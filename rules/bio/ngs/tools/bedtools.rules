@@ -1,23 +1,28 @@
-
 # -*- snakemake -*-
 import os
 from snakemakelib.utils import update_config, sml_rules_path
 
 # Start by including the general snakefile
-include: os.path.join(sml_rules_path(), 'base_settings.rules')
+include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
+
+SECTION="bio.ngs.tools.bedtools"
 
 config_default = { 
-	"bedtools" : {
-		"BEDTOOLS_HOME" : ".",
-		"BEDTOOLS_BFILE" : "",
-		"BEDTOOLS_OPTIONS" : "",
-		},
-	},
+    SECTION : {
+        "home" : ".",
+        "bfile" : "",
+        "options" : "",
+        "coverageBed" : {
+            "cmd" : "coverageBed",
+        }
+    },
 }
 
 config = update_config(config, config_default)
 
-rule rule_1:
-	input: " {prefix}.bam"
-	output: "{prefix}.coverage"
-	shell: "$(BEDTOOLS_HOME)/coverageBed $(BEDTOOLS_OPTIONS) -abam $< -b $(BEDTOOLS_BFILE) > $@.tmp && mv $@.tmp $@"
+rule bedtools_bam2coverage:
+    params: cmd=os.path.join(config[SECTION]["home"], config[SECTION]["coverageBed"]["cmd"]),
+            bfile = config[SECTION]["bfile"]
+    input: " {prefix}.bam"
+    output: "{prefix}.coverage"
+    shell: "{params.cmd} {params.options} -abam {input} -b {params.bfile} > {output}"

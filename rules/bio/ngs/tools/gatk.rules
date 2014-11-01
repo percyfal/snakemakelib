@@ -1,79 +1,130 @@
-
 # -*- snakemake -*-
 import os
 from snakemakelib.utils import update_config, sml_rules_path
 
 # Start by including the general snakefile
-include: os.path.join(sml_rules_path(), 'base_settings.rules')
+include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
+
+SECTION="bio.ngs.tools.gatk"
 
 config_default = { 
-	"gatk" : {
-		"GATK_INDELREALIGNER_OPTIONS" : "-R $(GATK_REF)",
-		"GATK_VARIANTFILTRATION_OPTIONS" : "",
-		"GATK_REALIGN_TARGET_CREATOR_OPTIONS" : "-R $(GATK_REF)",
-		"GATK_THREADS" : "$(THREADS)",
-		"GATK_READBACKEDPHASING_OPTIONS" : "",
-		"GATK_JAR" : "$(GATK_HOME)/GenomeAnalysisTK.jar",
-		"GATK_COMMAND" : "java -Xmx$(GATK_JAVA_MEM) -Djava.io.tmpdir=$(GATK_JAVA_TMPDIR) -jar $(GATK_JAR)",
-		"GATK_CLIPREADS_OPTIONS" : "",
-		"GATK_UNIFIEDGENOTYPER_OPTIONS+" : "--dbsnp $(GATK_DBSNP)",
-		"GATK_VARIANT_EVAL_OPTIONS" : "-ST Filter -l INFO --doNotUseAllStandardModules --evalModule CompOverlap --evalModule CountVariants --evalModule GenotypeConcordance --evalModule TiTvVariantEvaluator --evalModule ValidationReport --stratificationModule Filter",
-		"GATK_TARGET_REGIONS" : "$(TARGET_REGIONS)",
-		"GATK_BASERECALIBRATOR_OPTIONS" : "-R $(GATK_REF)",
-		"GATK_KNOWN_SITES" : "$(GATK_DBSNP)",
-		"GATK_SELECTSNPVARIANTS_OPTIONS" : "--selectTypeToInclude SNP",
-		"GATK_UNIFIEDGENOTYPER_OPTIONS" : "-stand_call_conf 30.0 -stand_emit_conf 10.0  --downsample_to_coverage 30 --output_mode EMIT_VARIANTS_ONLY -glm BOTH -nt $(GATK_THREADS) -R $(GATK_REF)",
-		"GATK_REF" : "$(REF)",
-		"GATK_PRINTREADS_OPTIONS" : "-R $(GATK_REF)",
-		"GATK_JAVA_MEM" : "$(JAVA_MEM)",
-		"GATK_BAM_LIST:" : "",
-		"GATK_VCFSUFFIX" : ".vcf",
-		"GATK_HOME" : ".",
-		"GATK_JAVA_TMPDIR" : "$(JAVA_TMPDIR)",
-		"GATK_DBSNP" : "$(DBSNP)",
-		},
-	},
+    SECTION : {
+        "home" : ".",
+        "bam_list:" : "",
+        "vcfsuffix" : ".vcf",
+        "dbsnp" : config["bio.ngs.settings"]["db"]["dbsnp"],
+        "java_mem" : config["bio.ngs.settings"]["java"]["java_mem"],
+        "java_tmpdir" : config["bio.ngs.settings"]["java"]["java_tmpdir"],
+        "ref" : config["bio.ngs.settings"]["db"]["ref"],
+
+        "target_regions" : config["bio.ngs.settings"]["sequence_capture"]["target_regions"],
+        "bait_regions" : config["bio.ngs.settings"]["sequence_capture"]["bait_regions"],
+        "threads" : config["bio.ngs.settings"]["threads"],
+    },
+}
+
+config_default[SECTION]["VariantFiltration"] = {
+    "options" : "",
+}
+config_default[SECTION]["ReadBackedPhasing"] = {
+    "options" : "",
+}
+config_default[SECTION]["ClipReads"] = {
+    "options" : "",
+}
+config_default[SECTION]["VariantEval"] = {
+    "options" : "-ST Filter -l INFO --doNotUseAllStandardModules --evalModule CompOverlap --evalModule CountVariants --evalModule GenotypeConcordance --evalModule TiTvVariantEvaluator --evalModule ValidationReport --stratificationModule Filter",
+}
+config_default[SECTION]["SelectSnpVariants"] = {
+    "options" : "--selectTypeToInclude SNP",
 }
 
 config = update_config(config, config_default)
 
-rule rule_1:
-	input: " {prefix}.bam"
-	output: "{prefix}.vcf"
-	shell: "$(GATK_COMMAND) -T UnifiedGenotyper $(GATK_UNIFIEDGENOTYPER_OPTIONS) -I $< -o $@.tmp && mv $@.tmp $@  && mv $@.tmp.idx $@.idx"
-rule rule_2:
-	input: " {prefix}.bam"
-	output: "{prefix}.intervals"
-	shell: "$(GATK_COMMAND) -T RealignerTargetCreator $(GATK_REALIGN_TARGET_CREATOR_OPTIONS) -I $< -o $@.tmp && mv $@.tmp $@"
-rule rule_3:
-	input: " {prefix}.bam {prefix}.intervals"
-	output: "{prefix}.realign.bam"
-	shell: "$(GATK_COMMAND) -T IndelRealigner $(GATK_INDELREALIGNER_OPTIONS) -o $@.tmp --targetIntervals $(word 2, $^) && mv $@.tmp $@  && mv $@.tmp.bai $@.bai"
-rule rule_4:
-	input: " {prefix}.bam {prefix}.bai"
-	output: "{prefix}.recal_data.grp"
-	shell: "$(GATK_COMMAND) -T BaseRecalibrator $(GATK_BASERECALIBRATOR_OPTIONS) $(KNOWN_SITES) -I $< -o $@.tmp && mv $@.tmp $@"
-rule rule_5:
-	input: " {prefix}.bam {prefix}.recal_data.grp"
-	output: "{prefix}.recal.bam"
-	shell: "$(GATK_COMMAND) -T PrintReads $(GATK_PRINTREADS_OPTIONS) -I $< -BQSR $(lastword $^) -o $@.tmp && mv $@.tmp $@ && mv $@.tmp.bai $@.bai"
-rule rule_6:
-	input: " {prefix}.bam {prefix}.bai"
-	output: "{prefix}.clip.bam"
-	shell: "$(GATK_COMMAND) -T ClipReads $(GATK_CLIPREADS_OPTIONS) -I $< -o $@.tmp && mv $@.tmp $@ && mv $@.tmp.bai $@.bai"
-rule rule_7:
-	input: " {prefix}.vcf"
-	output: "{prefix}.filtered.vcf"
-	shell: "$(GATK_COMMAND) -T VariantFiltration $(GATK_VARIANTFILTRATION_OPTIONS) -R $(GATK_REF) --variant $< --out $@.tmp && mv $@.tmp $@ && mv $@.tmp.idx $@.idx"
-rule rule_8:
-	input: " {prefix}.vcf"
-	output: "{prefix}.eval_metrics"
-	shell: "$(GATK_COMMAND) -T VariantEval $(GATK_VARIANT_EVAL_OPTIONS) -R $(GATK_REF) --eval $< -o $@.tmp && mv $@.tmp $@"
-rule rule_9:
-	input: " {prefix}.bam {prefix}.bai"
-	output: "{prefix}.phased.vcf"
-	shell: "$(GATK_COMMAND) -T ReadBackedPhasing $(GATK_READBACKEDPHASING_OPTIONS) -I $< --variant $*$(GATK_VCFSUFFIX) -R $(GATK_REF) -o $@.tmp && mv $@.tmp $@"
-rule rule_10:
-	input: " {prefix}.vcf"
-	output: "{prefix}.snp.vcf"
-	shell: "$(GATK_COMMAND) -T SelectVariants $(GATK_SELECTSNPVARIANTS_OPTIONS) --variant $< --out $@.tmp -R $(GATK_REF) && mv $@.tmp $@"
+# Set these rules after updating config as they depend on internal values and then redo update config 
+config_default[SECTION]["jar"] = os.path.join(config[SECTION]["home"], "GenomeAnalysisTK.jar")
+config_default[SECTION]["known_sites"] = config[SECTION]["dbsnp"]
+
+config_default[SECTION]["IndelRealigner"] = {
+    "cmd" : "IndelRealigner",
+    "ref" : config[SECTION]["ref"],
+    "options" : ""
+}
+config_default[SECTION]["PrintReads"] = {
+    "cmd" : "PrintReads",
+    "ref" : config[SECTION]["ref"],
+    "options" : ""
+}
+
+config_default[SECTION]["RealignerTargetCreator"] = {
+    "cmd" : "RealignerTargetCreator",
+    "ref" : config[SECTION]["ref"],
+    "options" : "",
+}
+config_default[SECTION]["BaseRecalibrator"] = {
+    "cmd" : "BaseRecalibrator",
+    "ref" : config[SECTION]["ref"],
+    "options" : "",
+}
+
+config_default[SECTION]["UnifiedGenotyper"] = {
+    "cmd" : "UnifiedGenotyper",
+    "ref" : config[SECTION]["ref"],
+    "options" : "-stand_call_conf 30.0 -stand_emit_conf 10.0  --downsample_to_coverage 30 --output_mode EMIT_VARIANTS_ONLY -glm BOTH"
+    + ("--dbsnp{dbsnp}".format(dbsnp=config.get(SECTION).get("gatk_dbsnp")) if not config.get(SECTION).get("gatk_dbsnp") is None else "")
+    + ("-L{target}".format(target=config.get(SECTION).get("target_regions")) if not config.get(SECTION).get("target_regions") is None else ""),
+}
+
+config = update_config(config, config_default)
+
+# And yes, we need to do it yet again due to dependency on config[SECTION]["jar"]
+config_default[SECTION]["cmd"] = "java -Xmx" + config[SECTION]["java_mem"] + " -Djava.io.tmpdir=" + config[SECTION]["java_tmpdir"] +  " -jar " + config[SECTION]["jar"]
+
+config = update_config(config, config_default)
+
+rule gatk_unifiedgenotyper:
+    params: cmd = config[SECTION][cmd] + " -T " + config[SECTION]["UnifiedGenotyper"]["cmd"],
+            options = config[SECTION]["UnifiedGenotyper"]["options"]
+    input: "{prefix}.bam"
+    output: "{prefix}.vcf"
+    shell: "{params.cmd} {params.options} -I {input} -o {output} 
+
+rule gatk_realigner_target_creator:
+    params: cmd = config[SECTION][cmd] + " -T " + config[SECTION]["RealignerTargetCreator"]["cmd"],
+            options = config[SECTION]["RealignerTargetCreator"]["options"]
+    input: " {prefix}.bam"
+    output: "{prefix}.intervals"
+    shell: "{params.cmd} {params.options} -I {input} -o {output}"
+
+# rule rule_3:
+# 	input: " {prefix}.bam {prefix}.intervals"
+# 	output: "{prefix}.realign.bam"
+# 	shell: "$(GATK_COMMAND) -T IndelRealigner $(GATK_INDELREALIGNER_OPTIONS) -o $@.tmp --targetIntervals $(word 2, $^) && mv $@.tmp $@  && mv $@.tmp.bai $@.bai"
+# rule rule_4:
+# 	input: " {prefix}.bam {prefix}.bai"
+# 	output: "{prefix}.recal_data.grp"
+# 	shell: "$(GATK_COMMAND) -T BaseRecalibrator $(GATK_BASERECALIBRATOR_OPTIONS) $(KNOWN_SITES) -I $< -o $@.tmp && mv $@.tmp $@"
+# rule rule_5:
+# 	input: " {prefix}.bam {prefix}.recal_data.grp"
+# 	output: "{prefix}.recal.bam"
+# 	shell: "$(GATK_COMMAND) -T PrintReads $(GATK_PRINTREADS_OPTIONS) -I $< -BQSR $(lastword $^) -o $@.tmp && mv $@.tmp $@ && mv $@.tmp.bai $@.bai"
+# rule rule_6:
+# 	input: " {prefix}.bam {prefix}.bai"
+# 	output: "{prefix}.clip.bam"
+# 	shell: "$(GATK_COMMAND) -T ClipReads $(GATK_CLIPREADS_OPTIONS) -I $< -o $@.tmp && mv $@.tmp $@ && mv $@.tmp.bai $@.bai"
+# rule rule_7:
+# 	input: " {prefix}.vcf"
+# 	output: "{prefix}.filtered.vcf"
+# 	shell: "$(GATK_COMMAND) -T VariantFiltration $(GATK_VARIANTFILTRATION_OPTIONS) -R $(GATK_REF) --variant $< --out $@.tmp && mv $@.tmp $@ && mv $@.tmp.idx $@.idx"
+# rule rule_8:
+# 	input: " {prefix}.vcf"
+# 	output: "{prefix}.eval_metrics"
+# 	shell: "$(GATK_COMMAND) -T VariantEval $(GATK_VARIANT_EVAL_OPTIONS) -R $(GATK_REF) --eval $< -o $@.tmp && mv $@.tmp $@"
+# rule rule_9:
+# 	input: " {prefix}.bam {prefix}.bai"
+# 	output: "{prefix}.phased.vcf"
+# 	shell: "$(GATK_COMMAND) -T ReadBackedPhasing $(GATK_READBACKEDPHASING_OPTIONS) -I $< --variant $*$(GATK_VCFSUFFIX) -R $(GATK_REF) -o $@.tmp && mv $@.tmp $@"
+# rule rule_10:
+# 	input: " {prefix}.vcf"
+# 	output: "{prefix}.snp.vcf"
+# 	shell: "$(GATK_COMMAND) -T SelectVariants $(GATK_SELECTSNPVARIANTS_OPTIONS) --variant $< --out $@.tmp -R $(GATK_REF) && mv $@.tmp $@"

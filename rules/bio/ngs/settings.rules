@@ -1,32 +1,40 @@
-
 # -*- snakemake -*-
 import os
 from snakemakelib.utils import update_config, sml_rules_path
 
 # Start by including the general snakefile
-include: os.path.join(sml_rules_path(), 'base_settings.rules')
+# include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
+
+SECTION="bio.ngs.settings"
 
 config_default = { 
-	"ngsvars" : {
-		"TRANSCRIPT_ANNOT_GTF" : "",
-		"JAVA_MEM" : "6g",
-		"READ2_LABEL" : "_R2_001",
-		"FLOWCELLRUNS " : " $(foreach s,$(SAMPLES),$(wildcard $(s)/*$(FLOWCELL_SUFFIX)))",
-		"THREADS" : "8",
-		"BAIT_REGIONS" : "",
-		"SAMPLES " : " $(foreach s,$(SAMPLE_PREFIX), $(wildcard $(s)*))",
-		"SAMPLE_PREFIX" : "P00",
-		"DBSNP" : "",
-		"JAVA_TMPDIR" : "/tmp",
-		"TARGET_REGIONS" : "",
-		"REF" : "",
-		"FASTQ_SUFFIX" : ".fastq",
-		"FLOWCELL_SUFFIX" : "XX",
-		"READ1_LABEL" : "_R1_001",
-		"INPUTDIR" : ".",
-		"ANNOT_LABEL" : "",
-		},
-	},
+    SECTION : {
+        "fastq_suffix" : ".fastq",
+        "flowcellruns " : " $(foreach s,$(samples),$(wildcard $(s)/*$(flowcell_suffix)))",
+        "flowcell_suffix" : "XX",
+        "inputdir" : ".",
+        "read1_label" : "_R1_001",
+        "read2_label" : "_R2_001",
+        "sample_prefix" : "P00",
+        "samples " : "$(foreach s,$(sample_prefix), $(wildcard $(s)*))",
+        "threads" : 8,
+        "annotation" : {
+            "annot_label" : "",
+            "transcript_annot_gtf" : "",
+        },
+        "db" : {
+            "dbsnp" : "",
+            "ref" : "hg19",
+        },
+        "java" : {
+            "java_mem" : "6g",
+            "java_tmpdir" : "/tmp",
+        },
+        "sequence_capture" : {
+            "bait_regions" : "",
+            "target_regions" : "",
+        },
+    },
 }
 
 config = update_config(config, config_default)

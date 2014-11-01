@@ -1,0 +1,26 @@
+# -*- snakemake -*- 
+import pprint as pp
+
+# Print global configuration
+rule conf:
+    run:
+      print ()
+      for (k,v) in sorted(config.items()):
+          if (not isinstance(v, dict)):
+              print (" ", k, " : ", config[k])
+      print ()
+      for (k,v) in sorted(config.items()):
+          if (isinstance(v, dict)):
+              print ("  " + k)
+              print ("  " + "="*len(k))
+	      for (kk, vv) in sorted(config[k].items()):
+                  print ("\t", kk, " : ", vv)
+                  # if isinstance(vv, dict):
+                  #     print ("\t", kk, " : ")
+                  #     for (kkk,vvv) in vv.items():
+                  #         print ("\t\t", kkk, " : ", vvv)
+                  # else:
+                  #     print ("\t", kk, " : ", vv)
+
+
+                  

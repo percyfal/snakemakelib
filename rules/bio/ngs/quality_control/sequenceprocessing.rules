@@ -1,0 +1,66 @@
+
+# -*- snakemake -*-
+import os
+from snakemakelib.utils import update_config, sml_rules_path
+
+# Start by including the general snakefile
+include: os.path.join(sml_rules_path(), 'base_settings.rules')
+
+config_default = { 
+	"sequenceprocessing" : {
+		"CUTADAPT_THREEPRIME" : "AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC",
+		"CUTADAPT" : "cutadapt",
+		"TRIMMOMATIC_HOME" : ".",
+		"TRIMMOMATIC_COMMAND" : "java -Xmx$(TRIMMOMATIC_JAVA_MEM) -Djava.io.tmpdir=$(TRIMMOMATIC_JAVA_TMPDIR) -jar $(TRIMMOMATIC_JAR)",
+		"TRIMMOMATIC_OPTIONS" : "-phred33 -threads $(TRIMMOMATIC_OPTION_THREADS)",
+		"RESYNCMATES_OPTIONS" : "",
+		"TRIMMOMATIC_OPTION_THREADS" : "$(THREADS)",
+		"TRIMMOMATIC_JAVA_MEM" : "$(JAVA_MEM)",
+		"TRIMMOMATIC_JAVA_TMPDIR" : "$(JAVA_TMPDIR)",
+		"TRIMMOMATIC_PROCESSING_OPTIONS" : "LEADING:15 TRAILING:15 MINLEN:36",
+		"CUTADAPT_FIVEPRIME" : "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT",
+		"TRIMMOMATIC_JAR" : "$(TRIMMOMATIC_HOME)/trimmomatic.jar",
+		"RESYNCMATES" : "resyncMates.pl",
+		"CUTADAPT_OPTIONS" : "",
+		},
+	},
+}
+
+config = update_config(config, config_default)
+
+rule rule_1:
+	input: " {prefix}$(READ1_LABEL).fastq.gz"
+	output: "{prefix}$(READ1_LABEL).trimmed.fastq.gz"
+	shell: "$(CUTADAPT) $(CUTADAPT_OPTIONS) -a $(CUTADAPT_THREEPRIME) $< -o $(@:.gz=).tmp.gz > $*.cutadapt_metrics && mv $(@:.gz=).tmp.gz $@"
+rule rule_2:
+	input: " {prefix}$(READ2_LABEL).fastq.gz"
+	output: "{prefix}$(READ2_LABEL).trimmed.fastq.gz"
+	shell: "$(CUTADAPT) $(CUTADAPT_OPTIONS) -a $(CUTADAPT_FIVEPRIME) $< -o $(@:.gz=).tmp.gz > $*.cutadapt_metrics && mv $(@:.gz=).tmp.gz $@"
+rule rule_3:
+	input: " {prefix}$(READ1_LABEL).trimmed.fastq.gz {prefix}$(READ2_LABEL).trimmed.fastq.gz"
+	output: "{prefix}$(READ1_LABEL).trimmed.sync.fastq.gz"
+	shell: "$(RESYNCMATES) $(RESYNCMATES_OPTIONS) -i $< -j $*$(READ2_LABEL).trimmed.fastq.gz -o $@.tmp.gz -p $*$(READ2_LABEL).trimmed.sync.fastq.gz && mv $@.tmp.gz $@"
+rule rule_4:
+	input: " {prefix}$(READ1_LABEL).trimmed.sync.fastq.gz"
+	output: "{prefix}$(READ2_LABEL).trimmed.sync.fastq.gz"
+	shell: "@echo $@ should be done in rule 1"
+rule rule_5:
+	input: " {prefix}$(READ1_LABEL).fq.gz {prefix}$(READ2_LABEL).fq.gz"
+	output: "{prefix}.trimmomatic.PE"
+	shell: "$(TRIMMOMATIC_COMMAND) PE $(TRIMMOMATIC_OPTIONS) $^ $*$(READ1_LABEL).P.qtrim.fq.tmp.gz $*$(READ1_LABEL).U.qtrim.fq.tmp.gz $*$(READ2_LABEL).P.qtrim.fq.tmp.gz $*$(READ2_LABEL).U.qtrim.fq.tmp.gz $(TRIMMOMATIC_PROCESSING_OPTIONS) &> $@.tmp && mv $@.tmp $@ && mv $*$(READ1_LABEL).P.qtrim.fq.tmp.gz $*$(READ1_LABEL).P.qtrim.fq.gz && mv $*$(READ1_LABEL).U.qtrim.fq.tmp.gz $*$(READ1_LABEL).U.qtrim.fq.gz && mv $*$(READ2_LABEL).P.qtrim.fq.tmp.gz $*$(READ2_LABEL).P.qtrim.fq.gz && mv $*$(READ2_LABEL).U.qtrim.fq.tmp.gz $*$(READ2_LABEL).U.qtrim.fq.gz"
+rule rule_6:
+	input: " {prefix}.trimmomatic.PE"
+	output: "{prefix}$(READ1_LABEL).P.qtrim.fq.gz"
+	shell: "echo Running rule $*.trimmomatic.PE to generate $@"
+rule rule_7:
+	input: " {prefix}.trimmomatic.PE"
+	output: "{prefix}$(READ1_LABEL).U.qtrim.fq.gz"
+	shell: "echo Running rule $*.trimmomatic.PE to generate $@"
+rule rule_8:
+	input: " {prefix}.trimmomatic.PE"
+	output: "{prefix}$(READ2_LABEL).P.qtrim.fq.gz"
+	shell: "echo Running rule $*.trimmomatic.PE to generate $@"
+rule rule_9:
+	input: " {prefix}.trimmomatic.PE"
+	output: "{prefix}$(READ2_LABEL).U.qtrim.fq.gz"
+	shell: "echo Running rule $*.trimmomatic.PE to generate $@"

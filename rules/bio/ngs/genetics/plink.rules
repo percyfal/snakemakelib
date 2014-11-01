@@ -1,0 +1,39 @@
+
+# -*- snakemake -*-
+import os
+from snakemakelib.utils import update_config, sml_rules_path
+
+# Start by including the general snakefile
+include: os.path.join(sml_rules_path(), 'base_settings.rules')
+
+config_default = { 
+	"plink" : {
+		"PLINK_OPTIONS_COMMON" : "--noweb",
+		"PLINK_OPTIONS" : "$(PLINK_OPTIONS_COMMON)",
+		"PLINK" : "plink",
+		},
+	},
+}
+
+config = update_config(config, config_default)
+
+rule rule_1:
+	input: " {prefix}.ped"
+	output: "{prefix}.r2.ld"
+	shell: "$(PLINK) $(PLINK_OPTIONS)  --file $* --r2 --out $(@:.ld=)"
+rule rule_2:
+	input: " {prefix}.bed"
+	output: "{prefix}.r2.ld"
+	shell: "$(PLINK) $(PLINK_OPTIONS)  --bfile $* --r2 --out $(@:.ld=)"
+rule rule_3:
+	input: " {prefix}.ped"
+	output: "{prefix}.bed"
+	shell: "$(PLINK) $(PLINK_OPTIONS)  --file $* --make-bed --out $*"
+rule rule_4:
+	input: " {prefix}.bed"
+	output: "{prefix}.blocks"
+	shell: "$(PLINK) $(PLINK_OPTIONS)  --bfile $* --blocks --out $*"
+rule rule_5:
+	input: " {prefix}.bed"
+	output: "{prefix}.chr$(PLINK_CHR).bed"
+	shell: "$(PLINK) $(PLINK_OPTIONS)  --bfile $* --chr $(PLINK_CHR) --make-bed --out $*.chr$(PLINK_CHR)"

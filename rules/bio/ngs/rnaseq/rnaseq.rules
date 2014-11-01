@@ -1,0 +1,42 @@
+
+# -*- snakemake -*-
+import os
+from snakemakelib.utils import update_config, sml_rules_path
+
+# Start by including the general snakefile
+include: os.path.join(sml_rules_path(), 'base_settings.rules')
+
+config_default = { 
+	"rnaseq" : {
+		"RNASEQC_JAVA_MEM" : "$(JAVA_MEM)",
+		"RNASEQC_OPTION_TRANSCRIPT_ANNOT_GTF" : "$(TRANSCRIPT_ANNOT_GTF)",
+		"RNASEQC_OPTION_BWArRNA" : "",
+		"RSEM_PREPARE_REFERENCE_OPTION_REF" : "$(REF)",
+		"RSEM_OPTIONS" : "",
+		"RNASEQC_JAR" : "$(RNASEQC_HOME)/RNA-SeQC.jar",
+		"RNASEQC_JAVA_TMPDIR" : "$(JAVA_TMPDIR)",
+		"RNASEQC_OPTION_REF" : "$(REF)",
+		"RSEM_CALCULATE_EXPRESSION" : "$(RSEM_HOME)/rsem-calculate-expression",
+		"RNASEQC_COMMAND" : "java -Xmx$(RNASEQC_JAVA_MEM) -Djava.io.tmpdir=$(RNASEQC_JAVA_TMPDIR) -jar $(RNASEQC_JAR)",
+		"RSEM_REFERENCE_NAME" : "",
+		"RNASEQC_HOME" : ".",
+		"RSEM_PREPARE_REFERENCE_OPTIONS" : "",
+		"RSEM_HOME" : ".",
+		"RNASEQC_OPTIONS" : "-n 1000",
+		"RSEM_CALCULATE_EXPRESSION_OPTIONS" : "--no-bam-output --bowtie-chunkmbs 512",
+		"RSEM_THREADS" : "$(THREADS)",
+		"RSEM_PREPARE_REFERENCE" : "$(RSEM_HOME)/rsem-prepare-reference",
+		},
+	},
+}
+
+config = update_config(config, config_default)
+
+rule rule_1:
+	input: " {prefix}$(READ1_LABEL)$(FASTQ_SUFFIX).gz {prefix}$(READ2_LABEL)$(FASTQ_SUFFIX).gz"
+	output: "{prefix}.rsem"
+	shell: "rm -f $(dir $(word 1, $^))read1.fifo $(dir $(word 2, $^))read2.fifo"
+rule rule_2:
+	input: " {prefix}.bam {prefix}.bai"
+	output: "{prefix}.rnaseqc"
+	shell: "$(RNASEQC_COMMAND) $(RNASEQC_OPTIONS) -o $@.tmp -s "sample|$<|rnaseqQC" && mv $@.tmp $@"

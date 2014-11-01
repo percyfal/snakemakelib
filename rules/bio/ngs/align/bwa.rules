@@ -1,0 +1,24 @@
+
+# -*- snakemake -*-
+import os
+from snakemakelib.utils import update_config, sml_rules_path
+
+# Start by including the general snakefile
+include: os.path.join(sml_rules_path(), 'base_settings.rules')
+
+config_default = { 
+	"bwa" : {
+		"BWA" : "bwa",
+		"BWA_OPTIONS" : "-t $(BWA_THREADS) -M",
+		"BWA_REF" : "$(REF)",
+		"BWA_THREADS" : "$(THREADS)",
+		},
+	},
+}
+
+config = update_config(config, config_default)
+
+rule rule_1:
+	input: " {prefix}$(READ1_LABEL).fastq.gz {prefix}$(READ2_LABEL).fastq.gz"
+	output: "{prefix}.bam"
+	shell: "$(BWA) mem $(BWA_OPTIONS) $(BWA_REF) $^ | $(SAMTOOLS) view -Sbh - > $@.tmp && mv $@.tmp $@"

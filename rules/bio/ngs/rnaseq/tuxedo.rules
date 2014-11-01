@@ -1,0 +1,59 @@
+
+# -*- snakemake -*-
+import os
+from snakemakelib.utils import update_config, sml_rules_path
+
+# Start by including the general snakefile
+include: os.path.join(sml_rules_path(), 'base_settings.rules')
+
+config_default = { 
+	"tuxedo" : {
+		"TOPHAT2_OPTIONS" : "-p $(TOPHAT2_OPTION_THREADS) -o $(TOPHAT2_OPTION_OUTPUT_DIR).tmp",
+		"CUFFLINKS_OPTIONS" : "",
+		"BOWTIE_OPTION_INDEX" : "",
+		"BOWTIE_OPTION_THREADS" : "$(THREADS)",
+		"BOWTIE2_OPTIONS" : "-p $(BOWTIE2_OPTION_THREADS)",
+		"BOWTIE" : "bowtie",
+		"TOPHAT2_OPTION_THREADS" : "$(THREADS)",
+		"TOPHAT2_OPTION_OUTPUT_DIR" : "./tophat_out",
+		"CUFFLINKS" : "cufflinks",
+		"BOWTIE_OPTIONS" : "-p $(BOWTIE_OPTION_THREADS)",
+		"BOWTIE2" : "bowtie2",
+		"CUFFLINKS_OPTION_TRANSCRIPT_ANNOT_GTF" : "$(TRANSCRIPT_ANNOT_GTF)",
+		"CUFFLINKS_ANNOT_LABEL" : "$(ANNOT_LABEL)",
+		"BOWTIE2_OPTION_THREADS" : "$(THREADS)",
+		"BOWTIE2_OPTION_INDEX" : "$(BOWTIE_OPTION_INDEX)",
+		"TOPHAT2_OPTION_INDEX" : "$(BOWTIE2_OPTION_INDEX)",
+		"BOWTIE2_BUILD" : "bowtie2-build",
+		"CUFFLINKS_OPTION_OUTPUT_DIR" : "./",
+		"TOPHAT2" : "tophat2",
+		},
+	},
+}
+
+config = update_config(config, config_default)
+
+rule rule_1:
+	input: " {prefix}$(READ1_LABEL).fastq.gz {prefix}$(READ2_LABEL).fastq.gz"
+	output: "{prefix}.bam"
+	shell: "$(BOWTIE) mem $(BOWTIE_OPTIONS) $(BOWTIE_OPTION_INDEX) $^ | $(SAMTOOLS) view -Sbh - > $@.tmp && mv $@.tmp $@"
+rule rule_2:
+	input: " {prefix}.fa"
+	output: "{prefix}"
+	shell: "$(BOWTIE2_BUILD) $< $@.tmp && rename $@.tmp $@ $(@)*"
+rule rule_3:
+	input: " {prefix}$(READ1_LABEL)$(FASTQ_SUFFIX).gz {prefix}$(READ2_LABEL)$(FASTQ_SUFFIX).gz"
+	output: "{prefix}.tophat2"
+	shell: "$(TOPHAT2) $(TOPHAT2_OPTIONS) $(TOPHAT2_OPTION_INDEX) $^ &> $@.tmp && mv $@.tmp $@ && mv $(dir $@)$(TOPHAT2_OPTION_OUTPUT_DIR).tmp $(dir $@)$(TOPHAT2_OPTION_OUTPUT_DIR)"
+rule rule_4:
+	input: " {prefix}.tophat2 $(CUFFLINKS_OPTION_TRANSCRIPT_ANNOT_GTF)"
+	output: "{prefix}.cufflinks_quant"
+	shell: "$(CUFFLINKS) $(CUFFLINKS_OPTIONS) --GTF $(word 2, $^) $(dir $<)$(TOPHAT2_OPTION_OUTPUT_DIR)/accepted_hits.bam -o $(dir $@)$(CUFFLINKS_OPTION_OUTPUT_DIR)_$(CUFFLINKS_ANNOT_LABEL).tmp &> $@.tmp && mv $@.tmp $@ && mv $(dir $@)$(CUFFLINKS_OPTION_OUTPUT_DIR)_$(CUFFLINKS_ANNOT_LABEL).tmp $(dir $@)$(CUFFLINKS_OPTION_OUTPUT_DIR)_$(CUFFLINKS_ANNOT_LABEL)"
+rule rule_5:
+	input: " {prefix}.tophat2"
+	output: "{prefix}.cufflinks"
+	shell: "$(CUFFLINKS) $(CUFFLINKS_OPTIONS) $(dir $<)$(TOPHAT2_OPTION_OUTPUT_DIR)/accepted_hits.bam -o $(dir $@)$(CUFFLINKS_OPTION_OUTPUT_DIR).tmp &> $@.tmp && mv $@.tmp $@ && mv $(dir $@)$(CUFFLINKS_OPTION_OUTPUT_DIR).tmp $(dir $@)$(CUFFLINKS_OPTION_OUTPUT_DIR)"
+rule rule_6:
+	input: " {prefix}.bam"
+	output: "{prefix}.cufflinks"
+	shell: "$(CUFFLINKS) $(CUFFLINKS_OPTIONS) $< -o $(dir $@)$(CUFFLINKS_OPTION_OUTPUT_DIR).tmp &> $@.tmp && mv $@.tmp $@ && mv $(dir $@)$(CUFFLINKS_OPTION_OUTPUT_DIR).tmp $(dir $@)$(CUFFLINKS_OPTION_OUTPUT_DIR)"

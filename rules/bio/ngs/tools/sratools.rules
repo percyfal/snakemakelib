@@ -1,0 +1,28 @@
+
+# -*- snakemake -*-
+import os
+from snakemakelib.utils import update_config, sml_rules_path
+
+# Start by including the general snakefile
+include: os.path.join(sml_rules_path(), 'base_settings.rules')
+
+config_default = { 
+	"sratools" : {
+		"SRATOOLS_HOME" : ".",
+		"SRATOOLS_FASTQDUMP" : "$(SRATOOLS_HOME)/fastq-dump",
+		"SRATOOLS_FASTQDUMP_OPTIONS" : "--split-3 -F -O $(dir $<)",
+		"SRATOOLS_OPTIONS" : "",
+		},
+	},
+}
+
+config = update_config(config, config_default)
+
+rule rule_1:
+	input: " {prefix}.sra"
+	output: "{prefix}_1.fq"
+	shell: "$(SRATOOLS_FASTQDUMP) $(SRATOOLS_FASTQDUMP_OPTIONS) $< && mv ${*}_1.fastq $@ && if [ -e ${*}_2.fastq ]; then mv ${*}_2.fastq ${*}_2.fq; fi"
+rule rule_2:
+	input: " {prefix}.sra"
+	output: "{prefix}_1.fq.gz"
+	shell: "$(SRATOOLS_FASTQDUMP) $(SRATOOLS_FASTQDUMP_OPTIONS) $< && mv ${*}_1.fastq.gz $@ && if [ -e ${*}_2.fastq.gz ]; then mv ${*}_2.fastq.gz ${*}_2.fq.gz; fi"

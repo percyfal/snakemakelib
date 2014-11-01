@@ -1,0 +1,75 @@
+
+# -*- snakemake -*-
+import os
+from snakemakelib.utils import update_config, sml_rules_path
+
+# Start by including the general snakefile
+include: os.path.join(sml_rules_path(), 'base_settings.rules')
+
+config_default = { 
+	"variation" : {
+		"SNPEFF_CONFIG" : "$(SNPEFF_HOME)/snpEff.config",
+		"ANNOVAR_DBLIST" : "dgv genomicSuperDups gwascatalog tfbs wgEncodeRegTfbsClustered wgEncodeRegDnaseClustered phastConsElements46way",
+		"ANNOVAR_DB" : "$(ANNOVAR_HOME)/humandb",
+		"SNPEFF_JAVA_MEM" : "$(JAVA_MEM)",
+		"ANNOVAR_TABLE_OPTIONS" : "--otherinfo",
+		"ANNOVAR_CONVERT_OPTIONS" : "--includeinfo",
+		"SNPEFF_HOME" : ".",
+		"SNPEFF_OPTIONS" : "-c $(SNPEFF_CONFIG) -o gatk",
+		"ANNOVAR_HOME" : ".",
+		"ANNOVAR_DBLIST_WEBFROM_ANNOVAR" : "1000g2012apr cosmic64 esp6500si_all esp6500si_ea ljb_all snp137 refGene avsift",
+		"SNPEFF_JAVA_TMPDIR" : "$(JAVA_TMPDIR)",
+		"SNPEFF_DBLIST" : "hg19",
+		"VCFTOOLS_HOME" : ".",
+		"VCFTOOLS_OPTIONS" : "",
+		"SNPEFF_GENOME_VERSION" : "hg19",
+		"ANNOVAR_CONVERT_VCF_FORMAT" : "vcf4",
+		"SNPEFF_COMMAND" : "java -Xmx$(SNPEFF_JAVA_MEM) -Djava.io.tmpdir=$(SNPEFF_JAVA_TMPDIR) -jar $(SNPEFF_JAR)",
+		"SNPEFF_JAR" : "$(SNPEFF_HOME)/snpEff.jar",
+		"HTSLIB_HOME" : ".",
+		"VCF_HOME" : ".",
+		"ANNOVAR_BUILDVER" : "hg19",
+		"ANNOVAR_OPTIONS" : "",
+		"VCFTOOLS_STATS_OPTIONS" : "",
+		},
+	},
+}
+
+config = update_config(config, config_default)
+
+rule rule_1:
+	input: " {prefix}.vcf"
+	output: "{prefix}.ped"
+	shell: "$(VCFTOOLS_HOME)/vcftools $(VCFTOOLS_OPTIONS) --vcf $< --plink --out $*.tmp && mv $*.tmp.ped $@; mv $*.tmp.map $*.map"
+rule rule_2:
+	input: " {prefix}.vcf"
+	output: "{prefix}.stats.dump"
+	shell: "$(VCFTOOLS_HOME)/vcf-stats $(VCFTOOLS_STATS_OPTIONS)  $< -p $*.stats"
+rule rule_3:
+	input: " {prefix}.vcf"
+	output: "{prefix}.frq"
+	shell: "$(VCFTOOLS_HOME)/vcftools --freq $(VCFTOOLS_OPTIONS) --vcf  $< --out $*.tmp && rename $*.tmp  $* $**"
+rule rule_4:
+	input: " {prefix}.vcf"
+	output: "{prefix}.2.frq"
+	shell: "$(VCFTOOLS_HOME)/vcftools --counts --freq2 $(VCFTOOLS_OPTIONS) --vcf  $< --out $*.2.tmp && rename $*.2.tmp  $*.2 $**"
+rule rule_5:
+	input: " {prefix}.vcf"
+	output: "{prefix}.chk"
+	shell: "$(VCF_HOME)/vcf check $< > $@.tmp && mv $@.tmp $@"
+rule rule_6:
+	input: " {prefix}.chk"
+	output: "{prefix}-summary.pdf"
+	shell: "$(HTSLIB_HOME)/misc/plot-vcfcheck $< -p $*"
+rule rule_7:
+	input: " {prefix}.vcf"
+	output: "{prefix}.annotated.vcf"
+	shell: "$(SNPEFF_COMMAND) $(SNPEFF_OPTIONS) $(SNPEFF_GENOME_VERSION) $< > $@.tmp && mv $@.tmp $@"
+rule rule_8:
+	input: " {prefix}.avinput"
+	output: "{prefix}.avinput.hg19_multianno.txt"
+	shell: "$(ANNOVAR_HOME)/table_annovar.pl $< $(ANNOVAR_DB) $(ANNOVAR_TABLE_OPTIONS) --buildver hg19"
+rule rule_9:
+	input: " {prefix}.vcf"
+	output: "{prefix}.avinput"
+	shell: "$(ANNOVAR_HOME)/convert2annovar.pl  $(ANNOVAR_OPTIONS) $(ANNOVAR_CONVERT_OPTIONS) -format $(ANNOVAR_CONVERT_VCF_FORMAT) $< > $@.tmp && mv $@.tmp $@"

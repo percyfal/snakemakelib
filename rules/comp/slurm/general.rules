@@ -1,0 +1,49 @@
+
+# -*- snakemake -*-
+import os
+from snakemakelib.utils import update_config, sml_rules_path
+
+# Start by including the general snakefile
+include: os.path.join(sml_rules_path(), 'base_settings.rules')
+
+config_default = { 
+	"general" : {
+		"SBATCH_OPTIONS" : "",
+		"SLURM_CONSTRAINT" : "",
+		"CAT" : "cat",
+		"SLURM_MAKE_OPTIONS" : "",
+		"SLURM_N_NODES" : "1",
+		"SLURM_MAILTYPE" : "All",
+		"SLURM_COMMAND" : "",
+		"$(eval SLURM_USER" : "$(shell echo $$USER))",
+		"MAKE" : "make",
+		"SLURM_EXTRA_HEADER" : "",
+		"SLURM_TIME" : "01:00:00",
+		"GREP" : "grep",
+		"SLURM_PARTITION" : "devel",
+		"SBATCH" : "sbatch",
+		"SLURM_N_CORES" : "1",
+		"ZCAT" : "zcat",
+		"SLURM_MODULES" : "",
+		"GZIP" : "gzip",
+		"SLURM_PREHOOK" : "",
+		"SLURM_MAILUSER" : "",
+		"SLURM_JOBNAME" : "",
+		"SLURM_ERR" : "",
+		"AWK" : "awk",
+		"SLURM_MAKE_J" : "1",
+		"SLURM_WORKDIR" : "",
+		"GZIP_OPTIONS" : "",
+		"SLURM_ACCOUNT" : "",
+		"SLURM_OUT" : "",
+		"SLURM_CLUSTER" : "",
+		},
+	},
+}
+
+config = update_config(config, config_default)
+
+rule rule_1:
+	input: ""
+	output: "{prefix}.log"
+	shell: "$(MAKE) $(MFLAGS) $* 2>&1 | tee -a $@.tmp && mv $@.tmp $*.runlog"

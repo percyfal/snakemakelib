@@ -1,0 +1,141 @@
+
+# -*- snakemake -*-
+import os
+from snakemakelib.utils import update_config, sml_rules_path
+
+# Start by including the general snakefile
+include: os.path.join(sml_rules_path(), 'base_settings.rules')
+
+config_default = { 
+	"angsd" : {
+		"ANGSD_CHR_LABEL" : "scaffold",
+		"ANGSD_PATH" : ".",
+		"GEM_MAPPABILITY_OPTIONS" : "-l 100 -T 7",
+		"ANGSD_CHROMOSOMES_EXTRA" : "chrM",
+		"ANGSD_OPTION_REF" : "$(REF)",
+		"ANGSD_POPULATIONS" : "",
+		"ANGSD_OPTION_NCHR" : "",
+		"ANGSD_DOMAFS_OPTIONS" : "-anc $(ANGSD_OPTION_ANC) -doMajorMinor $(ANGSD_OPTION_MAJORMINOR) -doMaf $(ANGSD_OPTION_MAF) -GL $(ANGSD_OPTION_GL) -nThreads $(ANGSD_OPTION_THREADS)",
+		"ANGSD_EMOPTIM" : "$(ANGSD_PATH)/misc/emOptim",
+		"ANGSD_EMOPTIM2_OPTIONS" : "-maxIter $(ANGSD_OPTION_MAXITER) -P $(ANGSD_OPTION_THREADS)",
+		"ANGSD_OPTION_MAF" : "10",
+		"ANGSD_EMOPTIM2" : "$(ANGSD_PATH)/misc/emOptim2",
+		"ANGSD_CHR_ENUM_FROM" : "1",
+		"ANGSD_CALCSTAT" : "$(ANGSD_PATH)/misc/calcStat",
+		"NGSTOOLS_NGSFST" : "$(NGSTOOLS_PATH)/ngsFST",
+		"NGSTOOLS_PATH" : ".",
+		"ANGSD_OPTION_NSITES" : "",
+		"ANGSD_OPTION_REALSFS" : "1",
+		"ANGSD_CHROMOSOMES" : "$(foreach i,${ANGSD_CHR_ENUM},$(ANGSD_CHR_LABEL)_$(i)) $(ANGSD_CHROMOSOMES_EXTRA)",
+		"ANGSD_CHR_ENUM_TO" : "1",
+		"ANGSD_OPTION_GL" : "2",
+		"NGSTK" : "ngstk",
+		"ANGSD_REALSFS_OPTIONS" : "-realSFS 1 -GL $(ANGSD_OPTION_GL) -anc $(ANGSD_OPTION_ANC) -nThreads $(ANGSD_OPTION_THREADS)",
+		"ANGSD" : "$(ANGSD_PATH)/angsd",
+		"ANGSD_OPTION_MAXITER" : "100",
+		"NGSTOOLS_OPTION_BLOCK_SIZE" : "",
+		"ANGSD_CHR_ENUM" : "$(shell seq $(ANGSD_CHR_ENUM_FROM) $(ANGSD_CHR_ENUM_TO))",
+		"ANGSD_DOTHETAS_OPTIONS" : "-realSFS 1 -GL $(ANGSD_OPTION_GL) -anc $(ANGSD_OPTION_ANC) -doThetas 1 -nThreads $(ANGSD_OPTION_THREADS) -r $(ANGSD_OPTION_CHR)",
+		"ANGSD_DOCOUNTS_OPTIONS" : "-doCounts 1 -dumpCounts 2 -anc $(ANGSD_OPTION_ANC)",
+		"ANGSD_BGID" : "$(ANGSD_PATH)/misc/bgid",
+		"ANGSD_OPTION_WINDOW" : "50000",
+		"ANGSD_OPTION_MAJORMINOR" : "5",
+		"GEM_INDEXER_OPTIONS" : "-T 7",
+		"ANGSD_OPTION_CHR" : "",
+		"PLOTNGSTK" : "$(MAKEDIR)scripts/plotNgstk.R",
+		"ANGSD_OPTIMSFS" : "$(ANGSD_PATH)/misc/optimSFS",
+		"ANGSD_BGID_DOSTAT_OPTIONS" : "-step $(ANGSD_OPTION_STEP) -win $(ANGSD_OPTION_WINDOW) -nChr $(ANGSD_OPTION_NCHR)",
+		"GEM_PATH" : ".",
+		"ANGSD_OPTION_ANC" : "$(REF)",
+		"NGSTOOLS_SITES" : "",
+		"ANGSD_OPTION_THREADS" : "$(THREADS)",
+		"ANGSD_CHROMOSOMES_WIDTH" : "",
+		"ANGSD_OPTION_STEP" : "50000",
+		"ANGSD_EMOPTIM_OPTIONS" : "-maxIter $(ANGSD_OPTION_MAXITER)",
+		"PLOTTHETAS" : "$(MAKEDIR)scripts/plotThetas.R",
+		},
+	},
+}
+
+config = update_config(config, config_default)
+
+rule rule_1:
+	input: " {prefix}.list"
+	output: "{prefix}.sfs"
+	shell: "$(ANGSD) $(ANGSD_REALSFS_OPTIONS) -bam $< -out $(@:.sfs=).tmp && mv $(@:.sfs=).tmp.sfs $@"
+rule rule_2:
+	input: " {prefix}.sfs"
+	output: "{prefix}.sfs.em2.ml"
+	shell: "$(AWK) '{for (i=1; i<NF; i++) printf("%f ",exp($$i)); printf("%f", exp($$i))}' $@.exp > $@.tmp && mv $@.tmp $@"
+rule rule_3:
+	input: " {prefix}.sfs"
+	output: "{prefix}.sfs.em.ml"
+	shell: "$(ANGSD_EMOPTIM) -binput $< -nChr $(ANGSD_OPTION_NCHR) $(ANGSD_EMOPTIM_OPTIONS) > $@.tmp && mv $@.tmp $@"
+rule rule_4:
+	input: " {prefix}.sfs"
+	output: "{prefix}.sfs.ml"
+	shell: "$(ANGSD_OPTIMSFS) -binput $< -nChr $(ANGSD_OPTION_NCHR) -outnames $@.tmp && mv $@.tmp $@"
+rule rule_5:
+	input: " {prefix}.sfs.em2.ml.ln"
+	output: "{prefix}.thetas.gz"
+	shell: "$(ANGSD) $(ANGSD_DOTHETAS_OPTIONS) -pest $(<:.ln=) -bam $*.list -out $*.tmp && mv $*.tmp.thetas.gz $@ && mv $*.tmp.arg $*.arg"
+rule rule_6:
+	input: " {prefix}.sfs.em2.ml"
+	output: "{prefix}.thetas.gz"
+	shell: "$(ANGSD) $(ANGSD_DOTHETAS_OPTIONS) -pest $< -bam $*.list -out $*.tmp && mv $*.tmp.thetas.gz $@ && mv $*.tmp.arg $*.arg"
+rule rule_7:
+	input: " {prefix}.sfs.em.ml"
+	output: "{prefix}.thetas.gz"
+	shell: "$(ANGSD) $(ANGSD_DOTHETAS_OPTIONS) -pest $< -bam $*.list -out $*.tmp && mv $*.tmp.thetas.gz $@ && mv $*.tmp.arg $*.arg"
+rule rule_8:
+	input: " {prefix}.list"
+	output: "{prefix}.mafs.gz"
+	shell: "$(ANGSD) $(ANGSD_DOMAFS_OPTIONS) -bam $< -out $(@:.mafs.gz=).tmp && rename $(@:.mafs.gz=).tmp $(@:.mafs.gz=) $(@:.mafs.gz=).tmp*"
+rule rule_9:
+	input: " {prefix}.list"
+	output: "{prefix}.counts.gz"
+	shell: "$(ANGSD) $(ANGSD_DOCOUNTS_OPTIONS) -bam $< -out $(@:.sfs=.counts.gz).tmp && rename $(@:.counts.gz=).tmp $(@:.counts.gz=) $(@:.counts.gz=).tmp*"
+rule rule_10:
+	input: " {prefix}.list"
+	output: "{prefix}.mpileup"
+	shell: "$(ANGSD) $(ANGSD_DOCOUNTS_OPTIONS) -show 1 -bam $< -out $(@:.sfs=.mpileup).tmp && mv $(@:.mpileup=).tmp.mpileup $@"
+rule rule_11:
+	input: " {prefix}.thetas.gz"
+	output: "{prefix}.thetas.gz.bin"
+	shell: "$(ANGSD_BGID) make_bed $<"
+rule rule_12:
+	input: " {prefix}.thetas.gz {prefix}.thetas.gz.bin"
+	output: "{prefix}.thetas.gz.bgid_pestPG"
+	shell: "$(ANGSD_BGID) do_stat $< $(ANGSD_BGID_DOSTAT_OPTIONS) && mv $*.thetas.gz.pestPG $@"
+rule rule_13:
+	input: " {prefix}.mafs.gz"
+	output: "{prefix}.bed"
+	shell: "$(ZCAT) $< | $(GREP) -v chromo | $(AWK) '{print $$1,$$2-1,$$2}' > $@.tmp && mv $@.tmp $@"
+rule rule_14:
+	input: " {prefix}.bed"
+	output: "{prefix}.pos.gz"
+	shell: "$(AWK) '{print $$1, $$3}' $< | $(GZIP) -c > $@.tmp && mv $@.tmp $@"
+rule rule_15:
+	input: " {prefix}.bed"
+	output: "{prefix}.pos"
+	shell: "$(AWK) '{print $$1, $$3}' $< > $@.tmp && mv $@.tmp $@"
+rule rule_16:
+	input: " {prefix}.fasta"
+	output: "{prefix}.gem"
+	shell: "$(GEM_PATH)/gem-indexer $(GEM_INDEXER_OPTIONS) -i $< -o $*.tmp && mv $*.tmp.gem $@; mv $*.tmp.log $*.log"
+rule rule_17:
+	input: " {prefix}.gem"
+	output: "{prefix}.mappability"
+	shell: "$(GEM_PATH)/gem-mappability $(GEM_MAPPABILITY_OPTIONS) -I $< -o $*.tmp && mv $*.tmp.mappability $@"
+rule rule_18:
+	input: ""
+	output: "{prefix}_ngstk.txt"
+	shell: "$(NGSTK) angsd $(POPA)_$(CHR) $(POPB)_$(CHR) -f $(FRAC) -c $(COV) > $@.tmp && mv $@.tmp $@"
+rule rule_19:
+	input: " {prefix}.bgid_pestPG"
+	output: "{prefix}.pdf"
+	shell: "$(PLOTTHETAS) $< $@.tmp && mv $@.tmp $@"
+rule rule_20:
+	input: " {prefix}_ngstk.txt"
+	output: "{prefix}_ngstk.pdf"
+	shell: "$(PLOTNGSTK) $< $@.tmp && mv $@.tmp $@"

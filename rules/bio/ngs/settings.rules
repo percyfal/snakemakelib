@@ -1,0 +1,33 @@
+
+# -*- snakemake -*-
+import os
+from snakemakelib.utils import update_config, sml_rules_path
+
+# Start by including the general snakefile
+include: os.path.join(sml_rules_path(), 'base_settings.rules')
+
+config_default = { 
+	"ngsvars" : {
+		"TRANSCRIPT_ANNOT_GTF" : "",
+		"JAVA_MEM" : "6g",
+		"READ2_LABEL" : "_R2_001",
+		"FLOWCELLRUNS " : " $(foreach s,$(SAMPLES),$(wildcard $(s)/*$(FLOWCELL_SUFFIX)))",
+		"THREADS" : "8",
+		"BAIT_REGIONS" : "",
+		"SAMPLES " : " $(foreach s,$(SAMPLE_PREFIX), $(wildcard $(s)*))",
+		"SAMPLE_PREFIX" : "P00",
+		"DBSNP" : "",
+		"JAVA_TMPDIR" : "/tmp",
+		"TARGET_REGIONS" : "",
+		"REF" : "",
+		"FASTQ_SUFFIX" : ".fastq",
+		"FLOWCELL_SUFFIX" : "XX",
+		"READ1_LABEL" : "_R1_001",
+		"INPUTDIR" : ".",
+		"ANNOT_LABEL" : "",
+		},
+	},
+}
+
+config = update_config(config, config_default)
+

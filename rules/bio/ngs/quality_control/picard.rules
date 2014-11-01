@@ -1,0 +1,85 @@
+
+# -*- snakemake -*-
+import os
+from snakemakelib.utils import update_config, sml_rules_path
+
+# Start by including the general snakefile
+include: os.path.join(sml_rules_path(), 'base_settings.rules')
+
+config_default = { 
+	"picard" : {
+		"PICARD_INSERTMETRICS_TARGETS" : "$(subst .bam,.insert_metrics,$(wildcard $(INPUTDIR)/*/*recal.bam))",
+		"PLOTMETRICS" : "$(MAKEDIR)scripts/plotMetrics.R",
+		"PICARD_REF" : "$(REF)",
+		"PICARD_JAVA_TMPDIR" : "$(JAVA_TMPDIR)",
+		"PICARD_HOME" : ".",
+		"PICARD_DUPMETRICS_TARGETS" : "$(subst .bam,.dup_metrics,$(wildcard $(INPUTDIR)/*/*recal.bam))",
+		"PICARD_MERGESAM_TARGETS" : "",
+		"PICARD_OPTIONS" : "$(PICARD_OPTIONS_COMMON)",
+		"PICARD_ALIGNMETRICS_TARGETS" : "$(subst .bam,.align_metrics,$(wildcard $(INPUTDIR)/*/*recal.bam))",
+		"PICARD_OPTION_SORTSAM" : "SORT_ORDER=coordinate",
+		"PICARD_JAVA" : "java -Xmx$(PICARD_JAVA_MEM) -Djava.io.tmpdir=$(PICARD_JAVA_TMPDIR) -jar",
+		"PICARD_JAVA_MEM" : "$(JAVA_MEM)",
+		"PICARD_TARGET_REGIONS" : "$(TARGET_REGIONS)",
+		"PICARD_HSMETRICS_TARGETS" : "$(subst .bam,.hs_metrics,$(wildcard $(INPUTDIR)/*/*recal.bam))",
+		"PICARD_OPTIONS_COMMON" : "VALIDATION_STRINGENCY=SILENT",
+		"PICARD_BAIT_REGIONS" : "$(BAIT_REGIONS)",
+		"PICARD_MERGESAM_OPTIONS" : "CREATE_INDEX=true",
+		},
+	},
+}
+
+config = update_config(config, config_default)
+
+rule rule_1:
+	input: " {prefix}.bam"
+	output: "{prefix}.bai"
+	shell: "$(PICARD_JAVA) $(PICARD_HOME)/BuildBamIndex.jar I=$< O=$@.tmp $(PICARD_OPTIONS) && mv $@.tmp $@"
+rule rule_2:
+	input: " {prefix}.bam"
+	output: "{prefix}.sort.bam"
+	shell: "$(PICARD_JAVA) $(PICARD_HOME)/SortSam.jar I=$< O=$@.tmp $(PICARD_OPTIONS) $(PICARD_OPTION_SORTSAM) && mv $@.tmp $@"
+rule rule_3:
+	input: " {prefix}.bam $(PICARD_REF)"
+	output: "{prefix}.resorted.bam"
+	shell: "$(PICARD_JAVA) $(PICARD_HOME)/ReorderSam.jar I=$< R=$(word 2,$^) O=$@.tmp $(PICARD_OPTIONS) && mv $@.tmp $@"
+rule rule_4:
+	input: " {prefix}.bam"
+	output: "{prefix}.dup.bam"
+	shell: "$(PICARD_JAVA) $(PICARD_HOME)/MarkDuplicates.jar I=$< O=$@.tmp $(PICARD_OPTIONS) M=$(@:.bam=).dup_metrics && mv $@.tmp $@"
+rule rule_5:
+	input: " $(PICARD_REF)"
+	output: "{prefix}.interval_list"
+	shell: "$(PICARD_JAVA) $(PICARD_HOME)/CreateSequenceDictionary.jar R=$< O=$@.tmp && mv $@.tmp $@"
+rule rule_6:
+	input: " {prefix}.bed $(subst .fa,.interval_list,$(PICARD_REF))"
+	output: "{prefix}.interval_list"
+	shell: "$(AWK) '{printf("%s\t%s\t%s\t%s\t%s\n", $$1,$$2,$$3,"+",$$4)}' $< >> $@.tmp && mv $@.tmp $@"
+rule rule_7:
+	input: " {prefix}.bam {prefix}.bai"
+	output: "{prefix}.insert_metrics"
+	shell: "$(PICARD_JAVA) $(PICARD_HOME)/CollectInsertSizeMetrics.jar $(PICARD_OPTIONS) H=$*.hist I=$< O=$@.tmp R=$(PICARD_REF) && mv $@.tmp $@"
+rule rule_8:
+	input: " {prefix}.bam {prefix}.bai"
+	output: "{prefix}.dup_metrics"
+	shell: "$(PICARD_JAVA) $(PICARD_HOME)/MarkDuplicates.jar $(PICARD_OPTIONS) I=$< M=$@.tmp O=$(@:.dup_metrics=).dup.bam && mv $@.tmp $@"
+rule rule_9:
+	input: " {prefix}.bam {prefix}.bai"
+	output: "{prefix}.align_metrics"
+	shell: "$(PICARD_JAVA) $(PICARD_HOME)/CollectAlignmentSummaryMetrics.jar $(PICARD_OPTIONS) I=$< O=$@.tmp R=$(PICARD_REF) && mv $@.tmp $@"
+rule rule_10:
+	input: " {prefix}.bam {prefix}.bai"
+	output: "{prefix}.hs_metrics"
+	shell: "$(PICARD_JAVA) $(PICARD_HOME)/CalculateHsMetrics.jar $(PICARD_OPTIONS) TI=$(PICARD_TARGET_REGIONS) BI=$(PICARD_BAIT_REGIONS) I=$< O=$@.tmp R=$(PICARD_REF) && mv $@.tmp $@"
+rule rule_11:
+	input: " {prefix}_metrics.txt"
+	output: "{prefix}_metrics.pdf"
+	shell: "$(PLOTMETRICS) $< $@.tmp $* && mv $@.tmp $@"
+rule rule_12:
+	input: " {prefix}.bam"
+	output: "{prefix}.rg.bam"
+	shell: "RGSM=$(firstword $(subst /, ,$(firstword $(subst ., ,$*)))) CREATE_INDEX=true && mv $@.tmp $@; mv $@.tmp.bai $(@.bam=).bai"
+rule rule_13:
+	input: ""
+	output: "{prefix}.merge.bam"
+	shell: "$(PICARD_JAVA) $(PICARD_HOME)/MergeSamFiles.jar $(INPUTFILES) O=$@.tmp $(PICARD_OPTIONS_COMMON) $(PICARD_MERGESAM_OPTION) && mv $@.tmp $@ && mv $@.tmp.bai $(@:.bam=).bai"

@@ -3,6 +3,7 @@ import pprint as pp
 
 # Print global configuration
 rule conf:
+    """Print configuration settings for loaded rules"""
     run:
       print ()
       for (k,v) in sorted(config.items()):

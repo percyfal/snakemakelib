@@ -5,34 +5,67 @@ from snakemakelib.utils import update_config, sml_rules_path
 # Start by including the general snakefile
 # include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
 
+# Config section and variable names. These variables define common key
+# names used in the configuration dictionaries for bio.ngs
 SECTION="bio.ngs.settings"
+
+# General names
+HOME = "home"
+BAM_LIST = "bam_list"
+VCFSUFFIX = "vcfsuffix"
+DB = "db"
+DBSNP = "dbsnp"
+KNOWN_SITES = "known_sites"
+JAR = "jar"
+JAVA = "java"
+JAVA_MEM = "java_mem"
+JAVA_TMPDIR = "java_tmpdir"
+REF = "ref"
+SEQUENCE_CAPTURE = "sequence_capture"
+TARGET_REGIONS = "target_regions"
+BAIT_REGIONS = "bait_regions"
+THREADS = "threads"
+CMD = "cmd"
+OPTIONS = "options"
+FASTQ_SUFFIX = "fastq_suffix"
+FLOWCELLRUNS = "flowcellruns"
+FLOWCELL_SUFFIX = "flowcellsuffix"
+INPUTDIR = "inputdir"
+READ1_LABEL = "read1_label"
+READ2_LABEL = "read2_label"
+SAMPLE_PREFIX = "sample_prefix"
+SAMPLES = "samples"
+ANNOTATION = "annotation"
+ANNOT_LABEL = "annot_label"
+TRANSCRIPT_ANNOT_GTF = "transcript_annot_gtf"
+
 
 config_default = { 
     SECTION : {
-        "fastq_suffix" : ".fastq",
-        "flowcellruns " : " $(foreach s,$(samples),$(wildcard $(s)/*$(flowcell_suffix)))",
-        "flowcell_suffix" : "XX",
-        "inputdir" : ".",
-        "read1_label" : "_R1_001",
-        "read2_label" : "_R2_001",
-        "sample_prefix" : "P00",
-        "samples " : "$(foreach s,$(sample_prefix), $(wildcard $(s)*))",
-        "threads" : 8,
-        "annotation" : {
-            "annot_label" : "",
-            "transcript_annot_gtf" : "",
+        FASTQ_SUFFIX : ".fastq",
+        FLOWCELLRUNS : " $(foreach s,$(samples),$(wildcard $(s)/*$(flowcell_suffix)))",
+        FLOWCELL_SUFFIX : "XX",
+        INPUTDIR : ".",
+        READ1_LABEL : "_R1_001",
+        READ2_LABEL : "_R2_001",
+        SAMPLE_PREFIX : "P00",
+        SAMPLES : "$(foreach s,$(sample_prefix), $(wildcard $(s)*))",
+        THREADS : 8,
+        ANNOTATION : {
+            ANNOT_LABEL : "",
+            TRANSCRIPT_ANNOT_GTF: "",
         },
-        "db" : {
-            "dbsnp" : "",
-            "ref" : "hg19",
+        DB : {
+            DBSNP : "",
+            REF : "hg19",
         },
-        "java" : {
-            "java_mem" : "6g",
-            "java_tmpdir" : "/tmp",
+        JAVA : {
+            JAVA_MEM : "6g",
+            JAVA_TMPDIR : "/tmp",
         },
-        "sequence_capture" : {
-            "bait_regions" : "",
-            "target_regions" : "",
+        SEQUENCE_CAPTURE : {
+            BAIT_REGIONS : "",
+            TARGET_REGIONS : "",
         },
     },
 }

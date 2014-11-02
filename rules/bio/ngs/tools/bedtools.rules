@@ -21,8 +21,12 @@ config_default = {
 config = update_config(config, config_default)
 
 rule bedtools_bam2coverage:
+    """Calculate coverage for a bam file.
+
+    Input: {prefix}.bam; output: {prefix}.coverage
+    """
     params: cmd=os.path.join(config[SECTION]["home"], config[SECTION]["coverageBed"]["cmd"]),
             bfile = config[SECTION]["bfile"]
-    input: " {prefix}.bam"
+    input: "{prefix}.bam"
     output: "{prefix}.coverage"
     shell: "{params.cmd} {params.options} -abam {input} -b {params.bfile} > {output}"

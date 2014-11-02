@@ -7,7 +7,7 @@ from snakemakelib.utils import update_config, sml_rules_path
 
 # Config section and variable names. These variables define common key
 # names used in the configuration dictionaries for bio.ngs
-SECTION="bio.ngs.settings"
+BIO_NGS_SETTINGS="bio.ngs.settings"
 
 # General names
 HOME = "home"
@@ -27,6 +27,7 @@ BAIT_REGIONS = "bait_regions"
 THREADS = "threads"
 CMD = "cmd"
 OPTIONS = "options"
+COMMON_OPTIONS = "common_options"
 FASTQ_SUFFIX = "fastq_suffix"
 FLOWCELLRUNS = "flowcellruns"
 FLOWCELL_SUFFIX = "flowcellsuffix"
@@ -41,7 +42,7 @@ TRANSCRIPT_ANNOT_GTF = "transcript_annot_gtf"
 
 
 config_default = { 
-    SECTION : {
+    BIO_NGS_SETTINGS : {
         FASTQ_SUFFIX : ".fastq",
         FLOWCELLRUNS : " $(foreach s,$(samples),$(wildcard $(s)/*$(flowcell_suffix)))",
         FLOWCELL_SUFFIX : "XX",

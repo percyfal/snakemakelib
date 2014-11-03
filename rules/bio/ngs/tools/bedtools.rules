@@ -7,13 +7,16 @@ include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
 
 SECTION="bio.ngs.tools.bedtools"
 
+COVERAGEBED="coverageBed"
+BFILE="bfile"
+
 config_default = { 
     SECTION : {
-        "home" : ".",
-        "bfile" : "",
-        "options" : "",
-        "coverageBed" : {
-            "cmd" : "coverageBed",
+        HOME : ".",
+        BFILE : "",
+        OPTIONS : "",
+        COVERAGEBED : {
+            CMD : COVERAGEBED,
         }
     },
 }
@@ -25,8 +28,9 @@ rule bedtools_bam2coverage:
 
     Input: {prefix}.bam; output: {prefix}.coverage
     """
-    params: cmd=os.path.join(config[SECTION]["home"], config[SECTION]["coverageBed"]["cmd"]),
-            bfile = config[SECTION]["bfile"]
+    params: cmd=os.path.join(config[SECTION][HOME], config[SECTION][COVERAGEBED][CMD]),
+            options=config[SECTION][OPTIONS],
+            bfile = config[SECTION][BFILE]
     input: "{prefix}.bam"
     output: "{prefix}.coverage"
     shell: "{params.cmd} {params.options} -abam {input} -b {params.bfile} > {output}"

@@ -1,27 +1,109 @@
 # -*- snakemake -*- 
+import os
+import string
 import pprint as pp
+from snakemakelib.utils import update_config, sml_rules_path
+from snakemake.io import Wildcards, Namedlist
 
-# Print global configuration
+include: os.path.join(sml_rules_path(), 'settings.rules')
+
+"""
+utils.rules
+
+Utility rules for use with snakemakelib.
+"""
 rule conf:
-    """Print configuration settings for loaded rules"""
+    """Print global configuration settings for loaded rules"""
     run:
-      print ()
+      if not config.get('section') is None:
+          d = config[config['section']]
+      else:
+          d = config
+      if (not isinstance(d, dict)):
+          logger.info (" {key} : {d}".format(key=config['section'], d=d))
+      else:
+          for (k,v) in sorted(d.items()):
+              # Top-level duration
+              if (not isinstance(v, dict)):
+                  logger.info (" {key} : {value}".format(key=k, value=d[k]))
+              for (k,v) in sorted(d.items(), key=lambda k: (len(k[0].split(".")), k)):
+                  if (isinstance(v, dict)):
+                      logger.info (k)
+                      logger.info ("="*len(k))
+                      for (kk, vv) in sorted(d[k].items()):
+                          logger.info ("    {kk} : {vv}".format(kk=kk, vv=vv))
+
+rule conf_sections:
+    """Print configuration sections. TODO: insert docstring from each rule file without running an import statement"""
+    run:
+      s = "Top-level configuration variables"
+      logger.info(s)
+      logger.info("=" * len(s))
       for (k,v) in sorted(config.items()):
           if (not isinstance(v, dict)):
-              print (" ", k, " : ", config[k])
-      print ()
-      for (k,v) in sorted(config.items()):
+              logger.info(" " + k)
+      s = "Configuration sections"
+      logger.info(s)
+      logger.info("=" * len(s))
+      for (k,v) in sorted(config.items(), key=lambda k: (len(k[0].split(".")), k)):
           if (isinstance(v, dict)):
-              print ("  " + k)
-              print ("  " + "="*len(k))
-	      for (kk, vv) in sorted(config[k].items()):
-                  print ("\t", kk, " : ", vv)
-                  # if isinstance(vv, dict):
-                  #     print ("\t", kk, " : ")
-                  #     for (kkk,vvv) in vv.items():
-                  #         print ("\t\t", kkk, " : ", vvv)
-                  # else:
-                  #     print ("\t", kk, " : ", vv)
+              logger.info(" " + k)
+
+def _group_rules_by_snakefile(rules):
+    d = {}
+    for rule in rules:
+        k = rule.snakefile
+        if k.startswith(sml_rules_path()):
+            k = k.replace(sml_rules_path() + os.sep, "").replace(os.sep, ".").replace(".rules", "")
+        if not k in d.keys():
+            d[k] = []
+        d[k].append(rule)
+        d[k] = sorted(d[k], key=lambda x: x.name)
+    return d
+
+rule rule_t:
+    """Print rules sorted by rule file, including input/output information"""
+    run:
+      rules = workflow.rules
+      d = _group_rules_by_snakefile(rules)
+      print (config.get("section"))
+      if not config.get("section") is None:
+          d = {config.get("section") : d[config.get("section")]} if config.get("section") in d.keys() else d
+      print (d.keys())
 
 
-                  
+rule rule_ll:
+    """Print rules sorted by rule file, including input/output information"""
+    run:
+      rules = workflow.rules
+      d = _group_rules_by_snakefile(rules)
+      if not config.get("section") is None:
+          d = {config.get("section") : d[config.get("section")]} if config.get("section") in d.keys() else d
+      for (snakefile, rl) in d.items():
+          logger.info(snakefile)
+          logger.info("=" * len(snakefile))
+          for rule in rl:
+              docstring = "\n    {doc}".format(doc=rule.docstring)
+              if rule.input or rule.output:
+                  docstring += "\n\tinput: {input}; output{output}\n".format(input=rule.input, output=rule.output)
+              if rule.shellcmd:
+                  format_d = dict()
+                  wc = {x:"{{prefix}}".format(x) for x in rule.wildcard_names}
+                  format_d.update(dict(input=rule.input, output=rule.output, params=rule.params, threads="{threads}", resources=rule.resources, log=rule.log, version=rule.version, wildcards=Wildcards(Namedlist(fromdict=wc))))
+                  shellstring = rule.shellcmd.format(**format_d)
+                  docstring += "\tshell: {shell}\n".format(shell=shellstring)
+              logger.rule_info(name=rule.name, docstring=docstring)
+
+
+rule rule_l:
+    """Print rules sorted by rule file, excluding input/output information"""
+    run:
+      rules = workflow.rules
+      d = _group_rules_by_snakefile(rules)
+      if not config.get("section") is None:
+          d = {config.get("section") : d[config.get("section")]} if config.get("section") in d.keys() else d
+      for (snakefile, rl) in d.items():
+          logger.info(snakefile)
+          logger.info("=" * len(snakefile))
+          for rule in rl:
+              logger.rule_info(name=rule.name, docstring=rule.docstring.split("\n")[0] if isinstance(rule.docstring, str) else None)

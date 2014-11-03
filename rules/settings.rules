@@ -1,0 +1,13 @@
+# -*- snakemake -*- 
+from snakemakelib.utils import update_config
+
+"""
+Main settings for snakemakelib. Defines top-level configuration
+settings for all rules. 
+"""
+
+config_default = {
+    'section' : None,
+}
+
+config = update_config(config, config_default)

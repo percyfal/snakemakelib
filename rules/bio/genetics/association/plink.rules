@@ -1,48 +1,43 @@
 # -*- snakemake -*-
 import os
 from snakemakelib.utils import update_config, sml_rules_path
+import snakemakelib.variables as VAR
 
 # Start by including the general snakefile
 include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
 
-BIO_NGS_GENETICS_PLINK = "bio.ngs.genetics.plink"
-PLINK = "plink"
-CHR = "chr"
-
 config_default = { 
-    BIO_NGS_GENETICS_PLINK : {
-        PLINK : {
-            COMMON_OPTIONS : "--noweb",
-            CMD : "plink",
-            CHR : "1",
+    VAR.BIO_GENETICS_ASSOCIATION_PLINK : {
+        VAR.PLINK : {
+            VAR.COMMON_OPTIONS : "--noweb",
+            VAR.CMD : "plink",
+            VAR.CHR : "1",
         },
     },
 }
 
 config = update_config(config, config_default)
 
-config_default[BIO_NGS_GENETICS_PLINK][PLINK][OPTIONS] = config[BIO_NGS_GENETICS_PLINK][PLINK][COMMON_OPTIONS]
+config_default[VAR.BIO_GENETICS_ASSOCIATION_PLINK][VAR.PLINK][VAR.OPTIONS] = config[VAR.BIO_GENETICS_ASSOCIATION_PLINK][VAR.PLINK][VAR.COMMON_OPTIONS]
 
 config = update_config(config, config_default)
 
+cfg = config[VAR.BIO_GENETICS_ASSOCIATION_PLINK]
+
 rule plink_ped2ld_r2:
     """Calculate r-squared linked disequilibrium from ped file. 
-
-    Input: {prefix}.ped; output: {prefix}.r2.ld
     """
-    params: cmd = config[BIO_NGS_GENETICS_PLINK][PLINK][CMD],
-            options = config[BIO_NGS_GENETICS_PLINK][PLINK][OPTIONS]
+    params: cmd = cfg[VAR.PLINK][VAR.CMD],
+            options = cfg[VAR.PLINK][VAR.OPTIONS]
     input: "{prefix}.ped"
     output: "{prefix}.r2.ld"
     shell: "{params.cmd} {params.options}  --file {wildcards.prefix} --r2 --out {wildcards.prefix}.r2"
 
 rule plink_bed2ld_r2:
     """Calculate r-squared linked disequilibrium from binary ped file.
-    
-    Input: {prefix}.bed; output: {prefix}.r2.ld
     """
-    params: cmd = config[BIO_NGS_GENETICS_PLINK][PLINK][CMD],
-            options = config[BIO_NGS_GENETICS_PLINK][PLINK][OPTIONS]
+    params: cmd = cfg[VAR.PLINK][VAR.CMD],
+            options = cfg[VAR.PLINK][VAR.OPTIONS]
     input: "{prefix}.bed"
     output: "{prefix}.r2.ld"
     shell: "{params.cmd} {params.options} --bfile {wildcards.prefix} --r2 --out {wildcards.prefix}.r2"
@@ -52,34 +47,28 @@ ruleorder: plink_bed2ld_r2 > plink_ped2ld_r2
 
 rule plink_bed2ped:
     """Convert ped file to binary ped. 
-    
-    Input: {prefix}.ped; output: {prefix}.bed
     """
-    params: cmd = config[BIO_NGS_GENETICS_PLINK][PLINK][CMD],
-            options = config[BIO_NGS_GENETICS_PLINK][PLINK][OPTIONS]
+    params: cmd = cfg[VAR.PLINK][VAR.CMD],
+            options = cfg[VAR.PLINK][VAR.OPTIONS]
     input: "{prefix}.ped"
     output: "{prefix}.bed"
     shell: "{params.cmd} {params.options}  --file {wildcards.prefix} --make-bed --out {wildcards.prefix}"
 
 rule plink_bed_blocks:
     """Calculate linkage disequilibrium blocks(?). 
-    
-    Input: {prefix}.bed; output: {prefix}.blocks
     """
-    params: cmd = config[BIO_NGS_GENETICS_PLINK][PLINK][CMD],
-            options = config[BIO_NGS_GENETICS_PLINK][PLINK][OPTIONS]
+    params: cmd = cfg[VAR.PLINK][VAR.CMD],
+            options = cfg[VAR.PLINK][VAR.OPTIONS]
     input: "{prefix}.bed"
     output: "{prefix}.blocks"
     shell: "{params.cmd} {params.options}  --bfile {wildcards.prefix} --blocks --out {wildcards.prefix}"
 
 rule plink_chr_bed:
     """Generate chromosome-wise bed files. 
-    
-    Input: {prefix}.bed; output: {prefix}.chr{params.chr}.bed
     """
-    params: cmd = config[BIO_NGS_GENETICS_PLINK][PLINK][CMD],
-            options = config[BIO_NGS_GENETICS_PLINK][PLINK][OPTIONS],
-            chr = config[BIO_NGS_GENETICS_PLINK][PLINK][CHR]
+    params: cmd = cfg[VAR.PLINK][VAR.CMD],
+            options = cfg[VAR.PLINK][VAR.OPTIONS],
+            chr = cfg[VAR.PLINK][VAR.CHR]
     input: "{prefix}.bed"
     output: "{prefix}.chr{params.chr}.bed"
     shell: "{params.cmd} {params.options} --bfile {wildcards.prefix} --make-bed --out {wildcards.prefix}.chr{params.chr}"

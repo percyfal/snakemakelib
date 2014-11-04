@@ -1,0 +1,38 @@
+# -*- snakemake -*-
+import os
+from snakemakelib.utils import update_config, sml_rules_path
+import snakemakelib.variables as VAR
+
+# Start by including the general snakefile
+include: os.path.join(sml_rules_path(), 'settings.rules')
+
+config_default = {
+    VAR.BIO_NGS_METHYLSEQ_BISMARK : {
+        VAR.REF : config[VAR.BIO_NGS_SETTINGS][VAR.REF],
+        VAR.CMD : "bismark",
+        VAR.MAIN : {
+            VAR.OPTIONS : '--bam --bowtie2 --phred33-quals',
+        },
+    },
+}
+
+config = update_config(config, config_default)
+
+#### CFCMD bismark --bam --bowtie2 --phred33-quals
+#### /apus/v1/a2010002/nobackup/biodata/genomes/Hsapiens/GRCh37/seq -1
+#### 8_140207_AC3NVGACXX_P923_101_1_val_1.fq.gz -2
+#### 8_140207_AC3NVGACXX_P923_101_2_val_2.fq.gz
+
+# Use subdictionary to enhance readability
+cfg = config[VAR.BIO_NGS_METHYLSEQ_BISMARK]
+
+rule bismark_main:
+    params: options = cfg[VAR.MAIN][VAR.OPTIONS],
+            cmd = cfg[VAR.CMD],
+            ref = cfg[VAR.REF]
+    input: "{prefix}" + config[VAR.BIO_NGS_SETTINGS][VAR.READ1_LABEL] + config[VAR.BIO_NGS_SETTINGS][VAR.FASTQ_SUFFIX],\
+    "{prefix}" + config[VAR.BIO_NGS_SETTINGS][VAR.READ2_LABEL] + config[VAR.BIO_NGS_SETTINGS][VAR.FASTQ_SUFFIX]
+    output: "{prefix}.bismark"
+    shell: "{params.cmd} {params.options} {params.ref} -1 {input[0]} -2 {input[1]}"
+    
+

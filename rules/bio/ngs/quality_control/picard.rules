@@ -1,85 +1,164 @@
-
 # -*- snakemake -*-
 import os
-from snakemakelib.utils import update_config, sml_rules_path
+from snakemakelib.utils import update_config, sml_rules_path, sml_path
+import snakemakelib.variables as VAR
 
 # Start by including the general snakefile
-include: os.path.join(sml_rules_path(), 'base_settings.rules')
+include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
+# Include comp settings to gain access to awk and friends
+include: os.path.join(sml_rules_path(), 'comp', 'settings.rules')
 
 config_default = { 
-	"picard" : {
-		"PICARD_INSERTMETRICS_TARGETS" : "$(subst .bam,.insert_metrics,$(wildcard $(INPUTDIR)/*/*recal.bam))",
-		"PLOTMETRICS" : "$(MAKEDIR)scripts/plotMetrics.R",
-		"PICARD_REF" : "$(REF)",
-		"PICARD_JAVA_TMPDIR" : "$(JAVA_TMPDIR)",
-		"PICARD_HOME" : ".",
-		"PICARD_DUPMETRICS_TARGETS" : "$(subst .bam,.dup_metrics,$(wildcard $(INPUTDIR)/*/*recal.bam))",
-		"PICARD_MERGESAM_TARGETS" : "",
-		"PICARD_OPTIONS" : "$(PICARD_OPTIONS_COMMON)",
-		"PICARD_ALIGNMETRICS_TARGETS" : "$(subst .bam,.align_metrics,$(wildcard $(INPUTDIR)/*/*recal.bam))",
-		"PICARD_OPTION_SORTSAM" : "SORT_ORDER=coordinate",
-		"PICARD_JAVA" : "java -Xmx$(PICARD_JAVA_MEM) -Djava.io.tmpdir=$(PICARD_JAVA_TMPDIR) -jar",
-		"PICARD_JAVA_MEM" : "$(JAVA_MEM)",
-		"PICARD_TARGET_REGIONS" : "$(TARGET_REGIONS)",
-		"PICARD_HSMETRICS_TARGETS" : "$(subst .bam,.hs_metrics,$(wildcard $(INPUTDIR)/*/*recal.bam))",
-		"PICARD_OPTIONS_COMMON" : "VALIDATION_STRINGENCY=SILENT",
-		"PICARD_BAIT_REGIONS" : "$(BAIT_REGIONS)",
-		"PICARD_MERGESAM_OPTIONS" : "CREATE_INDEX=true",
-		},
-	},
+    VAR.BIO_NGS_QUALITYCONTROL_PICARD : {
+        # INSERTMETRICS_TARGETS : "$(subst .bam,.insert_metrics,$(wildcard $(INPUTDIR)/*/*recal.bam))",
+        #ALIGNMETRICS_TARGETS : "$(subst .bam,.align_metrics,$(wildcard $(INPUTDIR)/*/*recal.bam))",
+        #DUPMETRICS_TARGETS : "$(subst .bam,.dup_metrics,$(wildcard $(INPUTDIR)/*/*recal.bam))",
+        #HSMETRICS_TARGETS : "$(subst .bam,.hs_metrics,$(wildcard $(INPUTDIR)/*/*recal.bam))",
+        VAR.ADD_OR_REPLACE_READ_GROUPS_OPTIONS : "SORT_ORDER=coordinate CREATE_INDEX=true",
+        VAR.ALIGNMETRICS_TARGETS : [],
+        VAR.BAIT_REGIONS : config[VAR.BIO_NGS_SETTINGS][VAR.SEQUENCE_CAPTURE][VAR.BAIT_REGIONS],
+        VAR.COMMON_OPTIONS : "VALIDATION_STRINGENCY=SILENT",
+        VAR.DUPMETRICS_TARGETS : [],
+        VAR.HOME : ".",
+        VAR.HSMETRICS_TARGETS : [],
+        VAR.INSERTMETRICS_TARGETS : [],
+        VAR.JAVA_MEM : config[VAR.BIO_NGS_SETTINGS][VAR.JAVA][VAR.JAVA_MEM],
+        VAR.JAVA_TMPDIR : config[VAR.BIO_NGS_SETTINGS][VAR.JAVA][VAR.JAVA_TMPDIR],
+        VAR.MERGE_SAM_PREFIX : "merge",
+        VAR.MERGE_SAM_OPTIONS : "CREATE_INDEX=true",
+        VAR.MERGE_SAM_TARGETS : [],
+        VAR.PLOTMETRICS : os.path.join(sml_path(), "scripts", "plotMetrics.R"),
+        VAR.REF : config[VAR.BIO_NGS_SETTINGS][VAR.DB][VAR.REF],
+        VAR.SORT_SAM_OPTIONS : "SORT_ORDER=coordinate",
+        VAR.TARGET_REGIONS : config[VAR.BIO_NGS_SETTINGS][VAR.SEQUENCE_CAPTURE][VAR.TARGET_REGIONS],
+    },
 }
+
 
 config = update_config(config, config_default)
 
-rule rule_1:
-	input: " {prefix}.bam"
-	output: "{prefix}.bai"
-	shell: "$(PICARD_JAVA) $(PICARD_HOME)/BuildBamIndex.jar I=$< O=$@.tmp $(PICARD_OPTIONS) && mv $@.tmp $@"
-rule rule_2:
-	input: " {prefix}.bam"
-	output: "{prefix}.sort.bam"
-	shell: "$(PICARD_JAVA) $(PICARD_HOME)/SortSam.jar I=$< O=$@.tmp $(PICARD_OPTIONS) $(PICARD_OPTION_SORTSAM) && mv $@.tmp $@"
-rule rule_3:
-	input: " {prefix}.bam $(PICARD_REF)"
-	output: "{prefix}.resorted.bam"
-	shell: "$(PICARD_JAVA) $(PICARD_HOME)/ReorderSam.jar I=$< R=$(word 2,$^) O=$@.tmp $(PICARD_OPTIONS) && mv $@.tmp $@"
-rule rule_4:
-	input: " {prefix}.bam"
-	output: "{prefix}.dup.bam"
-	shell: "$(PICARD_JAVA) $(PICARD_HOME)/MarkDuplicates.jar I=$< O=$@.tmp $(PICARD_OPTIONS) M=$(@:.bam=).dup_metrics && mv $@.tmp $@"
-rule rule_5:
-	input: " $(PICARD_REF)"
-	output: "{prefix}.interval_list"
-	shell: "$(PICARD_JAVA) $(PICARD_HOME)/CreateSequenceDictionary.jar R=$< O=$@.tmp && mv $@.tmp $@"
-rule rule_6:
-	input: " {prefix}.bed $(subst .fa,.interval_list,$(PICARD_REF))"
-	output: "{prefix}.interval_list"
-	shell: "$(AWK) '{printf("%s\t%s\t%s\t%s\t%s\n", $$1,$$2,$$3,"+",$$4)}' $< >> $@.tmp && mv $@.tmp $@"
-rule rule_7:
-	input: " {prefix}.bam {prefix}.bai"
-	output: "{prefix}.insert_metrics"
-	shell: "$(PICARD_JAVA) $(PICARD_HOME)/CollectInsertSizeMetrics.jar $(PICARD_OPTIONS) H=$*.hist I=$< O=$@.tmp R=$(PICARD_REF) && mv $@.tmp $@"
-rule rule_8:
-	input: " {prefix}.bam {prefix}.bai"
-	output: "{prefix}.dup_metrics"
-	shell: "$(PICARD_JAVA) $(PICARD_HOME)/MarkDuplicates.jar $(PICARD_OPTIONS) I=$< M=$@.tmp O=$(@:.dup_metrics=).dup.bam && mv $@.tmp $@"
-rule rule_9:
-	input: " {prefix}.bam {prefix}.bai"
-	output: "{prefix}.align_metrics"
-	shell: "$(PICARD_JAVA) $(PICARD_HOME)/CollectAlignmentSummaryMetrics.jar $(PICARD_OPTIONS) I=$< O=$@.tmp R=$(PICARD_REF) && mv $@.tmp $@"
-rule rule_10:
-	input: " {prefix}.bam {prefix}.bai"
-	output: "{prefix}.hs_metrics"
-	shell: "$(PICARD_JAVA) $(PICARD_HOME)/CalculateHsMetrics.jar $(PICARD_OPTIONS) TI=$(PICARD_TARGET_REGIONS) BI=$(PICARD_BAIT_REGIONS) I=$< O=$@.tmp R=$(PICARD_REF) && mv $@.tmp $@"
-rule rule_11:
-	input: " {prefix}_metrics.txt"
-	output: "{prefix}_metrics.pdf"
-	shell: "$(PLOTMETRICS) $< $@.tmp $* && mv $@.tmp $@"
-rule rule_12:
-	input: " {prefix}.bam"
-	output: "{prefix}.rg.bam"
-	shell: "RGSM=$(firstword $(subst /, ,$(firstword $(subst ., ,$*)))) CREATE_INDEX=true && mv $@.tmp $@; mv $@.tmp.bai $(@.bam=).bai"
-rule rule_13:
-	input: ""
-	output: "{prefix}.merge.bam"
-	shell: "$(PICARD_JAVA) $(PICARD_HOME)/MergeSamFiles.jar $(INPUTFILES) O=$@.tmp $(PICARD_OPTIONS_COMMON) $(PICARD_MERGESAM_OPTION) && mv $@.tmp $@ && mv $@.tmp.bai $(@:.bam=).bai"
+config_default[VAR.BIO_NGS_QUALITYCONTROL_PICARD][VAR.OPTIONS] = config[VAR.BIO_NGS_QUALITYCONTROL_PICARD][VAR.COMMON_OPTIONS] 
+
+config_default[VAR.BIO_NGS_QUALITYCONTROL_PICARD][VAR.CMD] = "java -Xmx" + config[VAR.BIO_NGS_QUALITYCONTROL_PICARD][VAR.JAVA_MEM] + " -Djava.io.tmpdir=" + config[VAR.BIO_NGS_QUALITYCONTROL_PICARD][VAR.JAVA_TMPDIR] + " -jar "
+
+config = update_config(config, config_default)
+
+# Use picard config to increase readibility
+picard_config = config[VAR.BIO_NGS_QUALITYCONTROL_PICARD]
+
+rule picard_build_bam_index:
+    """Picard: build bam index from bam file"""
+    params: cmd = picard_config[VAR.CMD] + os.path.join(picard_config[VAR.HOME], VAR.BUILD_BAM_INDEX),
+            options = picard_config[VAR.OPTIONS]
+    input: "{prefix}.bam"
+    output: "{prefix}.bai"
+    shell: "{params.cmd} I={input} O={output} {params.options}"
+
+
+rule picard_sort_bam:
+    """Picard: sort bam file"""
+    params: cmd = picard_config[VAR.CMD] + os.path.join(picard_config[VAR.HOME], VAR.SORT_SAM),
+            options = picard_config[VAR.OPTIONS],
+            sortsam_options = picard_config[VAR.SORT_SAM_OPTIONS]
+    input: "{prefix}.bam"
+    output: "{prefix}.sort.bam"
+    shell: "{params.cmd} I={input} O={output} {params.options} {params.sortsam_options}"
+
+rule picard_reorder_bam:
+    """Picard: reorder bam file"""
+    params: cmd = picard_config[VAR.CMD] + os.path.join(picard_config[VAR.HOME], VAR.REORDER_SAM),
+            options = picard_config[VAR.OPTIONS]
+    input: "{prefix}.bam", picard_config[VAR.REF]
+    output: "{prefix}.resorted.bam"
+    shell: "{params.cmd} I={input[0]} R={input[1]} O={output} {params.options}"
+
+rule picard_mark_duplicates:
+    """Picard: mark duplicates"""
+    params: cmd = picard_config[VAR.CMD] + os.path.join(picard_config[VAR.HOME], VAR.MARK_DUPLICATES),
+            options = picard_config[VAR.OPTIONS]
+    input: "{prefix}.bam"
+    output: "{prefix}.dup.bam", "{prefix}.dup_metrics"
+    shell: "{params.cmd} I={input} O={output[0]} {params.options} M={output[1]}"
+
+# rule picard_create_sequence_dictionary:
+#     params: cmd = picard_config[VAR.CMD] + os.path.join(picard_config[VAR.HOME], CREATE_SEQUENCE_DICTIONARY),
+#             options = picard_config[VAR.OPTIONS]
+#     input: picard_config[VAR.REF]
+#     output: "{prefix}.interval_list"
+#     shell: "{params.cmd} R={input} O={output}"
+
+rule picard_create_interval_list_awk:
+    """Picard: create interval list using awk"""
+    params: cmd = picard_config[VAR.CMD] + os.path.join(picard_config[VAR.HOME], VAR.CREATE_SEQUENCE_DICTIONARY),
+            options = picard_config[VAR.OPTIONS]
+    input: "{prefix}.bed", picard_config[VAR.REF].replace(".fa", ".interval_list")
+    output: "{prefix}.interval_list"
+    shell: config[VAR.COMP_SETTINGS][VAR.AWK] + " '{{printf(\"%s\\t%s\\t%s\\t%s\\t%s\\n\", $$1,$$2,$$3,\"+\",$$4)}}' $< >> {output}"
+
+rule picard_collect_insert_size_metrics:
+    """Picard: collect insertion size metrics"""
+    params: cmd = picard_config[VAR.CMD] + os.path.join(picard_config[VAR.HOME], VAR.COLLECT_INSERT_SIZE_METRICS),
+            options = picard_config[VAR.OPTIONS]
+    input: "{prefix}.bam", "{prefix}.bai"
+    output: "{prefix}.insert_metrics"
+    shell: "{params.cmd} {params.options} H={wildcards.prefix}.hist I={input[0]} O={output} R={input[1]}"
+
+rule picard_mark_duplicates_metrics:
+    """Picard: mark duplicates metrics. See also picard_mark_duplicates"""
+    params: cmd = picard_config[VAR.CMD] + os.path.join(picard_config[VAR.HOME], VAR.MARK_DUPLICATES),
+            options = picard_config[VAR.OPTIONS]
+    input: "{prefix}.bam", "{prefix}.bai"
+    output: "{prefix}.dup_metrics", "{prefix}.dup.bam"
+    shell: "{params.cmd} {params.options} I={input[0]} M={output[0]} O={output[1]}"
+
+rule picard_collect_alignment_summary_metrics:
+    """Picard: collect alignment summary metrics"""
+    params: cmd = picard_config[VAR.CMD] + os.path.join(picard_config[VAR.HOME], VAR.COLLECT_ALIGNMENT_SUMMARY_METRICS),
+            options = picard_config[VAR.OPTIONS]
+    input: "{prefix}.bam", "{prefix}.bai", picard_config[VAR.REF]
+    output: "{prefix}.align_metrics"
+    shell: "{params.cmd} {params.options} I={input} O={output[0]} R={input[2]}"
+
+rule picard_calculate_hs_metrics:
+    """Picard: calculate hybrid selection metrics"""
+    params: cmd = picard_config[VAR.CMD] + os.path.join(picard_config[VAR.HOME], VAR.CALCULATE_HS_METRICS),
+            options = picard_config[VAR.OPTIONS],
+            target_regions = picard_config[VAR.TARGET_REGIONS],
+            bait_regions = picard_config[VAR.BAIT_REGIONS]
+    input: "{prefix}.bam", "{prefix}.bai", picard_config[VAR.REF]
+    output: "{prefix}.hs_metrics"
+    shell: "{params.cmd} {params.options} TI={params.target_regions} BI={params.bait_regions} I={input[0]} O={output} R={input[2]}"
+
+rule picard_plot_metrics:
+    """Picard: plot metrics using custom R script """
+    params: cmd = picard_config[VAR.PLOTMETRICS]
+    input: "{prefix}_metrics.txt"
+    output: "{prefix}_metrics.pdf"
+    shell: "{params.cmd} {input} {output} {wildcards.prefix}"
+
+rule picard_add_or_replace_read_groups:
+    """Picard: add or replace read groups. Currently tailored for Illumina read groups."""
+    params: cmd = picard_config[VAR.CMD] + os.path.join(picard_config[VAR.HOME], VAR.ADD_OR_REPLACE_READ_GROUPS),
+            options = picard_config[VAR.OPTIONS],
+            custom_options = picard_config[VAR.ADD_OR_REPLACE_READ_GROUPS_OPTIONS],
+            lib = "lib",
+            rgpl = "Illumina",
+            # rgpu = input.split(".")[0],
+            # rgid = input.split(".")[0],
+            # rgsm = input.split(".")[0]
+            rgpu = "rgpu",
+            rgid = "rgid",
+            rgsm = "rgsm"
+    input: "{prefix}.bam"
+    output: "{prefix}.rg.bam"
+    shell: "{params.cmd} INPUT={input} OUTPUT={output} {params.custom_options} RGID={params.rgid} RGLIB={params.lib} RGSM={params.rgsm} RGPL={params.rgpl} RGPU={params.rgpu}"
+
+rule picard_merge_sam:
+    """Picard: merge sam files"""
+    params: cmd = picard_config[VAR.CMD] + os.path.join(picard_config[VAR.HOME], VAR.MERGE_SAM_FILES),
+            options = " ".join([picard_config[VAR.OPTIONS],
+            picard_config[VAR.MERGE_SAM_OPTIONS],
+            picard_config[VAR.COMMON_OPTIONS]])
+    input: ["INPUT={}".format(x) for x in picard_config[VAR.MERGE_SAM_TARGETS]]
+    output: picard_config[VAR.MERGE_SAM_PREFIX] + ".merge.bam"
+    shell: "{params.cmd} {input} O={output} {params.options}"

@@ -1,0 +1,34 @@
+# -*- snakemake -*-
+import os
+from snakemakelib.utils import update_config, sml_rules_path
+import snakemakelib.variables as VAR
+
+# Start by including the general snakefile
+include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
+
+config_default = {
+    VAR.BIO_NGS_ALIGN_BOWTIE : {
+        BOWTIE : {
+            VAR.REF : config[VAR.BIO_NGS_SETTINGS][VAR.REF],
+            VAR.CMD : "bowtie",
+            VAR.OPTIONS : "",
+            VAR.THREADS : config[VAR.BIO_NGS_SETTINGS][VAR.THREADS],
+        },
+        BOWTIE2 : {
+            VAR.REF : config[VAR.BIO_NGS_SETTINGS][VAR.REF],
+            VAR.CMD : "bowtie2",
+            VAR.OPTIONS : "",
+            VAR.THREADS : config[VAR.BIO_NGS_SETTINGS][VAR.THREADS],
+        },
+    }   
+}
+
+config = update_config(config, config_default)
+
+# rule bowtie_main:
+#     params: cmd = config
+#     input: "{prefix}.sam"
+#     output: "{bn}.bam"
+#     params: options=config["samtools"]["sam2bam"]["options"],
+#             cmd=config["samtools"]["cmd"]
+#     shell: "{params.cmd} view {params.options} {input} > {output}"

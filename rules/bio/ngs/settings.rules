@@ -2,71 +2,32 @@
 import os
 from snakemakelib.utils import update_config, sml_rules_path
 
-# Start by including the general snakefile
-# include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
-
-# Config section and variable names. These variables define common key
-# names used in the configuration dictionaries for bio.ngs
-BIO_NGS_SETTINGS="bio.ngs.settings"
-
-# General names
-HOME = "home"
-BAM_LIST = "bam_list"
-VCFSUFFIX = "vcfsuffix"
-DB = "db"
-DBSNP = "dbsnp"
-KNOWN_SITES = "known_sites"
-JAR = "jar"
-JAVA = "java"
-JAVA_MEM = "java_mem"
-JAVA_TMPDIR = "java_tmpdir"
-REF = "ref"
-SEQUENCE_CAPTURE = "sequence_capture"
-TARGET_REGIONS = "target_regions"
-BAIT_REGIONS = "bait_regions"
-THREADS = "threads"
-CMD = "cmd"
-OPTIONS = "options"
-COMMON_OPTIONS = "common_options"
-FASTQ_SUFFIX = "fastq_suffix"
-FLOWCELLRUNS = "flowcellruns"
-FLOWCELL_SUFFIX = "flowcellsuffix"
-INPUTDIR = "inputdir"
-READ1_LABEL = "read1_label"
-READ2_LABEL = "read2_label"
-SAMPLE_PREFIX = "sample_prefix"
-SAMPLES = "samples"
-ANNOTATION = "annotation"
-ANNOT_LABEL = "annot_label"
-TRANSCRIPT_ANNOT_GTF = "transcript_annot_gtf"
-
-
 config_default = { 
-    BIO_NGS_SETTINGS : {
-        FASTQ_SUFFIX : ".fastq",
-        FLOWCELLRUNS : " $(foreach s,$(samples),$(wildcard $(s)/*$(flowcell_suffix)))",
-        FLOWCELL_SUFFIX : "XX",
-        INPUTDIR : ".",
-        READ1_LABEL : "_R1_001",
-        READ2_LABEL : "_R2_001",
-        SAMPLE_PREFIX : "P00",
-        SAMPLES : "$(foreach s,$(sample_prefix), $(wildcard $(s)*))",
-        THREADS : 8,
-        ANNOTATION : {
-            ANNOT_LABEL : "",
-            TRANSCRIPT_ANNOT_GTF: "",
+    VAR.BIO_NGS_SETTINGS : {
+        VAR.FASTQ_SUFFIX : ".fastq",
+        VAR.FLOWCELLRUNS : " $(foreach s,$(samples),$(wildcard $(s)/*$(flowcell_suffix)))",
+        VAR.FLOWCELL_SUFFIX : "XX",
+        VAR.INPUTDIR : ".",
+        VAR.READ1_LABEL : "_R1_001",
+        VAR.READ2_LABEL : "_R2_001",
+        VAR.SAMPLE_PREFIX : "P00",
+        VAR.SAMPLES : "$(foreach s,$(sample_prefix), $(wildcard $(s)*))",
+        VAR.THREADS : 8,
+        VAR.ANNOTATION : {
+            VAR.ANNOT_LABEL : "",
+            VAR.TRANSCRIPT_ANNOT_GTF: "",
         },
-        DB : {
-            DBSNP : "",
-            REF : "hg19",
+        VAR.DB : {
+            VAR.DBSNP : "",
+            VAR.REF : "hg19",
         },
-        JAVA : {
-            JAVA_MEM : "6g",
-            JAVA_TMPDIR : "/tmp",
+        VAR.JAVA : {
+            VAR.JAVA_MEM : "6g",
+            VAR.JAVA_TMPDIR : "/tmp",
         },
-        SEQUENCE_CAPTURE : {
-            BAIT_REGIONS : "",
-            TARGET_REGIONS : "",
+        VAR.SEQUENCE_CAPTURE : {
+            VAR.BAIT_REGIONS : "",
+            VAR.TARGET_REGIONS : "",
         },
     },
 }

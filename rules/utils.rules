@@ -1,7 +1,5 @@
 # -*- snakemake -*- 
 import os
-import string
-import pprint as pp
 from snakemakelib.utils import update_config, sml_rules_path
 from snakemake.io import Wildcards, Namedlist
 
@@ -15,23 +13,21 @@ Utility rules for use with snakemakelib.
 rule conf:
     """Print global configuration settings for loaded rules"""
     run:
-      if not config.get('section') is None:
-          d = config[config['section']]
-      else:
-          d = config
-      if (not isinstance(d, dict)):
-          logger.info (" {key} : {d}".format(key=config['section'], d=d))
-      else:
-          for (k,v) in sorted(d.items()):
-              # Top-level duration
-              if (not isinstance(v, dict)):
-                  logger.info (" {key} : {value}".format(key=k, value=d[k]))
-              for (k,v) in sorted(d.items(), key=lambda k: (len(k[0].split(".")), k)):
-                  if (isinstance(v, dict)):
-                      logger.info (k)
-                      logger.info ("="*len(k))
-                      for (kk, vv) in sorted(d[k].items()):
-                          logger.info ("    {kk} : {vv}".format(kk=kk, vv=vv))
+      d = config
+      d = {config.get("section") : d[config.get("section")]} if config.get("section") in d.keys() else d
+      s = "Top-level configuration variables"
+      logger.info("\n" + s)
+      logger.info("=" * len(s))
+      for (k,v) in sorted(d.items()):
+          if (not isinstance(v, dict)) and not v is None:
+              logger.info (" {key} : {v}".format(key=config['section'], v=v))
+      logger.info("")  
+      for (k,v) in sorted(d.items(), key=lambda k: (len(k[0].split(".")), k)):
+          if (isinstance(v, dict)):
+              logger.info (k)
+              logger.info ("="*len(k))
+              for (kk, vv) in sorted(d[k].items()):
+                  logger.info ("    {kk} : {vv}".format(kk=kk, vv=vv))
 
 rule conf_sections:
     """Print configuration sections. TODO: insert docstring from each rule file without running an import statement"""
@@ -66,7 +62,6 @@ rule rule_t:
     run:
       rules = workflow.rules
       d = _group_rules_by_snakefile(rules)
-      print (config.get("section"))
       if not config.get("section") is None:
           d = {config.get("section") : d[config.get("section")]} if config.get("section") in d.keys() else d
       print (d.keys())
@@ -85,7 +80,7 @@ rule rule_ll:
           for rule in rl:
               docstring = "\n    {doc}".format(doc=rule.docstring)
               if rule.input or rule.output:
-                  docstring += "\n\tinput: {input}; output{output}\n".format(input=rule.input, output=rule.output)
+                  docstring += "\n\tinput: {input}\n\toutput: {output}\n".format(input=rule.input, output=rule.output)
               if rule.shellcmd:
                   format_d = dict()
                   wc = {x:"{{prefix}}".format(x) for x in rule.wildcard_names}

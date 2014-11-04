@@ -1,204 +1,192 @@
 # -*- snakemake -*-
 import os
 from snakemakelib.utils import update_config, sml_rules_path
+import snakemakelib.variables as VAR
 
 # Start by including the general snakefile
 include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
-
-# Config section and variable names
-BIO_NGS_TOOLS_GATK="bio.ngs.tools.gatk"
-
-# GATK modules
-GATK_JAR_PROGRAM = "GenomeAnalysisTK.jar"
-UNIFIED_GENOTYPER = "UnifiedGenotyper"
-PRINT_READS = "PrintReads"
-BASE_RECALIBRATOR = "BaseRecalibrator"
-INDEL_REALIGNER = "IndelRealigner"
-REALIGNER_TARGET_CREATOR = "RealignerTargetCreator"
-VARIANT_EVAL = "VariantEval"
-VARIANT_FILTRATION = "VariantFiltration"
-READ_BACKED_PHASING = "ReadBackedPhasing"
-CLIP_READS = "ClipReads"
-SELECT_SNP_VARIANTS = "SelectSnpVariants"
 
 # FIXME: update_config is run *three* separate times due to the fact
 # that many rules depend on defaults in the same section. Could this
 # be done more economically?
 config_default = { 
-    BIO_NGS_TOOLS_GATK : {
-        HOME : ".",
-        BAM_LIST : "",
-        VCFSUFFIX : ".vcf",
-        DBSNP : config[BIO_NGS_SETTINGS][DB][DBSNP],
-        JAVA_MEM : config[BIO_NGS_SETTINGS][JAVA][JAVA_MEM],
-        JAVA_TMPDIR : config[BIO_NGS_SETTINGS][JAVA][JAVA_TMPDIR],
-        REF : config[BIO_NGS_SETTINGS][DB][REF],
+    VAR.BIO_NGS_TOOLS_GATK : {
+        VAR.HOME : ".",
+        VAR.BAM_LIST : "",
+        VAR.VCFSUFFIX : ".vcf",
+        VAR.DBSNP : config[VAR.BIO_NGS_SETTINGS][VAR.DB][VAR.DBSNP],
+        VAR.JAVA_MEM : config[VAR.BIO_NGS_SETTINGS][VAR.JAVA][VAR.JAVA_MEM],
+        VAR.JAVA_TMPDIR : config[VAR.BIO_NGS_SETTINGS][VAR.JAVA][VAR.JAVA_TMPDIR],
+        VAR.REF : config[VAR.BIO_NGS_SETTINGS][VAR.DB][VAR.REF],
 
-        TARGET_REGIONS : config[BIO_NGS_SETTINGS][SEQUENCE_CAPTURE][TARGET_REGIONS],
-        BAIT_REGIONS : config[BIO_NGS_SETTINGS][SEQUENCE_CAPTURE][BAIT_REGIONS],
-        THREADS : config[BIO_NGS_SETTINGS][THREADS],
+        VAR.TARGET_REGIONS : config[VAR.BIO_NGS_SETTINGS][VAR.SEQUENCE_CAPTURE][VAR.TARGET_REGIONS],
+        VAR.BAIT_REGIONS : config[VAR.BIO_NGS_SETTINGS][VAR.SEQUENCE_CAPTURE][VAR.BAIT_REGIONS],
+        VAR.THREADS : config[VAR.BIO_NGS_SETTINGS][VAR.THREADS],
     },
-}
-
-config_default[BIO_NGS_TOOLS_GATK][VARIANT_FILTRATION] = {
-    CMD : VARIANT_FILTRATION,
-    REF : config[BIO_NGS_TOOLS_GATK][REF],
-    OPTIONS : "",
-}
-config_default[BIO_NGS_TOOLS_GATK][READ_BACKED_PHASING] = {
-    CMD : READ_BACKED_PHASING,
-    REF : config[BIO_NGS_TOOLS_GATK][REF],
-    OPTIONS : "",
-}
-config_default[BIO_NGS_TOOLS_GATK][CLIP_READS] = {
-    CMD : CLIP_READS,
-    OPTIONS : "",
-}
-config_default[BIO_NGS_TOOLS_GATK][VARIANT_EVAL] = {
-    CMD : VARIANT_EVAL,
-    REF : config[BIO_NGS_TOOLS_GATK][REF],
-    OPTIONS : "-ST Filter -l INFO --doNotUseAllStandardModules --evalModule CompOverlap --evalModule CountVariants --evalModule GenotypeConcordance --evalModule TiTvVariantEvaluator --evalModule ValidationReport --stratificationModule Filter",
-}
-config_default[BIO_NGS_TOOLS_GATK][SELECT_SNP_VARIANTS] = {
-    CMD : SELECT_SNP_VARIANTS,
-    REF : config[BIO_NGS_TOOLS_GATK][REF],
-    OPTIONS : "--selectTypeToInclude SNP",
 }
 
 config = update_config(config, config_default)
 
 # Set these rules after updating config as they depend on internal values and then redo update config 
-config_default[BIO_NGS_TOOLS_GATK][JAR] = os.path.join(config[BIO_NGS_TOOLS_GATK][HOME], GATK_JAR_PROGRAM)
-config_default[BIO_NGS_TOOLS_GATK][KNOWN_SITES] = config[BIO_NGS_TOOLS_GATK][DBSNP]
+config_default[VAR.BIO_NGS_TOOLS_GATK][VAR.JAR] = os.path.join(config[VAR.BIO_NGS_TOOLS_GATK][VAR.HOME], VAR.GATK_JAR_PROGRAM)
+config_default[VAR.BIO_NGS_TOOLS_GATK][VAR.KNOWN_SITES] = config[VAR.BIO_NGS_TOOLS_GATK][VAR.DBSNP]
 
-config_default[BIO_NGS_TOOLS_GATK][INDEL_REALIGNER] = {
-    CMD : INDEL_REALIGNER,
-    REF : config[BIO_NGS_TOOLS_GATK][REF],
-    OPTIONS : " ".join(["-L {target}".format(target=config.get(BIO_NGS_TOOLS_GATK).get(TARGET_REGIONS)) if config.get(BIO_NGS_TOOLS_GATK).get(TARGET_REGIONS)  else ""])
+config_default[VAR.BIO_NGS_TOOLS_GATK][VAR.VARIANT_FILTRATION] = {
+    VAR.CMD : VAR.VARIANT_FILTRATION,
+    VAR.REF : config[VAR.BIO_NGS_TOOLS_GATK][VAR.REF],
+    VAR.OPTIONS : "",
 }
-config_default[BIO_NGS_TOOLS_GATK][PRINT_READS] = {
-    CMD : PRINT_READS,
-    REF : config[BIO_NGS_TOOLS_GATK][REF],
-    OPTIONS : ""
+config_default[VAR.BIO_NGS_TOOLS_GATK][VAR.READ_BACKED_PHASING] = {
+    VAR.CMD : VAR.READ_BACKED_PHASING,
+    VAR.REF : config[VAR.BIO_NGS_TOOLS_GATK][VAR.REF],
+    VAR.OPTIONS : "",
+}
+config_default[VAR.BIO_NGS_TOOLS_GATK][VAR.CLIP_READS] = {
+    VAR.CMD : VAR.CLIP_READS,
+    VAR.OPTIONS : "",
+}
+config_default[VAR.BIO_NGS_TOOLS_GATK][VAR.VARIANT_EVAL] = {
+    VAR.CMD : VAR.VARIANT_EVAL,
+    VAR.REF : config[VAR.BIO_NGS_TOOLS_GATK][VAR.REF],
+    VAR.OPTIONS : "-ST Filter -l INFO --doNotUseAllStandardModules --evalModule CompOverlap --evalModule CountVariants --evalModule GenotypeConcordance --evalModule TiTvVariantEvaluator --evalModule ValidationReport --stratificationModule Filter",
+}
+config_default[VAR.BIO_NGS_TOOLS_GATK][VAR.SELECT_SNP_VARIANTS] = {
+    VAR.CMD : VAR.SELECT_SNP_VARIANTS,
+    VAR.REF : config[VAR.BIO_NGS_TOOLS_GATK][VAR.REF],
+    VAR.OPTIONS : "--selectTypeToInclude SNP",
 }
 
-config_default[BIO_NGS_TOOLS_GATK][REALIGNER_TARGET_CREATOR] = {
-    CMD : REALIGNER_TARGET_CREATOR,
-    REF : config[BIO_NGS_TOOLS_GATK][REF],
-    OPTIONS : "",
+config_default[VAR.BIO_NGS_TOOLS_GATK][VAR.INDEL_REALIGNER] = {
+    VAR.CMD : VAR.INDEL_REALIGNER,
+    VAR.REF : config[VAR.BIO_NGS_TOOLS_GATK][VAR.REF],
+    VAR.OPTIONS : " ".join(["-L {target}".format(target=config.get(VAR.BIO_NGS_TOOLS_GATK).get(VAR.TARGET_REGIONS)) if config.get(VAR.BIO_NGS_TOOLS_GATK).get(VAR.TARGET_REGIONS)  else ""])
+}
+config_default[VAR.BIO_NGS_TOOLS_GATK][VAR.PRINT_READS] = {
+    VAR.CMD : VAR.PRINT_READS,
+    VAR.REF : config[VAR.BIO_NGS_TOOLS_GATK][VAR.REF],
+    VAR.OPTIONS : ""
 }
 
-config_default[BIO_NGS_TOOLS_GATK][UNIFIED_GENOTYPER] = {
-    CMD : UNIFIED_GENOTYPER,
-    REF : config[BIO_NGS_TOOLS_GATK][REF],
-    OPTIONS : " ".join(["-stand_call_conf 30.0 -stand_emit_conf 10.0  --downsample_to_coverage 30 --output_mode EMIT_VARIANTS_ONLY -glm BOTH",
-                        "--dbsnp {dbsnp}".format(dbsnp=config.get(BIO_NGS_TOOLS_GATK).get(DBSNP)) if config.get(BIO_NGS_TOOLS_GATK).get(DBSNP) else "",
-                        "-L {target}".format(target=config.get(BIO_NGS_TOOLS_GATK).get(TARGET_REGIONS)) if config.get(BIO_NGS_TOOLS_GATK).get(TARGET_REGIONS) else ""])
+config_default[VAR.BIO_NGS_TOOLS_GATK][VAR.REALIGNER_TARGET_CREATOR] = {
+    VAR.CMD : VAR.REALIGNER_TARGET_CREATOR,
+    VAR.REF : config[VAR.BIO_NGS_TOOLS_GATK][VAR.REF],
+    VAR.OPTIONS : "",
+}
+
+config_default[VAR.BIO_NGS_TOOLS_GATK][VAR.UNIFIED_GENOTYPER] = {
+    VAR.CMD : VAR.UNIFIED_GENOTYPER,
+    VAR.REF : config[VAR.BIO_NGS_TOOLS_GATK][VAR.REF],
+    VAR.OPTIONS : " ".join(["-stand_call_conf 30.0 -stand_emit_conf 10.0  --downsample_to_coverage 30 --output_mode EMIT_VARIANTS_ONLY -glm BOTH",
+                        "--dbsnp {dbsnp}".format(dbsnp=config.get(VAR.BIO_NGS_TOOLS_GATK).get(VAR.DBSNP)) if config.get(VAR.BIO_NGS_TOOLS_GATK).get(VAR.DBSNP) else "",
+                        "-L {target}".format(target=config.get(VAR.BIO_NGS_TOOLS_GATK).get(VAR.TARGET_REGIONS)) if config.get(VAR.BIO_NGS_TOOLS_GATK).get(VAR.TARGET_REGIONS) else ""])
 }
 
 config = update_config(config, config_default)
 
-# And yes, we need to do it yet again due to dependency on config[BIO_NGS_TOOLS_GATK][JAR]
-config_default[BIO_NGS_TOOLS_GATK][CMD] = "java -Xmx" + config[BIO_NGS_TOOLS_GATK][JAVA_MEM] + " -Djava.io.tmpdir=" + config[BIO_NGS_TOOLS_GATK][JAVA_TMPDIR] +  " -jar " + config[BIO_NGS_TOOLS_GATK][JAR]
+# And yes, we need to do it yet again due to dependency on config[VAR.BIO_NGS_TOOLS_GATK][VAR.JAR]
+config_default[VAR.BIO_NGS_TOOLS_GATK][VAR.CMD] = "java -Xmx" + config[VAR.BIO_NGS_TOOLS_GATK][VAR.JAVA_MEM] + " -Djava.io.tmpdir=" + config[VAR.BIO_NGS_TOOLS_GATK][VAR.JAVA_TMPDIR] +  " -jar " + config[VAR.BIO_NGS_TOOLS_GATK][VAR.JAR]
 
-config_default[BIO_NGS_TOOLS_GATK][BASE_RECALIBRATOR] = {
-    CMD : BASE_RECALIBRATOR,
-    REF : config[BIO_NGS_TOOLS_GATK][REF],
-    OPTIONS : " ".join([
-        "-L {target}".format(target=config.get(BIO_NGS_TOOLS_GATK).get(TARGET_REGIONS)) if config.get(BIO_NGS_TOOLS_GATK).get(TARGET_REGIONS)  else "",
-        "-knownSites {known}".format(known=config.get(BIO_NGS_TOOLS_GATK).get(KNOWN_SITES)) if config.get(BIO_NGS_TOOLS_GATK).get(KNOWN_SITES) else ""])
+config_default[VAR.BIO_NGS_TOOLS_GATK][VAR.BASE_RECALIBRATOR] = {
+    VAR.CMD : VAR.BASE_RECALIBRATOR,
+    VAR.REF : config[VAR.BIO_NGS_TOOLS_GATK][VAR.REF],
+    VAR.OPTIONS : " ".join([
+        "-L {target}".format(target=config.get(VAR.BIO_NGS_TOOLS_GATK).get(VAR.TARGET_REGIONS)) if config.get(VAR.BIO_NGS_TOOLS_GATK).get(VAR.TARGET_REGIONS)  else "",
+        "-knownSites {known}".format(known=config.get(VAR.BIO_NGS_TOOLS_GATK).get(VAR.KNOWN_SITES)) if config.get(VAR.BIO_NGS_TOOLS_GATK).get(VAR.KNOWN_SITES) else ""])
 }
 
 config = update_config(config, config_default)
+
+# Use gatk config to increase readability
+gatk_config = config[VAR.BIO_NGS_TOOLS_GATK]
 
 ##################################################
 # Rules
 ##################################################
 rule gatk_unified_genotyper:
     """Run GATK UnifiedGenotyper"""
-    params: cmd = config[BIO_NGS_TOOLS_GATK][JAR] + " -T " + config[BIO_NGS_TOOLS_GATK][UNIFIED_GENOTYPER][CMD],
-            options = " ".join(["-R", config[BIO_NGS_TOOLS_GATK][UNIFIED_GENOTYPER][REF], 
-            config[BIO_NGS_TOOLS_GATK][UNIFIED_GENOTYPER][OPTIONS]])
+    params: cmd = gatk_config[VAR.JAR] + " -T " + gatk_config[VAR.UNIFIED_GENOTYPER][VAR.CMD],
+            options = " ".join(["-R", gatk_config[VAR.UNIFIED_GENOTYPER][VAR.REF], 
+            gatk_config[VAR.UNIFIED_GENOTYPER][VAR.OPTIONS]])
     input: "{prefix}.bam"
     output: "{prefix}.vcf"
     shell: "{params.cmd} {params.options} -I {input} -o {output}"
 
 rule gatk_realigner_target_creator:
     """Run GATK RealignerTargetCreator"""
-    params: cmd = config[BIO_NGS_TOOLS_GATK][JAR] + " -T " + config[BIO_NGS_TOOLS_GATK][REALIGNER_TARGET_CREATOR][CMD],
-            options = " ".join(["-R", config[BIO_NGS_TOOLS_GATK][REALIGNER_TARGET_CREATOR][REF],
-            config[BIO_NGS_TOOLS_GATK][REALIGNER_TARGET_CREATOR][OPTIONS]])
+    params: cmd = gatk_config[VAR.JAR] + " -T " + gatk_config[VAR.REALIGNER_TARGET_CREATOR][VAR.CMD],
+            options = " ".join(["-R", gatk_config[VAR.REALIGNER_TARGET_CREATOR][VAR.REF],
+            gatk_config[VAR.REALIGNER_TARGET_CREATOR][VAR.OPTIONS]])
     input: "{prefix}.bam"
     output: "{prefix}.intervals"
     shell: "{params.cmd} {params.options} -I {input} -o {output}"
 
 rule gatk_indel_realigner:
     """Run GATK IndelRealigner"""
-    params: cmd = config[BIO_NGS_TOOLS_GATK][JAR] + " -T " + config[BIO_NGS_TOOLS_GATK][INDEL_REALIGNER][CMD],
-            options = " ".join(["-R", config[BIO_NGS_TOOLS_GATK][INDEL_REALIGNER][REF],
-            config[BIO_NGS_TOOLS_GATK][INDEL_REALIGNER][OPTIONS]])
+    params: cmd = gatk_config[VAR.JAR] + " -T " + gatk_config[VAR.INDEL_REALIGNER][VAR.CMD],
+            options = " ".join(["-R", gatk_config[VAR.INDEL_REALIGNER][VAR.REF],
+            gatk_config[VAR.INDEL_REALIGNER][VAR.OPTIONS]])
     input: "{prefix}.bam", "{prefix}.intervals"
     output: "{prefix}.realign.bam"
     shell: "{params.cmd} {params.options} -o {output} --targetIntervals {input[1]}"
 
 rule gatk_base_recalibrator:
     """Run GATK BaseRecalibrator"""
-    params: cmd = config[BIO_NGS_TOOLS_GATK][JAR] + " -T " + config[BIO_NGS_TOOLS_GATK][BASE_RECALIBRATOR][CMD],
-            options = config[BIO_NGS_TOOLS_GATK][BASE_RECALIBRATOR][OPTIONS]
+    params: cmd = gatk_config[VAR.JAR] + " -T " + gatk_config[VAR.BASE_RECALIBRATOR][VAR.CMD],
+            options = gatk_config[VAR.BASE_RECALIBRATOR][VAR.OPTIONS]
     input: "{prefix}.bam", "{prefix}.bai"
     output: "{prefix}.recal_data.grp"
     shell: "{params.cmd} {params.options} -I {input[0]} -o {output}"
 
 rule gatk_print_reads:
     """Run GATK PrintReads"""
-    params: cmd = config[BIO_NGS_TOOLS_GATK][JAR] + " -T " + config[BIO_NGS_TOOLS_GATK][PRINT_READS][CMD],
-            options = " ".join(["-R", config[BIO_NGS_TOOLS_GATK][PRINT_READS][REF],
-            config[BIO_NGS_TOOLS_GATK][PRINT_READS][OPTIONS]])
+    params: cmd = gatk_config[VAR.JAR] + " -T " + gatk_config[VAR.PRINT_READS][VAR.CMD],
+            options = " ".join(["-R", gatk_config[VAR.PRINT_READS][VAR.REF],
+            gatk_config[VAR.PRINT_READS][VAR.OPTIONS]])
     input: "{prefix}.bam", "{prefix}.recal_data.grp"
     output: "{prefix}.recal.bam"
     shell: "{params.cmd} {params.options} -I {input[0]} -BQSR {input[1]} -o {output}"
 
 rule gatk_clip_reads:
     """Run GATK ClipReads"""
-    params: cmd = config[BIO_NGS_TOOLS_GATK][JAR] + " -T " + config[BIO_NGS_TOOLS_GATK][CLIP_READS][CMD],
-            options = " ".join([config[BIO_NGS_TOOLS_GATK][CLIP_READS][OPTIONS]])
+    params: cmd = gatk_config[VAR.JAR] + " -T " + gatk_config[VAR.CLIP_READS][VAR.CMD],
+            options = " ".join([gatk_config[VAR.CLIP_READS][VAR.OPTIONS]])
     input: "{prefix}.bam", "{prefix}.bai"
     output: "{prefix}.clip.bam"
     shell: "{params.cmd} {params.options} -I {input} -o {output}"
 
 rule gatk_variant_filtration:
     """Run GATK VariantFiltration"""
-    params: cmd = config[BIO_NGS_TOOLS_GATK][JAR] + " -T " + config[BIO_NGS_TOOLS_GATK][VARIANT_FILTRATION][CMD],
-            options = " ".join(["-R", config[BIO_NGS_TOOLS_GATK][VARIANT_FILTRATION][REF],
-            config[BIO_NGS_TOOLS_GATK][VARIANT_FILTRATION][OPTIONS]])
+    params: cmd = gatk_config[VAR.JAR] + " -T " + gatk_config[VAR.VARIANT_FILTRATION][VAR.CMD],
+            options = " ".join(["-R", gatk_config[VAR.VARIANT_FILTRATION][VAR.REF],
+            gatk_config[VAR.VARIANT_FILTRATION][VAR.OPTIONS]])
     input: "{prefix}.vcf"
     output: "{prefix}.filtered.vcf"
     shell: "{params.cmd} {params.options} --variant {input} --out {output}"
 
 rule gatk_variant_eval:
     """Run GATK VariantEval"""
-    params: cmd = config[BIO_NGS_TOOLS_GATK][JAR] + " -T " + config[BIO_NGS_TOOLS_GATK][VARIANT_EVAL][CMD],
-            options = " ".join(["-R", config[BIO_NGS_TOOLS_GATK][VARIANT_EVAL][REF],
-            config[BIO_NGS_TOOLS_GATK][VARIANT_EVAL][OPTIONS]])
+    params: cmd = gatk_config[VAR.JAR] + " -T " + gatk_config[VAR.VARIANT_EVAL][VAR.CMD],
+            options = " ".join(["-R", gatk_config[VAR.VARIANT_EVAL][VAR.REF],
+            gatk_config[VAR.VARIANT_EVAL][VAR.OPTIONS]])
     input: "{prefix}.vcf"
     output: "{prefix}.eval_metrics"
     shell: "{params.cmd} {params.options} --eval {input} -o {output}"
 
 rule gatk_read_backed_phasing:
     """Run GATK ReadBackedPhasing"""
-    params: cmd = config[BIO_NGS_TOOLS_GATK][JAR] + " -T " + config[BIO_NGS_TOOLS_GATK][READ_BACKED_PHASING][CMD],
-            options = " ".join(["-R", config[BIO_NGS_TOOLS_GATK][READ_BACKED_PHASING][REF],
-                                config[BIO_NGS_TOOLS_GATK][READ_BACKED_PHASING][OPTIONS],
-                                "--variant {prefix}" + config[BIO_NGS_TOOLS_GATK][VCFSUFFIX]])
+    params: cmd = gatk_config[VAR.JAR] + " -T " + gatk_config[VAR.READ_BACKED_PHASING][VAR.CMD],
+            options = " ".join(["-R", gatk_config[VAR.READ_BACKED_PHASING][VAR.REF],
+                                gatk_config[VAR.READ_BACKED_PHASING][VAR.OPTIONS],
+                                "--variant {prefix}" + gatk_config[VAR.VCFSUFFIX]])
     input: "{prefix}.bam", "{prefix}.bai"
     output: "{prefix}.phased.vcf"
     shell: "{params.cmd} {params.options} -I {input} -o {output}"
 
 rule gatk_select_snp_variants:
     """Run GATK SelectVariants to select SNPs"""
-    params: cmd = config[BIO_NGS_TOOLS_GATK][JAR] + " -T " + config[BIO_NGS_TOOLS_GATK][SELECT_SNP_VARIANTS][CMD],
-            options = " ".join(["-R", config[BIO_NGS_TOOLS_GATK][SELECT_SNP_VARIANTS][REF],
-                                config[BIO_NGS_TOOLS_GATK][SELECT_SNP_VARIANTS][OPTIONS]])
+    params: cmd = gatk_config[VAR.JAR] + " -T " + gatk_config[VAR.SELECT_SNP_VARIANTS][VAR.CMD],
+            options = " ".join(["-R", gatk_config[VAR.SELECT_SNP_VARIANTS][VAR.REF],
+                                gatk_config[VAR.SELECT_SNP_VARIANTS][VAR.OPTIONS]])
     input: "{prefix}.vcf"
     output: "{prefix}.snp.vcf"
     shell: "{params.cmd} {params.options} --variant {input} --out {output}"

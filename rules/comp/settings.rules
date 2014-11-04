@@ -1,0 +1,17 @@
+# -*- snakemake -*- 
+import os
+from snakemakelib.utils import update_config, sml_rules_path
+import snakemakelib.variables as VAR
+
+"""
+Main settings for snakemakelib.comp. Defines top-level configuration
+settings for comp rules. 
+"""
+
+config_default = {
+    VAR.COMP_SETTINGS : {
+        VAR.AWK : "/bin/awk",
+    },
+}
+
+config = update_config(config, config_default)

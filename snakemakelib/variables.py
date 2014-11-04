@@ -27,6 +27,11 @@ The variables listed here define the keys for the config dictionary.
 ##################################################
 COMP_SETTINGS = "comp.settings"
 AWK = "awk"
+CAT = "cat"
+GREP = "grep"
+GZIP = "gzip"
+HEAD = "head"
+ZCAT = "zcat"
 
 ##################################################
 # bio
@@ -62,8 +67,9 @@ COMMON_OPTIONS = "common_options"
 DB = "db"
 DBSNP = "dbsnp"
 FASTQ_SUFFIX = "fastq_suffix"
+FLOWCELLS = "flowcells"
 FLOWCELLRUNS = "flowcellruns"
-FLOWCELL_SUFFIX = "flowcellsuffix"
+FLOWCELL_SUFFIX = "flowcell_suffix"
 HOME = "home"
 INPUTDIR = "inputdir"
 JAR = "jar"
@@ -71,12 +77,16 @@ JAVA = "java"
 JAVA_MEM = "java_mem"
 JAVA_TMPDIR = "java_tmpdir"
 KNOWN_SITES = "known_sites"
+LANES = "lanes"
+MAIN = "main"
 OPTIONS = "options"
 READ1_LABEL = "read1_label"
 READ2_LABEL = "read2_label"
 REF = "ref"
+RUN_ID_RE = "run_id_re"
 SAMPLES = "samples"
 SAMPLE_PREFIX = "sample_prefix"
+SECTION = "section"
 SEQUENCE_CAPTURE = "sequence_capture"
 TARGET_REGIONS = "target_regions"
 THREADS = "threads"
@@ -107,9 +117,9 @@ BOWTIE2 = "bowtie2"
 BIO_NGS_METHYLSEQ_BISMARK = "bio.ngs.methylseq.bismark"
 
 ##################################################
-# bio.ngs.quality_control.picard
+# bio.ngs.qc.picard
 ##################################################
-BIO_NGS_QUALITYCONTROL_PICARD = "bio.ngs.quality_control.picard"
+BIO_NGS_QC_PICARD = "bio.ngs.qc.picard"
 
 PLOTMETRICS = "plotmetrics"
 
@@ -136,9 +146,17 @@ CALCULATE_HS_METRICS = "CalculateHsMetrics.jar"
 ADD_OR_REPLACE_READ_GROUPS = "AddOrReplaceReadGroups.jar"
 
 ##################################################
-# bio.ngs.quality_control.sequenceprocessing
+# bio.ngs.qc.sequenceprocessing
 ##################################################
-BIO_NGS_QUALITYCONTROL_SEQUENCEPROCESSING = "bio.ngs.quality_control.sequenceprocessing"
+BIO_NGS_QC_SEQUENCEPROCESSING = "bio.ngs.qc.sequenceprocessing"
+TRIMMOMATIC_JAR_PROGRAM = "trimmomatic.jar"
+THREEPRIME = "threeprime"
+FIVEPRIME = "fiveprime"
+CUTADAPT = "cutadapt"
+TRIMMOMATIC = "trimmomatic"
+RESYNCMATES = "resyncmates"
+PROCESSING_OPTIONS = "processing_options"
+FASTQC = "fastqc"
 
 ##################################################
 # bio.ngs.tools.gatk

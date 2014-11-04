@@ -6,13 +6,14 @@ import snakemakelib.variables as VAR
 config_default = { 
     VAR.BIO_NGS_SETTINGS : {
         VAR.FASTQ_SUFFIX : ".fastq",
-        VAR.FLOWCELLRUNS : " $(foreach s,$(samples),$(wildcard $(s)/*$(flowcell_suffix)))",
+        VAR.FLOWCELLS : [],
+        VAR.FLOWCELLRUNS : [],
         VAR.FLOWCELL_SUFFIX : "XX",
         VAR.INPUTDIR : ".",
         VAR.READ1_LABEL : "_R1_001",
         VAR.READ2_LABEL : "_R2_001",
+        VAR.SAMPLES : [],
         VAR.SAMPLE_PREFIX : "P00",
-        VAR.SAMPLES : "$(foreach s,$(sample_prefix), $(wildcard $(s)*))",
         VAR.THREADS : 8,
         VAR.ANNOTATION : {
             VAR.ANNOT_LABEL : "",

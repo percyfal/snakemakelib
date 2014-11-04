@@ -8,9 +8,15 @@ Main settings for snakemakelib.comp. Defines top-level configuration
 settings for comp rules. 
 """
 
+# Most programs are usually found in $PATH
 config_default = {
     VAR.COMP_SETTINGS : {
-        VAR.AWK : "/bin/awk",
+        VAR.AWK : "awk",
+        VAR.CAT : "cat",
+        VAR.GREP : "grep",
+        VAR.GZIP : "gzip",
+        VAR.HEAD : "head",
+        VAR.ZCAT : "zcat",
     },
 }
 

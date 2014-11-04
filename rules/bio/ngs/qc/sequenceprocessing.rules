@@ -1,67 +1,67 @@
 # -*- snakemake -*-
 import os
 from snakemakelib.utils import update_config, sml_rules_path
+import snakemakelib.variables as VAR
 
 # Start by including the general snakefile
 include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
 
-BIO_NGS_QUALITYCONTROL_SEQUENCEPROCESSING = 'bio.ngs.quality_control.sequenceprocessing'
-THREEPRIME = "threeprime"
-FIVEPRIME = "fiveprime"
-CUTADAPT = "cutadapt"
-TRIMMOMATIC = "trimmomatic"
-RESYNCMATES = "resyncmates"
-PROCESSING_OPTIONS = "processing_options"
-
 config_default = { 
-    BIO_NGS_QUALITYCONTROL_SEQUENCEPROCESSING : {
-        CUTADAPT : {
-            CMD : "cutadapt",
-            THREEPRIME: "AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC",
-            FIVEPRIME : "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT",
-            OPTIONS : "",
+    VAR.BIO_NGS_QC_SEQUENCEPROCESSING : {
+        VAR.CUTADAPT : {
+            VAR.CMD : "cutadapt",
+            VAR.THREEPRIME: "AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC",
+            VAR.FIVEPRIME : "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT",
+            VAR.OPTIONS : "",
         },
-        TRIMMOMATIC : {
-            HOME : ".",
-            OPTIONS : "-phred33",
-            JAVA_MEM : config[BIO_NGS_SETTINGS][JAVA][JAVA_MEM],
-            JAVA_TMPDIR : config[BIO_NGS_SETTINGS][JAVA][JAVA_TMPDIR],
-            PROCESSING_OPTIONS : "LEADING:15 TRAILING:15 MINLEN:36",
+        VAR.TRIMMOMATIC : {
+            VAR.HOME : ".",
+            VAR.OPTIONS : "-phred33",
+            VAR.JAVA_MEM : config[VAR.BIO_NGS_SETTINGS][VAR.JAVA][VAR.JAVA_MEM],
+            VAR.JAVA_TMPDIR : config[VAR.BIO_NGS_SETTINGS][VAR.JAVA][VAR.JAVA_TMPDIR],
+            VAR.PROCESSING_OPTIONS : "LEADING:15 TRAILING:15 MINLEN:36",
         },
-        RESYNCMATES : {
-            HOME : ".",
-            CMD : "resyncMates.pl",
-            OPTIONS : "",
+        VAR.RESYNCMATES : {
+            VAR.HOME : ".",
+            VAR.CMD : "resyncMates.pl",
+            VAR.OPTIONS : "",
+        },
+        VAR.FASTQC : {
+            VAR.CMD : "fastqc",
+            VAR.OPTIONS : "-q",
         },
     },
 }
 
 config = update_config(config, config_default)
 
-config_default[BIO_NGS_QUALITYCONTROL_SEQUENCEPROCESSING][TRIMMOMATIC][JAR] = os.path.join(config[BIO_NGS_TOOLS_GATK][HOME], GATK_JAR_PROGRAM)
+config_default[VAR.BIO_NGS_QC_SEQUENCEPROCESSING][VAR.TRIMMOMATIC][VAR.JAR] = os.path.join(config[VAR.BIO_NGS_QC_SEQUENCEPROCESSING][VAR.TRIMMOMATIC][VAR.HOME], VAR.TRIMMOMATIC_JAR_PROGRAM)
 
 config = update_config(config, config_default)
 
-config_default[BIO_NGS_QUALITYCONTROL_SEQUENCEPROCESSING][TRIMMOMATIC][CMD]  = "java -Xmx" + config[BIO_NGS_QUALITYCONTROL_SEQUENCEPROCESSING][TRIMMOMATIC][JAVA_MEM] + " -Djava.io.tmpdir=" + config[BIO_NGS_QUALITYCONTROL_SEQUENCEPROCESSING][TRIMMOMATIC][JAVA_TMPDIR] +  " -jar " + config[BIO_NGS_QUALITYCONTROL_SEQUENCEPROCESSING][TRIMMOMATIC][JAR]
+config_default[VAR.BIO_NGS_QC_SEQUENCEPROCESSING][VAR.TRIMMOMATIC][VAR.CMD]  = "java -Xmx" + config[VAR.BIO_NGS_QC_SEQUENCEPROCESSING][VAR.TRIMMOMATIC][VAR.JAVA_MEM] + " -Djava.io.tmpdir=" + config[VAR.BIO_NGS_QC_SEQUENCEPROCESSING][VAR.TRIMMOMATIC][VAR.JAVA_TMPDIR] +  " -jar " + config[VAR.BIO_NGS_QC_SEQUENCEPROCESSING][VAR.TRIMMOMATIC][VAR.JAR]
 
 config = update_config(config, config_default)
+
+sp_cfg = config[VAR.BIO_NGS_QC_SEQUENCEPROCESSING]
+ngs_cfg = config[VAR.BIO_NGS_SETTINGS]
 
 rule cutadapt_cut_threeprime:
     """Cutadapt: cut threeprime adaptor"""
-    params: cmd = config[BIO_NGS_QUALITYCONTROL_SEQUENCEPROCESSING][CUTADAPT][CMD],
-            options = config[BIO_NGS_QUALITYCONTROL_SEQUENCEPROCESSING][CUTADAPT][OPTIONS],
-            threeprime = config[BIO_NGS_QUALITYCONTROL_SEQUENCEPROCESSING][CUTADAPT][THREEPRIME]
-    input: "{prefix}" + config[BIO_NGS_SETTINGS][READ1_LABEL] + config[BIO_NGS_SETTINGS][FASTQ_SUFFIX]
-    output: "{prefix}" + config[BIO_NGS_SETTINGS][READ1_LABEL] + ".trimmed" + config[BIO_NGS_SETTINGS][FASTQ_SUFFIX]
+    params: cmd = sp_cfg[VAR.CUTADAPT][VAR.CMD],
+            options = sp_cfg[VAR.CUTADAPT][VAR.OPTIONS],
+            threeprime = sp_cfg[VAR.CUTADAPT][VAR.THREEPRIME]
+    input: "{prefix}" + ngs_cfg[VAR.READ1_LABEL] + ngs_cfg[VAR.FASTQ_SUFFIX]
+    output: "{prefix}" + ngs_cfg[VAR.READ1_LABEL] + ".trimmed" + ngs_cfg[VAR.FASTQ_SUFFIX]
     shell: "{params.cmd} {params.options} -a {params.threeprime} {input} -o {output} > {wildcards.prefix}.cutadapt_metrics"
 
 rule cutadapt_cut_fiveprime:
     """Cutadapt: cut fiveprime adaptor"""
-    params: cmd = config[BIO_NGS_QUALITYCONTROL_SEQUENCEPROCESSING][CUTADAPT][CMD],
-            options = config[BIO_NGS_QUALITYCONTROL_SEQUENCEPROCESSING][CUTADAPT][OPTIONS],
-            fiveprime = config[BIO_NGS_QUALITYCONTROL_SEQUENCEPROCESSING][CUTADAPT][FIVEPRIME]
-    input: "{prefix}" + config[BIO_NGS_SETTINGS][READ1_LABEL] + config[BIO_NGS_SETTINGS][FASTQ_SUFFIX]
-    output: "{prefix}" + config[BIO_NGS_SETTINGS][READ1_LABEL] + ".trimmed" + config[BIO_NGS_SETTINGS][FASTQ_SUFFIX]
+    params: cmd = sp_cfg[VAR.CUTADAPT][VAR.CMD],
+            options = sp_cfg[VAR.CUTADAPT][VAR.OPTIONS],
+            fiveprime = sp_cfg[VAR.CUTADAPT][VAR.FIVEPRIME]
+    input: "{prefix}" + ngs_cfg[VAR.READ1_LABEL] + ngs_cfg[VAR.FASTQ_SUFFIX]
+    output: "{prefix}" + ngs_cfg[VAR.READ1_LABEL] + ".trimmed" + ngs_cfg[VAR.FASTQ_SUFFIX]
     shell: "{params.cmd} {params.options} -a {params.fiveprime} {input} -o {output} > {wildcards.prefix}.cutadapt_metrics"
 
 # rule rule_3:
@@ -98,3 +98,15 @@ rule cutadapt_cut_fiveprime:
 # 	input: " {prefix}.trimmomatic.PE"
 # 	output: "{prefix}$(READ2_LABEL).U.qtrim.fq.gz"
 # 	shell: "echo Running rule $*.trimmomatic.PE to generate $@"
+
+##################################################
+# FastQC
+##################################################
+rule fastqc_main:
+    """Sequenceprocessing: run fastqc on a fastq file"""
+    params: cmd = sp_cfg[VAR.FASTQC][VAR.CMD],
+            options = sp_cfg[VAR.FASTQC][VAR.OPTIONS],
+    input: "{prefix}" + ngs_cfg[VAR.FASTQ_SUFFIX]
+    output: "{prefix}_fastqc.html"
+    shell: "{params.cmd} {params.options} {input}"
+

@@ -9,7 +9,7 @@ include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
 include: os.path.join(sml_rules_path(), 'comp', 'settings.rules')
 
 config_default = { 
-    VAR.BIO_NGS_QUALITYCONTROL_PICARD : {
+    VAR.BIO_NGS_QC_PICARD : {
         # INSERTMETRICS_TARGETS : "$(subst .bam,.insert_metrics,$(wildcard $(INPUTDIR)/*/*recal.bam))",
         #ALIGNMETRICS_TARGETS : "$(subst .bam,.align_metrics,$(wildcard $(INPUTDIR)/*/*recal.bam))",
         #DUPMETRICS_TARGETS : "$(subst .bam,.dup_metrics,$(wildcard $(INPUTDIR)/*/*recal.bam))",
@@ -37,14 +37,14 @@ config_default = {
 
 config = update_config(config, config_default)
 
-config_default[VAR.BIO_NGS_QUALITYCONTROL_PICARD][VAR.OPTIONS] = config[VAR.BIO_NGS_QUALITYCONTROL_PICARD][VAR.COMMON_OPTIONS] 
+config_default[VAR.BIO_NGS_QC_PICARD][VAR.OPTIONS] = config[VAR.BIO_NGS_QC_PICARD][VAR.COMMON_OPTIONS] 
 
-config_default[VAR.BIO_NGS_QUALITYCONTROL_PICARD][VAR.CMD] = "java -Xmx" + config[VAR.BIO_NGS_QUALITYCONTROL_PICARD][VAR.JAVA_MEM] + " -Djava.io.tmpdir=" + config[VAR.BIO_NGS_QUALITYCONTROL_PICARD][VAR.JAVA_TMPDIR] + " -jar "
+config_default[VAR.BIO_NGS_QC_PICARD][VAR.CMD] = "java -Xmx" + config[VAR.BIO_NGS_QC_PICARD][VAR.JAVA_MEM] + " -Djava.io.tmpdir=" + config[VAR.BIO_NGS_QC_PICARD][VAR.JAVA_TMPDIR] + " -jar "
 
 config = update_config(config, config_default)
 
 # Use picard config to increase readibility
-picard_config = config[VAR.BIO_NGS_QUALITYCONTROL_PICARD]
+picard_config = config[VAR.BIO_NGS_QC_PICARD]
 
 rule picard_build_bam_index:
     """Picard: build bam index from bam file"""

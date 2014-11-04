@@ -1,5 +1,6 @@
 # -*- snakemake -*- 
 from snakemakelib.utils import update_config
+import snakemakelib.variables as VAR
 
 """
 Main settings for snakemakelib. Defines top-level configuration
@@ -7,7 +8,7 @@ settings for all rules.
 """
 
 config_default = {
-    'section' : None,
+    VAR.SECTION : None,
 }
 
 config = update_config(config, config_default)

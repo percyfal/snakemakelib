@@ -6,28 +6,34 @@ import snakemakelib.variables as VAR
 # Start by including the general snakefile
 include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
 
-BIO_NGS_ALIGN_BWA="bio.ngs.align.bwa"
-MEM = "mem"
-
 config_default = { 
     VAR.BIO_NGS_ALIGN_BWA : {
         VAR.CMD : "bwa",
         VAR.REF : config[VAR.BIO_NGS_SETTINGS][VAR.DB][VAR.REF],
         VAR.THREADS : config[VAR.BIO_NGS_SETTINGS][VAR.THREADS],
         VAR.OPTIONS : "-M"
+        VAR.MEM : {
+        },
     },
 }
-config_default[VAR.BIO_NGS_ALIGN_BWA][VAR.MEM] = {'options' : config_default[VAR.BIO_NGS_ALIGN_BWA][VAR.OPTIONS]}
 
 config = update_config(config, config_default)
 
+config_default[VAR.BIO_NGS_ALIGN_BWA][VAR.MEM][VAR.OPTIONS] = config[VAR.BIO_NGS_ALIGN_BWA][VAR.OPTIONS]
+
+config = update_config(config, config_default)
+
+bwa_cfg = config[VAR.BIO_NGS_ALIGN_BWA]
+ngs_cfg = config[VAR.BIO_NGS_SETTINGS]
+samtools_cfg = config[VAR.BIO_NGS_TOOLS_SAMTOOLS]
+
 rule bwa_mem:
     """Run bwa mem"""
-    params: options = config[VAR.BIO_NGS_ALIGN_BWA][VAR.MEM][VAR.OPTIONS],
-            cmd = config[VAR.BIO_NGS_ALIGN_BWA][VAR.CMD],
-            ref = config[VAR.BIO_NGS_ALIGN_BWA][VAR.REF]
-    input: "{prefix}" + config[VAR.BIO_NGS_SETTINGS][VAR.READ1_LABEL] + config[VAR.BIO_NGS_SETTINGS][VAR.FASTQ_SUFFIX],\
-    "{prefix}" + config[VAR.BIO_NGS_SETTINGS][VAR.READ2_LABEL] + config[VAR.BIO_NGS_SETTINGS][VAR.FASTQ_SUFFIX]
+    params: options = bwa_cfg[VAR.MEM][VAR.OPTIONS],
+            cmd = bwa_cfg[VAR.CMD],
+            ref = bwa_cfg[VAR.REF]
+    input: "{prefix}" + ngs_cfg[VAR.READ1_LABEL] + ngs_cfg[VAR.FASTQ_SUFFIX],\
+    "{prefix}" + ngs_cfg[VAR.READ2_LABEL] + ngs_cfg[VAR.FASTQ_SUFFIX]
     output: "{prefix}.bam"
-    threads: config[VAR.BIO_NGS_ALIGN_BWA][VAR.THREADS]
-    shell: "{params.cmd} mem -t {threads} {params.options} {params.ref} {input} | " + config[VAR.BIO_NGS_TOOLS_SAMTOOLS][VAR.CMD] + " view -Sb - > {output}"
+    threads: bwa_cfg[VAR.THREADS]
+    shell: "{params.cmd} mem -t {threads} {params.options} {params.ref} {input} | " + samtools_cfg[VAR.CMD] + " view -Sb - > {output}"

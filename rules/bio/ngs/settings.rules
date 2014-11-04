@@ -1,6 +1,7 @@
 # -*- snakemake -*-
 import os
 from snakemakelib.utils import update_config, sml_rules_path
+import snakemakelib.variables as VAR
 
 config_default = { 
     VAR.BIO_NGS_SETTINGS : {

@@ -1,21 +1,26 @@
-
 # -*- snakemake -*-
 import os
 from snakemakelib.utils import update_config, sml_rules_path
+import snakemakelib.variables as VAR
 
 # Start by including the general snakefile
-include: os.path.join(sml_rules_path(), 'base_settings.rules')
+include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
 
 config_default = { 
-	"angsd" : {
-		"ANGSD_CHR_LABEL" : "scaffold",
-		"ANGSD_PATH" : ".",
-		"GEM_MAPPABILITY_OPTIONS" : "-l 100 -T 7",
-		"ANGSD_CHROMOSOMES_EXTRA" : "chrM",
-		"ANGSD_OPTION_REF" : "$(REF)",
-		"ANGSD_POPULATIONS" : "",
-		"ANGSD_OPTION_NCHR" : "",
-		"ANGSD_DOMAFS_OPTIONS" : "-anc $(ANGSD_OPTION_ANC) -doMajorMinor $(ANGSD_OPTION_MAJORMINOR) -doMaf $(ANGSD_OPTION_MAF) -GL $(ANGSD_OPTION_GL) -nThreads $(ANGSD_OPTION_THREADS)",
+    VAR.BIO_NGS_POPGEN_ANGSD : {
+        VAR.ANGSD : {
+            VAR.ANGSD_CHR_LABEL : "scaffold",
+            VAR.HOME : ".",
+            VAR.CHR_EXTRA : "chrM",
+            VAR.REF : config[VAR.BIO_NGS_SETTINGS][VAR.DB][VAR.REF],
+            VAR.NCHR_OPTION : "",            
+            VAR.POPULATIONS : "",
+        }
+        VAR.GEM {
+            VAR.MAPPABILITY_OPTIONS : "-l 100 -T 7",
+        }
+
+        "ANGSD_DOMAFS_OPTIONS" : 
 		"ANGSD_EMOPTIM" : "$(ANGSD_PATH)/misc/emOptim",
 		"ANGSD_EMOPTIM2_OPTIONS" : "-maxIter $(ANGSD_OPTION_MAXITER) -P $(ANGSD_OPTION_THREADS)",
 		"ANGSD_OPTION_MAF" : "10",
@@ -56,6 +61,10 @@ config_default = {
 		},
 	},
 }
+
+
+
+DOMAFS_OPTIONS:"-anc $(ANGSD_OPTION_ANC) -doMajorMinor $(ANGSD_OPTION_MAJORMINOR) -doMaf $(ANGSD_OPTION_MAF) -GL $(ANGSD_OPTION_GL) -nThreads $(ANGSD_OPTION_THREADS)",
 
 config = update_config(config, config_default)
 

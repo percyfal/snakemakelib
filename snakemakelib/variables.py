@@ -53,9 +53,9 @@ PLINK = "plink"
 # bio.ngs
 ##################################################
 
-##################################################
+##############################
 # bio.ngs.settings
-##################################################
+##############################
 BIO_NGS_SETTINGS = "bio.ngs.settings"
 ANNOTATION = "annotation"
 ANNOT_LABEL = "annot_label"
@@ -115,6 +115,31 @@ BOWTIE2 = "bowtie2"
 # bio.ngs.methylseq.bismark
 ##################################################
 BIO_NGS_METHYLSEQ_BISMARK = "bio.ngs.methylseq.bismark"
+
+########################################
+# bio.ngs.platform
+########################################
+
+##############################
+# bio.ngs.platform.illumina
+##############################
+BIO_NGS_PLATFORM_ILLUMINA = "bio.ngs.platform.illumina"
+
+##################################################
+# bio.ngs.popgen
+##################################################
+
+##################################################
+# bio.ngs.popgen.angsd
+##################################################
+BIO_NGS_POPGEN_ANGSD = "bio.ngs.popgen.angsd"
+ANGSD = "angsd"
+CHR_LABEL = "chr_label"
+CHR_EXTRA = "chr_extra"
+GEM = "gem"
+MAPPABILITY_OPTIONS = "mappability_options"
+NCHR_OPTION = "nchr_option"
+POPULATIONS = "populations"
 
 ##################################################
 # bio.ngs.qc.picard

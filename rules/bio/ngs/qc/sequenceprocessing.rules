@@ -30,6 +30,12 @@ config_default = {
             VAR.CMD : "fastqc",
             VAR.OPTIONS : "-q",
         },
+        VAR.TRIM_GALORE : {
+            VAR.CMD : "trim_galore",
+            VAR.OPTIONS : "--paired --trim1 --phred33 --fastqc",
+            VAR.READ1_SUFFIX : "_val_1.fq.gz",
+            VAR.READ2_SUFFIX : "_val_2.fq.gz",
+        },
     },
 }
 
@@ -109,4 +115,18 @@ rule fastqc_main:
     input: "{prefix}" + ngs_cfg[VAR.FASTQ_SUFFIX]
     output: "{prefix}_fastqc.html"
     shell: "{params.cmd} {params.options} {input}"
+
+##################################################
+# trim_galore
+##################################################
+rule trim_galore_main:
+    """Sequenceprocessing: run trim_galore on a fastq file"""
+    params: cmd = sp_cfg[VAR.TRIM_GALORE][VAR.CMD],
+            options = " ".join([sp_cfg[VAR.TRIM_GALORE][VAR.OPTIONS],"--gzip"])
+    input: "{path}" + os.sep + "{prefix}" + ngs_cfg[VAR.READ1_LABEL] + ngs_cfg[VAR.FASTQ_SUFFIX],\
+    "{path}" + os.sep + "{prefix}" + ngs_cfg[VAR.READ2_LABEL] + ngs_cfg[VAR.FASTQ_SUFFIX]
+    output: "{path}" + os.sep + "{prefix}" + ngs_cfg[VAR.READ1_LABEL] + sp_cfg[VAR.TRIM_GALORE][VAR.READ1_SUFFIX],\
+            "{path}" + os.sep + "{prefix}" + ngs_cfg[VAR.READ2_LABEL] + sp_cfg[VAR.TRIM_GALORE][VAR.READ2_SUFFIX]
+    shell: "{params.cmd} {params.options} {input} -o {wildcards.path}"
+ 
 

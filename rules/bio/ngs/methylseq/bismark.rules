@@ -27,12 +27,11 @@ config = update_config(config, config_default)
 cfg = config[VAR.BIO_NGS_METHYLSEQ_BISMARK]
 
 rule bismark_main:
+    """bismark: Run bismark methylation analysis"""
     params: options = cfg[VAR.MAIN][VAR.OPTIONS],
             cmd = cfg[VAR.CMD],
             ref = cfg[VAR.REF]
-    input: "{prefix}" + config[VAR.BIO_NGS_SETTINGS][VAR.READ1_LABEL] + config[VAR.BIO_NGS_SETTINGS][VAR.FASTQ_SUFFIX],\
-    "{prefix}" + config[VAR.BIO_NGS_SETTINGS][VAR.READ2_LABEL] + config[VAR.BIO_NGS_SETTINGS][VAR.FASTQ_SUFFIX]
-    output: "{prefix}.bismark"
-    shell: "{params.cmd} {params.options} {params.ref} -1 {input[0]} -2 {input[1]}"
-    
-
+    input: "{path}" + os.sep + "{prefix}" + config[VAR.BIO_NGS_SETTINGS][VAR.READ1_LABEL] + config[VAR.BIO_NGS_SETTINGS][VAR.FASTQ_SUFFIX],\
+    "{path}" + os.sep + "{prefix}" + config[VAR.BIO_NGS_SETTINGS][VAR.READ2_LABEL] + config[VAR.BIO_NGS_SETTINGS][VAR.FASTQ_SUFFIX]
+    output: "{path}" + os.sep + "{prefix}.bismark"
+    shell: "{params.cmd} {params.options} {params.ref} -1 {input[0]} -2 {input[1]} -o {wildcards.path}"

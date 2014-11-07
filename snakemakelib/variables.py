@@ -82,6 +82,8 @@ MAIN = "main"
 OPTIONS = "options"
 READ1_LABEL = "read1_label"
 READ2_LABEL = "read2_label"
+READ1_SUFFIX = "read1_suffix"
+READ2_SUFFIX = "read2_suffix"
 REF = "ref"
 RUN_ID_RE = "run_id_re"
 SAMPLES = "samples"
@@ -182,6 +184,7 @@ TRIMMOMATIC = "trimmomatic"
 RESYNCMATES = "resyncmates"
 PROCESSING_OPTIONS = "processing_options"
 FASTQC = "fastqc"
+TRIM_GALORE = "trim_galore"
 
 ##################################################
 # bio.ngs.tools.gatk

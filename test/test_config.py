@@ -3,86 +3,80 @@ import os
 import sys 
 import unittest
 import logging
-from snakemakelib.config import sml_config
-from collections import OrderedDict, namedtuple
+from nose.tools import raises
+from snakemakelib.config import sml_config, BaseConfig
+from snakemake.logging import logger
 
 logging.basicConfig(level=logging.DEBUG)
-
-config = dict()
-
-class BaseConfig(dict):
-    _sections = []
-    def __init__(self, *args, **kwargs):
-        self._sections = [kk for k in args for kk in list(k)] + list(kwargs)
-        self.update(*args, **kwargs)
-
-    def __setitem__(self, key, val):
-        if not key in self._sections:
-            raise KeyError("key '" + key + "' not found in configuration dictionary")
-        dict.__setitem__(self, key, val)
-
-d = {'test':1, 't2': 2}
-b = BaseConfig(d, a=2)
-print (b)
-#b['23'] = "test"
-#print (b)
-
-# print (b._sections)
-# print (dir(b._sections))
-# print (type(b._sections))
-# print ('test' in b._sections)
-# for k in b._sections:
-#     print (k)
 
 def fun1():
     return "fun1"
 
-def fun2():
-    return "fun2"
-
-def fun3():
-    return " ".join(["-R", str(cfg['bio.ngs.settings']['db']['ref'])])
-
-c = BaseConfig({'bio.ngs.settings' : 
-                BaseConfig({'fastq_suffix':None,
-                            'flowcells': None,
-                            'flowcellruns' : None,
-                            'annotation': BaseConfig({'annot_label':None, 'transcript_annot_gtf':None}),
-                            'db' : BaseConfig({'dbsnp':None, 'ref':None})})
-                })
-c['bio.ngs.settings']['fastq_suffix'] = ".fastq.gz"
-c['bio.ngs.settings']['db']['ref'] = "hg19"
-d = BaseConfig({'bio.ngs.align.bwa' : 
-                BaseConfig({'cmd':'bwa',
-                            'ref': None,
-                            'threads' : None,
-                            'options': "-M",
-                            'mem' : fun1(),
-                        })
-                })
-global cfg
-cfg = BaseConfig({'bio.ngs.settings':c['bio.ngs.settings'],
-                         'bio.ngs.align.bwa':d['bio.ngs.align.bwa']})
 
 
-class TestBasicConfig(unittest.TestCase):
-    def test_print_config(self):
-        """Test printing config"""
-        print ("Configuration", config)
+class TestBaseConfig(unittest.TestCase):
+    def setUp(self):
+        self.cfg_foo = BaseConfig({'foo':'bar'})
+        self.cfg_bar = BaseConfig({'bar':'foo', 'fun':fun1()})
 
+    def test_create_cfg_from_dict(self):
+        """Test create configuration from dictionary"""
+        cfg = BaseConfig({'foo':'bar'})
+        self.assertIsInstance(cfg, BaseConfig)
+        self.assertDictEqual(cfg, {'foo':'bar'})
+        self.assertListEqual(cfg.sections, ['foo'])
+
+    def test_create_cfg_from_nested_dict(self):
+        """Test create configuration from nested dictionary"""
+        cfg = BaseConfig({'foo': BaseConfig({'bar':'foobar'})})
+        self.assertIsInstance(cfg, BaseConfig)
+        self.assertIsInstance(cfg['foo'], BaseConfig)
+        self.assertDictEqual(cfg['foo'], {'bar':'foobar'})
+        self.assertListEqual(cfg.sections, ['foo'])
+        self.assertListEqual(cfg['foo'].sections, ['bar'])
+
+    def test_create_cfg_from_args(self):
+        """Test create configuration from *args"""
+        cfg = BaseConfig(foo="bar", bar=BaseConfig(foo="bar", bar="foo"))
+        self.assertSetEqual (set(cfg.sections), set(['bar', 'foo']))
+        self.assertIsInstance(cfg['bar'], BaseConfig)
+
+    def test_create_cfg_from_args_kwargs(self):
+        """Test create configuration from *args and **kwargs"""
+        cfg = BaseConfig(foo="bar", bar=BaseConfig(foo="bar", bar="foo"), **{'foobar':'bar', 'barfoo':BaseConfig({'foo':'bar'})})
+        self.assertSetEqual (set(cfg.sections), set(['bar', 'foo', 'foobar', 'barfoo']))
+        self.assertIsInstance(cfg['bar'], BaseConfig)
+        self.assertIsInstance(cfg['barfoo'], BaseConfig)
+
+    @raises(TypeError)
+    def test_create_cfg_from_nested_dict_with_subsection_dict(self):
+        """Test create configuration from dictionary in which a subsection is a dict. Should raise TypeError error."""
+        cfg = BaseConfig({'foo':BaseConfig({'bar':{'foo':'bar'}})})
+
+    @raises(TypeError)
+    def test_add_section_dict(self):
+        """Test adding a section to config as dict"""
+        self.cfg_foo.add_section({'foobar':'bar'})
+
+    def test_add_section_str(self):
+        """Test adding a section to config as str"""
+        self.cfg_foo.add_section('foobar')
+
+    def test_update_config(self):
+        """Test updating configuration with another configuration objet."""
+        # The question is whether to override dict.update or have a
+        # separate function?
+        pass
+
+
+    @raises(TypeError)
+    def test_setting_config_section_to_dict(self):
+        """Test setting a configuration section to a dict"""
+        cfg = BaseConfig({'foo':'bar'})
+        cfg['foo'] = {'foo':'bar'}
+
+class TestGlobalConfig(unittest.TestCase):
     def test_sml_config(self):
         """Test printing global sml config"""
         print ("Global configuration " , sml_config)
 
-    def test_config(self):
-        print (c)
-
-
-    def test_base_config(self):
-
-        print (cfg)
-        print (cfg['bio.ngs.settings'])
-        print (cfg['bio.ngs.align.bwa'])
-        print (cfg['bio.ngs.align.bwa']['mem'])
-        cfg['bio.ngs.align.bwa']['mem'] = fun3()
-        print (cfg['bio.ngs.align.bwa']['mem'])

@@ -22,30 +22,40 @@ def update_config(config, d):
                     config[section][subsection] = config[section].get(subsection, option)
     return config
 
-def update_sml_config(config, d):
-    """Update snakemakelib configuration object
+
+
+def update_sml_config(config, default):
+    """Update snakemakelib configuration object. The default object is
+defined in the preamble of rules files and contains sensitive default
+settings. 
+
+    While traversing the config dictionary, make sure that the configuration settings correspond to those in the default dictionary, i.e. that if a section in default points to another BaseConfig object, then the config object should also point to a BaseConfig object.
 
     :param config: configuration to update
-    :param d: config with new values
+    :param default: config with default values
 
     :return: updated configuration object
     """
-    for (section, value) in d.items():
-        config[section] = config.get(section, d[section])
-        if (not isinstance(d[section], dict)):
-            # config key has value - can be modified via commandline
-            config[section] = config.get(section, value)
-        else:
-            for (subsection, option) in d[section].items():
-                if (isinstance(option, dict)):
-                    config[section][subsection] = config[section].get(subsection, {})
-                    for (param, value) in option.items():
-                        config[section][subsection][param] = config[section][subsection].get(param, value)
-                else:
-                    config[section][subsection] = config[section].get(subsection, option)
-    return config
-    
+    if config is None:
+        return default
+    if not type(config) == type(default):
+        raise TypeError("config {config}, default {default}; configuration entry is not of type {type}".format(config=config, default=default, type=type(default)))
+    if isinstance(default, BaseConfig):
+        if not set(list(config)).issuperset(set(list(default))):
+            # TODO: make this a warning
+            logger.info("Unique keys in config: {}".format(list(set(list(config)).difference(set(list(default))))))
 
+    # Loop sections
+    for (section, value) in default.items():
+        if not config.has_section(section):
+            config.add_section(section)
+        if (not isinstance(default[section], BaseConfig)):
+            # if config has no value set to default
+            if config.get(section) is None:
+                config[section] = default[section]
+        else:
+            config[section] = update_sml_config(config[section], default[section])
+    return config
 
 def sml_path():
     return os.path.dirname(__file__)
@@ -64,8 +74,6 @@ sml_config = {'section1': 'value',
                            'subsection2':'value2'}}
 
 class BaseConfig(dict):
-    _sections = []
-
     def _inspect_sections(self):
         """Walk through configuration object to make sure subsections are BaseConfig classes, not dictionaries"""
         for k,v in self.items():
@@ -76,10 +84,9 @@ class BaseConfig(dict):
                 v._inspect_sections()
 
     def __init__(self, *args, **kwargs):
-        self._sections = [kk for k in args for kk in list(k)] + list(kwargs)
+        dict.__init__(self)
+        self._sections = []
         self.update(*args, **kwargs)
-        # Make sure all dict subsections are BaseConfig objects
-        self._inspect_sections()
 
     def __setitem__(self, key, val):
         if not key in self._sections:
@@ -87,6 +94,12 @@ class BaseConfig(dict):
         if isinstance(val, dict) and not isinstance(val, BaseConfig):
             raise TypeError("dictionary {val} must be instance of <BaseConfig> class".format(val=val) )
         dict.__setitem__(self, key, val)
+
+    def update(self, *args, **kwargs):
+        self._sections += [kk for k in args for kk in list(k)] + list(kwargs)
+        dict.update(self, *args, **kwargs)
+        # Make sure all dict subsections are BaseConfig objects
+        self._inspect_sections()
 
     def add_section(self, section):
         """Add new section to configuration object."""
@@ -97,6 +110,10 @@ class BaseConfig(dict):
             return
         self._sections.append(section)
         self[section] = None
+
+    def has_section(self, section):
+        """Check if section is already defined"""
+        return section in self.sections
 
     @property
     def sections(self):

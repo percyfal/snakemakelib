@@ -1,6 +1,6 @@
 # -*- snakemake -*- 
 import os
-from snakemakelib.utils import update_config, sml_rules_path
+from snakemakelib.config import sml_rules_path, get_sml_config
 from snakemake.io import Wildcards, Namedlist
 
 include: os.path.join(sml_rules_path(), 'settings.rules')
@@ -13,7 +13,7 @@ Utility rules for use with snakemakelib.
 rule conf:
     """Print global configuration settings for loaded rules"""
     run:
-      d = config
+      d = get_sml_config()
       d = {config.get("section") : d[config.get("section")]} if config.get("section") in d.keys() else d
       s = "Top-level configuration variables"
       logger.info("\n" + s)
@@ -32,16 +32,17 @@ rule conf:
 rule conf_sections:
     """Print configuration sections. TODO: insert docstring from each rule file without running an import statement"""
     run:
+      d = get_sml_config()
       s = "Top-level configuration variables"
       logger.info(s)
       logger.info("=" * len(s))
-      for (k,v) in sorted(config.items()):
+      for (k,v) in sorted(d.items()):
           if (not isinstance(v, dict)):
               logger.info(" " + k)
       s = "Configuration sections"
       logger.info(s)
       logger.info("=" * len(s))
-      for (k,v) in sorted(config.items(), key=lambda k: (len(k[0].split(".")), k)):
+      for (k,v) in sorted(d.items(), key=lambda k: (len(k[0].split(".")), k)):
           if (isinstance(v, dict)):
               logger.info(" " + k)
 

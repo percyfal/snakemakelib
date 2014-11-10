@@ -1,36 +1,37 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.utils import update_config, sml_rules_path
+from snakemakelib.config import update_sml_config, sml_rules_path, BaseConfig, get_sml_config
 
 # Start by including the general snakefile
 include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
 
-SECTION="bio.ngs.tools.bedtools"
+sml_config = get_sml_config()
 
-COVERAGEBED="coverageBed"
-BFILE="bfile"
+config_default = BaseConfig({ 
+    'bio.ngs.tools.bedtools' : BaseConfig({
+        'home' : ".",
+        'bfile' : "",
+        'options' : "",
+        'coveragebed' : BaseConfig({
+            'cmd' : 'coverageBed',
+        }),
+    }),
+})
 
-config_default = { 
-    SECTION : {
-        HOME : ".",
-        BFILE : "",
-        OPTIONS : "",
-        COVERAGEBED : {
-            CMD : COVERAGEBED,
-        }
-    },
-}
+update_sml_config(config_default)
 
-config = update_config(config, config_default)
+sml_config = get_sml_config()
+
+bedtools_config = sml_config['bio.ngs.tools.bedtools']
 
 rule bedtools_bam2coverage:
     """Calculate coverage for a bam file.
 
     Input: {prefix}.bam; output: {prefix}.coverage
     """
-    params: cmd=os.path.join(config[SECTION][HOME], config[SECTION][COVERAGEBED][CMD]),
-            options=config[SECTION][OPTIONS],
-            bfile = config[SECTION][BFILE]
+    params: cmd=os.path.join(bedtools_config['home'], bedtools_config['coveragebed']['cmd']),
+            options=bedtools_config['options'],
+            bfile = bedtools_config['bfile']
     input: "{prefix}.bam"
     output: "{prefix}.coverage"
     shell: "{params.cmd} {params.options} -abam {input} -b {params.bfile} > {output}"

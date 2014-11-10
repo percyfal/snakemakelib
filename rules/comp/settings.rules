@@ -1,7 +1,6 @@
 # -*- snakemake -*- 
 import os
-from snakemakelib.utils import update_config, sml_rules_path
-import snakemakelib.variables as VAR
+from snakemakelib.config import update_sml_config, sml_rules_path, BaseConfig, get_sml_config
 
 """
 Main settings for snakemakelib.comp. Defines top-level configuration
@@ -9,15 +8,15 @@ settings for comp rules.
 """
 
 # Most programs are usually found in $PATH
-config_default = {
-    VAR.COMP_SETTINGS : {
-        VAR.AWK : "awk",
-        VAR.CAT : "cat",
-        VAR.GREP : "grep",
-        VAR.GZIP : "gzip",
-        VAR.HEAD : "head",
-        VAR.ZCAT : "zcat",
-    },
-}
+config_default = BaseConfig({
+    'comp.settings' : BaseConfig({
+        'awk' : "awk",
+        'cat' : "cat",
+        'grep' : "grep",
+        'gzip' : "gzip",
+        'head' : "head",
+        'zcat' : "zcat",
+    }),
+})
 
-config = update_config(config, config_default)
+update_sml_config(config_default)

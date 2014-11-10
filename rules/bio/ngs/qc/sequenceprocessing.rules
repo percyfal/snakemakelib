@@ -1,108 +1,117 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.utils import update_config, sml_rules_path
-import snakemakelib.variables as VAR
+from snakemakelib.config import update_sml_config, sml_rules_path, BaseConfig, get_sml_config
 
 # Start by including the general snakefile
 include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
 
-config_default = { 
-    VAR.BIO_NGS_QC_SEQUENCEPROCESSING : {
-        VAR.CUTADAPT : {
-            VAR.CMD : "cutadapt",
-            VAR.THREEPRIME: "AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC",
-            VAR.FIVEPRIME : "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT",
-            VAR.OPTIONS : "",
-        },
-        VAR.TRIMMOMATIC : {
-            VAR.HOME : ".",
-            VAR.OPTIONS : "-phred33",
-            VAR.JAVA_MEM : config[VAR.BIO_NGS_SETTINGS][VAR.JAVA][VAR.JAVA_MEM],
-            VAR.JAVA_TMPDIR : config[VAR.BIO_NGS_SETTINGS][VAR.JAVA][VAR.JAVA_TMPDIR],
-            VAR.PROCESSING_OPTIONS : "LEADING:15 TRAILING:15 MINLEN:36",
-        },
-        VAR.RESYNCMATES : {
-            VAR.HOME : ".",
-            VAR.CMD : "resyncMates.pl",
-            VAR.OPTIONS : "",
-        },
-        VAR.FASTQC : {
-            VAR.CMD : "fastqc",
-            VAR.OPTIONS : "-q",
-        },
-        VAR.TRIM_GALORE : {
-            VAR.CMD : "trim_galore",
-            VAR.OPTIONS : "--paired --trim1 --phred33 --fastqc",
-            VAR.READ1_SUFFIX : "_val_1.fq.gz",
-            VAR.READ2_SUFFIX : "_val_2.fq.gz",
-        },
-    },
-}
+sml_config = get_sml_config()
 
-config = update_config(config, config_default)
+TRIMMOMATIC_JAR_PROGRAM = "trimmomatic.jar"
 
-config_default[VAR.BIO_NGS_QC_SEQUENCEPROCESSING][VAR.TRIMMOMATIC][VAR.JAR] = os.path.join(config[VAR.BIO_NGS_QC_SEQUENCEPROCESSING][VAR.TRIMMOMATIC][VAR.HOME], VAR.TRIMMOMATIC_JAR_PROGRAM)
+config_default = BaseConfig({ 
+    'bio.ngs.qc.sequenceprocessing' : BaseConfig({
+        'cutadapt' : BaseConfig({
+            'cmd' : "cutadapt",
+            'threeprime': "AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC",
+            'fiveprime' : "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT",
+            'options' : "",
+        }),
+        'trimmomatic' : BaseConfig({
+            'home' : ".",
+            'options' : "-phred33",
+            'java_mem' : sml_config['bio.ngs.settings']['java']['java_mem'],
+            'java_tmpdir' : sml_config['bio.ngs.settings']['java']['java_tmpdir'],
+            'processing_options' : "LEADING:15 TRAILING:15 MINLEN:36",
+        }),
+        'resyncmates' : BaseConfig({
+            'home' : ".",
+            'cmd' : "resyncmates.pl",
+            'options' : "",
+        }),
+        'fastqc' : BaseConfig({
+            'cmd' : "fastqc",
+            'options' : "-q",
+        }),
+        'trim_galore' : BaseConfig({
+            'cmd' : "trim_galore",
+            'options' : "--paired --trim1 --phred33 --fastqc",
+            'read1_suffix' : "_val_1.fq.gz",
+            'read2_suffix' : "_val_2.fq.gz",
+        }),
+    }),
+})
 
-config = update_config(config, config_default)
+update_sml_config(config_default)
 
-config_default[VAR.BIO_NGS_QC_SEQUENCEPROCESSING][VAR.TRIMMOMATIC][VAR.CMD]  = "java -Xmx" + config[VAR.BIO_NGS_QC_SEQUENCEPROCESSING][VAR.TRIMMOMATIC][VAR.JAVA_MEM] + " -Djava.io.tmpdir=" + config[VAR.BIO_NGS_QC_SEQUENCEPROCESSING][VAR.TRIMMOMATIC][VAR.JAVA_TMPDIR] +  " -jar " + config[VAR.BIO_NGS_QC_SEQUENCEPROCESSING][VAR.TRIMMOMATIC][VAR.JAR]
+config_default['bio.ngs.qc.sequenceprocessing']['trimmomatic'].add_section('jar')
+config_default['bio.ngs.qc.sequenceprocessing']['trimmomatic']['jar'] = os.path.join(sml_config['bio.ngs.qc.sequenceprocessing']['trimmomatic']['home'], TRIMMOMATIC_JAR_PROGRAM)
 
-config = update_config(config, config_default)
+update_sml_config(config_default)
 
-sp_cfg = config[VAR.BIO_NGS_QC_SEQUENCEPROCESSING]
-ngs_cfg = config[VAR.BIO_NGS_SETTINGS]
+sml_config = get_sml_config()
+
+config_default['bio.ngs.qc.sequenceprocessing']['trimmomatic'].add_section('cmd')
+config_default['bio.ngs.qc.sequenceprocessing']['trimmomatic']['cmd']  = "java -Xmx" + sml_config['bio.ngs.qc.sequenceprocessing']['trimmomatic']['java_mem'] + " -Djava.io.tmpdir=" + sml_config['bio.ngs.qc.sequenceprocessing']['trimmomatic']['java_tmpdir'] +  " -jar " + sml_config['bio.ngs.qc.sequenceprocessing']['trimmomatic']['jar']
+
+update_sml_config(config_default)
+
+sml_config = get_sml_config()
+
+sp_cfg = sml_config['bio.ngs.qc.sequenceprocessing']
+ngs_cfg = sml_config['bio.ngs.settings']
 
 rule cutadapt_cut_threeprime:
     """Cutadapt: cut threeprime adaptor"""
-    params: cmd = sp_cfg[VAR.CUTADAPT][VAR.CMD],
-            options = sp_cfg[VAR.CUTADAPT][VAR.OPTIONS],
-            threeprime = sp_cfg[VAR.CUTADAPT][VAR.THREEPRIME]
-    input: "{prefix}" + ngs_cfg[VAR.READ1_LABEL] + ngs_cfg[VAR.FASTQ_SUFFIX]
-    output: "{prefix}" + ngs_cfg[VAR.READ1_LABEL] + ".trimmed" + ngs_cfg[VAR.FASTQ_SUFFIX]
+    params: cmd = sp_cfg['cutadapt']['cmd'],
+            options = sp_cfg['cutadapt']['options'],
+            threeprime = sp_cfg['cutadapt']['threeprime']
+    input: "{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']
+    output: "{prefix}" + ngs_cfg['read1_label'] + ".trimmed" + ngs_cfg['fastq_suffix']
     shell: "{params.cmd} {params.options} -a {params.threeprime} {input} -o {output} > {wildcards.prefix}.cutadapt_metrics"
 
 rule cutadapt_cut_fiveprime:
     """Cutadapt: cut fiveprime adaptor"""
-    params: cmd = sp_cfg[VAR.CUTADAPT][VAR.CMD],
-            options = sp_cfg[VAR.CUTADAPT][VAR.OPTIONS],
-            fiveprime = sp_cfg[VAR.CUTADAPT][VAR.FIVEPRIME]
-    input: "{prefix}" + ngs_cfg[VAR.READ1_LABEL] + ngs_cfg[VAR.FASTQ_SUFFIX]
-    output: "{prefix}" + ngs_cfg[VAR.READ1_LABEL] + ".trimmed" + ngs_cfg[VAR.FASTQ_SUFFIX]
+    params: cmd = sp_cfg['cutadapt']['cmd'],
+            options = sp_cfg['cutadapt']['options'],
+            fiveprime = sp_cfg['cutadapt']['fiveprime']
+    input: "{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']
+    output: "{prefix}" + ngs_cfg['read1_label'] + ".trimmed" + ngs_cfg['fastq_suffix']
     shell: "{params.cmd} {params.options} -a {params.fiveprime} {input} -o {output} > {wildcards.prefix}.cutadapt_metrics"
 
 # rule rule_3:
-# 	input: " {prefix}$(READ1_LABEL).trimmed.fastq.gz {prefix}$(READ2_LABEL).trimmed.fastq.gz"
-# 	output: "{prefix}$(READ1_LABEL).trimmed.sync.fastq.gz"
-# 	shell: "$(RESYNCMATES) $(RESYNCMATES_OPTIONS) -i $< -j $*$(READ2_LABEL).trimmed.fastq.gz -o $@.tmp.gz -p $*$(READ2_LABEL).trimmed.sync.fastq.gz && mv $@.tmp.gz $@"
+# 	input: " {prefix}$('read1_label').trimmed.fastq.gz {prefix}$('read2_label').trimmed.fastq.gz"
+# 	output: "{prefix}$('read1_label').trimmed.sync.fastq.gz"
+# 	shell: "$(RESYNCMATES) $(RESYNCMATES_options) -i $< -j $*$('read2_label').trimmed.fastq.gz -o $@.tmp.gz -p $*$('read2_label').trimmed.sync.fastq.gz && mv $@.tmp.gz $@"
 
 # rule rule_4:
-# 	input: " {prefix}$(READ1_LABEL).trimmed.sync.fastq.gz"
-# 	output: "{prefix}$(READ2_LABEL).trimmed.sync.fastq.gz"
+# 	input: " {prefix}$('read1_label').trimmed.sync.fastq.gz"
+# 	output: "{prefix}$('read2_label').trimmed.sync.fastq.gz"
 # 	shell: "@echo $@ should be done in rule 1"
 
 # rule rule_5:
-# 	input: " {prefix}$(READ1_LABEL).fq.gz {prefix}$(READ2_LABEL).fq.gz"
+# 	input: " {prefix}$('read1_label').fq.gz {prefix}$('read2_label').fq.gz"
 # 	output: "{prefix}.trimmomatic.PE"
-# 	shell: "$(TRIMMOMATIC_COMMAND) PE $(TRIMMOMATIC_OPTIONS) $^ $*$(READ1_LABEL).P.qtrim.fq.tmp.gz $*$(READ1_LABEL).U.qtrim.fq.tmp.gz $*$(READ2_LABEL).P.qtrim.fq.tmp.gz $*$(READ2_LABEL).U.qtrim.fq.tmp.gz $(TRIMMOMATIC_PROCESSING_OPTIONS) &> $@.tmp && mv $@.tmp $@ && mv $*$(READ1_LABEL).P.qtrim.fq.tmp.gz $*$(READ1_LABEL).P.qtrim.fq.gz && mv $*$(READ1_LABEL).U.qtrim.fq.tmp.gz $*$(READ1_LABEL).U.qtrim.fq.gz && mv $*$(READ2_LABEL).P.qtrim.fq.tmp.gz $*$(READ2_LABEL).P.qtrim.fq.gz && mv $*$(READ2_LABEL).U.qtrim.fq.tmp.gz $*$(READ2_LABEL).U.qtrim.fq.gz"
+# 	shell: "$(TRIMMOMATIC_COMMAND) PE $(TRIMMOMATIC_options) $^ $*$('read1_label').P.qtrim.fq.tmp.gz $*$('read1_label').U.qtrim.fq.tmp.gz $*$('read2_label').P.qtrim.fq.tmp.gz $*$('read2_label').U.qtrim.fq.tmp.gz $(TRIMMOMATIC_PROCESSING_options) &> $@.tmp && mv $@.tmp $@ && mv $*$('read1_label').P.qtrim.fq.tmp.gz $*$('read1_label').P.qtrim.fq.gz && mv $*$('read1_label').U.qtrim.fq.tmp.gz $*$('read1_label').U.qtrim.fq.gz && mv $*$('read2_label').P.qtrim.fq.tmp.gz $*$('read2_label').P.qtrim.fq.gz && mv $*$('read2_label').U.qtrim.fq.tmp.gz $*$('read2_label').U.qtrim.fq.gz"
 
 # rule rule_6:
 # 	input: " {prefix}.trimmomatic.PE"
-# 	output: "{prefix}$(READ1_LABEL).P.qtrim.fq.gz"
+# 	output: "{prefix}$('read1_label').P.qtrim.fq.gz"
 # 	shell: "echo Running rule $*.trimmomatic.PE to generate $@"
 
 # rule rule_7:
 # 	input: " {prefix}.trimmomatic.PE"
-# 	output: "{prefix}$(READ1_LABEL).U.qtrim.fq.gz"
+# 	output: "{prefix}$('read1_label').U.qtrim.fq.gz"
 # 	shell: "echo Running rule $*.trimmomatic.PE to generate $@"
 
 # rule rule_8:
 # 	input: " {prefix}.trimmomatic.PE"
-# 	output: "{prefix}$(READ2_LABEL).P.qtrim.fq.gz"
+# 	output: "{prefix}$('read2_label').P.qtrim.fq.gz"
 # 	shell: "echo Running rule $*.trimmomatic.PE to generate $@"
 
 # rule rule_9:
 # 	input: " {prefix}.trimmomatic.PE"
-# 	output: "{prefix}$(READ2_LABEL).U.qtrim.fq.gz"
+# 	output: "{prefix}$('read2_label').U.qtrim.fq.gz"
 # 	shell: "echo Running rule $*.trimmomatic.PE to generate $@"
 
 ##################################################
@@ -110,9 +119,9 @@ rule cutadapt_cut_fiveprime:
 ##################################################
 rule fastqc_main:
     """Sequenceprocessing: run fastqc on a fastq file"""
-    params: cmd = sp_cfg[VAR.FASTQC][VAR.CMD],
-            options = sp_cfg[VAR.FASTQC][VAR.OPTIONS],
-    input: "{prefix}" + ngs_cfg[VAR.FASTQ_SUFFIX]
+    params: cmd = sp_cfg['fastqc']['cmd'],
+            options = sp_cfg['fastqc']['options'],
+    input: "{prefix}" + ngs_cfg['fastq_suffix']
     output: "{prefix}_fastqc.html"
     shell: "{params.cmd} {params.options} {input}"
 
@@ -121,12 +130,12 @@ rule fastqc_main:
 ##################################################
 rule trim_galore_main:
     """Sequenceprocessing: run trim_galore on a fastq file"""
-    params: cmd = sp_cfg[VAR.TRIM_GALORE][VAR.CMD],
-            options = " ".join([sp_cfg[VAR.TRIM_GALORE][VAR.OPTIONS],"--gzip"])
-    input: "{path}" + os.sep + "{prefix}" + ngs_cfg[VAR.READ1_LABEL] + ngs_cfg[VAR.FASTQ_SUFFIX],\
-    "{path}" + os.sep + "{prefix}" + ngs_cfg[VAR.READ2_LABEL] + ngs_cfg[VAR.FASTQ_SUFFIX]
-    output: "{path}" + os.sep + "{prefix}" + ngs_cfg[VAR.READ1_LABEL] + sp_cfg[VAR.TRIM_GALORE][VAR.READ1_SUFFIX],\
-            "{path}" + os.sep + "{prefix}" + ngs_cfg[VAR.READ2_LABEL] + sp_cfg[VAR.TRIM_GALORE][VAR.READ2_SUFFIX]
+    params: cmd = sp_cfg['trim_galore']['cmd'],
+            options = " ".join([sp_cfg['trim_galore']['options'],"--gzip"])
+    input: "{path}" + os.sep + "{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],\
+    "{path}" + os.sep + "{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['fastq_suffix']
+    output: "{path}" + os.sep + "{prefix}" + ngs_cfg['read1_label'] + sp_cfg['trim_galore']['read1_suffix'],\
+            "{path}" + os.sep + "{prefix}" + ngs_cfg['read2_label'] + sp_cfg['trim_galore']['read2_suffix']
     shell: "{params.cmd} {params.options} {input} -o {wildcards.path}"
  
 

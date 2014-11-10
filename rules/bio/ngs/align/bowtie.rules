@@ -1,29 +1,30 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.utils import update_config, sml_rules_path
-import snakemakelib.variables as VAR
+from snakemakelib.config import update_sml_config, sml_rules_path, BaseConfig, get_sml_config
 
 # Start by including the general snakefile
 include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
 
-config_default = {
-    VAR.BIO_NGS_ALIGN_BOWTIE : {
-        BOWTIE : {
-            VAR.REF : config[VAR.BIO_NGS_SETTINGS][VAR.REF],
-            VAR.CMD : "bowtie",
-            VAR.OPTIONS : "",
-            VAR.THREADS : config[VAR.BIO_NGS_SETTINGS][VAR.THREADS],
-        },
-        BOWTIE2 : {
-            VAR.REF : config[VAR.BIO_NGS_SETTINGS][VAR.REF],
-            VAR.CMD : "bowtie2",
-            VAR.OPTIONS : "",
-            VAR.THREADS : config[VAR.BIO_NGS_SETTINGS][VAR.THREADS],
-        },
-    }   
-}
+sml_config = get_sml_config()
 
-config = update_config(config, config_default)
+config_default = BaseConfig({
+    'bio.ngs.align.bowtie' : BaseConfig({
+        'bowtie' : BaseConfig({
+            'ref' : sml_config['bio.ngs.settings']['db']['ref'],
+            'cmd' : "bowtie",
+            'options' : "",
+            'threads' : sml_config['bio.ngs.settings']['threads'],
+        }),
+        'bowtie2' : BaseConfig({
+            'ref' : sml_config['bio.ngs.settings']['db']['ref'],
+            'cmd' : "bowtie2",
+            'options' : "",
+            'threads' : sml_config['bio.ngs.settings']['threads'],
+        }),
+    }),   
+})
+
+update_sml_config(config_default)
 
 # rule bowtie_main:
 #     params: cmd = config

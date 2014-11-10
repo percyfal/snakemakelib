@@ -1,38 +1,37 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.utils import update_config, sml_rules_path
-import snakemakelib.variables as VAR
+from snakemakelib.config import update_sml_config, sml_rules_path, BaseConfig
 
-config_default = { 
-    VAR.BIO_NGS_SETTINGS : {
-        VAR.FASTQ_SUFFIX : ".fastq",
-        VAR.FLOWCELLS : [],
-        VAR.FLOWCELLRUNS : [],
-        VAR.FLOWCELL_SUFFIX : "XX",
-        VAR.INPUTDIR : ".",
-        VAR.READ1_LABEL : "_R1_001",
-        VAR.READ2_LABEL : "_R2_001",
-        VAR.SAMPLES : [],
-        VAR.SAMPLE_PREFIX : "P00",
-        VAR.THREADS : 8,
-        VAR.ANNOTATION : {
-            VAR.ANNOT_LABEL : "",
-            VAR.TRANSCRIPT_ANNOT_GTF: "",
-        },
-        VAR.DB : {
-            VAR.DBSNP : "",
-            VAR.REF : "hg19",
-        },
-        VAR.JAVA : {
-            VAR.JAVA_MEM : "6g",
-            VAR.JAVA_TMPDIR : "/tmp",
-        },
-        VAR.SEQUENCE_CAPTURE : {
-            VAR.BAIT_REGIONS : "",
-            VAR.TARGET_REGIONS : "",
-        },
-    },
-}
+config_default = BaseConfig({ 
+    'bio.ngs.settings' : BaseConfig({
+        'fastq_suffix' : ".fastq",
+        'flowcells' : [],
+        'flowcellruns' : [],
+        'flowcell_suffix' : "XX",
+        'inputdir' : ".",
+        'read1_label' : "_R1_001",
+        'read2_label' : "_R2_001",
+        'samples' : [],
+        'sample_prefix' : "P00",
+        'threads' : 8,
+        'annotation' : BaseConfig({
+            'annot_label' : "",
+            'transcript_annot_gtf' : "",
+        }),
+        'db' : BaseConfig({
+            'dbsnp' : "",
+            'ref' : "hg19",
+        }),
+        'java' : BaseConfig({
+            'java_mem' : "6g",
+            'java_tmpdir' : "/tmp",
+        }),
+        'sequence_capture' : BaseConfig({
+            'bait_regions' : "",
+            'target_regions' : "",
+        }),
+    }),
+})
 
-config = update_config(config, config_default)
+update_sml_config(config_default)
 

@@ -5,12 +5,10 @@ Configuration module
 import os
 from snakemake.logging import logger
 
-
 class BaseConfig(dict):
     def _inspect_sections(self):
         """Walk through configuration object to make sure subsections are BaseConfig classes, not dictionaries"""
         for k,v in self.items():
-            logger.info("{k} : {v}".format(k=k, v=v))
             if isinstance(v, dict):
                 if not isinstance(v, BaseConfig):
                     raise TypeError("section {k}; dictionary {v} must be instance of <BaseConfig> class".format(k=k,v=v) )
@@ -73,8 +71,9 @@ def init_sml_config(cfg):
 
 def get_sml_config():
     return __sml_config__
-    
-def update_sml_config(custom_cfg, default):
+
+# TODO: rename default    
+def update_sml_config(default):
     """Update sml configuration object.
 
     Loops through items in default configuration and updates the cfg
@@ -94,8 +93,7 @@ def update_sml_config(custom_cfg, default):
 
     """    
     global __sml_config__
-    cfg = _update_sml_config(custom_cfg, default)
-    _update_sml_config(__sml_config__, cfg)
+    _update_sml_config(__sml_config__, default)
     return 0
 
 def _update_sml_config(config, default):
@@ -112,15 +110,10 @@ settings.
     """
     if config is None:
         return default
+    if not isinstance(default, BaseConfig):
+        raise TypeError("default config must be instance <class 'snakemakelib.config.BaseConfig'>; found {type}".format(type=type(default)) )        
     if not type(config) == type(default):
-        raise TypeError("config {config}, default {default}; configuration entry is not of type {type}".format(config=config, default=default, type=type(default)))
-    # if not isinstance(default, BaseConfig):
-    #     raise TypeError("default {default} must be instance of <BaseConfig> class; found {type}".format(default=default, type=type(default)) )        
-    if isinstance(default, BaseConfig):
-        if not set(list(config)).issuperset(set(list(default))):
-            # TODO: make this a warning
-            logger.info("Sections {} not defined in default rules configuration; this setting will not affect rules behaviour".format(list(set(list(config)).difference(set(list(default))))))
-
+        raise TypeError("config type {config}, default type {default}; configuration entry is not of type {type}".format(config=type(config), default=type(default), type=type(default)))
     # Loop sections
     for (section, value) in default.items():
         if not config.has_section(section):
@@ -131,7 +124,11 @@ settings.
                 config[section] = default[section]
         else:
             config[section] = _update_sml_config(config[section], default[section])
-
+    # if not set(list(config)).issuperset(set(list(default))):
+    #     print(list(config))
+    #     print(list(default))
+    #     # TODO: make this a warning
+    #     logger.info("Sections {} not defined in default rules configuration; this setting will not affect rules behaviour".format(list(set(list(config)).difference(set(list(default))))))
     return config
 
 def sml_path():

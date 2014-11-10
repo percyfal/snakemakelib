@@ -1,43 +1,47 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.utils import update_config, sml_rules_path
-import snakemakelib.variables as VAR
+from snakemakelib.config import update_sml_config, sml_rules_path, BaseConfig, get_sml_config
 
 # Start by including the general snakefile
 include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
 
-config_default = { 
-    VAR.BIO_GENETICS_ASSOCIATION_PLINK : {
-        VAR.PLINK : {
-            VAR.COMMON_OPTIONS : "--noweb",
-            VAR.CMD : "plink",
-            VAR.CHR : "1",
-        },
-    },
-}
+config_default = BaseConfig({ 
+    'bio.genetics.association.plink' : BaseConfig({
+        'plink' : BaseConfig({
+            'common_options' : "--noweb",
+            'cmd' : "plink",
+            'chr' : "1",
+        }),
+    }),
+})
 
-config = update_config(config, config_default)
+update_sml_config(config_default)
 
-config_default[VAR.BIO_GENETICS_ASSOCIATION_PLINK][VAR.PLINK][VAR.OPTIONS] = config[VAR.BIO_GENETICS_ASSOCIATION_PLINK][VAR.PLINK][VAR.COMMON_OPTIONS]
+sml_config = get_sml_config()
 
-config = update_config(config, config_default)
+config_default['bio.genetics.association.plink']['plink'].add_section('options')
+config_default['bio.genetics.association.plink']['plink']['options'] = sml_config['bio.genetics.association.plink']['plink']['common_options']
 
-cfg = config[VAR.BIO_GENETICS_ASSOCIATION_PLINK]
+update_sml_config(config_default)
+
+sml_config = get_sml_config()
+
+plink_config = sml_config['bio.genetics.association.plink']
 
 rule plink_ped2ld_r2:
-    """Calculate r-squared linked disequilibrium from ped file. 
+    """calculate r-squared linked disequilibrium from ped file. 
     """
-    params: cmd = cfg[VAR.PLINK][VAR.CMD],
-            options = cfg[VAR.PLINK][VAR.OPTIONS]
+    params: cmd = plink_config['plink']['cmd'],
+            options = plink_config['plink']['options']
     input: "{prefix}.ped"
     output: "{prefix}.r2.ld"
     shell: "{params.cmd} {params.options}  --file {wildcards.prefix} --r2 --out {wildcards.prefix}.r2"
 
 rule plink_bed2ld_r2:
-    """Calculate r-squared linked disequilibrium from binary ped file.
+    """calculate r-squared linked disequilibrium from binary ped file.
     """
-    params: cmd = cfg[VAR.PLINK][VAR.CMD],
-            options = cfg[VAR.PLINK][VAR.OPTIONS]
+    params: cmd = plink_config['plink']['cmd'],
+            options = plink_config['plink']['options']
     input: "{prefix}.bed"
     output: "{prefix}.r2.ld"
     shell: "{params.cmd} {params.options} --bfile {wildcards.prefix} --r2 --out {wildcards.prefix}.r2"
@@ -46,29 +50,29 @@ ruleorder: plink_bed2ld_r2 > plink_ped2ld_r2
 
 
 rule plink_bed2ped:
-    """Convert ped file to binary ped. 
+    """convert ped file to binary ped. 
     """
-    params: cmd = cfg[VAR.PLINK][VAR.CMD],
-            options = cfg[VAR.PLINK][VAR.OPTIONS]
+    params: cmd = plink_config['plink']['cmd'],
+            options = plink_config['plink']['options']
     input: "{prefix}.ped"
     output: "{prefix}.bed"
     shell: "{params.cmd} {params.options}  --file {wildcards.prefix} --make-bed --out {wildcards.prefix}"
 
 rule plink_bed_blocks:
-    """Calculate linkage disequilibrium blocks(?). 
+    """calculate linkage disequilibrium blocks(?). 
     """
-    params: cmd = cfg[VAR.PLINK][VAR.CMD],
-            options = cfg[VAR.PLINK][VAR.OPTIONS]
+    params: cmd = plink_config['plink']['cmd'],
+            options = plink_config['plink']['options']
     input: "{prefix}.bed"
     output: "{prefix}.blocks"
     shell: "{params.cmd} {params.options}  --bfile {wildcards.prefix} --blocks --out {wildcards.prefix}"
 
 rule plink_chr_bed:
-    """Generate chromosome-wise bed files. 
+    """generate chromosome-wise bed files. 
     """
-    params: cmd = cfg[VAR.PLINK][VAR.CMD],
-            options = cfg[VAR.PLINK][VAR.OPTIONS],
-            chr = cfg[VAR.PLINK][VAR.CHR]
+    params: cmd = plink_config['plink']['cmd'],
+            options = plink_config['plink']['options'],
+            chr = plink_config['plink']['chr']
     input: "{prefix}.bed"
     output: "{prefix}.chr{params.chr}.bed"
     shell: "{params.cmd} {params.options} --bfile {wildcards.prefix} --make-bed --out {wildcards.prefix}.chr{params.chr}"

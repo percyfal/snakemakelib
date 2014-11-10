@@ -1,6 +1,6 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.utils import update_config, sml_rules_path
+from snakemakelib.utils import update_sml_config, sml_rules_path
 import snakemakelib.variables as VAR
 
 # Start by including the general snakefile

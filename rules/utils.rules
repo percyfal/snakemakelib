@@ -13,6 +13,11 @@ Utility rules for use with snakemakelib.
 rule conf:
     """Print global configuration settings for loaded rules"""
     run:
+      s = "Snakemake global configuration variables"
+      logger.info("\n" + s)
+      logger.info("=" * len(s))
+      for (k,v) in sorted(config.items()):
+          logger.info (" {k} : {v}".format(k=k, v=v))
       d = get_sml_config()
       d = {config.get("section") : d[config.get("section")]} if config.get("section") in d.keys() else d
       s = "Top-level configuration variables"

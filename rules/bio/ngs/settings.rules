@@ -35,3 +35,8 @@ config_default = BaseConfig({
 
 update_sml_config(config_default)
 
+# Add configuration variable to snakemake global config object
+config['lanes'] = []
+config['samples'] = []
+config['flowcells'] = []
+

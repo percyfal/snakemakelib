@@ -1,27 +1,28 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.utils import update_config, sml_rules_path
-import snakemakelib.variables as VAR
+from snakemakelib.config import update_sml_config, sml_rules_path, BaseConfig, get_sml_config
 
 # Start by including the general snakefile
 include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
 
-config_default = { 
-    VAR.BIO_NGS_TOOLS_SAMTOOLS : {
-        VAR.REF : config[VAR.BIO_NGS_SETTINGS][VAR.DB][VAR.DB],
-        VAR.CMD : "samtools",
-        VAR.THREADS : config[VAR.BIO_NGS_SETTINGS][VAR.THREADS],
-        VAR.OPTIONS : "",
-    },
-}
+sml_config = get_sml_config()
 
-config = update_config(config, config_default)
+config_default = BaseConfig({ 
+    'bio.ngs.tools.samtools' : BaseConfig({
+        'ref' : sml_config['bio.ngs.settings']['db']['ref'],
+        'cmd' : "samtools",
+        'threads' : sml_config['bio.ngs.settings']['threads'],
+        'options' : "",
+    }),
+})
 
-samtools_config = config[VAR.BIO_NGS_TOOLS_SAMTOOLS]
+update_sml_config(config_default)
+
+samtools_config = sml_config['bio.ngs.tools.samtools']
 
 rule samtools_sam2bam:
-    params: cmd=samtools_config[VAR.CMD]
+    params: cmd=samtools_config['cmd']
     input: "{prefix}.sam"
     output: "{prefix}.bam"
-    threads: samtools_config[VAR.THREADS]
+    threads: samtools_config['threads']
     shell: "{params.cmd} view -Sb {input} > {output}"

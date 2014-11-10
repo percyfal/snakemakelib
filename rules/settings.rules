@@ -1,14 +1,10 @@
 # -*- snakemake -*- 
-from snakemakelib.utils import update_config
-import snakemakelib.variables as VAR
+from snakemakelib.config import update_sml_config
 
 """
 Main settings for snakemakelib. Defines top-level configuration
 settings for all rules. 
 """
 
-config_default = {
-    VAR.SECTION : None,
-}
-
-config = update_config(config, config_default)
+# Add configuration variable to snakemake global config object
+config['section'] = ""

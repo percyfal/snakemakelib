@@ -4,7 +4,7 @@ import sys
 import unittest
 import logging
 from nose.tools import raises
-from snakemakelib.config import BaseConfig, init_sml_config, update_sml_config
+from snakemakelib.config import BaseConfig, init_sml_config, update_sml_config, get_sml_config
 from snakemake.logging import logger
 
 logging.basicConfig(level=logging.DEBUG)
@@ -138,17 +138,19 @@ class TestSmlConfig(unittest.TestCase):
 
     @raises(TypeError)
     def test_init_sml_config_from_dict(self):
-        cfg = init_sml_config({})
+        init_sml_config({})
 
     def test_init_sml_config(self):
         """Test initalizing the sml config object"""
-        cfg = init_sml_config(BaseConfig({'foo':'bar'}))
+        init_sml_config(BaseConfig({'foo':'bar'}))
+        cfg = get_sml_config()
         self.assertDictEqual(cfg, {'foo': 'bar'})
 
     def test_update_sml_config_from_init(self):
         """Test initializing the sml config object from an init"""
         init_sml_config(self.cfg)
-        cfg = update_sml_config(BaseConfig({}), self.cfg_nested)
+        update_sml_config(BaseConfig({}), self.cfg_nested)
+        cfg = get_sml_config()
         self.assertDictEqual(cfg, {'bar': {'bar': {'bar': 'customfoo'}, 'foo': 'customfoo'}})
 
     def test_update_sml_config_with_default(self):
@@ -161,20 +163,23 @@ class TestSmlConfig(unittest.TestCase):
         3. Default settings need to be updated with custom config at once so that custom changes are reflected in rules (is this true?)
         """
         init_sml_config(BaseConfig({}))
-        self.cfg = update_sml_config(self.cfg, self.default)
-        self.assertDictEqual(self.cfg, {'bar': {'bar': 'foo', 'foo': 'customfoo'}, 'foo': 'bar'})
+        update_sml_config(self.cfg, self.default)
+        cfg = get_sml_config()
+        self.assertDictEqual(cfg, {'bar': {'bar': 'foo', 'foo': 'customfoo'}, 'foo': 'bar'})
 
     def test_update_sml_config_with_default_nested(self):
         init_sml_config(BaseConfig({}))
-        self.cfg = update_sml_config(self.cfg, self.default_nested)
-        self.assertDictEqual(self.cfg, {'foo': 'bar', 'bar': {'foo': 'customfoo', 'bar': {'foo': 'bar'}}})
+        update_sml_config(self.cfg, self.default_nested)
+        cfg = get_sml_config()
+        self.assertDictEqual(cfg, {'foo': 'bar', 'bar': {'foo': 'customfoo', 'bar': {'foo': 'bar'}}})
 
 
     def test_update_sml_config_with_both_nested(self):
         """Test updating a configuration object where both are nested. Note that in this example  self.cfg_nested has a key (section) not defined in default so a warning should be raised. In other words, at a given level, if default is a BaseConfig, the keys in config should be a subset of keys in default."""
         init_sml_config(BaseConfig({}))
-        self.cfg_nested = update_sml_config(self.cfg_nested, self.default_nested)
-        self.assertDictEqual(self.cfg_nested, {'foo': 'bar', 'bar': {'foo': 'foobar', 'bar': {'foo': 'bar', 'bar': 'customfoo'}}})
+        update_sml_config(self.cfg_nested, self.default_nested)
+        cfg = get_sml_config()
+        self.assertDictEqual(cfg, {'foo': 'bar', 'bar': {'foo': 'foobar', 'bar': {'foo': 'bar', 'bar': 'customfoo'}}})
 
     @raises(TypeError)
     def test_update_sml_config_with_cfg_nested_missing_bc(self):

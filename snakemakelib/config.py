@@ -64,11 +64,14 @@ def init_sml_config(cfg):
         cfg: A configuration object of type <BaseConfig>
 
     Returns:
-        __sml_config___: global configuration object.
+        0
     """
     global __sml_config__
     __sml_config__ = BaseConfig({})
     __sml_config__ =  _update_sml_config(__sml_config__, cfg)
+    return 0
+
+def get_sml_config():
     return __sml_config__
     
 def update_sml_config(custom_cfg, default):
@@ -92,8 +95,8 @@ def update_sml_config(custom_cfg, default):
     """    
     global __sml_config__
     cfg = _update_sml_config(custom_cfg, default)
-    __sml_config__ = _update_sml_config(__sml_config__, cfg)
-    return __sml_config__
+    _update_sml_config(__sml_config__, cfg)
+    return 0
 
 def _update_sml_config(config, default):
     """Update snakemakelib configuration object. The default object is
@@ -111,6 +114,8 @@ settings.
         return default
     if not type(config) == type(default):
         raise TypeError("config {config}, default {default}; configuration entry is not of type {type}".format(config=config, default=default, type=type(default)))
+    # if not isinstance(default, BaseConfig):
+    #     raise TypeError("default {default} must be instance of <BaseConfig> class; found {type}".format(default=default, type=type(default)) )        
     if isinstance(default, BaseConfig):
         if not set(list(config)).issuperset(set(list(default))):
             # TODO: make this a warning

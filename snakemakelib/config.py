@@ -46,6 +46,16 @@ class BaseConfig(dict):
         """Check if section is already defined"""
         return section in self.sections
 
+    def get_section(self, section):
+        """Return section from config"""
+        if not (isinstance(section, str)):
+            raise TypeError("argument 'section' must be of type <str>")
+        try:
+            return self[section]
+        except KeyError:
+            logger.error("Error: no such section {} in config; returning entire config".format(section))
+            return self
+
     @property
     def sections(self):
         """Return sections"""
@@ -54,22 +64,19 @@ class BaseConfig(dict):
 # Global configuration variable
 __sml_config__ = BaseConfig({})
 
-
 def init_sml_config(cfg):
     """Initialize sml configuration.
 
     Args:
         cfg: A configuration object of type <BaseConfig>
-
-    Returns:
-        0
     """
     global __sml_config__
     __sml_config__ = BaseConfig({})
     __sml_config__ =  _update_sml_config(__sml_config__, cfg)
-    return 0
 
-def get_sml_config():
+def get_sml_config(section=None):
+    if not section is None:
+        return __sml_config__.get_section(section)
     return __sml_config__
 
 # TODO: rename default    
@@ -90,11 +97,9 @@ def update_sml_config(default):
         custom_cfg: A configuration object with custom settings of
                     type <BaseConfig>
         default: default configuration object of type <BaseConfig>
-
     """    
     global __sml_config__
     _update_sml_config(__sml_config__, default)
-    return 0
 
 def _update_sml_config(config, default):
     """Update snakemakelib configuration object. The default object is

@@ -1,6 +1,7 @@
 # -*- snakemake -*-
 import os
 from snakemakelib.config import update_sml_config, sml_rules_path, BaseConfig, get_sml_config
+from snakemakelib.bio.ngs.methylseq.bismark import ref
 
 # Start by including the general bio.ngs snakefile
 include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
@@ -9,7 +10,8 @@ sml_config = get_sml_config()
 
 config_default = BaseConfig({
      'bio.ngs.methylseq.bismark' : BaseConfig({
-        'ref' : sml_config['bio.ngs.settings']['db']['ref'],
+         #'ref' : sml_config['bio.ngs.settings']['db']['ref'],
+        'ref' : ref(),
         'cmd' : "bismark",
         'main' : BaseConfig({
             'options' : '--bam --bowtie2 --phred33-quals',
@@ -24,10 +26,7 @@ update_sml_config(config_default)
 #### 8_140207_AC3NVGACXX_P923_101_1_val_1.fq.gz -2
 #### 8_140207_AC3NVGACXX_P923_101_2_val_2.fq.gz
 
-sml_config = get_sml_config()
-
-# Use subdictionary to enhance readability
-cfg = sml_config['bio.ngs.methylseq.bismark']
+cfg = get_sml_config('bio.ngs.methylseq.bismark')
 
 rule bismark_main:
     """bismark: Run bismark methylation analysis"""

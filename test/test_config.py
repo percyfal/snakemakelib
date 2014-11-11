@@ -182,7 +182,8 @@ class TestSmlConfig(unittest.TestCase):
         self.assertDictEqual(cfg, {'foo': 'bar', 'bar': {'foo': 'foobar', 'bar': {'foo': 'bar', 'bar': 'customfoo'}}})
 
     @raises(TypeError)
-    def test_update_sml_config_with_cfg_nested_missing_bc(self):
+    def test_update_sml_config_with_cfg_nested_missing_base_config(self):
+        """Test updating sml config where value for section is string in custom config and BaseConfig in default"""
         cfg = BaseConfig({
             'bar' : BaseConfig({
                 'bar' : 'test'
@@ -191,3 +192,10 @@ class TestSmlConfig(unittest.TestCase):
         init_sml_config(cfg)
         update_sml_config(self.default_nested)
 
+
+    def test_get_sml_config_section(self):
+        """Test getting a config section section"""
+        init_sml_config(self.cfg_nested)
+        update_sml_config(self.default_nested)
+        cfg = get_sml_config(section="bar")
+        self.assertDictEqual(cfg, {'bar': {'bar': 'customfoo', 'foo': 'bar'}, 'foo': 'foobar'})

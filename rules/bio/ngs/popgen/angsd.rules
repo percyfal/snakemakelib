@@ -1,72 +1,114 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.utils import update_config, sml_rules_path
-import snakemakelib.variables as VAR
+from snakemakelib.config import update_sml_config, sml_rules_path, BaseConfig, get_sml_config, sml_path
 
 # Start by including the general snakefile
 include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
 
-config_default = { 
-    VAR.BIO_NGS_POPGEN_ANGSD : {
-        VAR.ANGSD : {
-            VAR.ANGSD_CHR_LABEL : "scaffold",
-            VAR.HOME : ".",
-            VAR.CHR_EXTRA : "chrM",
-            VAR.REF : config[VAR.BIO_NGS_SETTINGS][VAR.DB][VAR.REF],
-            VAR.NCHR_OPTION : "",            
-            VAR.POPULATIONS : "",
-        }
-        VAR.GEM {
-            VAR.MAPPABILITY_OPTIONS : "-l 100 -T 7",
-        }
+sml_config = get_sml_config()
 
-        "ANGSD_DOMAFS_OPTIONS" : 
-		"ANGSD_EMOPTIM" : "$(ANGSD_PATH)/misc/emOptim",
-		"ANGSD_EMOPTIM2_OPTIONS" : "-maxIter $(ANGSD_OPTION_MAXITER) -P $(ANGSD_OPTION_THREADS)",
-		"ANGSD_OPTION_MAF" : "10",
-		"ANGSD_EMOPTIM2" : "$(ANGSD_PATH)/misc/emOptim2",
-		"ANGSD_CHR_ENUM_FROM" : "1",
-		"ANGSD_CALCSTAT" : "$(ANGSD_PATH)/misc/calcStat",
-		"NGSTOOLS_NGSFST" : "$(NGSTOOLS_PATH)/ngsFST",
-		"NGSTOOLS_PATH" : ".",
-		"ANGSD_OPTION_NSITES" : "",
-		"ANGSD_OPTION_REALSFS" : "1",
-		"ANGSD_CHROMOSOMES" : "$(foreach i,${ANGSD_CHR_ENUM},$(ANGSD_CHR_LABEL)_$(i)) $(ANGSD_CHROMOSOMES_EXTRA)",
-		"ANGSD_CHR_ENUM_TO" : "1",
-		"ANGSD_OPTION_GL" : "2",
-		"NGSTK" : "ngstk",
-		"ANGSD_REALSFS_OPTIONS" : "-realSFS 1 -GL $(ANGSD_OPTION_GL) -anc $(ANGSD_OPTION_ANC) -nThreads $(ANGSD_OPTION_THREADS)",
-		"ANGSD" : "$(ANGSD_PATH)/angsd",
-		"ANGSD_OPTION_MAXITER" : "100",
-		"NGSTOOLS_OPTION_BLOCK_SIZE" : "",
-		"ANGSD_CHR_ENUM" : "$(shell seq $(ANGSD_CHR_ENUM_FROM) $(ANGSD_CHR_ENUM_TO))",
-		"ANGSD_DOTHETAS_OPTIONS" : "-realSFS 1 -GL $(ANGSD_OPTION_GL) -anc $(ANGSD_OPTION_ANC) -doThetas 1 -nThreads $(ANGSD_OPTION_THREADS) -r $(ANGSD_OPTION_CHR)",
-		"ANGSD_DOCOUNTS_OPTIONS" : "-doCounts 1 -dumpCounts 2 -anc $(ANGSD_OPTION_ANC)",
-		"ANGSD_BGID" : "$(ANGSD_PATH)/misc/bgid",
-		"ANGSD_OPTION_WINDOW" : "50000",
-		"ANGSD_OPTION_MAJORMINOR" : "5",
-		"GEM_INDEXER_OPTIONS" : "-T 7",
-		"ANGSD_OPTION_CHR" : "",
-		"PLOTNGSTK" : "$(MAKEDIR)scripts/plotNgstk.R",
-		"ANGSD_OPTIMSFS" : "$(ANGSD_PATH)/misc/optimSFS",
-		"ANGSD_BGID_DOSTAT_OPTIONS" : "-step $(ANGSD_OPTION_STEP) -win $(ANGSD_OPTION_WINDOW) -nChr $(ANGSD_OPTION_NCHR)",
-		"GEM_PATH" : ".",
-		"ANGSD_OPTION_ANC" : "$(REF)",
-		"NGSTOOLS_SITES" : "",
-		"ANGSD_OPTION_THREADS" : "$(THREADS)",
-		"ANGSD_CHROMOSOMES_WIDTH" : "",
-		"ANGSD_OPTION_STEP" : "50000",
-		"ANGSD_EMOPTIM_OPTIONS" : "-maxIter $(ANGSD_OPTION_MAXITER)",
-		"PLOTTHETAS" : "$(MAKEDIR)scripts/plotThetas.R",
-		},
-	},
-}
+config_default = BaseConfig({ 
+    'bio.ngs.popgen.angsd' : BaseConfig({
+        'path' : os.curdir,
+        'chr_label' : "scaffold",
+        'chr_extra' : "chrM",
+        # I seem to have set a whole lot of specific options. Put them in subsection options for now
+        'options' : BaseConfig({
+            'anc' : sml_config['bio.ngs.settings']['db']['ref'],
+            'chr' : "",
+            'chr_enum_from' : 1,
+            'chr_enum_to' : 1,
+            'chromosomes_width' : "",
+            'gl' : 2,
+            'maf' : 10,
+            'majorminor' : 5,
+            'maxiter' : 100,
+            'nchr' : "",
+            'nsites' : "",
+            'populations' : "",
+            'realSFS' : 1,
+            'ref' : sml_config['bio.ngs.settings']['db']['ref'],
+            'step' : 50000,
+            'threads' : sml_config['bio.ngs.settings']['threads'],
+            'window' : 50000,
+            }),
+        'utils' : BaseConfig({
+            'plotthetas' : os.path.join(sml_path(), 'scripts/plotThetas.R'),
+        }),
+        # Private addition
+        'ngstk' : BaseConfig({
+            'cmd' : "ngstk",
+            'plotngstk' : os.path.join(sml_path(), "scripts/plotNgstk.R"),
+        })
+    }),
+    # TODO: move to own rules files
+    'bio.ngs.popgen.ngstools' : BaseConfig({
+        'block_size' : "",
+        'sites' : "",
+        'path' : os.curdir,
+    }),
+    'bio.ngs.popgen.gem' : BaseConfig({
+        'path' : os.curdir,
+        'cmd' : "gem",
+        'options' : BaseConfig({
+            'indexer' : "-T 7",
+            'mappability' : "-l 100 -T 7",
+        }),
+    }),
+})
+
+update_sml_config(config_default)
+
+cfg = get_sml_config('bio.ngs.popgen.angsd')
+ngstools_cfg = get_sml_config('bio.ngs.popgen.ngstools')
+
+# Second round
+config_default = BaseConfig({
+    'bio.ngs.popgen.angsd' : BaseConfig({
+        'cmd' : os.path.join(cfg['path'], 'angsd'),
+        'options' : BaseConfig({
+            'chromosomes' : ["{chr_label}{chr}".format(chr_label=cfg['options']['chr_label'], chr=i) for i in range(cfg['options']['chr_enum_from'], cfg['options']['chr_enum_to'])],
+            'chr_enum' : range(cfg['options']['chr_enum_from'], cfg['options']['chr_enum_to']),
+            'dothetas' : "-realSFS 1 -GL {gl} -anc {anc} -doThetas 1 -nThreads {threads} -r {chr}".format(gl=cfg['options']['gl'], anc=cfg['options']['anc'], threads=cfg['options']['threads'], chr=cfg['options']['chr']),
+            'docounts' : "-doCounts 1 -dumpCounts 2 -anc {anc}".format(anc=cfg['options']['anc']),
+        }),
+        'domafs' : BaseConfig({
+            'options' :"-anc {anc} -doMajorMinor {majorminor} -doMaf {maf} -GL {gl} -nThreads {threads}".format(gl=cfg['options']['gl'], anc=cfg['options']['anc'], threads=cfg['options']['threads'], chr=cfg['options']['chr'], maf=cfg['options']['maf'], majorminor=cfg['options']['majorminor']),
+        }),
+        'optimsfs' : BaseConfig({
+            'cmd' : os.path.join(cfg['path'], 'misc/optimSFS'),
+        }),
+        'bgid' : BaseConfig({
+            'cmd' : os.path.join(cfg['path'], "misc/bgid"),
+            'dostat_options' : "-step {step} -win {window} -nChr {nchr}".format(step=cfg['options']['step'], window=cfg['options']['window'], nchr=cfg['options']['nchr']),           
+        })
+        'emoptim' : BaseConfig({
+            'cmd' : os.path.join(cfg['path'], '/misc/emOptim'),
+            'options' : "-maxIter {maxiter}".format(maxiter=cfg['options']['maxiter']),
+        }),
+        'emoptim2' : BaseConfig({
+            'cmd' : os.path.join(cfg['path'],'/misc/emOptim2'),
+            'options' : "-maxIter {maxiter} -P {threads}".format(maxiter=cfg['options']['maxiter'], threads=cfg['options']['threads']),
+        }),
+        'calcstat' : BaseConfig({
+            'cmd' : os.path.join(cfg['path'],'/misc/calcStat'),
+        }),
+        'realSFS' : BaseConfig({
+            'options' : "-realSFS 1 -GL {gl} -anc {anc} -nThreads {threads}".format(gl=cfg['options']['gl'], anc=cfg['options']['anc'], threads=cfg['options']['threads']),
+        }),
+    }),
+    'bio.ngs.popgen.ngstools' : BaseConfig({
+        'ngsfst' : BaseConfig({
+            'cmd' : os.path.join(ngstools_cfg['path'], "ngsFST"),
+        }),
+    }),
+})
 
 
+update_sml_config(config_default)
 
-DOMAFS_OPTIONS:"-anc $(ANGSD_OPTION_ANC) -doMajorMinor $(ANGSD_OPTION_MAJORMINOR) -doMaf $(ANGSD_OPTION_MAF) -GL $(ANGSD_OPTION_GL) -nThreads $(ANGSD_OPTION_THREADS)",
+cfg = get_sml_config('bio.ngs.popgen.angsd')
 
-config = update_config(config, config_default)
 
 rule rule_1:
 	input: " {prefix}.list"

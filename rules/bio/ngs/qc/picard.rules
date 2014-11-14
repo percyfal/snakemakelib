@@ -52,10 +52,8 @@ update_sml_config(config_default)
 
 sml_config = get_sml_config()
 
-config_default['bio.ngs.qc.picard'].add_section('options')
 config_default['bio.ngs.qc.picard']['options'] = sml_config['bio.ngs.qc.picard']['common_options'] 
 
-config_default['bio.ngs.qc.picard'].add_section('cmd')
 config_default['bio.ngs.qc.picard']['cmd'] = "java -Xmx" + sml_config['bio.ngs.qc.picard']['java_mem'] + " -Djava.io.tmpdir=" + sml_config['bio.ngs.qc.picard']['java_tmpdir'] + " -jar "
 
 update_sml_config(config_default)

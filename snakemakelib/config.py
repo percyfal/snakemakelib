@@ -11,7 +11,7 @@ class BaseConfig(dict):
         for k,v in self.items():
             if isinstance(v, dict):
                 if not isinstance(v, BaseConfig):
-                    logger.info("Updating key {k} to <BaseConfig> class".format(k=k))
+                    logger.debug("Updating key {k} to <BaseConfig> class".format(k=k))
                     self[k] = BaseConfig(v)
                 self[k]._inspect_sections()
 
@@ -106,40 +106,50 @@ def update_sml_config(config_default):
         raise TypeError("Failed to convert config_default to <BaseConfig> object; recieved {cd}".format(cd=type(config_default)))
     _update_sml_config(__sml_config__, config_default)
 
-def _update_sml_config(config, default):
+def _update_sml_config(sml_config, config_default):
     """Update snakemakelib configuration object. The default object is
 defined in the preamble of rules files and contains sensitive default
-settings. 
+settings.
 
-    While traversing the config dictionary, make sure that the configuration settings correspond to those in the default dictionary, i.e. that if a section in default points to another BaseConfig object, then the config object should also point to a BaseConfig object.
+    While traversing the config dictionary, make sure that the
+    configuration settings correspond to those in the default
+    dictionary, i.e. that if a section in default points to another
+    BaseConfig object, then the config object should also point to a
+    BaseConfig object.
 
-    :param config: configuration to update
-    :param default: config with default values
+    Args:
+      sml_config: sml configuration to update
+      default: config with default values
 
-    :return: updated configuration object
+    Returns:
+      updated configuration object
+
     """
-    if config is None:
-        return default
-    if not isinstance(default, BaseConfig):
-        raise TypeError("default config must be instance <class 'snakemakelib.config.BaseConfig'>; found {type}".format(type=type(default)) )        
-    if not type(config) == type(default):
-        raise TypeError("config type {config}, default type {default}; configuration entry is not of type {type}".format(config=type(config), default=type(default), type=type(default)))
+    if not isinstance(config_default, BaseConfig):
+        try:
+            config_default = BaseConfig(config_default)
+        except:
+            raise TypeError("Failed to convert config_default to <BaseConfig> object; recieved {cd}".format(cd=type(config_default)))
+    if sml_config is None:
+        return config_default
+    if not type(sml_config) == type(config_default):
+        raise TypeError("config type {sml_config}, default type {config_default}; configuration entry is not of type {type}".format(sml_config=type(sml_config), config_default=type(config_default), type=type(config_default)))
     # Loop sections
-    for (section, value) in default.items():
-        if not config.has_section(section):
-            config.add_section(section)
-        if (not isinstance(default[section], BaseConfig)):
+    for (section, value) in config_default.items():
+        if not sml_config.has_section(section):
+            sml_config.add_section(section)
+        if (not isinstance(config_default[section], BaseConfig)):
             # if config has no value set to default
-            if config.get(section) is None:
-                config[section] = default[section]
+            if sml_config.get(section) is None:
+                sml_config[section] = config_default[section]
         else:
-            config[section] = _update_sml_config(config[section], default[section])
+            sml_config[section] = _update_sml_config(sml_config[section], config_default[section])
     # if not set(list(config)).issuperset(set(list(default))):
     #     print(list(config))
     #     print(list(default))
     #     # TODO: make this a warning
     #     logger.info("Sections {} not defined in default rules configuration; this setting will not affect rules behaviour".format(list(set(list(config)).difference(set(list(default))))))
-    return config
+    return sml_config
 
 def sml_path():
     return os.path.dirname(__file__)

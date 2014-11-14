@@ -132,9 +132,12 @@ class TestSmlConfig(unittest.TestCase):
         del self.cfg
         del self.default
 
-    @raises(TypeError)
+
     def test_init_sml_config_from_dict(self):
-        init_sml_config({})
+        init_sml_config({'foo':'bar'})
+        cfg = get_sml_config()
+        self.assertIsInstance(cfg, BaseConfig)
+        self.assertDictEqual(cfg, {'foo': 'bar'})
 
     def test_init_sml_config(self):
         """Test initalizing the sml config object"""

@@ -44,14 +44,12 @@ config_default = {
 
 update_sml_config(config_default)
 
-config_default['bio.ngs.qc.sequenceprocessing']['trimmomatic'].add_section('jar')
 config_default['bio.ngs.qc.sequenceprocessing']['trimmomatic']['jar'] = os.path.join(sml_config['bio.ngs.qc.sequenceprocessing']['trimmomatic']['home'], TRIMMOMATIC_JAR_PROGRAM)
 
 update_sml_config(config_default)
 
 sml_config = get_sml_config()
 
-config_default['bio.ngs.qc.sequenceprocessing']['trimmomatic'].add_section('cmd')
 config_default['bio.ngs.qc.sequenceprocessing']['trimmomatic']['cmd']  = "java -Xmx" + sml_config['bio.ngs.qc.sequenceprocessing']['trimmomatic']['java_mem'] + " -Djava.io.tmpdir=" + sml_config['bio.ngs.qc.sequenceprocessing']['trimmomatic']['java_tmpdir'] +  " -jar " + sml_config['bio.ngs.qc.sequenceprocessing']['trimmomatic']['jar']
 
 update_sml_config(config_default)

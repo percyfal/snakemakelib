@@ -12,7 +12,7 @@ setup(name = "snakemakelib",
       scripts = glob.glob('scripts/*.py'),
       install_requires = [
           "pyyaml",
-          "matplotlib>=1.2.1",
+          "matplotlib>=1.3.1",
           "snakemake>=3.1",
           ## Required for testing
           "nose",

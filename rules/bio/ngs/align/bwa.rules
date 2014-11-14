@@ -1,39 +1,46 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.utils import update_config, sml_rules_path
-import snakemakelib.variables as VAR
+from snakemakelib.config import update_sml_config, sml_rules_path, get_sml_config
 
 # Start by including the general snakefile
 include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
+include: os.path.join(sml_rules_path(), 'bio/ngs/tools', 'samtools.rules')
+
+sml_config = get_sml_config()
 
 config_default = { 
-    VAR.BIO_NGS_ALIGN_BWA : {
-        VAR.CMD : "bwa",
-        VAR.REF : config[VAR.BIO_NGS_SETTINGS][VAR.DB][VAR.REF],
-        VAR.THREADS : config[VAR.BIO_NGS_SETTINGS][VAR.THREADS],
-        VAR.OPTIONS : "-M"
-        VAR.MEM : {
+    'bio.ngs.align.bwa' : {
+        'cmd' : "bwa",
+        'ref' : sml_config['bio.ngs.settings']['db']['ref'],
+        'threads' : sml_config['bio.ngs.settings']['threads'],
+        'options' : "-M",
+        'mem' :{
+            'options' : "",
         },
     },
 }
 
-config = update_config(config, config_default)
+update_sml_config(config_default)
 
-config_default[VAR.BIO_NGS_ALIGN_BWA][VAR.MEM][VAR.OPTIONS] = config[VAR.BIO_NGS_ALIGN_BWA][VAR.OPTIONS]
+sml_config = get_sml_config()
 
-config = update_config(config, config_default)
+config_default['bio.ngs.align.bwa']['mem']['options'] = sml_config['bio.ngs.align.bwa']['options']
 
-bwa_cfg = config[VAR.BIO_NGS_ALIGN_BWA]
-ngs_cfg = config[VAR.BIO_NGS_SETTINGS]
-samtools_cfg = config[VAR.BIO_NGS_TOOLS_SAMTOOLS]
+update_sml_config(config_default)
+
+sml_config = get_sml_config()
+
+bwa_cfg = sml_config['bio.ngs.align.bwa']
+ngs_cfg = sml_config['bio.ngs.settings']
+samtools_cfg = sml_config['bio.ngs.tools.samtools']
 
 rule bwa_mem:
     """Run bwa mem"""
-    params: options = bwa_cfg[VAR.MEM][VAR.OPTIONS],
-            cmd = bwa_cfg[VAR.CMD],
-            ref = bwa_cfg[VAR.REF]
-    input: "{prefix}" + ngs_cfg[VAR.READ1_LABEL] + ngs_cfg[VAR.FASTQ_SUFFIX],\
-    "{prefix}" + ngs_cfg[VAR.READ2_LABEL] + ngs_cfg[VAR.FASTQ_SUFFIX]
+    params: options = bwa_cfg['mem']['options'],
+            cmd = bwa_cfg['cmd'],
+            ref = bwa_cfg['ref']
+    input: "{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],\
+    "{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['fastq_suffix']
     output: "{prefix}.bam"
-    threads: bwa_cfg[VAR.THREADS]
-    shell: "{params.cmd} mem -t {threads} {params.options} {params.ref} {input} | " + samtools_cfg[VAR.CMD] + " view -Sb - > {output}"
+    threads: bwa_cfg['threads']
+    shell: "{params.cmd} mem -t {threads} {params.options} {params.ref} {input} | " + samtools_cfg['cmd'] + " view -Sb - > {output}"

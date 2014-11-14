@@ -1,22 +1,22 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.config import update_sml_config, sml_rules_path, BaseConfig, get_sml_config
+from snakemakelib.config import update_sml_config, sml_rules_path, get_sml_config
 
 # Start by including the general snakefile
 include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
 
 sml_config = get_sml_config()
 
-config_default = BaseConfig({ 
-    'bio.ngs.tools.bedtools' : BaseConfig({
+config_default = { 
+    'bio.ngs.tools.bedtools' : {
         'home' : ".",
         'bfile' : "",
         'options' : "",
-        'coveragebed' : BaseConfig({
+        'coveragebed' : {
             'cmd' : 'coverageBed',
-        }),
-    }),
-})
+        },
+    },
+}
 
 update_sml_config(config_default)
 

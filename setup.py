@@ -16,7 +16,6 @@ setup(name = "snakemakelib",
           "snakemake>=3.1",
           ## Required for testing
           "nose",
-          "sphinx",
       ],
       test_suite = 'nose.collector',
       packages=find_packages(exclude=['ez_setup', 'test*']),

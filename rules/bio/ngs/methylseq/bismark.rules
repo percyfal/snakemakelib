@@ -6,15 +6,16 @@ from snakemakelib.bio.ngs.methylseq.bismark import ref
 # Start by including the general bio.ngs snakefile
 include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
 
-sml_config = get_sml_config()
+ngs_cfg = get_sml_config('bio.ngs.settings')
 
 config_default = BaseConfig({
     'bio.ngs.methylseq.bismark' : BaseConfig({
-        #'ref' : sml_config['bio.ngs.settings']['db']['ref'],
+        #'ref' : ngs_cfg['db']['ref'],
         'ref' : ref(),
         'align' : BaseConfig({
             'cmd' : 'bismark',
             'options' : '--bam --bowtie2 --phred33-quals',
+            'threads' : 8,
         }),
         'deduplicate' : BaseConfig({
             'cmd' : 'deduplicate_bismark',
@@ -33,16 +34,19 @@ config_default = BaseConfig({
 update_sml_config(config_default)
 
 cfg = get_sml_config('bio.ngs.methylseq.bismark')
+ngs_cfg = get_sml_config('bio.ngs.settings')
 
+# output: 8_140207_AC3NVGACXX_P923_101_1_val_1.fq.gz_bismark_bt2_pe.bam
 rule bismark_align:
     """bismark: Run bismark align."""
     params: options = cfg['align']['options'],
             cmd = cfg['align']['cmd'],
-            ref = cfg['ref']
-    input: "{path}" + os.sep + "{prefix}",\
-           "{path}" + os.sep + "{prefix}"
+            ref = cfg['ref'],
+    threads: cfg['align']['threads']
+    input: "{path}" + os.sep + "{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['read1_suffix'],\
+           "{path}" + os.sep + "{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['read2_suffix']
     output: "{path}" + os.sep + "{prefix}_bismark_bt2_pe.bam"
-    shell: "{params.cmd} {params.options} {params.ref} -1 {input[0]} -2 {input[1]} -o {wildcards.path}"
+    shell: "{params.cmd} {params.options} {params.ref} -1 {input[0]} -2 {input[1]} -o {wildcards.path} -p {threads}"
 
 # output: 8_140207_AC3NVGACXX_P923_101_1_val_1.fq.gz_bismark_bt2_pe.deduplicated.bam
 rule bismark_deduplicate:
@@ -62,7 +66,7 @@ rule bismark_methXtract:
             cmd = cfg['methXtract']['cmd'],
     input: "{path}" + os.sep + "{prefix}" + ".bam"
     output: "{path}" + os.sep + "{prefix}.bedGraph", "{path}" + os.sep + "{prefix}.cov"
-    shell: "{params.cmd} {params.options} {input}"
+    shell: "{params.cmd} {params.options} {input} -o {wildcards.path}"
 
 # input: 8_140207_AC3NVGACXX_P923_101_1_val_1.fq.gz_bismark_bt2_pe.deduplicated.bedGraph
 # output: 8_140207_AC3NVGACXX_P923_101_1_val_1.fq.gz_bismark_bt2_pe.deduplicated.M-bias.txt

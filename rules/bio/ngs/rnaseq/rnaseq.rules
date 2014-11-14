@@ -1,10 +1,9 @@
-
 # -*- snakemake -*-
 import os
-from snakemakelib.utils import update_config, sml_rules_path
+from snakemakelib.utils import update_sml_config, sml_rules_path
 
 # Start by including the general snakefile
-include: os.path.join(sml_rules_path(), 'base_settings.rules')
+include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
 
 config_default = { 
 	"rnaseq" : {

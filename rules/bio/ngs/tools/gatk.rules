@@ -1,6 +1,6 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.config import update_sml_config, sml_rules_path, BaseConfig, get_sml_config
+from snakemakelib.config import update_sml_config, sml_rules_path, get_sml_config
 
 # Start by including the general snakefile
 include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
@@ -12,8 +12,8 @@ GATK_JAR_PROGRAM = "GenomeAnalysisTK.jar"
 # FIXME: update_sml_config is run *three* separate times due to the fact
 # that many rules depend on defaults in the same section. Could this
 # be done more economically?
-config_default = BaseConfig({ 
-    'bio.ngs.tools.gatk' : BaseConfig({
+config_default = { 
+    'bio.ngs.tools.gatk' : {
         'cmd' : "",
         'home' : ".",
         'bam_list' : "",
@@ -27,8 +27,8 @@ config_default = BaseConfig({
         'target_regions' : sml_config['bio.ngs.settings']['sequence_capture']['target_regions'],
         'bait_regions' : sml_config['bio.ngs.settings']['sequence_capture']['bait_regions'],
         'threads' : sml_config['bio.ngs.settings']['threads'],
-    }),
-})
+    },
+}
 
 update_sml_config(config_default)
 
@@ -39,68 +39,68 @@ config_default['bio.ngs.tools.gatk']['jar'] = os.path.join(sml_config['bio.ngs.t
 config_default['bio.ngs.tools.gatk']['known_sites'] = sml_config['bio.ngs.tools.gatk']['dbsnp']
 
 config_default['bio.ngs.tools.gatk'].add_section('variant_filtration')
-config_default['bio.ngs.tools.gatk']['variant_filtration'] = BaseConfig({
+config_default['bio.ngs.tools.gatk']['variant_filtration'] = {
     'cmd' : 'VariantFiltration',
     'ref' : sml_config['bio.ngs.tools.gatk']['ref'],
     'options' : "",
-})
+}
 
 config_default['bio.ngs.tools.gatk'].add_section('read_backed_phasing')
-config_default['bio.ngs.tools.gatk']['read_backed_phasing'] = BaseConfig({
+config_default['bio.ngs.tools.gatk']['read_backed_phasing'] = {
     'cmd' : 'ReadBackedPhasing',
     'ref' : sml_config['bio.ngs.tools.gatk']['ref'],
     'options' : "",
-})
+}
 
 config_default['bio.ngs.tools.gatk'].add_section('clip_reads')
-config_default['bio.ngs.tools.gatk']['clip_reads'] = BaseConfig({
+config_default['bio.ngs.tools.gatk']['clip_reads'] = {
     'cmd' : 'ClipReads',
     'options' : "",
-})
+}
 
 config_default['bio.ngs.tools.gatk'].add_section('variant_eval')
-config_default['bio.ngs.tools.gatk']['variant_eval'] = BaseConfig({
+config_default['bio.ngs.tools.gatk']['variant_eval'] = {
     'cmd' : 'VariantEval',
     'ref' : sml_config['bio.ngs.tools.gatk']['ref'],
     'options' : "-ST Filter -l INFO --doNotUseAllStandardModules --evalModule CompOverlap --evalModule CountVariants --evalModule GenotypeConcordance --evalModule TiTvVariantEvaluator --evalModule ValidationReport --stratificationModule Filter",
-})
+}
 
 config_default['bio.ngs.tools.gatk'].add_section('select_snp_variants')
-config_default['bio.ngs.tools.gatk']['select_snp_variants'] = BaseConfig({
+config_default['bio.ngs.tools.gatk']['select_snp_variants'] = {
     'cmd' : 'SelectSnpVariants',
     'ref' : sml_config['bio.ngs.tools.gatk']['ref'],
     'options' : "--selectTypeToInclude SNP",
-})
+}
 
 config_default['bio.ngs.tools.gatk'].add_section('indel_realigner')
-config_default['bio.ngs.tools.gatk']['indel_realigner'] = BaseConfig({
+config_default['bio.ngs.tools.gatk']['indel_realigner'] = {
     'cmd' : 'IndelRealigner',
     'ref' : sml_config['bio.ngs.tools.gatk']['ref'],
     'options' : " ".join(["-L {target}".format(target=sml_config['bio.ngs.tools.gatk']['target_regions'])])
-})
+}
 
 config_default['bio.ngs.tools.gatk'].add_section('print_reads')
-config_default['bio.ngs.tools.gatk']['print_reads'] = BaseConfig({
+config_default['bio.ngs.tools.gatk']['print_reads'] = {
     'cmd' : 'PrintReads',
     'ref' : sml_config['bio.ngs.tools.gatk']['ref'],
     'options' : ""
-})
+}
 
 config_default['bio.ngs.tools.gatk'].add_section('realigner_target_creator')
-config_default['bio.ngs.tools.gatk']['realigner_target_creator'] = BaseConfig({
+config_default['bio.ngs.tools.gatk']['realigner_target_creator'] = {
     'cmd' : 'RealignerTargetCreator',
     'ref' : sml_config['bio.ngs.tools.gatk']['ref'],
     'options' : "",
-})
+}
 
 config_default['bio.ngs.tools.gatk'].add_section('unified_genotyper')
-config_default['bio.ngs.tools.gatk']['unified_genotyper'] = BaseConfig({
+config_default['bio.ngs.tools.gatk']['unified_genotyper'] = {
     'cmd' : 'UnifiedGenotyper',
     'ref' : sml_config['bio.ngs.tools.gatk']['ref'],
     'options' : " ".join(["-stand_call_conf 30.0 -stand_emit_conf 10.0  --downsample_to_coverage 30 --output_mode EMIT_VARIANTS_ONLY -glm BOTH",
                         "--dbsnp {dbsnp}".format(dbsnp=sml_config['bio.ngs.tools.gatk']['dbsnp']),
                           "-L {target}".format(target=sml_config['bio.ngs.tools.gatk']['target_regions'])])
-})
+}
 
 update_sml_config(config_default)
 
@@ -108,13 +108,13 @@ update_sml_config(config_default)
 config_default['bio.ngs.tools.gatk']['cmd'] = "java -Xmx" + sml_config['bio.ngs.tools.gatk']['java_mem'] + " -Djava.io.tmpdir=" + sml_config['bio.ngs.tools.gatk']['java_tmpdir'] +  " -jar " + sml_config['bio.ngs.tools.gatk']['jar']
 
 config_default['bio.ngs.tools.gatk'].add_section('base_recalibrator')
-config_default['bio.ngs.tools.gatk']['base_recalibrator'] = BaseConfig({
+config_default['bio.ngs.tools.gatk']['base_recalibrator'] = {
     'cmd' : 'BaseRecalibrator',
     'ref' : sml_config['bio.ngs.tools.gatk']['ref'],
     'options' : " ".join([
         "-L {target}".format(target=sml_config['bio.ngs.tools.gatk']['target_regions']),
         "-knownSites {known}".format(known=sml_config['bio.ngs.tools.gatk']['known_sites'])])
-})
+}
 
 # update_sml_config(config_default)
 

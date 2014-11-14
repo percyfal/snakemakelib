@@ -50,12 +50,6 @@ class TestBaseConfig(unittest.TestCase):
         del cfg
 
     @raises(TypeError)
-    def test_create_cfg_from_nested_dict_with_subsection_dict(self):
-        """Test create configuration from dictionary in which a subsection is a dict. Should raise TypeError error."""
-        cfg = BaseConfig({'foo':BaseConfig({'bar':{'foo':'bar'}})})
-        del cfg
-
-    @raises(TypeError)
     def test_add_section_dict(self):
         """Test adding a section to config as dict"""
         self.cfg.add_section({'foobar':'bar'})
@@ -74,7 +68,7 @@ class TestBaseConfig(unittest.TestCase):
         del cfg2
 
     def test_update_config_same_section(self):
-        """Test updating configuration with another configuration objet whose sections overlap. Note that this will overwrite the first configuration. FIXME: should this be intended behaviour?"""
+        """Test updating configuration with another configuration object whose sections overlap. Note that this will overwrite the first configuration. FIXME: should this be intended behaviour?"""
         cfg2 = BaseConfig({'foo':'foobar'})
         self.cfg.update(cfg2)
         self.assertDictEqual(self.cfg, {'foo':'foobar'})
@@ -87,18 +81,20 @@ class TestBaseConfig(unittest.TestCase):
         self.assertDictEqual(self.cfg, {'foo':'bar', 'bar':{'foo':'bar'}})
         del cfg2
 
-
-    @raises(TypeError)
-    def test_update_config_nested_dict(self):
-        """Test updating configuration with another nested configuration that has a dict section"""
-        cfg2 = BaseConfig({'bar': {'foo':'bar'}})
-        self.cfg.update(cfg2)
-        del cfg2
-
-    @raises(TypeError)
     def test_setting_config_section_to_dict(self):
         """Test setting a configuration section to a dict"""
         self.cfg['foo'] = {'foo':'bar'}
+        self.assertIsInstance(self.cfg['foo'], BaseConfig)
+
+    def test_baseconfig_from_nested_dictionary(self):
+        """Instantiate BaseConfig object from nested dictionary"""
+        d = BaseConfig({'foo':'bar', 'bar' : {'foo':'bar', 'bar':{'foo':'bar', 'bar':{'foo':'bar'}}}})
+        def assert_sections(d):
+            for k,v in d.items():
+                if isinstance(v,dict):
+                    self.assertIsInstance(v, BaseConfig)
+        assert_sections(d)
+
 
 class TestSmlConfig(unittest.TestCase):
     def setUp(self):
@@ -192,6 +188,10 @@ class TestSmlConfig(unittest.TestCase):
         init_sml_config(cfg)
         update_sml_config(self.default_nested)
 
+    @raises(TypeError)
+    def test_update_sml_config_with_string(self):
+        cfg = "foo"
+        update_sml_config(cfg)
 
     def test_get_sml_config_section(self):
         """Test getting a config section section"""
@@ -199,3 +199,4 @@ class TestSmlConfig(unittest.TestCase):
         update_sml_config(self.default_nested)
         cfg = get_sml_config(section="bar")
         self.assertDictEqual(cfg, {'bar': {'bar': 'customfoo', 'foo': 'bar'}, 'foo': 'foobar'})
+

@@ -1,19 +1,19 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.config import update_sml_config, sml_rules_path, BaseConfig, get_sml_config, sml_path
+from snakemakelib.config import update_sml_config, sml_rules_path, get_sml_config, sml_path
 
 # Start by including the general snakefile
 include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
 
-sml_config = get_sml_config()
+bio_cfg = get_sml_config('bio.ngs.settings')
 
-config_default = BaseConfig({ 
-    'bio.ngs.popgen.angsd' : BaseConfig({
+config_default = { 
+    'bio.ngs.popgen.angsd' : {
         'path' : os.curdir,
         'chr_label' : "scaffold",
         'chr_extra' : "chrM",
         # I seem to have set a whole lot of specific options. Put them in subsection options for now
-        'options' : BaseConfig({
+        'options' : {
             'anc' : sml_config['bio.ngs.settings']['db']['ref'],
             'chr' : "",
             'chr_enum_from' : 1,
@@ -27,35 +27,36 @@ config_default = BaseConfig({
             'nsites' : "",
             'populations' : "",
             'realSFS' : 1,
-            'ref' : sml_config['bio.ngs.settings']['db']['ref'],
+            'ref' : bio_cfg['db']['ref'],
+            'doSaf' : 1,
             'step' : 50000,
-            'threads' : sml_config['bio.ngs.settings']['threads'],
+            'threads' : bio_cfg['threads'],
             'window' : 50000,
-            }),
-        'utils' : BaseConfig({
+            },
+        'utils' : {
             'plotthetas' : os.path.join(sml_path(), 'scripts/plotThetas.R'),
-        }),
+        },
         # Private addition
-        'ngstk' : BaseConfig({
+        'ngstk' : {
             'cmd' : "ngstk",
             'plotngstk' : os.path.join(sml_path(), "scripts/plotNgstk.R"),
-        })
-    }),
+        }
+    },
     # TODO: move to own rules files
-    'bio.ngs.popgen.ngstools' : BaseConfig({
+    'bio.ngs.popgen.ngstools' : {
         'block_size' : "",
         'sites' : "",
         'path' : os.curdir,
-    }),
-    'bio.ngs.popgen.gem' : BaseConfig({
+    },
+    'bio.ngs.popgen.gem' : {
         'path' : os.curdir,
         'cmd' : "gem",
-        'options' : BaseConfig({
+        'options' : {
             'indexer' : "-T 7",
             'mappability' : "-l 100 -T 7",
-        }),
-    }),
-})
+        },
+    },
+}
 
 update_sml_config(config_default)
 
@@ -63,130 +64,135 @@ cfg = get_sml_config('bio.ngs.popgen.angsd')
 ngstools_cfg = get_sml_config('bio.ngs.popgen.ngstools')
 
 # Second round
-config_default = BaseConfig({
-    'bio.ngs.popgen.angsd' : BaseConfig({
+config_default = {
+    'bio.ngs.popgen.angsd' : {
         'cmd' : os.path.join(cfg['path'], 'angsd'),
-        'options' : BaseConfig({
+        'options' : {
             'chromosomes' : ["{chr_label}{chr}".format(chr_label=cfg['options']['chr_label'], chr=i) for i in range(cfg['options']['chr_enum_from'], cfg['options']['chr_enum_to'])],
             'chr_enum' : range(cfg['options']['chr_enum_from'], cfg['options']['chr_enum_to']),
-            'dothetas' : "-realSFS 1 -GL {gl} -anc {anc} -doThetas 1 -nThreads {threads} -r {chr}".format(gl=cfg['options']['gl'], anc=cfg['options']['anc'], threads=cfg['options']['threads'], chr=cfg['options']['chr']),
-            'docounts' : "-doCounts 1 -dumpCounts 2 -anc {anc}".format(anc=cfg['options']['anc']),
-        }),
-        'domafs' : BaseConfig({
+            'doThetas' : "-realSFS 1 -GL {gl} -anc {anc} -doThetas 1 -nThreads {threads} -r {chr}".format(gl=cfg['options']['gl'], anc=cfg['options']['anc'], threads=cfg['options']['threads'], chr=cfg['options']['chr']),
+            'doCounts' : "-doCounts 1 -dumpCounts 2 -anc {anc}".format(anc=cfg['options']['anc']),
+            'doSaf' : "-doSaf {doSaf} -anc {anc} -GL {GL}".format(doSaf=cfg['options']['doSaf'], anc=cfg['options']['anc'], GL=cfg['options']['gl']),
+        },
+        'domafs' : {
             'options' :"-anc {anc} -doMajorMinor {majorminor} -doMaf {maf} -GL {gl} -nThreads {threads}".format(gl=cfg['options']['gl'], anc=cfg['options']['anc'], threads=cfg['options']['threads'], chr=cfg['options']['chr'], maf=cfg['options']['maf'], majorminor=cfg['options']['majorminor']),
-        }),
-        'optimsfs' : BaseConfig({
+        },
+        'optimsfs' : {
             'cmd' : os.path.join(cfg['path'], 'misc/optimSFS'),
-        }),
-        'bgid' : BaseConfig({
+        },
+        'bgid' : {
             'cmd' : os.path.join(cfg['path'], "misc/bgid"),
             'dostat_options' : "-step {step} -win {window} -nChr {nchr}".format(step=cfg['options']['step'], window=cfg['options']['window'], nchr=cfg['options']['nchr']),           
-        })
-        'emoptim' : BaseConfig({
+        }
+        'emoptim' : {
             'cmd' : os.path.join(cfg['path'], '/misc/emOptim'),
             'options' : "-maxIter {maxiter}".format(maxiter=cfg['options']['maxiter']),
-        }),
-        'emoptim2' : BaseConfig({
+        },
+        'emoptim2' : {
             'cmd' : os.path.join(cfg['path'],'/misc/emOptim2'),
             'options' : "-maxIter {maxiter} -P {threads}".format(maxiter=cfg['options']['maxiter'], threads=cfg['options']['threads']),
-        }),
-        'calcstat' : BaseConfig({
+        },
+        'calcstat' : {
             'cmd' : os.path.join(cfg['path'],'/misc/calcStat'),
-        }),
-        'realSFS' : BaseConfig({
+        },
+        'realSFS' : {
             'options' : "-realSFS 1 -GL {gl} -anc {anc} -nThreads {threads}".format(gl=cfg['options']['gl'], anc=cfg['options']['anc'], threads=cfg['options']['threads']),
-        }),
-    }),
-    'bio.ngs.popgen.ngstools' : BaseConfig({
-        'ngsfst' : BaseConfig({
+        },
+    },
+    'bio.ngs.popgen.ngstools' : {
+        'ngsfst' : {
             'cmd' : os.path.join(ngstools_cfg['path'], "ngsFST"),
-        }),
-    }),
-})
+        },
+    },
+}
 
 
 update_sml_config(config_default)
 
 cfg = get_sml_config('bio.ngs.popgen.angsd')
 
+rule generate_sfs:
+    """Estimate the site frequency spectrum. Note that the implementation has changed for angsd versions > 0.5"""
+    params: cmd = cfg['cmd'],
+            options = cfg['options']['doSaf']
+    threads: cfg['options']['threads']
+    input: " {prefix}.list"
+    output: "{prefix}.saf"
+    shell: "{params.cmd} {params.options} -bam {input} -out {output} -P {threads}"
 
-rule rule_1:
-	input: " {prefix}.list"
-	output: "{prefix}.sfs"
-	shell: "$(ANGSD) $(ANGSD_REALSFS_OPTIONS) -bam $< -out $(@:.sfs=).tmp && mv $(@:.sfs=).tmp.sfs $@"
-rule rule_2:
-	input: " {prefix}.sfs"
-	output: "{prefix}.sfs.em2.ml"
-	shell: "$(AWK) '{for (i=1; i<NF; i++) printf("%f ",exp($$i)); printf("%f", exp($$i))}' $@.exp > $@.tmp && mv $@.tmp $@"
-rule rule_3:
-	input: " {prefix}.sfs"
-	output: "{prefix}.sfs.em.ml"
-	shell: "$(ANGSD_EMOPTIM) -binput $< -nChr $(ANGSD_OPTION_NCHR) $(ANGSD_EMOPTIM_OPTIONS) > $@.tmp && mv $@.tmp $@"
-rule rule_4:
-	input: " {prefix}.sfs"
-	output: "{prefix}.sfs.ml"
-	shell: "$(ANGSD_OPTIMSFS) -binput $< -nChr $(ANGSD_OPTION_NCHR) -outnames $@.tmp && mv $@.tmp $@"
-rule rule_5:
-	input: " {prefix}.sfs.em2.ml.ln"
-	output: "{prefix}.thetas.gz"
-	shell: "$(ANGSD) $(ANGSD_DOTHETAS_OPTIONS) -pest $(<:.ln=) -bam $*.list -out $*.tmp && mv $*.tmp.thetas.gz $@ && mv $*.tmp.arg $*.arg"
-rule rule_6:
-	input: " {prefix}.sfs.em2.ml"
-	output: "{prefix}.thetas.gz"
-	shell: "$(ANGSD) $(ANGSD_DOTHETAS_OPTIONS) -pest $< -bam $*.list -out $*.tmp && mv $*.tmp.thetas.gz $@ && mv $*.tmp.arg $*.arg"
-rule rule_7:
-	input: " {prefix}.sfs.em.ml"
-	output: "{prefix}.thetas.gz"
-	shell: "$(ANGSD) $(ANGSD_DOTHETAS_OPTIONS) -pest $< -bam $*.list -out $*.tmp && mv $*.tmp.thetas.gz $@ && mv $*.tmp.arg $*.arg"
-rule rule_8:
-	input: " {prefix}.list"
-	output: "{prefix}.mafs.gz"
-	shell: "$(ANGSD) $(ANGSD_DOMAFS_OPTIONS) -bam $< -out $(@:.mafs.gz=).tmp && rename $(@:.mafs.gz=).tmp $(@:.mafs.gz=) $(@:.mafs.gz=).tmp*"
-rule rule_9:
-	input: " {prefix}.list"
-	output: "{prefix}.counts.gz"
-	shell: "$(ANGSD) $(ANGSD_DOCOUNTS_OPTIONS) -bam $< -out $(@:.sfs=.counts.gz).tmp && rename $(@:.counts.gz=).tmp $(@:.counts.gz=) $(@:.counts.gz=).tmp*"
-rule rule_10:
-	input: " {prefix}.list"
-	output: "{prefix}.mpileup"
-	shell: "$(ANGSD) $(ANGSD_DOCOUNTS_OPTIONS) -show 1 -bam $< -out $(@:.sfs=.mpileup).tmp && mv $(@:.mpileup=).tmp.mpileup $@"
-rule rule_11:
-	input: " {prefix}.thetas.gz"
-	output: "{prefix}.thetas.gz.bin"
-	shell: "$(ANGSD_BGID) make_bed $<"
-rule rule_12:
-	input: " {prefix}.thetas.gz {prefix}.thetas.gz.bin"
-	output: "{prefix}.thetas.gz.bgid_pestPG"
-	shell: "$(ANGSD_BGID) do_stat $< $(ANGSD_BGID_DOSTAT_OPTIONS) && mv $*.thetas.gz.pestPG $@"
-rule rule_13:
-	input: " {prefix}.mafs.gz"
-	output: "{prefix}.bed"
-	shell: "$(ZCAT) $< | $(GREP) -v chromo | $(AWK) '{print $$1,$$2-1,$$2}' > $@.tmp && mv $@.tmp $@"
-rule rule_14:
-	input: " {prefix}.bed"
-	output: "{prefix}.pos.gz"
-	shell: "$(AWK) '{print $$1, $$3}' $< | $(GZIP) -c > $@.tmp && mv $@.tmp $@"
-rule rule_15:
-	input: " {prefix}.bed"
-	output: "{prefix}.pos"
-	shell: "$(AWK) '{print $$1, $$3}' $< > $@.tmp && mv $@.tmp $@"
-rule rule_16:
-	input: " {prefix}.fasta"
-	output: "{prefix}.gem"
-	shell: "$(GEM_PATH)/gem-indexer $(GEM_INDEXER_OPTIONS) -i $< -o $*.tmp && mv $*.tmp.gem $@; mv $*.tmp.log $*.log"
-rule rule_17:
-	input: " {prefix}.gem"
-	output: "{prefix}.mappability"
-	shell: "$(GEM_PATH)/gem-mappability $(GEM_MAPPABILITY_OPTIONS) -I $< -o $*.tmp && mv $*.tmp.mappability $@"
-rule rule_18:
-	input: ""
-	output: "{prefix}_ngstk.txt"
-	shell: "$(NGSTK) angsd $(POPA)_$(CHR) $(POPB)_$(CHR) -f $(FRAC) -c $(COV) > $@.tmp && mv $@.tmp $@"
-rule rule_19:
-	input: " {prefix}.bgid_pestPG"
-	output: "{prefix}.pdf"
-	shell: "$(PLOTTHETAS) $< $@.tmp && mv $@.tmp $@"
-rule rule_20:
-	input: " {prefix}_ngstk.txt"
-	output: "{prefix}_ngstk.pdf"
-	shell: "$(PLOTNGSTK) $< $@.tmp && mv $@.tmp $@"
+# rule rule_2:
+# 	input: " {prefix}.sfs"
+# 	output: "{prefix}.sfs.em2.ml"
+# 	shell: "$(AWK) '{for (i=1; i<NF; i++) printf("%f ",exp($$i)); printf("%f", exp($$i))}' $@.exp > $@.tmp && mv $@.tmp $@"
+# rule rule_3:
+# 	input: " {prefix}.sfs"
+# 	output: "{prefix}.sfs.em.ml"
+# 	shell: "$(ANGSD_EMOPTIM) -binput $< -nChr $(ANGSD_OPTION_NCHR) $(ANGSD_EMOPTIM_OPTIONS) > $@.tmp && mv $@.tmp $@"
+# rule rule_4:
+# 	input: " {prefix}.sfs"
+# 	output: "{prefix}.sfs.ml"
+# 	shell: "$(ANGSD_OPTIMSFS) -binput $< -nChr $(ANGSD_OPTION_NCHR) -outnames $@.tmp && mv $@.tmp $@"
+# rule rule_5:
+# 	input: " {prefix}.sfs.em2.ml.ln"
+# 	output: "{prefix}.thetas.gz"
+# 	shell: "$(ANGSD) $(ANGSD_DOTHETAS_OPTIONS) -pest $(<:.ln=) -bam $*.list -out $*.tmp && mv $*.tmp.thetas.gz $@ && mv $*.tmp.arg $*.arg"
+# rule rule_6:
+# 	input: " {prefix}.sfs.em2.ml"
+# 	output: "{prefix}.thetas.gz"
+# 	shell: "$(ANGSD) $(ANGSD_DOTHETAS_OPTIONS) -pest $< -bam $*.list -out $*.tmp && mv $*.tmp.thetas.gz $@ && mv $*.tmp.arg $*.arg"
+# rule rule_7:
+# 	input: " {prefix}.sfs.em.ml"
+# 	output: "{prefix}.thetas.gz"
+# 	shell: "$(ANGSD) $(ANGSD_DOTHETAS_OPTIONS) -pest $< -bam $*.list -out $*.tmp && mv $*.tmp.thetas.gz $@ && mv $*.tmp.arg $*.arg"
+# rule rule_8:
+# 	input: " {prefix}.list"
+# 	output: "{prefix}.mafs.gz"
+# 	shell: "$(ANGSD) $(ANGSD_DOMAFS_OPTIONS) -bam $< -out $(@:.mafs.gz=).tmp && rename $(@:.mafs.gz=).tmp $(@:.mafs.gz=) $(@:.mafs.gz=).tmp*"
+# rule rule_9:
+# 	input: " {prefix}.list"
+# 	output: "{prefix}.counts.gz"
+# 	shell: "$(ANGSD) $(ANGSD_DOCOUNTS_OPTIONS) -bam $< -out $(@:.sfs=.counts.gz).tmp && rename $(@:.counts.gz=).tmp $(@:.counts.gz=) $(@:.counts.gz=).tmp*"
+# rule rule_10:
+# 	input: " {prefix}.list"
+# 	output: "{prefix}.mpileup"
+# 	shell: "$(ANGSD) $(ANGSD_DOCOUNTS_OPTIONS) -show 1 -bam $< -out $(@:.sfs=.mpileup).tmp && mv $(@:.mpileup=).tmp.mpileup $@"
+# rule rule_11:
+# 	input: " {prefix}.thetas.gz"
+# 	output: "{prefix}.thetas.gz.bin"
+# 	shell: "$(ANGSD_BGID) make_bed $<"
+# rule rule_12:
+# 	input: " {prefix}.thetas.gz {prefix}.thetas.gz.bin"
+# 	output: "{prefix}.thetas.gz.bgid_pestPG"
+# 	shell: "$(ANGSD_BGID) do_stat $< $(ANGSD_BGID_DOSTAT_OPTIONS) && mv $*.thetas.gz.pestPG $@"
+# rule rule_13:
+# 	input: " {prefix}.mafs.gz"
+# 	output: "{prefix}.bed"
+# 	shell: "$(ZCAT) $< | $(GREP) -v chromo | $(AWK) '{print $$1,$$2-1,$$2}' > $@.tmp && mv $@.tmp $@"
+# rule rule_14:
+# 	input: " {prefix}.bed"
+# 	output: "{prefix}.pos.gz"
+# 	shell: "$(AWK) '{print $$1, $$3}' $< | $(GZIP) -c > $@.tmp && mv $@.tmp $@"
+# rule rule_15:
+# 	input: " {prefix}.bed"
+# 	output: "{prefix}.pos"
+# 	shell: "$(AWK) '{print $$1, $$3}' $< > $@.tmp && mv $@.tmp $@"
+# rule rule_16:
+# 	input: " {prefix}.fasta"
+# 	output: "{prefix}.gem"
+# 	shell: "$(GEM_PATH)/gem-indexer $(GEM_INDEXER_OPTIONS) -i $< -o $*.tmp && mv $*.tmp.gem $@; mv $*.tmp.log $*.log"
+# rule rule_17:
+# 	input: " {prefix}.gem"
+# 	output: "{prefix}.mappability"
+# 	shell: "$(GEM_PATH)/gem-mappability $(GEM_MAPPABILITY_OPTIONS) -I $< -o $*.tmp && mv $*.tmp.mappability $@"
+# rule rule_18:
+# 	input: ""
+# 	output: "{prefix}_ngstk.txt"
+# 	shell: "$(NGSTK) angsd $(POPA)_$(CHR) $(POPB)_$(CHR) -f $(FRAC) -c $(COV) > $@.tmp && mv $@.tmp $@"
+# rule rule_19:
+# 	input: " {prefix}.bgid_pestPG"
+# 	output: "{prefix}.pdf"
+# 	shell: "$(PLOTTHETAS) $< $@.tmp && mv $@.tmp $@"
+# rule rule_20:
+# 	input: " {prefix}_ngstk.txt"
+# 	output: "{prefix}_ngstk.pdf"
+# 	shell: "$(PLOTNGSTK) $< $@.tmp && mv $@.tmp $@"

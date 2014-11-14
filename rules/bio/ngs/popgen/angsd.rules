@@ -1,20 +1,20 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.config import update_sml_config, sml_rules_path, BaseConfig, get_sml_config, sml_path
+from snakemakelib.config import update_sml_config, sml_rules_path, get_sml_config, sml_path
 
 # Start by including the general snakefile
 include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
 
 bio_cfg = get_sml_config('bio.ngs.settings')
 
-config_default = BaseConfig({ 
-    'bio.ngs.popgen.angsd' : BaseConfig({
+config_default = { 
+    'bio.ngs.popgen.angsd' : {
         'path' : os.curdir,
         'chr_label' : "scaffold",
         'chr_extra' : "chrM",
         # I seem to have set a whole lot of specific options. Put them in subsection options for now
-        'options' : BaseConfig({
-            'anc' : bio_cfg['db']['ref'],
+        'options' : {
+            'anc' : sml_config['bio.ngs.settings']['db']['ref'],
             'chr' : "",
             'chr_enum_from' : 1,
             'chr_enum_to' : 1,
@@ -32,31 +32,31 @@ config_default = BaseConfig({
             'step' : 50000,
             'threads' : bio_cfg['threads'],
             'window' : 50000,
-        }),
-        'utils' : BaseConfig({
+            },
+        'utils' : {
             'plotthetas' : os.path.join(sml_path(), 'scripts/plotThetas.R'),
-        }),
+        },
         # Private addition
-        'ngstk' : BaseConfig({
+        'ngstk' : {
             'cmd' : "ngstk",
             'plotngstk' : os.path.join(sml_path(), "scripts/plotNgstk.R"),
-        }),
-    }),
+        }
+    },
     # TODO: move to own rules files
-    'bio.ngs.popgen.ngstools' : BaseConfig({
+    'bio.ngs.popgen.ngstools' : {
         'block_size' : "",
         'sites' : "",
         'path' : os.curdir,
-    }),
-    'bio.ngs.popgen.gem' : BaseConfig({
+    },
+    'bio.ngs.popgen.gem' : {
         'path' : os.curdir,
         'cmd' : "gem",
-        'options' : BaseConfig({
+        'options' : {
             'indexer' : "-T 7",
             'mappability' : "-l 100 -T 7",
-        }),
-    }),
-})
+        },
+    },
+}
 
 update_sml_config(config_default)
 
@@ -64,47 +64,47 @@ cfg = get_sml_config('bio.ngs.popgen.angsd')
 ngstools_cfg = get_sml_config('bio.ngs.popgen.ngstools')
 
 # Second round
-config_default = BaseConfig({
-    'bio.ngs.popgen.angsd' : BaseConfig({
+config_default = {
+    'bio.ngs.popgen.angsd' : {
         'cmd' : os.path.join(cfg['path'], 'angsd'),
-        'options' : BaseConfig({
+        'options' : {
             'chromosomes' : ["{chr_label}{chr}".format(chr_label=cfg['options']['chr_label'], chr=i) for i in range(cfg['options']['chr_enum_from'], cfg['options']['chr_enum_to'])],
             'chr_enum' : range(cfg['options']['chr_enum_from'], cfg['options']['chr_enum_to']),
             'doThetas' : "-realSFS 1 -GL {gl} -anc {anc} -doThetas 1 -nThreads {threads} -r {chr}".format(gl=cfg['options']['gl'], anc=cfg['options']['anc'], threads=cfg['options']['threads'], chr=cfg['options']['chr']),
             'doCounts' : "-doCounts 1 -dumpCounts 2 -anc {anc}".format(anc=cfg['options']['anc']),
             'doSaf' : "-doSaf {doSaf} -anc {anc} -GL {GL}".format(doSaf=cfg['options']['doSaf'], anc=cfg['options']['anc'], GL=cfg['options']['gl']),
-        }),
-        'domafs' : BaseConfig({
+        },
+        'domafs' : {
             'options' :"-anc {anc} -doMajorMinor {majorminor} -doMaf {maf} -GL {gl} -nThreads {threads}".format(gl=cfg['options']['gl'], anc=cfg['options']['anc'], threads=cfg['options']['threads'], chr=cfg['options']['chr'], maf=cfg['options']['maf'], majorminor=cfg['options']['majorminor']),
-        }),
-        'optimsfs' : BaseConfig({
+        },
+        'optimsfs' : {
             'cmd' : os.path.join(cfg['path'], 'misc/optimSFS'),
-        }),
-        'bgid' : BaseConfig({
+        },
+        'bgid' : {
             'cmd' : os.path.join(cfg['path'], "misc/bgid"),
             'dostat_options' : "-step {step} -win {window} -nChr {nchr}".format(step=cfg['options']['step'], window=cfg['options']['window'], nchr=cfg['options']['nchr']),           
-        }),
-        'emoptim' : BaseConfig({
+        }
+        'emoptim' : {
             'cmd' : os.path.join(cfg['path'], '/misc/emOptim'),
             'options' : "-maxIter {maxiter}".format(maxiter=cfg['options']['maxiter']),
-        }),
-        'emoptim2' : BaseConfig({
+        },
+        'emoptim2' : {
             'cmd' : os.path.join(cfg['path'],'/misc/emOptim2'),
             'options' : "-maxIter {maxiter} -P {threads}".format(maxiter=cfg['options']['maxiter'], threads=cfg['options']['threads']),
-        }),
-        'calcstat' : BaseConfig({
+        },
+        'calcstat' : {
             'cmd' : os.path.join(cfg['path'],'/misc/calcStat'),
-        }),
-        'realSFS' : BaseConfig({
+        },
+        'realSFS' : {
             'options' : "-realSFS 1 -GL {gl} -anc {anc} -nThreads {threads}".format(gl=cfg['options']['gl'], anc=cfg['options']['anc'], threads=cfg['options']['threads']),
-        }),
-    }),
-    'bio.ngs.popgen.ngstools' : BaseConfig({
-        'ngsfst' : BaseConfig({
+        },
+    },
+    'bio.ngs.popgen.ngstools' : {
+        'ngsfst' : {
             'cmd' : os.path.join(ngstools_cfg['path'], "ngsFST"),
-        }),
-    }),
-})
+        },
+    },
+}
 
 
 update_sml_config(config_default)

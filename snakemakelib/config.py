@@ -11,8 +11,9 @@ class BaseConfig(dict):
         for k,v in self.items():
             if isinstance(v, dict):
                 if not isinstance(v, BaseConfig):
-                    raise TypeError("section {k}; dictionary {v} must be instance of <BaseConfig> class".format(k=k,v=v) )
-                v._inspect_sections()
+                    logger.info("Updating key {k} to <BaseConfig> class".format(k=k))
+                    self[k] = BaseConfig(v)
+                self[k]._inspect_sections()
 
     def __init__(self, *args, **kwargs):
         dict.__init__(self)
@@ -23,7 +24,7 @@ class BaseConfig(dict):
         if not key in self._sections:
             raise KeyError("section '{key}' not found in configuration dictionary".format(key=key))
         if isinstance(val, dict) and not isinstance(val, BaseConfig):
-            raise TypeError("dictionary {val} must be instance of <BaseConfig> class".format(val=val) )
+            val = BaseConfig(val)
         dict.__setitem__(self, key, val)
 
     def update(self, *args, **kwargs):
@@ -80,7 +81,7 @@ def get_sml_config(section=None):
     return __sml_config__
 
 # TODO: rename default    
-def update_sml_config(default):
+def update_sml_config(config_default):
     """Update sml configuration object.
 
     Loops through items in default configuration and updates the cfg
@@ -96,10 +97,14 @@ def update_sml_config(default):
     Args:
         custom_cfg: A configuration object with custom settings of
                     type <BaseConfig>
-        default: default configuration object of type <BaseConfig>
+        config_default: default configuration object of type <dict> or <BaseConfig>
     """    
     global __sml_config__
-    _update_sml_config(__sml_config__, default)
+    try:
+        config_default = BaseConfig(config_default)
+    except:
+        raise TypeError("Failed to convert config_default to <BaseConfig> object; recieved {cd}".format(cd=type(config_default)))
+    _update_sml_config(__sml_config__, config_default)
 
 def _update_sml_config(config, default):
     """Update snakemakelib configuration object. The default object is

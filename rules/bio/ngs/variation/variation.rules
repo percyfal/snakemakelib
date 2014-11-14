@@ -1,15 +1,15 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.config import update_sml_config, sml_rules_path, BaseConfig, get_sml_config
+from snakemakelib.config import update_sml_config, sml_rules_path, get_sml_config
 
 # Start by including the general snakefile
 include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
 
 bio_cfg = get_sml_config('bio.ngs.settings')
 
-config_default = BaseConfig({
-    'bio.ngs.variation.variation' : BaseConfig({
-        'annovar' : BaseConfig({
+config_default = {
+    'bio.ngs.variation.variation' : {
+        'annovar' : {
             'buildver' : bio_cfg['db']['ref'],
             'convert_options' : "--includeinfo",
             'convert_vcf_format' : "vcf4",
@@ -18,63 +18,63 @@ config_default = BaseConfig({
             'path' : os.curdir,
             'options' : "",
             'table_options' : "--otherinfo",
-        }),
-        'snpeff' : BaseConfig({
+        },
+        'snpeff' : {
             'path' : os.curdir,
             'java_mem' : bio_cfg['java']['java_mem'],
             'java_tmpdir' : bio_cfg['java']['java_tmpdir'],
             'dblist' : "hg19",
             'genome_version' : bio_cfg['db']['ref'],
-        }),
-        'vcftools' : BaseConfig({
+        },
+        'vcftools' : {
             'path' : os.curdir,
-            'options' : BaseConfig({
+            'options' : {
                 'main' : "",
                 'stats' : "",
-            }),
-        }),
-        'htslib' : BaseConfig({
+            },
+        },
+        'htslib' : {
             'path' : os.curdir,
-        }),
-        'vcf' : BaseConfig({
+        },
+        'vcf' : {
             'path' : os.curdir,
-        }),
-    }),
-})
+        },
+    },
+}
 
 update_sml_config(config_default)
 
 var_cfg = get_sml_config('bio.ngs.variation.variation')
 
-config_default = BaseConfig({
-    'bio.ngs.variation.variation' : BaseConfig({
-        'annovar' : BaseConfig({
+config_default = {
+    'bio.ngs.variation.variation' : {
+        'annovar' : {
             'db' : os.path.join(var_cfg['annovar']['path'], "/humandb"),
-        }),
-        'snpeff' : BaseConfig({
+        },
+        'snpeff' : {
             'config' : os.path.join(var_cfg['snpeff']['path'], "snpEff.config"),
             'jar' : os.path.join(var_cfg['snpeff']['path'], "snpEff.jar"),
-        }),
-        'vcftools' : BaseConfig({
+        },
+        'vcftools' : {
             'cmd' : os.path.join(var_cfg['vcftools']['path'], 'vcftools'),
-        }),
-    }),
-})
+        },
+    },
+}
 
 update_sml_config(config_default)
 
 var_cfg = get_sml_config('bio.ngs.variation.variation')
 
-config_default = BaseConfig({
-    'bio.ngs.variation.variation' : BaseConfig({
-        'snpeff' : BaseConfig({
+config_default = {
+    'bio.ngs.variation.variation' : {
+        'snpeff' : {
             'options' : "-c {config} -o gatk".format(config=var_cfg['snpeff']['config']),
             'cmd' : "java -Xmx{java_mem} -Djava.io.tmpdir={java_tmpdir} -jar {jar}".format(java_mem=var_cfg['snpeff']['java_mem'],
                                                                                            java_tmpdir=var_cfg['snpeff']['java_tmpdir'],
                                                                                            jar=var_cfg['snpeff']['jar']),
-        }),
-    }),
-})
+        },
+    },
+}
 
 update_sml_config(config_default)
 

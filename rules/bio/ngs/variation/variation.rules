@@ -1,74 +1,181 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.utils import update_config, sml_rules_path
+from snakemakelib.config import update_sml_config, sml_rules_path, get_sml_config
 
 # Start by including the general snakefile
-include: os.path.join(sml_rules_path(), 'base_settings.rules')
+include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
 
-config_default = { 
-	"variation" : {
-		"SNPEFF_CONFIG" : "$(SNPEFF_HOME)/snpEff.config",
-		"ANNOVAR_DBLIST" : "dgv genomicSuperDups gwascatalog tfbs wgEncodeRegTfbsClustered wgEncodeRegDnaseClustered phastConsElements46way",
-		"ANNOVAR_DB" : "$(ANNOVAR_HOME)/humandb",
-		"SNPEFF_JAVA_MEM" : "$(JAVA_MEM)",
-		"ANNOVAR_TABLE_OPTIONS" : "--otherinfo",
-		"ANNOVAR_CONVERT_OPTIONS" : "--includeinfo",
-		"SNPEFF_HOME" : ".",
-		"SNPEFF_OPTIONS" : "-c $(SNPEFF_CONFIG) -o gatk",
-		"ANNOVAR_HOME" : ".",
-		"ANNOVAR_DBLIST_WEBFROM_ANNOVAR" : "1000g2012apr cosmic64 esp6500si_all esp6500si_ea ljb_all snp137 refGene avsift",
-		"SNPEFF_JAVA_TMPDIR" : "$(JAVA_TMPDIR)",
-		"SNPEFF_DBLIST" : "hg19",
-		"VCFTOOLS_HOME" : ".",
-		"VCFTOOLS_OPTIONS" : "",
-		"SNPEFF_GENOME_VERSION" : "hg19",
-		"ANNOVAR_CONVERT_VCF_FORMAT" : "vcf4",
-		"SNPEFF_COMMAND" : "java -Xmx$(SNPEFF_JAVA_MEM) -Djava.io.tmpdir=$(SNPEFF_JAVA_TMPDIR) -jar $(SNPEFF_JAR)",
-		"SNPEFF_JAR" : "$(SNPEFF_HOME)/snpEff.jar",
-		"HTSLIB_HOME" : ".",
-		"VCF_HOME" : ".",
-		"ANNOVAR_BUILDVER" : "hg19",
-		"ANNOVAR_OPTIONS" : "",
-		"VCFTOOLS_STATS_OPTIONS" : "",
-		},
-	},
+bio_cfg = get_sml_config('bio.ngs.settings')
+
+config_default = {
+    'bio.ngs.variation.variation' : {
+        'annovar' : {
+            'buildver' : bio_cfg['db']['ref'],
+            'convert_options' : "--includeinfo",
+            'convert_vcf_format' : "vcf4",
+            'dblist' : ["dgv", "genomicSuperDups", "gwascatalog", "tfbs", "wgEncodeRegTfbsClustered", "wgEncodeRegDnaseClustered", "phastConsElements46way"],
+            'dblist_webfrom_annovar' : ["1000g2012apr", "cosmic64", "esp6500si_all", "esp6500si_ea", "ljb_all", "snp137", "refGene", "avsift"],
+            'path' : os.curdir,
+            'options' : "",
+            'table_options' : "--otherinfo",
+        },
+        'snpeff' : {
+            'path' : os.curdir,
+            'java_mem' : bio_cfg['java']['java_mem'],
+            'java_tmpdir' : bio_cfg['java']['java_tmpdir'],
+            'dblist' : "hg19",
+            'genome_version' : bio_cfg['db']['ref'],
+        },
+        'vcftools' : {
+            'path' : os.curdir,
+            'options' : {
+                'main' : "",
+                'stats' : "",
+            },
+        },
+        'htslib' : {
+            'path' : os.curdir,
+        },
+        'vcf' : {
+            'path' : os.curdir,
+        },
+    },
 }
 
-config = update_config(config, config_default)
+update_sml_config(config_default)
 
-rule rule_1:
-	input: " {prefix}.vcf"
-	output: "{prefix}.ped"
-	shell: "$(VCFTOOLS_HOME)/vcftools $(VCFTOOLS_OPTIONS) --vcf $< --plink --out $*.tmp && mv $*.tmp.ped $@; mv $*.tmp.map $*.map"
-rule rule_2:
-	input: " {prefix}.vcf"
-	output: "{prefix}.stats.dump"
-	shell: "$(VCFTOOLS_HOME)/vcf-stats $(VCFTOOLS_STATS_OPTIONS)  $< -p $*.stats"
-rule rule_3:
-	input: " {prefix}.vcf"
-	output: "{prefix}.frq"
-	shell: "$(VCFTOOLS_HOME)/vcftools --freq $(VCFTOOLS_OPTIONS) --vcf  $< --out $*.tmp && rename $*.tmp  $* $**"
-rule rule_4:
-	input: " {prefix}.vcf"
-	output: "{prefix}.2.frq"
-	shell: "$(VCFTOOLS_HOME)/vcftools --counts --freq2 $(VCFTOOLS_OPTIONS) --vcf  $< --out $*.2.tmp && rename $*.2.tmp  $*.2 $**"
-rule rule_5:
-	input: " {prefix}.vcf"
-	output: "{prefix}.chk"
-	shell: "$(VCF_HOME)/vcf check $< > $@.tmp && mv $@.tmp $@"
-rule rule_6:
-	input: " {prefix}.chk"
-	output: "{prefix}-summary.pdf"
-	shell: "$(HTSLIB_HOME)/misc/plot-vcfcheck $< -p $*"
-rule rule_7:
-	input: " {prefix}.vcf"
-	output: "{prefix}.annotated.vcf"
-	shell: "$(SNPEFF_COMMAND) $(SNPEFF_OPTIONS) $(SNPEFF_GENOME_VERSION) $< > $@.tmp && mv $@.tmp $@"
-rule rule_8:
-	input: " {prefix}.avinput"
-	output: "{prefix}.avinput.hg19_multianno.txt"
-	shell: "$(ANNOVAR_HOME)/table_annovar.pl $< $(ANNOVAR_DB) $(ANNOVAR_TABLE_OPTIONS) --buildver hg19"
-rule rule_9:
-	input: " {prefix}.vcf"
-	output: "{prefix}.avinput"
-	shell: "$(ANNOVAR_HOME)/convert2annovar.pl  $(ANNOVAR_OPTIONS) $(ANNOVAR_CONVERT_OPTIONS) -format $(ANNOVAR_CONVERT_VCF_FORMAT) $< > $@.tmp && mv $@.tmp $@"
+var_cfg = get_sml_config('bio.ngs.variation.variation')
+
+config_default = {
+    'bio.ngs.variation.variation' : {
+        'annovar' : {
+            'db' : os.path.join(var_cfg['annovar']['path'], "/humandb"),
+        },
+        'snpeff' : {
+            'config' : os.path.join(var_cfg['snpeff']['path'], "snpEff.config"),
+            'jar' : os.path.join(var_cfg['snpeff']['path'], "snpEff.jar"),
+        },
+        'vcftools' : {
+            'cmd' : os.path.join(var_cfg['vcftools']['path'], 'vcftools'),
+        },
+    },
+}
+
+update_sml_config(config_default)
+
+var_cfg = get_sml_config('bio.ngs.variation.variation')
+
+config_default = {
+    'bio.ngs.variation.variation' : {
+        'snpeff' : {
+            'options' : "-c {config} -o gatk".format(config=var_cfg['snpeff']['config']),
+            'cmd' : "java -Xmx{java_mem} -Djava.io.tmpdir={java_tmpdir} -jar {jar}".format(java_mem=var_cfg['snpeff']['java_mem'],
+                                                                                           java_tmpdir=var_cfg['snpeff']['java_tmpdir'],
+                                                                                           jar=var_cfg['snpeff']['jar']),
+        },
+    },
+}
+
+update_sml_config(config_default)
+
+cfg = get_sml_config('bio.ngs.variation.variation')
+
+rule vcftools_vcf2ped:
+    """vcftools: convert ped file to vcf."""
+    params: cmd=cfg['vcftools']['cmd'],
+            options=cfg['vcftools']['options']['main']
+    input: "{prefix}.vcf"
+    output: "{prefix}.ped"
+    shell: "{params.cmd} {params.options} --vcf {input} --plink --out {output}"
+
+rule vcftools_dump_stats:
+    """vcftools: dump statistics"""
+    params: cmd=os.path.join(cfg['vcftools']['path'], 'vcf-stats'),
+            options=cfg['vcftools']['options']['stats']
+    input: "{prefix}.vcf"
+    output: "{prefix}.stats.dump"
+    shell: "{params.cmd} {params.options} {input} -p {wildcards.prefix}.stats"
+
+rule vcftools_vcf_freq:
+    """vcftools: calculate the variant frequencies in a vcf file"""
+    params: cmd=cfg['vcftools']['cmd'],
+            options=cfg['vcftools']['options']['main']
+    input: "{prefix}.vcf"
+    output: "{prefix}.frq"
+    shell: "{params.cmd} --freq {params.options} --vcf  {input} --out {wildcards.prefix}"
+
+rule vcftools_vcf_freq2:
+    """vcftools: calculate the variant frequencies in a vcf file using option --freq2"""
+    params: cmd=cfg['vcftools']['cmd'],
+            options=cfg['vcftools']['options']['main']
+    input: "{prefix}.vcf"
+    output: "{prefix}.2.frq"
+    shell: "{params.cmd} --counts --freq2 {params.options} --vcf {input} --out {wildcards.prefix}.2"
+
+# Vcf
+rule vcf_chk:
+    """vcf: Run vcf check on vcf file"""
+    params: cmd=os.path.join(cfg['vcf']['path'], 'vcf')
+    input: "{prefix}.vcf"
+    output: "{prefix}.chk"
+    shell: "{params.cmd} check {input} > {output}"
+
+# Htslib
+rule htslib_plot_vcfcheck:
+    """htslib: plot vcf check outut file"""
+    params: cmd=os.path.join(cfg['htslib']['path'], 'misc/plot-vcfcheck')
+    input: "{prefix}.chk"
+    output: "{prefix}-summary.pdf"
+    shell: "{params.cmd} {input} -p {wildcards.prefix}"
+
+
+# snpEff
+rule snpeff_download_database:
+    """Download snpEff database. FIXME: fix output so that rule doesn't rerun everytime."""
+    params: snpeffhome=cfg['snpeff']['path'],
+            cmd="java -jar {}".format(cfg['snpeff']['jar']),
+    output: cfg['snpeff']['dblist']
+    shell: "cd {params.snpeffhome} && {params.cmd} download {output}"
+
+rule snpeff_annotate_variants:
+    """snpEff: annotate variants"""
+    params: cmd = "java -jar {}".format(cfg['snpeff']['jar']),
+            options=cfg['snpeff']['options'],
+            genome_version=cfg['snpeff']['genome_version']
+    input: "{prefix}.vcf"
+    output: "{prefix}.annotated.vcf"
+    shell: "{params.cmd} {params.options} {params.genome_version} {input} > {output}"
+
+# Annovar
+rule annovar_table_annovar:
+    """annovar: run table_annovar. Currently only defined for hg19."""
+    params: cmd=os.path.join(cfg['annovar']['path'], 'table_annovar.pl'),
+            options=cfg['annovar']['table_options'],
+            db=cfg['annovar']['db'],
+            buildver=cfg['annovar']['buildver']
+    input: "{prefix}.avinput"
+    output: "{prefix}.avinput.hg19_multianno.txt"
+    shell: "{params.cmd} {input} {params.db} {params.options} --buildver hg19"
+
+rule annovar_convert2annovar:
+    """Convert data to annovar format"""
+    params: cmd=os.path.join(cfg['annovar']['path'], 'convert2annovar.pl'),
+            options=" ".join([cfg['annovar']['options'], cfg['annovar']['convert_options']]),
+            vcf_format = cfg['annovar']['convert_vcf_format']
+    input: "{prefix}.vcf"
+    output: "{prefix}.avinput"
+    shell: "{params.cmd} {params.options} -format {params.vcf_format} {input} > {output}"
+
+rule annovar_download_webfrom_annovar:
+    params: cmd=os.path.join(cfg['annovar']['path'], 'annotate_variation.pl'),
+            buildver=cfg['annovar']['buildver'],
+            db = cfg['annovar']['db']
+    output: "{db}"
+    shell: "{params.cmd} -buildver {params.buildver} -downdb -webfrom annovar {wildcards.db} {params.db}"
+
+rule annovar_download:
+    params: cmd=os.path.join(cfg['annovar']['path'], 'annotate_variation.pl'),
+            buildver=cfg['annovar']['buildver'],
+            db = cfg['annovar']['db']
+    output: "{db}"
+    shell: "{params.cmd} -buildver {params.buildver} -downdb {wildcards.db} {params.db}"

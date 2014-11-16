@@ -1,5 +1,6 @@
 # -*- snakemake -*-
 import os
+import glob
 from snakemakelib.config import update_sml_config, sml_rules_path, get_sml_config, sml_path
 
 # Start by including the general snakefile
@@ -9,18 +10,18 @@ include: os.path.join(sml_rules_path(), 'comp', 'settings.rules')
 
 
 # Jar program names
-BUILD_BAM_INDEX = "BuildBamIndex.jar"
-SORT_SAM = "SortSam.jar"
-MERGE_SAM_FILES = "MergeSamFiles.jar"
-REORDER_SAM = "ReorderSam.jar"
-MARK_DUPLICATES = "MarkDuplicates.jar"
-CREATE_SEQUENCE_DICTIONARY = "CreateSequenceDictionary.jar"
-COLLECT_INSERT_SIZE_METRICS = "CollectInsertSizeMetrics.jar"
-COLLECT_ALIGNMENT_SUMMARY_METRICS = "CollectAlignmentSummaryMetrics.jar"
-CALCULATE_HS_METRICS = "CalculateHsMetrics.jar"
-ADD_OR_REPLACE_READ_GROUPS = "AddOrReplaceReadGroups.jar"
+BUILD_BAM_INDEX = "BuildBamIndex"
+SORT_SAM = "SortSam"
+MERGE_SAM_FILES = "MergeSamFiles"
+REORDER_SAM = "ReorderSam"
+MARK_DUPLICATES = "MarkDuplicates"
+CREATE_SEQUENCE_DICTIONARY = "CreateSequenceDictionary"
+COLLECT_INSERT_SIZE_METRICS = "CollectInsertSizeMetrics"
+COLLECT_ALIGNMENT_SUMMARY_METRICS = "CollectAlignmentSummaryMetrics"
+CALCULATE_HS_METRICS = "CalculateHsMetrics"
+ADD_OR_REPLACE_READ_GROUPS = "AddOrReplaceReadGroups"
 
-sml_config = get_sml_config()
+ngs_cfg = get_sml_config('bio.ngs.settings')
 
 config_default = { 
     'bio.ngs.qc.picard' : {
@@ -30,41 +31,47 @@ config_default = {
         #'hsmetrics_targets' : "$(subst .bam,.hs_metrics,$(wildcard $(inputdir)/*/*recal.bam))",
         'add_or_replace_read_groups_options' : "sort_order=coordinate create_index=true",
         'alignmetrics_targets' : [],
-        'bait_regions' : sml_config['bio.ngs.settings']['sequence_capture']['bait_regions'],
+        'bait_regions' : ngs_cfg['sequence_capture']['bait_regions'],
         'common_options' : "VALIDATION_STRINGENCY=SILENT",
         'dupmetrics_targets' : [],
         'home' : ".",
         'hsmetrics_targets' : [],
         'insertmetrics_targets' : [],
-        'java_mem' : sml_config['bio.ngs.settings']['java']['java_mem'],
-        'java_tmpdir' : sml_config['bio.ngs.settings']['java']['java_tmpdir'],
-        'merge_sam_prefix' : "merge",
-        'merge_sam_options' : "CREATE_INDEX=true",
-        'merge_sam_targets' : [],
+        'java_mem' : ngs_cfg['java']['java_mem'],
+        'java_tmpdir' : ngs_cfg['java']['java_tmpdir'],
         'plotmetrics' : os.path.join(sml_path(), "scripts", "plotMetrics.R"),
-        'ref' : sml_config['bio.ngs.settings']['db']['ref'],
+        'ref' : ngs_cfg['db']['ref'],
         'sort_sam_options' : "SORT_ORDER=coordinate",
-        'target_regions' : sml_config['bio.ngs.settings']['sequence_capture']['target_regions'],
+        'target_regions' : ngs_cfg['sequence_capture']['target_regions'],
+        'merge_sam' : {
+            'suffix' : '.sort.bam', # source suffixes
+            'label' : "merge", # target label
+            'options' : "CREATE_INDEX=true",
+            'output' : [],
+            'input' : [],
+        },
     },
 }
 
 update_sml_config(config_default)
 
-sml_config = get_sml_config()
+picard_config = get_sml_config('bio.ngs.qc.picard')
 
-config_default['bio.ngs.qc.picard']['options'] = sml_config['bio.ngs.qc.picard']['common_options'] 
+config_default['bio.ngs.qc.picard']['options'] = picard_config['common_options'] 
 
-config_default['bio.ngs.qc.picard']['cmd'] = "java -Xmx" + sml_config['bio.ngs.qc.picard']['java_mem'] + " -Djava.io.tmpdir=" + sml_config['bio.ngs.qc.picard']['java_tmpdir'] + " -jar "
+config_default['bio.ngs.qc.picard']['cmd'] = " ".join(["java -Xmx" + picard_config['java_mem'],
+                                                       "-Djava.io.tmpdir=" + picard_config['java_tmpdir'], 
+                                                       "-jar", os.path.join(picard_config['home'], "picard.jar ")])
 
 update_sml_config(config_default)
 
 # Use picard config to increase readibility
 sml_config = get_sml_config()
-picard_config = sml_config['bio.ngs.qc.picard']
+picard_config = get_sml_config('bio.ngs.qc.picard')
 
 rule picard_build_bam_index:
     """Picard: build bam index from bam file"""
-    params: cmd = picard_config['cmd'] + os.path.join(picard_config['home'], BUILD_BAM_INDEX),
+    params: cmd = picard_config['cmd'] +  BUILD_BAM_INDEX,
             options = picard_config['options']
     input: "{prefix}.bam"
     output: "{prefix}.bai"
@@ -73,7 +80,7 @@ rule picard_build_bam_index:
 
 rule picard_sort_bam:
     """Picard: sort bam file"""
-    params: cmd = picard_config['cmd'] + os.path.join(picard_config['home'], SORT_SAM),
+    params: cmd = picard_config['cmd'] + SORT_SAM,
             options = picard_config['options'],
             sortsam_options = picard_config['sort_sam_options']
     input: "{prefix}.bam"
@@ -82,7 +89,7 @@ rule picard_sort_bam:
 
 rule picard_reorder_bam:
     """Picard: reorder bam file"""
-    params: cmd = picard_config['cmd'] + os.path.join(picard_config['home'], REORDER_SAM),
+    params: cmd = picard_config['cmd'] + REORDER_SAM,
             options = picard_config['options']
     input: "{prefix}.bam", picard_config['ref']
     output: "{prefix}.resorted.bam"
@@ -90,14 +97,14 @@ rule picard_reorder_bam:
 
 rule picard_mark_duplicates:
     """Picard: mark duplicates"""
-    params: cmd = picard_config['cmd'] + os.path.join(picard_config['home'], MARK_DUPLICATES),
+    params: cmd = picard_config['cmd'] + MARK_DUPLICATES,
             options = picard_config['options']
-    input: "{prefix}.bam"
-    output: "{prefix}.dup.bam", "{prefix}.dup_metrics"
-    shell: "{params.cmd} I={input} O={output[0]} {params.options} M={output[1]}"
+    input: "{prefix}.bam", "{prefix}.bai"
+    output: "{prefix}.dup.bam"
+    shell: "{params.cmd} I={input} O={output} {params.options} M={wildcards.prefix}.dup_metrics"
 
 # rule picard_create_sequence_dictionary:
-#     params: cmd = picard_config['cmd'] + os.path.join(picard_config['home'], CREATE_SEQUENCE_DICTIONARY),
+#     params: cmd = picard_config['cmd'] + CREATE_SEQUENCE_DICTIONARY,
 #             options = picard_config['options']
 #     input: picard_config['ref']
 #     output: "{prefix}.interval_list"
@@ -105,7 +112,7 @@ rule picard_mark_duplicates:
 
 rule picard_create_interval_list_awk:
     """Picard: create interval list using awk"""
-    params: cmd = picard_config['cmd'] + os.path.join(picard_config['home'], CREATE_SEQUENCE_DICTIONARY),
+    params: cmd = picard_config['cmd'] + CREATE_SEQUENCE_DICTIONARY,
             options = picard_config['options']
     input: "{prefix}.bed", picard_config['ref'].replace(".fa", ".interval_list")
     output: "{prefix}.interval_list"
@@ -113,23 +120,25 @@ rule picard_create_interval_list_awk:
 
 rule picard_collect_insert_size_metrics:
     """Picard: collect insertion size metrics"""
-    params: cmd = picard_config['cmd'] + os.path.join(picard_config['home'], COLLECT_INSERT_SIZE_METRICS),
+    params: cmd = picard_config['cmd'] + COLLECT_INSERT_SIZE_METRICS,
             options = picard_config['options']
     input: "{prefix}.bam", "{prefix}.bai"
     output: "{prefix}.insert_metrics"
     shell: "{params.cmd} {params.options} H={wildcards.prefix}.hist I={input[0]} O={output} R={input[1]}"
 
 rule picard_mark_duplicates_metrics:
-    """Picard: mark duplicates metrics. See also picard_mark_duplicates"""
-    params: cmd = picard_config['cmd'] + os.path.join(picard_config['home'], MARK_DUPLICATES),
+    """Picard: mark duplicates metrics. See also picard_mark_duplicates."""
+    params: cmd = picard_config['cmd'] + MARK_DUPLICATES,
             options = picard_config['options']
     input: "{prefix}.bam", "{prefix}.bai"
-    output: "{prefix}.dup_metrics", "{prefix}.dup.bam"
-    shell: "{params.cmd} {params.options} I={input[0]} M={output[0]} O={output[1]}"
+    output: "{prefix}.dup_metrics"
+    shell: "{params.cmd} {params.options} I={input[0]} M={output} O={wildcards.prefix}.dup.bam"
+
+ruleorder: picard_mark_duplicates > picard_mark_duplicates_metrics
 
 rule picard_collect_alignment_summary_metrics:
     """Picard: collect alignment summary metrics"""
-    params: cmd = picard_config['cmd'] + os.path.join(picard_config['home'], COLLECT_ALIGNMENT_SUMMARY_METRICS),
+    params: cmd = picard_config['cmd'] + COLLECT_ALIGNMENT_SUMMARY_METRICS,
             options = picard_config['options']
     input: "{prefix}.bam", "{prefix}.bai", picard_config['ref']
     output: "{prefix}.align_metrics"
@@ -137,7 +146,7 @@ rule picard_collect_alignment_summary_metrics:
 
 rule picard_calculate_hs_metrics:
     """Picard: calculate hybrid selection metrics"""
-    params: cmd = picard_config['cmd'] + os.path.join(picard_config['home'], CALCULATE_HS_METRICS),
+    params: cmd = picard_config['cmd'] + CALCULATE_HS_METRICS,
             options = picard_config['options'],
             target_regions = picard_config['target_regions'],
             bait_regions = picard_config['bait_regions']
@@ -154,7 +163,7 @@ rule picard_plot_metrics:
 
 rule picard_add_or_replace_read_groups:
     """Picard: add or replace read groups. Currently tailored for Illumina read groups."""
-    params: cmd = picard_config['cmd'] + os.path.join(picard_config['home'], ADD_OR_REPLACE_READ_GROUPS),
+    params: cmd = picard_config['cmd'] + ADD_OR_REPLACE_READ_GROUPS,
             options = picard_config['options'],
             custom_options = picard_config['add_or_replace_read_groups_options'],
             lib = "lib",
@@ -169,12 +178,26 @@ rule picard_add_or_replace_read_groups:
     output: "{prefix}.rg.bam"
     shell: "{params.cmd} INPUT={input} OUTPUT={output} {params.custom_options} RGID={params.rgid} RGLIB={params.lib} RGSM={params.rgsm} RGPL={params.rgpl} RGPU={params.rgpu}"
 
+
+# FIXME: this is hacky at the moment but is a proof of principle
+def find_merge_inputs(wildcards):
+    """Find the input files for picard_merge_sam"""
+    print(wildcards.prefix)
+    subdirs = [d for d in os.listdir(wildcards.path) if os.path.isdir(os.path.join(wildcards.path, d))]
+    sources = []
+    for d in subdirs:
+        #src = glob.glob("{path}{sep}{prefix}*{suffix}".format(path=os.path.join(wildcards.path, d), sep=os.sep, prefix=wildcards.prefix, suffix=picard_config['merge_sam']['suffix']))
+        src = glob.glob("{path}{sep}{prefix}.bam".format(path=os.path.join(wildcards.path, d), sep=os.sep, prefix=wildcards.prefix))
+        sources += src
+    return sources
+
 rule picard_merge_sam:
     """Picard: merge sam files"""
-    params: cmd = picard_config['cmd'] + os.path.join(picard_config['home'], MERGE_SAM_FILES),
+    params: cmd = picard_config['cmd'] + MERGE_SAM_FILES,
             options = " ".join([picard_config['options'],
-            picard_config['merge_sam_options'],
-            picard_config['common_options']])
-    input: ["INPUT={}".format(x) for x in picard_config['merge_sam_targets']]
-    output: picard_config['merge_sam_prefix'] + ".merge.bam"
-    shell: "{params.cmd} {input} O={output} {params.options}"
+                                picard_config['merge_sam']['options']])
+    input: find_merge_inputs
+    output: "{path}" + os.sep + "{prefix}." + picard_config['merge_sam']['label'] + ".bam"
+    run: 
+      inputstr = " ".join(["INPUT={}".format(x) for x in input])
+      shell("{cmd} {ips} OUTPUT={out} {opt}".format(cmd=params.cmd, ips=inputstr, out=output, opt=params.options))

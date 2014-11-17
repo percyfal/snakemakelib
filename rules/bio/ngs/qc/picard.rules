@@ -45,7 +45,7 @@ config_default = {
         'target_regions' : ngs_cfg['sequence_capture']['target_regions'],
         'merge_sam' : {
             'suffix' : '.sort.bam', # source suffixes
-            'label' : "merge", # target label
+            'label' : "sort.merge", # target label
             'options' : "CREATE_INDEX=true",
             'output' : [],
             'input' : [],
@@ -77,7 +77,6 @@ rule picard_build_bam_index:
     output: "{prefix}.bai"
     shell: "{params.cmd} I={input} O={output} {params.options}"
 
-
 rule picard_sort_bam:
     """Picard: sort bam file"""
     params: cmd = picard_config['cmd'] + SORT_SAM,
@@ -101,7 +100,9 @@ rule picard_mark_duplicates:
             options = picard_config['options']
     input: "{prefix}.bam", "{prefix}.bai"
     output: "{prefix}.dup.bam"
-    shell: "{params.cmd} I={input} O={output} {params.options} M={wildcards.prefix}.dup_metrics"
+    shell: "{params.cmd} I={input[0]} O={output} {params.options} M={wildcards.prefix}.dup_metrics"
+
+ruleorder: picard_mark_duplicates > picard_build_bam_index
 
 # rule picard_create_sequence_dictionary:
 #     params: cmd = picard_config['cmd'] + CREATE_SEQUENCE_DICTIONARY,
@@ -173,22 +174,24 @@ rule picard_add_or_replace_read_groups:
             # rgsm = input.split(".")[0]
             rgpu = "rgpu",
             rgid = "rgid",
-            rgsm = "rgsm"
+            rgsm = "RGSM"
     input: "{prefix}.bam"
-    output: "{prefix}.rg.bam"
-    shell: "{params.cmd} INPUT={input} OUTPUT={output} {params.custom_options} RGID={params.rgid} RGLIB={params.lib} RGSM={params.rgsm} RGPL={params.rgpl} RGPU={params.rgpu}"
+    output: "{prefix}.rg.bam", "{prefix}.rg.bai"
+    shell: "{params.cmd} INPUT={input} OUTPUT={output[0]} {params.custom_options} RGID={params.rgid} RGLB={params.lib} RGSM={params.rgsm} RGPL={params.rgpl} RGPU={params.rgpu}"
 
+ruleorder: picard_add_or_replace_read_groups > picard_build_bam_index
 
 # FIXME: this is hacky at the moment but is a proof of principle
 def find_merge_inputs(wildcards):
     """Find the input files for picard_merge_sam"""
-    print(wildcards.prefix)
     subdirs = [d for d in os.listdir(wildcards.path) if os.path.isdir(os.path.join(wildcards.path, d))]
     sources = []
     for d in subdirs:
-        #src = glob.glob("{path}{sep}{prefix}*{suffix}".format(path=os.path.join(wildcards.path, d), sep=os.sep, prefix=wildcards.prefix, suffix=picard_config['merge_sam']['suffix']))
-        src = glob.glob("{path}{sep}{prefix}.bam".format(path=os.path.join(wildcards.path, d), sep=os.sep, prefix=wildcards.prefix))
-        sources += src
+        # Assume we start from fastq sources; could be more than one barcode, more than one lane
+        fqsrc = sorted(glob.glob("{path}{sep}{prefix}*{suffix}".format(path=os.path.join(wildcards.path, d), sep=os.sep, prefix=wildcards.prefix, suffix=sml_config['bio.ngs.settings']['fastq_suffix'])))
+        pfx = fqsrc[0].replace(sml_config['bio.ngs.settings']['fastq_suffix'], "").replace(sml_config['bio.ngs.settings']['read1_label'], "")
+        src = "{prefix}{suffix}".format(prefix=pfx, suffix=picard_config['merge_sam']['suffix'])
+        sources.append(src)
     return sources
 
 rule picard_merge_sam:

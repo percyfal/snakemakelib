@@ -1,28 +1,28 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.config import update_sml_config, sml_rules_path, BaseConfig, get_sml_config
+from snakemakelib.config import update_sml_config, sml_rules_path, get_sml_config
 
 # Start by including the general snakefile
 include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
 
 sml_config = get_sml_config()
 
-config_default = BaseConfig({
-    'bio.ngs.align.bowtie' : BaseConfig({
-        'bowtie' : BaseConfig({
+config_default = {
+    'bio.ngs.align.bowtie' : {
+        'bowtie' : {
             'ref' : sml_config['bio.ngs.settings']['db']['ref'],
             'cmd' : "bowtie",
             'options' : "",
             'threads' : sml_config['bio.ngs.settings']['threads'],
-        }),
-        'bowtie2' : BaseConfig({
+        },
+        'bowtie2' : {
             'ref' : sml_config['bio.ngs.settings']['db']['ref'],
             'cmd' : "bowtie2",
             'options' : "",
             'threads' : sml_config['bio.ngs.settings']['threads'],
-        }),
-    }),   
-})
+        },
+    },   
+}
 
 update_sml_config(config_default)
 

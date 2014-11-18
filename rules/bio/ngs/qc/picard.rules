@@ -1,6 +1,6 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.config import update_sml_config, sml_rules_path, BaseConfig, get_sml_config, sml_path
+from snakemakelib.config import update_sml_config, sml_rules_path, get_sml_config, sml_path
 
 # Start by including the general snakefile
 include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
@@ -22,8 +22,8 @@ ADD_OR_REPLACE_READ_GROUPS = "AddOrReplaceReadGroups.jar"
 
 sml_config = get_sml_config()
 
-config_default = BaseConfig({ 
-    'bio.ngs.qc.picard' : BaseConfig({
+config_default = { 
+    'bio.ngs.qc.picard' : {
         # 'insertmetrics_targets' : "$(subst .bam,.insert_metrics,$(wildcard $(inputdir)/*/*recal.bam))",
         #'alignmetrics_targets' : "$(subst .bam,.align_metrics,$(wildcard $(inputdir)/*/*recal.bam))",
         #'dupmetrics_targets' : "$(subst .bam,.dup_metrics,$(wildcard $(inputdir)/*/*recal.bam))",
@@ -45,17 +45,15 @@ config_default = BaseConfig({
         'ref' : sml_config['bio.ngs.settings']['db']['ref'],
         'sort_sam_options' : "SORT_ORDER=coordinate",
         'target_regions' : sml_config['bio.ngs.settings']['sequence_capture']['target_regions'],
-    }),
-})
+    },
+}
 
 update_sml_config(config_default)
 
 sml_config = get_sml_config()
 
-config_default['bio.ngs.qc.picard'].add_section('options')
 config_default['bio.ngs.qc.picard']['options'] = sml_config['bio.ngs.qc.picard']['common_options'] 
 
-config_default['bio.ngs.qc.picard'].add_section('cmd')
 config_default['bio.ngs.qc.picard']['cmd'] = "java -Xmx" + sml_config['bio.ngs.qc.picard']['java_mem'] + " -Djava.io.tmpdir=" + sml_config['bio.ngs.qc.picard']['java_tmpdir'] + " -jar "
 
 update_sml_config(config_default)

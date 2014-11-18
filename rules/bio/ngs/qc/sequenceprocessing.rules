@@ -1,6 +1,6 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.config import update_sml_config, sml_rules_path, BaseConfig, get_sml_config
+from snakemakelib.config import update_sml_config, sml_rules_path, get_sml_config
 
 # Start by including the general snakefile
 include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
@@ -9,49 +9,47 @@ sml_config = get_sml_config()
 
 TRIMMOMATIC_JAR_PROGRAM = "trimmomatic.jar"
 
-config_default = BaseConfig({ 
-    'bio.ngs.qc.sequenceprocessing' : BaseConfig({
-        'cutadapt' : BaseConfig({
+config_default = { 
+    'bio.ngs.qc.sequenceprocessing' : {
+        'cutadapt' : {
             'cmd' : "cutadapt",
             'threeprime': "AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC",
             'fiveprime' : "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT",
             'options' : "",
-        }),
-        'trimmomatic' : BaseConfig({
+        },
+        'trimmomatic' : {
             'home' : ".",
             'options' : "-phred33",
             'java_mem' : sml_config['bio.ngs.settings']['java']['java_mem'],
             'java_tmpdir' : sml_config['bio.ngs.settings']['java']['java_tmpdir'],
             'processing_options' : "LEADING:15 TRAILING:15 MINLEN:36",
-        }),
-        'resyncmates' : BaseConfig({
+        },
+        'resyncmates' : {
             'home' : ".",
             'cmd' : "resyncmates.pl",
             'options' : "",
-        }),
-        'fastqc' : BaseConfig({
+        },
+        'fastqc' : {
             'cmd' : "fastqc",
             'options' : "-q",
-        }),
-        'trim_galore' : BaseConfig({
+        },
+        'trim_galore' : {
             'cmd' : "trim_galore",
             'options' : "--paired --trim1 --phred33 --fastqc",
             'read1_suffix' : "_val_1.fq.gz",
             'read2_suffix' : "_val_2.fq.gz",
-        }),
-    }),
-})
+        },
+    },
+}
 
 update_sml_config(config_default)
 
-config_default['bio.ngs.qc.sequenceprocessing']['trimmomatic'].add_section('jar')
 config_default['bio.ngs.qc.sequenceprocessing']['trimmomatic']['jar'] = os.path.join(sml_config['bio.ngs.qc.sequenceprocessing']['trimmomatic']['home'], TRIMMOMATIC_JAR_PROGRAM)
 
 update_sml_config(config_default)
 
 sml_config = get_sml_config()
 
-config_default['bio.ngs.qc.sequenceprocessing']['trimmomatic'].add_section('cmd')
 config_default['bio.ngs.qc.sequenceprocessing']['trimmomatic']['cmd']  = "java -Xmx" + sml_config['bio.ngs.qc.sequenceprocessing']['trimmomatic']['java_mem'] + " -Djava.io.tmpdir=" + sml_config['bio.ngs.qc.sequenceprocessing']['trimmomatic']['java_tmpdir'] +  " -jar " + sml_config['bio.ngs.qc.sequenceprocessing']['trimmomatic']['jar']
 
 update_sml_config(config_default)

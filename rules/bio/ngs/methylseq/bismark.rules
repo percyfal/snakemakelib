@@ -1,6 +1,6 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.config import update_sml_config, sml_rules_path, BaseConfig, get_sml_config
+from snakemakelib.config import update_sml_config, sml_rules_path, get_sml_config
 from snakemakelib.bio.ngs.methylseq.bismark import ref
 
 # Start by including the general bio.ngs snakefile
@@ -8,27 +8,27 @@ include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
 
 ngs_cfg = get_sml_config('bio.ngs.settings')
 
-config_default = BaseConfig({
-    'bio.ngs.methylseq.bismark' : BaseConfig({
+config_default = {
+    'bio.ngs.methylseq.bismark' : {
         'ref' : ref(),
-        'align' : BaseConfig({
+        'align' : {
             'cmd' : 'bismark',
             'options' : '--bam --bowtie2 --phred33-quals',
             'threads' : 8,
-        }),
-        'deduplicate' : BaseConfig({
+        },
+        'deduplicate' : {
             'cmd' : 'deduplicate_bismark',
             'options' : '-p --bam',
-        }),
-        'methXtract' : BaseConfig({
+        },
+        'methXtract' : {
             'cmd' : 'bismark_methylation_extractor',
             'options' : "--bedGraph --counts  --gzip -p --no_overlap --report",
-        }),
-        'report' : BaseConfig({
+        },
+        'report' : {
             'cmd' : 'bismark2report',
-        }),
-    }),
-})
+        },
+    },
+}
 
 update_sml_config(config_default)
 

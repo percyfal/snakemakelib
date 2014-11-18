@@ -1,15 +1,13 @@
 # -*- snakemake -*- 
 import os
-from snakemakelib.utils import update_config, sml_rules_path
-import snakemakelib.variables as VAR
+from snakemakelib.utils import update_sml_config, sml_rules_path
 
 include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
 
-
 config_default = {
-    VAR.BIO_NGS_PLATFORM_ILLUMINA : {
-        VAR.PLATFORM : "Illumina",
+    'bio.ngs.platform.illumina' : {
+        'platform' : "Illumina",
     } 
 }
 
-config = update_config(config, config_default)
+update_sml_config(config_default)

@@ -10,7 +10,6 @@ ngs_cfg = get_sml_config('bio.ngs.settings')
 
 config_default = BaseConfig({
     'bio.ngs.methylseq.bismark' : BaseConfig({
-        #'ref' : ngs_cfg['db']['ref'],
         'ref' : ref(),
         'align' : BaseConfig({
             'cmd' : 'bismark',
@@ -19,7 +18,7 @@ config_default = BaseConfig({
         }),
         'deduplicate' : BaseConfig({
             'cmd' : 'deduplicate_bismark',
-            'options' : '-p',
+            'options' : '-p --bam',
         }),
         'methXtract' : BaseConfig({
             'cmd' : 'bismark_methylation_extractor',
@@ -36,7 +35,6 @@ update_sml_config(config_default)
 cfg = get_sml_config('bio.ngs.methylseq.bismark')
 ngs_cfg = get_sml_config('bio.ngs.settings')
 
-# output: 8_140207_AC3NVGACXX_P923_101_1_val_1.fq.gz_bismark_bt2_pe.bam
 rule bismark_align:
     """bismark: Run bismark align."""
     params: options = cfg['align']['options'],
@@ -46,9 +44,8 @@ rule bismark_align:
     input: "{path}" + os.sep + "{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['read1_suffix'],\
            "{path}" + os.sep + "{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['read2_suffix']
     output: "{path}" + os.sep + "{prefix}_bismark_bt2_pe.bam"
-    shell: "{params.cmd} {params.options} {params.ref} -1 {input[0]} -2 {input[1]} -o {wildcards.path} -p {threads}"
+    shell: "{params.cmd} {params.options} {params.ref} -1 {input[0]} -2 {input[1]} -o {wildcards.path} -p {threads} -B {wildcards.prefix}"
 
-# output: 8_140207_AC3NVGACXX_P923_101_1_val_1.fq.gz_bismark_bt2_pe.deduplicated.bam
 rule bismark_deduplicate:
     """bismark: Run bismark deduplication."""
     params: options = cfg['deduplicate']['options'],
@@ -58,8 +55,6 @@ rule bismark_deduplicate:
     shell: "{params.cmd} {params.options} {input}"
     
 
-# output: 8_140207_AC3NVGACXX_P923_101_1_val_1.fq.gz_bismark_bt2_pe.deduplicated.bedGraph
-# 8_140207_AC3NVGACXX_P923_101_1_val_1.fq.gz_bismark_bt2_pe.deduplicated.bismark.cov
 rule bismark_methXtract:
     """bismark: Run bismark methylation extractor"""
     params: options = cfg['methXtract']['options'],

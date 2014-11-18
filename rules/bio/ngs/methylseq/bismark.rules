@@ -6,34 +6,79 @@ from snakemakelib.bio.ngs.methylseq.bismark import ref
 # Start by including the general bio.ngs snakefile
 include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
 
-sml_config = get_sml_config()
+ngs_cfg = get_sml_config('bio.ngs.settings')
 
 config_default = {
-     'bio.ngs.methylseq.bismark' : {
-         #'ref' : sml_config['bio.ngs.settings']['db']['ref'],
+    'bio.ngs.methylseq.bismark' : {
         'ref' : ref(),
-        'cmd' : "bismark",
-        'main' : {
+        'align' : {
+            'cmd' : 'bismark',
             'options' : '--bam --bowtie2 --phred33-quals',
+            'threads' : 8,
+            'suffix'  : '_bismark_bt2_pe.bam',
+        },
+        'deduplicate' : {
+            'cmd' : 'deduplicate_bismark',
+            'options' : '-p --bam',
+        },
+        'methXtract' : {
+            'cmd' : 'bismark_methylation_extractor',
+            'options' : "--counts  --gzip -p --no_overlap",
+        },
+        'report' : {
+            'cmd' : 'bismark2report',
+            'options' : "",
         },
     },
 }
 
 update_sml_config(config_default)
 
-#### CFCMD bismark --bam --bowtie2 --phred33-quals
-#### /apus/v1/a2010002/nobackup/biodata/genomes/Hsapiens/GRCh37/seq -1
-#### 8_140207_AC3NVGACXX_P923_101_1_val_1.fq.gz -2
-#### 8_140207_AC3NVGACXX_P923_101_2_val_2.fq.gz
-
 cfg = get_sml_config('bio.ngs.methylseq.bismark')
+ngs_cfg = get_sml_config('bio.ngs.settings')
 
-rule bismark_main:
-    """bismark: Run bismark methylation analysis"""
-    params: options = cfg['main']['options'],
-            cmd = cfg['cmd'],
-            ref = cfg['ref']
-    input: "{path}" + os.sep + "{prefix}" + sml_config['bio.ngs.settings']['read1_label'] + sml_config['bio.ngs.settings']['fastq_suffix'],\
-    "{path}" + os.sep + "{prefix}" + sml_config['bio.ngs.settings']['read2_label'] + sml_config['bio.ngs.settings']['fastq_suffix']
-    output: "{path}" + os.sep + "{prefix}.bismark"
-    shell: "{params.cmd} {params.options} {params.ref} -1 {input[0]} -2 {input[1]} -o {wildcards.path}"
+# Prefix: 8_140228_BC3TYRACXX_P923_101
+# Input: 8_140207_AC3NVGACXX_P923_101_1_val_1.fq.gz, 8_140207_AC3NVGACXX_P923_101_2_val_2.fq.gz
+rule bismark_align:
+    """bismark: Run bismark align."""
+    params: options = cfg['align']['options'],
+            cmd = cfg['align']['cmd'],
+            ref = cfg['ref'],
+            sfx = cfg['align']['suffix']
+    threads: cfg['align']['threads']
+    input: "{path}" + os.sep + "{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['read1_suffix'],\
+           "{path}" + os.sep + "{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['read2_suffix']
+    output: "{path}" + os.sep + "{prefix}{params.sfx}", "{path}" + os.sep + "{prefix}_bismark_bt2_PE_report.txt"
+    shell: "{params.cmd} {params.options} {params.ref} -1 {input[0]} -2 {input[1]} -o {wildcards.path} -p {threads} -B {wildcards.prefix}"
+
+rule bismark_deduplicate:
+    """bismark: Run bismark deduplication."""
+    params: options = cfg['deduplicate']['options'],
+            cmd = cfg['deduplicate']['cmd'],
+    input: "{path}" + os.sep + "{prefix}" + ".bam"
+    output: "{path}" + os.sep + "{prefix}.deduplicated.bam", "{path}" + os.sep + "{prefix}.deduplication_report.txt"
+    shell: "{params.cmd} {params.options} {input}"
+    
+
+rule bismark_methXtract:
+    """bismark: Run bismark methylation extractor
+
+    The option '--report' is hardcoded so that a report is *always*
+    generated
+
+    """
+    params: options = cfg['methXtract']['options'],
+            cmd = cfg['methXtract']['cmd'],
+    input: "{path}" + os.sep + "{prefix}" + ".bam"
+    output: "{path}" + os.sep + "{prefix}.bismark.cov", "{path}" + os.sep + "{prefix}.deduplicated.M-bias.txt", "{path}" + os.sep + "{prefix}.deduplicated.bam_splitting_report.txt"
+    shell: "{params.cmd} {params.options} {input} -o {wildcards.path} --report"
+
+rule bismark_report:
+    """bismark: Run bismark report. 
+
+    """
+    params: options = cfg['report']['options'],
+            cmd = cfg['report']['cmd']
+    input: "{path}" + os.sep + "{prefix}" + "_PE_report.txt", "{path}" + os.sep + "{prefix}" + "_pe.deduplicated.M-bias.txt", "{path}" + os.sep + "{prefix}" + "_pe.deduplicated.bam_splitting_report.txt", "{path}" + os.sep + "{prefix}" + "_pe.deduplication_report.txt"
+    output: "{path}" + os.sep + "{prefix}" + "_PE_report.html"
+    shell: "{params.cmd} {params.options} --dir {wildcards.path} --alignment_report {input[0]} --mbias {input[1]} --splitting_report {input[2]} --dedup_report {input[3]}"

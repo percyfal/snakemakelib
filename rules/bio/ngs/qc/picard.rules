@@ -3,6 +3,19 @@ import os
 import glob
 from snakemakelib.config import update_sml_config, sml_rules_path, get_sml_config, sml_path
 
+# FIXME: this is hacky at the moment but is a proof of principle
+def find_merge_inputs(wildcards):
+    """Find the input files for picard_merge_sam"""
+    subdirs = [d for d in os.listdir(wildcards.path) if os.path.isdir(os.path.join(wildcards.path, d))]
+    sources = []
+    for d in subdirs:
+        # Assume we start from fastq sources; could be more than one barcode, more than one lane
+        fqsrc = sorted(glob.glob("{path}{sep}*{prefix}*{suffix}".format(path=os.path.join(wildcards.path, d), sep=os.sep, prefix=wildcards.prefix, suffix=sml_config['bio.ngs.settings']['fastq_suffix'])))
+        pfx = fqsrc[0].replace(sml_config['bio.ngs.settings']['fastq_suffix'], "").replace(sml_config['bio.ngs.settings']['read1_label'], "")
+        src = "{prefix}{suffix}".format(prefix=pfx, suffix=picard_config['merge_sam']['suffix'])
+        sources.append(src)
+    return sources
+
 # Start by including the general snakefile
 include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
 # Include comp settings to gain access to awk and friends
@@ -48,7 +61,7 @@ config_default = {
             'label' : "sort.merge", # target label
             'options' : "CREATE_INDEX=true",
             'output' : [],
-            'input' : [],
+            'inputfun' : find_merge_inputs,
         },
     },
 }
@@ -181,25 +194,13 @@ rule picard_add_or_replace_read_groups:
 
 ruleorder: picard_add_or_replace_read_groups > picard_build_bam_index
 
-# FIXME: this is hacky at the moment but is a proof of principle
-def find_merge_inputs(wildcards):
-    """Find the input files for picard_merge_sam"""
-    subdirs = [d for d in os.listdir(wildcards.path) if os.path.isdir(os.path.join(wildcards.path, d))]
-    sources = []
-    for d in subdirs:
-        # Assume we start from fastq sources; could be more than one barcode, more than one lane
-        fqsrc = sorted(glob.glob("{path}{sep}{prefix}*{suffix}".format(path=os.path.join(wildcards.path, d), sep=os.sep, prefix=wildcards.prefix, suffix=sml_config['bio.ngs.settings']['fastq_suffix'])))
-        pfx = fqsrc[0].replace(sml_config['bio.ngs.settings']['fastq_suffix'], "").replace(sml_config['bio.ngs.settings']['read1_label'], "")
-        src = "{prefix}{suffix}".format(prefix=pfx, suffix=picard_config['merge_sam']['suffix'])
-        sources.append(src)
-    return sources
 
 rule picard_merge_sam:
     """Picard: merge sam files"""
     params: cmd = picard_config['cmd'] + MERGE_SAM_FILES,
             options = " ".join([picard_config['options'],
                                 picard_config['merge_sam']['options']])
-    input: find_merge_inputs
+    input: picard_config['merge_sam']['inputfun']
     output: "{path}" + os.sep + "{prefix}." + picard_config['merge_sam']['label'] + ".bam"
     run: 
       inputstr = " ".join(["INPUT={}".format(x) for x in input])

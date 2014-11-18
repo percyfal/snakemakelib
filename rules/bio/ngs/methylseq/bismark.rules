@@ -22,10 +22,11 @@ config_default = {
         },
         'methXtract' : {
             'cmd' : 'bismark_methylation_extractor',
-            'options' : "--bedGraph --counts  --gzip -p --no_overlap --report",
+            'options' : "--counts  --gzip -p --no_overlap",
         },
         'report' : {
             'cmd' : 'bismark2report',
+            'options' : "",
         },
     },
 }
@@ -39,11 +40,11 @@ rule bismark_align:
     """bismark: Run bismark align."""
     params: options = cfg['align']['options'],
             cmd = cfg['align']['cmd'],
-            ref = cfg['ref'],
+            ref = cfg['ref']
     threads: cfg['align']['threads']
     input: "{path}" + os.sep + "{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['read1_suffix'],\
            "{path}" + os.sep + "{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['read2_suffix']
-    output: "{path}" + os.sep + "{prefix}_bismark_bt2_pe.bam"
+    output: "{path}" + os.sep + "{prefix}_bismark_bt2_pe.bam", "{path}" + os.sep + "{prefix}_bismark_bt2_PE_report.txt"
     shell: "{params.cmd} {params.options} {params.ref} -1 {input[0]} -2 {input[1]} -o {wildcards.path} -p {threads} -B {wildcards.prefix}"
 
 rule bismark_deduplicate:
@@ -51,30 +52,29 @@ rule bismark_deduplicate:
     params: options = cfg['deduplicate']['options'],
             cmd = cfg['deduplicate']['cmd'],
     input: "{path}" + os.sep + "{prefix}" + ".bam"
-    output: "{path}" + os.sep + "{prefix}.deduplicated.bam"
+    output: "{path}" + os.sep + "{prefix}.deduplicated.bam", "{path}" + os.sep + "{prefix}.deduplication_report.txt"
     shell: "{params.cmd} {params.options} {input}"
     
 
 rule bismark_methXtract:
-    """bismark: Run bismark methylation extractor"""
+    """bismark: Run bismark methylation extractor
+
+    The option '--report' is hardcoded so that a report is *always*
+    generated
+
+    """
     params: options = cfg['methXtract']['options'],
             cmd = cfg['methXtract']['cmd'],
     input: "{path}" + os.sep + "{prefix}" + ".bam"
-    output: "{path}" + os.sep + "{prefix}.bedGraph", "{path}" + os.sep + "{prefix}.cov"
-    shell: "{params.cmd} {params.options} {input} -o {wildcards.path}"
+    output: "{path}" + os.sep + "{prefix}.bismark.cov", "{path}" + os.sep + "{prefix}.deduplicated.M-bias.txt", "{path}" + os.sep + "{prefix}.deduplicated.bam_splitting_report.txt"
+    shell: "{params.cmd} {params.options} {input} -o {wildcards.path} --report"
 
-# input: 8_140207_AC3NVGACXX_P923_101_1_val_1.fq.gz_bismark_bt2_pe.deduplicated.bedGraph
-# output: 8_140207_AC3NVGACXX_P923_101_1_val_1.fq.gz_bismark_bt2_pe.deduplicated.M-bias.txt
-# rule bismark_report:
-#     """bismark: Run bismark report. 
+rule bismark_report:
+    """bismark: Run bismark report. 
 
-#     This rule currently *requires* that methylation extraction has
-#     been run as the input depends on the bedGraph output from
-#     bismark_methXtract.
-#     """
-#     params: options = cfg['report']['options'],
-#             cmd = cfg['report']['cmd']
-#     input: "{path}" + os.sep + "{prefix}" + ".bedGraph"
-#     output: "{path}" + os.sep + "{prefix}.M-bias.txt"
-#     shell: "{params.cmd} {params.options} --mbias {input}"
-
+    """
+    params: options = cfg['report']['options'],
+            cmd = cfg['report']['cmd']
+    input: "{path}" + os.sep + "{prefix}" + "_PE_report.txt", "{path}" + os.sep + "{prefix}" + "_pe.deduplicated.M-bias.txt", "{path}" + os.sep + "{prefix}" + "_pe.deduplicated.bam_splitting_report.txt", "{path}" + os.sep + "{prefix}" + "_pe.deduplication_report.txt"
+    output: "{path}" + os.sep + "{prefix}" + "_PE_report.html"
+    shell: "{params.cmd} {params.options} --dir {wildcards.path} --alignment_report {input[0]} --mbias {input[1]} --splitting_report {input[2]} --dedup_report {input[3]}"

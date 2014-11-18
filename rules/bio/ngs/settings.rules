@@ -1,9 +1,9 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.config import update_sml_config, sml_rules_path, BaseConfig
+from snakemakelib.config import update_sml_config, sml_rules_path
 
-config_default = BaseConfig({ 
-    'bio.ngs.settings' : BaseConfig({
+config_default = { 
+    'bio.ngs.settings' : {
         'fastq_suffix' : ".fastq",
         'flowcells' : [],
         'flowcellruns' : [],
@@ -14,24 +14,24 @@ config_default = BaseConfig({
         'samples' : [],
         'sample_prefix' : "P00",
         'threads' : 8,
-        'annotation' : BaseConfig({
+        'annotation' : {
             'annot_label' : "",
             'transcript_annot_gtf' : "",
-        }),
-        'db' : BaseConfig({
+        },
+        'db' : {
             'dbsnp' : "",
             'ref' : "hg19",
-        }),
-        'java' : BaseConfig({
+        },
+        'java' : {
             'java_mem' : "6g",
             'java_tmpdir' : "/tmp",
-        }),
-        'sequence_capture' : BaseConfig({
+        },
+        'sequence_capture' : {
             'bait_regions' : "",
             'target_regions' : "",
-        }),
-    }),
-})
+        },
+    },
+}
 
 update_sml_config(config_default)
 

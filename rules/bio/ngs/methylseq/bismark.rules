@@ -15,6 +15,7 @@ config_default = {
             'cmd' : 'bismark',
             'options' : '--bam --bowtie2 --phred33-quals',
             'threads' : 8,
+            'suffix'  : '_bismark_bt2_pe.bam',
         },
         'deduplicate' : {
             'cmd' : 'deduplicate_bismark',
@@ -36,15 +37,18 @@ update_sml_config(config_default)
 cfg = get_sml_config('bio.ngs.methylseq.bismark')
 ngs_cfg = get_sml_config('bio.ngs.settings')
 
+# Prefix: 8_140228_BC3TYRACXX_P923_101
+# Input: 8_140207_AC3NVGACXX_P923_101_1_val_1.fq.gz, 8_140207_AC3NVGACXX_P923_101_2_val_2.fq.gz
 rule bismark_align:
     """bismark: Run bismark align."""
     params: options = cfg['align']['options'],
             cmd = cfg['align']['cmd'],
-            ref = cfg['ref']
+            ref = cfg['ref'],
+            sfx = cfg['align']['suffix']
     threads: cfg['align']['threads']
     input: "{path}" + os.sep + "{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['read1_suffix'],\
            "{path}" + os.sep + "{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['read2_suffix']
-    output: "{path}" + os.sep + "{prefix}_bismark_bt2_pe.bam", "{path}" + os.sep + "{prefix}_bismark_bt2_PE_report.txt"
+    output: "{path}" + os.sep + "{prefix}{params.sfx}", "{path}" + os.sep + "{prefix}_bismark_bt2_PE_report.txt"
     shell: "{params.cmd} {params.options} {params.ref} -1 {input[0]} -2 {input[1]} -o {wildcards.path} -p {threads} -B {wildcards.prefix}"
 
 rule bismark_deduplicate:

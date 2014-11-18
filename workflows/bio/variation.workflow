@@ -21,20 +21,19 @@ update_sml_config(variation_config)
 
 include: os.path.join(sml_rules_path(), 'settings.rules')
 include: os.path.join(sml_rules_path(), 'utils.rules')
+include: os.path.join(sml_rules_path(), 'bio/ngs/variation', 'variation.rules')
 include: os.path.join(sml_rules_path(), 'bio/ngs/tools', 'gatk.rules')
 include: os.path.join(sml_rules_path(), 'bio/ngs/qc', 'picard.rules')
 include: os.path.join(sml_rules_path(), 'bio/ngs/align', 'bwa.rules')
 
-#ruleorder: gatk_read_backed_phasing > gatk_unified_genotyper
 
 cfg = get_sml_config()
 
-# Sample sort targets
-
 # Default targets: expand samples and flowcells
-TARGET_SUFFIX=".sort.merge.rg.dup.realign.recal.bp_variants.phased.vcf"
+TARGET_SUFFIX=".sort.merge.rg.dup.realign.recal.bp_variants.phased.annotated.vcf"
+
 rule all:
-    input: ["{sample}{sep}{sample}{sfx}".format(sep=os.sep, sample=x, sfx=TARGET_SUFFIX) for x in cfg['bio.ngs.settings']['samples']]
+    input: ["{sample}{sep}{sample}{sfx}".format(sep=os.sep, sample=x, sfx=TARGET_SUFFIX) for x in cfg['bio.ngs.settings']['samples']] + ["{sample}{sep}{sample}{sfx}".format(sep=os.sep, sample=x, sfx=TARGET_SUFFIX).replace(".vcf", ".txt") for x in cfg['bio.ngs.settings']['samples']]
 
 rule variation_snp_filtration:
     """Run variant filtration and variant recalibration

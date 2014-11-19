@@ -2,3 +2,4 @@ snakemakelib.egg-info
 build
 dist
 wiki
+.snakemake

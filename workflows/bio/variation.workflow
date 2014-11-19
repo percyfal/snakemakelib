@@ -30,11 +30,28 @@ cfg = get_sml_config()
 
 ruleorder: gatk_print_reads > picard_build_bam_index
 
-# Default targets: expand samples and flowcells
+# Target suffices
 TARGET_SUFFIX=".sort.merge.rg.dup.realign.recal.bp_variants.phased.annotated.vcf"
+DUP_METRICS_SUFFIX=".sort.merge.rg.dup_metrics"
+ALIGN_METRICS_SUFFIX=".sort.merge.rg.dup.align_metrics"
+INSERT_METRICS_SUFFIX=".sort.merge.rg.dup.insert_metrics"
+HS_METRICS_SUFFIX=".sort.merge.rg.dup.hs_metrics"
+
+# Default targets: expand samples and flowcells
+VCF_TARGETS = ["{sample}{sep}{sample}{sfx}".format(sep=os.sep, sample=x, sfx=TARGET_SUFFIX) for x in cfg['bio.ngs.settings']['samples']]
+VCF_TXT_TARGETS = ["{sample}{sep}{sample}{sfx}".format(sep=os.sep, sample=x, sfx=TARGET_SUFFIX).replace(".vcf", ".txt") for x in cfg['bio.ngs.settings']['samples']]
+DUP_METRICS_TARGETS = ["{sample}{sep}{sample}{sfx}".format(sep=os.sep, sample=x, sfx=DUP_METRICS_SUFFIX) for x in cfg['bio.ngs.settings']['samples']]
+ALIGN_METRICS_TARGETS = ["{sample}{sep}{sample}{sfx}".format(sep=os.sep, sample=x, sfx=ALIGN_METRICS_SUFFIX) for x in cfg['bio.ngs.settings']['samples']]
+INSERT_METRICS_TARGETS = ["{sample}{sep}{sample}{sfx}".format(sep=os.sep, sample=x, sfx=INSERT_METRICS_SUFFIX) for x in cfg['bio.ngs.settings']['samples']]
+HS_METRICS_TARGETS = ["{sample}{sep}{sample}{sfx}".format(sep=os.sep, sample=x, sfx=HS_METRICS_SUFFIX) for x in cfg['bio.ngs.settings']['samples']] 
+
 
 rule all:
-    input: ["{sample}{sep}{sample}{sfx}".format(sep=os.sep, sample=x, sfx=TARGET_SUFFIX) for x in cfg['bio.ngs.settings']['samples']] + ["{sample}{sep}{sample}{sfx}".format(sep=os.sep, sample=x, sfx=TARGET_SUFFIX).replace(".vcf", ".txt") for x in cfg['bio.ngs.settings']['samples']]
+    input: VCF_TARGETS + VCF_TXT_TARGETS + DUP_METRICS_TARGETS + ALIGN_METRICS_TARGETS + INSERT_METRICS_TARGETS + HS_METRICS_TARGETS
+
+# Run metrics only
+rule metrics:
+    input: DUP_METRICS_TARGETS + ALIGN_METRICS_TARGETS + INSERT_METRICS_TARGETS + HS_METRICS_TARGETS
 
 rule variation_snp_filtration:
     """Run variant filtration and variant recalibration
@@ -139,4 +156,4 @@ rule clean:
     (.fastq|.fastq.gz) and csv files
     """
     params: d = workflow._workdir
-    shell: 'for f in `find  {params.d} -type f -name "*" |grep -v ".snakemake" | grep -v ".fastq$" | grep -v ".fastq.gz$" | grep -v ".csv$"`; do echo removing $f; rm -f $f; done'
+    shell: 'for f in `find  {params.d} -type f -name "*" | grep -v ".fastq$" | grep -v ".fastq.gz$" | grep -v ".csv$"`; do echo removing $f; rm -f $f; done'

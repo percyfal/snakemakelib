@@ -26,8 +26,9 @@ include: os.path.join(sml_rules_path(), 'bio/ngs/tools', 'gatk.rules')
 include: os.path.join(sml_rules_path(), 'bio/ngs/qc', 'picard.rules')
 include: os.path.join(sml_rules_path(), 'bio/ngs/align', 'bwa.rules')
 
-
 cfg = get_sml_config()
+
+ruleorder: gatk_print_reads > picard_build_bam_index
 
 # Default targets: expand samples and flowcells
 TARGET_SUFFIX=".sort.merge.rg.dup.realign.recal.bp_variants.phased.annotated.vcf"
@@ -132,3 +133,10 @@ rule variation_combine_variants:
     run: 
         inputstr = " ".join(["-V {}".format(x) for x in input])
         shell("{cmd} {ips} -o {out} {opt}".format(cmd=params.cmd, ips=inputstr, out=output, opt=params.options))
+
+rule clean:
+    """Clean working directory. WARNING: will remove all files except
+    (.fastq|.fastq.gz) and csv files
+    """
+    params: d = workflow._workdir
+    shell: 'for f in `find  {params.d} -type f -name "*" |grep -v ".snakemake" | grep -v ".fastq$" | grep -v ".fastq.gz$" | grep -v ".csv$"`; do echo removing $f; rm -f $f; done'

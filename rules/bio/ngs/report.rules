@@ -1,26 +1,26 @@
 # -*- snakemake -*-
 import os
 from collections import namedtuple
-from snakemakelib.config import update_sml_config, sml_rules_path, BaseConfig, get_sml_config
+from snakemakelib.config import update_sml_config, sml_rules_path, get_sml_config
 from snakemakelib.report.sphinx import sphinx_sample_metrics_report
 from snakemakelib.utils import utc_time
 
 # Start by including the general snakefile
 include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
 
-config_default = BaseConfig({ 
-    'bio.ngs.report' : BaseConfig({
+config_default = { 
+    'bio.ngs.report' : {
         'project_id' : "",
         'project_name' : "",
         'basedir' : os.curdir,
         'application':"",
         'date':utc_time(),
         'docroot' : 'sphinx_report',
-        'picard' : BaseConfig({
+        'picard' : {
             'columns' : [],
-        })
-    }),
-})
+        },
+    },
+}
 
 update_sml_config(config_default)
 

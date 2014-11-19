@@ -133,18 +133,27 @@ rule htslib_plot_vcfcheck:
 rule snpeff_download_database:
     """Download snpEff database. FIXME: fix output so that rule doesn't rerun everytime."""
     params: snpeffhome=cfg['snpeff']['path'],
-            cmd="java -jar {}".format(cfg['snpeff']['jar']),
+            cmd=cfg['snpeff']['cmd']
     output: cfg['snpeff']['dblist']
     shell: "cd {params.snpeffhome} && {params.cmd} download {output}"
 
-rule snpeff_annotate_variants:
+rule snpeff_annotate_variants_vcf:
     """snpEff: annotate variants"""
-    params: cmd = "java -jar {}".format(cfg['snpeff']['jar']),
+    params: cmd=cfg['snpeff']['cmd'],
             options=cfg['snpeff']['options'],
             genome_version=cfg['snpeff']['genome_version']
     input: "{prefix}.vcf"
     output: "{prefix}.annotated.vcf"
-    shell: "{params.cmd} {params.options} {params.genome_version} {input} > {output}"
+    shell: "{params.cmd} {params.options} {params.genome_version} {input} -i vcf -o vcf > {output}"
+
+rule snpeff_annotate_variants_txt:
+    """snpEff: annotate variants"""
+    params: cmd=cfg['snpeff']['cmd'],
+            options=cfg['snpeff']['options'],
+            genome_version=cfg['snpeff']['genome_version']
+    input: "{prefix}.vcf"
+    output: "{prefix}.annotated.txt"
+    shell: "{params.cmd} {params.options} {params.genome_version} {input} -i vcf -o gatk > {output}"
 
 # Annovar
 rule annovar_table_annovar:
@@ -166,16 +175,16 @@ rule annovar_convert2annovar:
     output: "{prefix}.avinput"
     shell: "{params.cmd} {params.options} -format {params.vcf_format} {input} > {output}"
 
-rule annovar_download_webfrom_annovar:
-    params: cmd=os.path.join(cfg['annovar']['path'], 'annotate_variation.pl'),
-            buildver=cfg['annovar']['buildver'],
-            db = cfg['annovar']['db']
-    output: "{db}"
-    shell: "{params.cmd} -buildver {params.buildver} -downdb -webfrom annovar {wildcards.db} {params.db}"
+# rule annovar_download_webfrom_annovar:
+#     params: cmd=os.path.join(cfg['annovar']['path'], 'annotate_variation.pl'),
+#             buildver=cfg['annovar']['buildver'],
+#             db = cfg['annovar']['db']
+#     output: "{db}"
+#     shell: "{params.cmd} -buildver {params.buildver} -downdb -webfrom annovar {wildcards.db} {params.db}"
 
-rule annovar_download:
-    params: cmd=os.path.join(cfg['annovar']['path'], 'annotate_variation.pl'),
-            buildver=cfg['annovar']['buildver'],
-            db = cfg['annovar']['db']
-    output: "{db}"
-    shell: "{params.cmd} -buildver {params.buildver} -downdb {wildcards.db} {params.db}"
+# rule annovar_download:
+#     params: cmd=os.path.join(cfg['annovar']['path'], 'annotate_variation.pl'),
+#             buildver=cfg['annovar']['buildver'],
+#             db = cfg['annovar']['db']
+#     output: "{db}"
+#     shell: "{params.cmd} -buildver {params.buildver} -downdb {wildcards.db} {params.db}"

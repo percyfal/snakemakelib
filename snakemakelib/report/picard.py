@@ -118,6 +118,13 @@ class PicardMetrics(object):
     def __setitem__(self, key, val):
         _ = [row.update([(key, val)]) for row in self._metrics]
 
+    # FIXME: reimplement the following functions
+    # def __radd__(self, other):
+    #     pass
+
+    # def __iadd__(self, other):
+    #     pass
+
     def __add__(self, other):
         if not self.fieldnames == other.fieldnames:
             raise TypeError("fieldnames differ between {id1} and {id2}: {fn1} != {fn2}; cannot merge objects with different fieldnames".format(id1=self.id, id2=other.id, fn1=self.fieldnames, fn2=other.fieldnames))
@@ -286,7 +293,7 @@ class DuplicationMetrics(PicardHistMetrics):
         return DuplicationMetrics(*a, filename=self.filename, identifier=self.id, hist=list(self.hist))
 
 
-class PicardMetricsSummary(object):
+class PicardMetricsSummary(PicardMetrics):
     """Combine different picard metrics to one summary.
 
     Takes AlignMetrics etc as input and outputs the *metrics*
@@ -294,13 +301,34 @@ class PicardMetricsSummary(object):
     others three times.
 
     """
+    _format = []
 
     def __init__(self, alnmetrics=None, hsmetrics=None, insertmetrics=None, dupmetrics=None):
-        self.alnmetrics=alnmetrics
-        self.hsmetrics=hsmetrics
-        self.insertmetrics=insertmetrics
-        self.dupmetrics=dupmetrics
+        self._fieldnames = []
+        self._fieldnames += alnmetrics.fieldnames if not alnmetrics is None else []
+        self._fieldnames += hsmetrics.fieldnames if not hsmetrics is None else []
+        self._fieldnames += insertmetrics.fieldnames if not insertmetrics is None else []
+        self._fieldnames += dupmetrics.fieldnames if not dupmetrics is None else []
+        self._set_metrics(alnmetrics, hsmetrics, insertmetrics, dupmetrics)
 
-    # def __str__(self):
-    #     pass
+    def _set_metrics(self, alnmetrics, hsmetrics, insertmetrics, dupmetrics):
+        self._metrics = []
+        args = []
+        fmtlist = []
+        if not hsmetrics is None:
+            args += list(([(k,row[k]) for k in hsmetrics.fieldnames] for row in hsmetrics.metrics))
+            fmtlist += list([(k,v) for k,v in hsmetrics._format.items()])
+        if not dupmetrics is None:
+            args += list(([(k,row[k]) for k in dupmetrics.fieldnames] for row in dupmetrics.metrics))
+            fmtlist += list([(k,v) for k,v in dupmetrics._format.items()])
+        if not insertmetrics is None:
+            args += list(([(k,row[k]) for k in insertmetrics.fieldnames] for row in insertmetrics.metrics))
+            fmtlist += list([(k,v) for k,v in insertmetrics._format.items()])
+        args = [item for sublist in args for item in sublist]
+        self._format = collections.OrderedDict(fmtlist)
+        self._metrics = collections.OrderedDict(args)
+        # for row in self._metrics:
+        #     print (list(self._metrics) + list(hsmetrics.metrics))
+        #     print ([(k,row[k] for k in alnmetrics.fieldnames)
+        
 

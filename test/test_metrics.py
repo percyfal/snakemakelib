@@ -7,7 +7,7 @@ import logging
 import texttable as tt
 from collections import OrderedDict
 from nose.tools import raises
-from snakemakelib.report.picard import PicardMetrics, PicardHistMetrics, AlignMetrics, InsertMetrics, HsMetrics, DuplicationMetrics, _read_picard_metrics
+from snakemakelib.report.picard import PicardMetrics, PicardHistMetrics, AlignMetrics, InsertMetrics, HsMetrics, DuplicationMetrics, _read_picard_metrics, PicardMetricsSummary
 
 logger = logging.getLogger(__name__)
 
@@ -260,9 +260,19 @@ class TestHsMetrics(unittest.TestCase):
 
 class TestPicardMetricsSummary(unittest.TestCase):
     """Test PicardMetricsSummary class"""
+    def test_empty_init(self):
+        """Test empty init"""
+        pms = PicardMetricsSummary()
+        self.assertListEqual(list(pms), [])
+        self.assertListEqual(pms.fieldnames, [])
+        self.assertListEqual(pms.metrics, [])
+
     def test_summary(self):
         """Test summary combining all metrics, all AlignMetrics rows"""
-        pass
+        pms = PicardMetricsSummary(insertmetrics=IMa, hsmetrics=HMa, dupmetrics=DMa)
+        #print (pms.fieldnames)
+        #print (pms.metrics)
+        print (pms.summary())
 
     def test_summary_pairs(self):
         """Test summary using only PAIRS category of AlignMetrics"""

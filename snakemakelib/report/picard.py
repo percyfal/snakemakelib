@@ -1,5 +1,6 @@
 # Copyright (c) 2014 Per Unneberg
 import os
+import sys
 import re
 import csv
 import collections
@@ -65,10 +66,34 @@ EXTENSIONS={'.align_metrics':('align', 'alignment', _read_picard_metrics),
             }
 
 class PicardMetrics(object):
-    _fieldnames = []
+    """Generic class to store metrics section from Picard Metrics reports.
+    See also class PicardHistMetrics for reports that provide metrics
+    and histogram information.
+
+
+    Args:
+      name (str): unique identifier for object, e.g. sample or unit name
+      filename (str): file from which to collect metrics
+      *args: if provided, must be a list of lists that upon initialization is converted to an OrderedDict. The first list is treated as a header.
+
+    Returns:
+      An instance of class PicardMetrics
+    """
     _format = collections.OrderedDict()
 
-    def __init__(self, *args):
+    def __init__(self, *args, filename=None, identifier=None):
+        if filename is None and not args:
+            raise ValueError("please supply either filename or args to instantiate class")
+        self._set_vars(identifier, filename)
+        if not self.filename is None and not args:
+            (args, _) = _read_picard_metrics(self.filename)
+        self._set_metrics(args)
+
+    def _set_vars(self, identifier, filename):
+        self._id = identifier if not identifier is None else filename
+        self._filename = filename
+
+    def _set_metrics(self, args):
         reader = csv.DictReader([",".join([str(y) for y in x]) for x in args])
         self._fieldnames = reader.fieldnames
         self._metrics = [collections.OrderedDict([(k, row[k]) for k in self._fieldnames]) for row in reader]
@@ -89,17 +114,82 @@ class PicardMetrics(object):
 
     def __getitem__(self, columns):
         a = [columns] + [[row[c] for c in columns] for row in self._metrics]
-        return __class__(*a)
+        return PicardMetrics(*a, filename=self.filename, identifier=self.id)
 
     @property
     def fieldnames(self):
         return self._fieldnames
+
+    @property
+    def metrics(self):
+        return self._metrics
     
-    def summary(self, columns=None, fmt = None, ctype = None, sep="\t"):
-        columns = list(self._format.keys()) if columns is None else columns
+    @property 
+    def id(self):
+        return self._id
+
+    @property
+    def filename(self):
+        return self._filename
+
+    def summary(self, fmt = None, ctype = None, sep="\t"):
+        columns = self.fieldnames
         fmt = {k:v[0] for (k,v) in list(self._format.items()) if k in columns} if fmt is None else {k:v for (k,v) in zip(columns, fmt)}
         ctype = {k:v[1] for (k,v) in list(self._format.items()) if k in columns} if ctype is None else {k:v for (k,v) in zip(columns, ctype)}
         return "\n".join([sep.join([x for x in columns])] + [sep.join(["{{{}}}".format(fmt[c]).format(ctype[c](r[c])) for c in columns]) for r in self._metrics])
+
+
+class PicardHistMetrics(PicardMetrics):
+    """Generic class to store metrics section from Picard Histogram
+    Metrics reports. 
+
+    In addition to metrics data the class also stores histogram
+    values. Nevertheless, iterations and slices of the class will only
+    be applied on the metrics tables as it makes little sense to slice
+    or iterate over the histograms.
+
+    Args:
+      name (str): unique identifier for object, e.g. sample or unit name
+
+      filename (str): file from which to collect metrics
+      
+      hist (list): list of lists, where the first entry holds the
+        names of the values
+
+      *args (list): if provided, must be a list of lists that upon
+         initialization is converted to an OrderedDict. The first list
+         is treated as a header.
+
+    Returns:
+      An instance of class PicardHistMetrics
+
+    """
+
+    def __init__(self, *args, identifier=None, filename=None, hist=None):
+        # NB: __init__ should call super, but with current
+        # implementation would require reading the metrics file twice!
+        if filename is None and hist is None:
+            raise ValueError("please provide argument hist when not reading from file")
+        if filename is None and not args:
+            raise ValueError("please supply either filename or args to instantiate class")
+        self._set_vars(identifier, filename)
+        if not self.filename is None and not args:
+            (args, hist) = _read_picard_metrics(self.filename)
+        self._set_metrics(args)
+        self._histfieldnames = hist[0]
+        self._hist = collections.OrderedDict([(y[0], y[1:]) for y in [[x[i] for x in hist] for i in range(0, len(self._histfieldnames))]])
+
+    def __getitem__(self, columns):
+        a = [columns] + [[row[c] for c in columns] for row in self._metrics]
+        return PicardHistMetrics(*a, filename=self.filename, identifier=self.id, hist=list(self.hist))
+        
+    @property
+    def hist(self):
+        return self._hist
+    
+    @property
+    def histfieldnames(self):
+        return self._histfieldnames
 
 class AlignMetrics(PicardMetrics):
     _format = collections.OrderedDict([('CATEGORY', (':s', str)), ('TOTAL_READS', (':3.2E', int)), 
@@ -113,15 +203,14 @@ class AlignMetrics(PicardMetrics):
                                        ('PCT_READS_ALIGNED_IN_PAIRS', (':3.2f', float)), ('BAD_CYCLES', (':3.2E', int)), ('STRAND_BALANCE', (':3.2f', float)), 
                                        ('PCT_CHIMERAS', (':3.2f', float)), ('PCT_ADAPTER', (':3.2f', float)), ('SAMPLE', (':s', str)), 
                                        ('LIBRARY', (':s', str)), ('READ_GROUP', (':s', str))])
-    def __init__(self, *args):
-        super(AlignMetrics, self).__init__(*args)
+    def __init__(self, *args, identifier=None, filename=None):
+        super(AlignMetrics, self).__init__(*args, identifier=identifier, filename=filename)
 
     def __getitem__(self, columns):
         a = [columns] + [[row[c] for c in columns] for row in self._metrics]
-        return __class__(*a)
+        return AlignMetrics(*a, filename=self.filename, identifier=self.id)
 
-
-class InsertMetrics(PicardMetrics):
+class InsertMetrics(PicardHistMetrics):
     _format = collections.OrderedDict([('MEDIAN_INSERT_SIZE', ('', int)), ('MEDIAN_ABSOLUTE_DEVIATION', ('', int)), 
                                        ('MIN_INSERT_SIZE', ('', int)), ('MAX_INSERT_SIZE', ('', int)), 
                                        ('MEAN_INSERT_SIZE', (':3.3f', float)), ('STANDARD_DEVIATION', (':3.3f', float)), 
@@ -132,12 +221,12 @@ class InsertMetrics(PicardMetrics):
                                        ('WIDTH_OF_70_PERCENT', ('', int)), ('WIDTH_OF_80_PERCENT', ('', int)), 
                                        ('WIDTH_OF_90_PERCENT', ('', int)), ('WIDTH_OF_99_PERCENT', ('', int)),
                                        ('SAMPLE', (':s', str)), ('LIBRARY', (':s', str)), ('READ_GROUP', (':s', str))])
-    def __init__(self, *args):
-        super(InsertMetrics, self).__init__(*args)
+    def __init__(self, *args, identifier=None, filename=None, hist=None):
+        super(InsertMetrics, self).__init__(*args, identifier=identifier, filename=filename, hist=hist)
 
     def __getitem__(self, columns):
         a = [columns] + [[row[c] for c in columns] for row in self._metrics]
-        return __class__(*a)
+        return InsertMetrics(*a, filename=self.filename, identifier=self.id, hist=list(self.hist))
 
 
 class HsMetrics(PicardMetrics):
@@ -161,139 +250,35 @@ class HsMetrics(PicardMetrics):
                                        ('HS_PENALTY_50X', (':3.2f', float)), ('HS_PENALTY_100X', (':3.2f', float)), ('AT_DROPOUT', (':3.2f', float)), 
                                        ('GC_DROPOUT', (':3.2f', float)), ('SAMPLE', (':s', str)), ('LIBRARY',  (':s', str)), ('READ_GROUP',  (':s', str))])
 
-    def __init__(self, *args):
-        super(HsMetrics, self).__init__(*args)
+    def __init__(self, *args, identifier=None, filename=None):
+        super(HsMetrics, self).__init__(*args, identifier=identifier, filename=filename)
 
     def __getitem__(self, columns):
         a = [columns] + [[row[c] for c in columns] for row in self._metrics]
-        return __class__(*a)
+        return HsMetrics(*a)
 
 
-class DuplicationMetrics(PicardMetrics):
+class DuplicationMetrics(PicardHistMetrics):
     _format = collections.OrderedDict([('LIBRARY', (':s', str)), ('UNPAIRED_READS_EXAMINED', (':3.2E', int)), 
                                        ('READ_PAIRS_EXAMINED', (':3.2E', int)), ('UNMAPPED_READS', (':3.2E', int)),
                                        ('UNPAIRED_READ_DUPLICATES', (':3.2E', int)), ('READ_PAIR_DUPLICATES', (':3.2E', int)), 
                                        ('READ_PAIR_OPTICAL_DUPLICATES', (':3.2f', float)), 
                                        ('PERCENT_DUPLICATION', (':3.2f', float)), ('ESTIMATED_LIBRARY_SIZE', (':3.2E', int))])
 
-    def __init__(self, *args):
-        super(DuplicationMetrics, self).__init__(*args)
+    def __init__(self, *args, identifier=None, filename=None, hist=None):
+        super(DuplicationMetrics, self).__init__(*args, identifier=identifier, filename=filename, hist=hist)
 
     def __getitem__(self, columns):
         a = [columns] + [[row[c] for c in columns] for row in self._metrics]
-        return __class__(*a)
+        return DuplicationMetrics(*a, filename=self.filename, identifier=self.id, hist=list(self.hist))
 
-class PicardHist(object):
-    _fieldnames = []
-    def __init__(self, *args):
-        self._fieldnames = args[0]
-        self._hist = collections.OrderedDict([(y[0], y[1:]) for y in [[x[i] for x in args] for i in range(0, len(self._fieldnames))]])
-
-    @property
-    def hist(self):
-        return self._hist
-
-    def __str__(self):
-        return str(self._hist)
-
-    @property
-    def fieldnames(self):
-        return self._fieldnames
-
-class PicardMetricsCollection(object):
-    """PicardMetrics: class for reading/storing metrics from one picard
-    metrics file. The collection refers to the fact that often the
-    files contain more than one type of metrics.
-
-    Args:
-      pmid (str): unique identifier
-      file (str): metrics file to read
-
-    """
-    def __init__(self, pmid, file):
-        self._metrics = None
-        self._hist = None
-        self._file = file
-        self._pmid = pmid
-        (_, self._metrics_type) = (os.path.splitext(file))
-        self._read_metrics()
-
-    def _read_metrics(self):
-        """Read metrics"""
-        (self._metrics, self._hist) = EXTENSIONS[self._metrics_type][2](self._file)
-        # Possibly make separate containers for these
-        self._update_data()
-
-    def _update_data(self):
-        reader = csv.DictReader([",".join([str(y) for y in x]) for x in self._metrics])
-        self._metrics = [collections.OrderedDict([(k, row[k]) for k in reader.fieldnames]) for row in reader]
-        # FIXME: this could probably be done more efficiently with some list comprehension
-        if not self._hist is None:
-            ncols = len(self._hist[0])
-            nrows = len(self._hist)
-            d = {x:[] for x in self._hist[0]}
-            i = 0
-            for c in self._hist[0]:
-                d[c] = [x[i] for x in self._hist[1:]]
-                i += 1
-            self._hist = d
-
-    def metrics(self, columns = None):
-        if not columns is None:
-            if not set(columns).issubset(set(self._metrics[0].keys())):
-                raise KeyError("No such keys {} in {}".format(set(columns).difference(set(self._metrics[0].keys())), __name__))
-            return [{k:v for k,v in x.items() if k in columns} for x in self._metrics]
-        return self._metrics
-
-    def hist(self):
-        return self._hist
-
-    @property
-    def id(self):
-        return self._pmid
-
-    @property
-    def type(self):
-        return self._metrics_type
-
-    @property
-    def file(self):
-        return self._file
-
-    def __str__(self):
-        return str(self._metrics)
-
-    def __add__(self, other):
-        pass
-
-
-class AlignMetricsCollection(PicardMetricsCollection):
-    def __init__(self, pmid, file):
-        super(AlignMetricsCollection, self).__init__(pmid, file)
-
-    def metrics(self, category = ['FIRST_OF_PAIR', 'SECOND_OF_PAIR', 'PAIR'], columns = None):
-        metrics = [x for x in self._metrics if x['CATEGORY'] in category]
-        if columns:
-            if not set(columns).issubset(set(metrics[0].keys())):
-                raise KeyError("No such keys {} in {}".format(set(columns).difference(set(metrics[0].keys())), __name__))
-            return [{k:v for k,v in x.items() if k in columns and x['CATEGORY'] in category} for x in metrics]
-        #return [{k:v for k,v in x.items()} for x in metrics]
-        return metrics
-
-class InsertMetricsCollection(PicardMetricsCollection):
-    def __init__(self, pmid, file):
-        super(InsertMetricsCollection, self).__init__(pmid, file)
-
-class DuplicationMetricsCollection(PicardMetricsCollection):
-    def __init__(self, pmid, file):
-        super(DuplicationMetricsCollection, self).__init__(pmid, file)
-        
-class HsMetricsCollection(PicardMetricsCollection):
-    def __init__(self, pmid, file):
-        super(HsMetricsCollection, self).__init__(pmid, file)
 
 class PicardMetricsSummary(object):
     """Combine different picard metrics to one summary.
+
+    Takes AlignMetrics etc as input and outputs the *metrics*
+    summaries only. If all alnmetrics lines chosen, replicate the
+    others three times.
 
     """
 

@@ -57,10 +57,10 @@ rule variation_snp_filtration:
     """Run variant filtration and variant recalibration
 
 
-    The FiltrationWrapper wraps snp and indel variant filtration
-    tasks. It sets up different filtration tasks depending on the
-    *cov_interval* setting, which can be one of "regional", "exome",
-    or None. The effects of the different choices are as follows:
+    The rule does snp variant filtration/variant recalibration. It
+    sets up different filtration tasks depending on the *cov_interval*
+    setting, which can be one of "regional", "exome", or None. The
+    effects of the different choices are as follows:
 
     regional
       Do filtering based on JEXL-expressions. See `section 3, subtitle Recommendations for very small data sets <http://www.broadinstitute.org/gatk/guide/topic?name=best-practices>`_
@@ -70,6 +70,7 @@ rule variation_snp_filtration:
 
     None
       Perform "standard" VQSR
+
     """
     input: "{prefix}.snp.vcf"
     output: "{prefix}.snp.filtSNP.vcf"

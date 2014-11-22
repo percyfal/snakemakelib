@@ -56,15 +56,6 @@ def _indent_texttable_for_rst(ttab, indent=4, add_spacing=True):
             new_output.append(" " * indent + "".join(new_row))
     return "\n".join(new_output)
 
-# For now: extension maps to tuple (label, description). Label should
-# be reused for analysis definitions
-EXTENSIONS={'.align_metrics':('align', 'alignment', _read_picard_metrics),
-            '.hs_metrics':('hs', 'hybrid selection', _read_picard_metrics),
-            '.dup_metrics':('dup', 'duplication metrics', _read_picard_metrics),
-            '.insert_metrics':('insert', 'insert size', _read_picard_metrics),
-            '.eval_metrics':('eval', 'snp evaluation', _raw)
-            }
-
 class PicardMetrics(object):
     """Generic class to store metrics section from Picard Metrics reports.
     See also class PicardHistMetrics for reports that provide metrics
@@ -95,8 +86,8 @@ class PicardMetrics(object):
 
     def _set_metrics(self, args):
         reader = csv.DictReader([",".join([str(y) for y in x]) for x in args])
-        self._metrics = [collections.OrderedDict([(k, row[k]) for k in reader.fieldnames] + [("ID", self.id)]) for row in reader]
-        self._fieldnames = reader.fieldnames + ["ID"]
+        self._fieldnames = reader.fieldnames
+        self._metrics = [collections.OrderedDict([(k, row[k]) for k in self._fieldnames]) for row in reader]
 
     def __str__(self):
         return str(self._metrics)
@@ -120,8 +111,7 @@ class PicardMetrics(object):
         if not self.fieldnames == other.fieldnames:
             raise TypeError("fieldnames differ between {id1} and {id2}: {fn1} != {fn2}; cannot merge objects with different fieldnames".format(id1=self.id, id2=other.id, fn1=self.fieldnames, fn2=other.fieldnames))
         a = [self.fieldnames] + [[row[c] for c in self.fieldnames] for row in self._metrics] + [[row[c] for c in other.fieldnames] for row in other.metrics]
-        #return PicardMetrics(*a, filename=",".join([self.filename, other.filename]), identifier=",".join([self.id, other.id]))
-        return PicardMetrics(*a, filename=",".join([self.filename, other.filename]))#, identifier=",".join([self.id, other.id]))
+        return PicardMetrics(*a, filename=",".join([self.filename, other.filename]), identifier=",".join([self.id, other.id]))
 
     @property
     def fieldnames(self):
@@ -211,7 +201,7 @@ class AlignMetrics(PicardMetrics):
                                        ('MEAN_READ_LENGTH', (':3.2f', float)), ('READS_ALIGNED_IN_PAIRS', (':3.2E', int)), 
                                        ('PCT_READS_ALIGNED_IN_PAIRS', (':3.2f', float)), ('BAD_CYCLES', (':3.2E', int)), ('STRAND_BALANCE', (':3.2f', float)), 
                                        ('PCT_CHIMERAS', (':3.2f', float)), ('PCT_ADAPTER', (':3.2f', float)), ('SAMPLE', (':s', str)), 
-                                       ('LIBRARY', (':s', str)), ('READ_GROUP', (':s', str)), ('ID', (':s', str))])
+                                       ('LIBRARY', (':s', str)), ('READ_GROUP', (':s', str))])
 
     def __init__(self, *args, identifier=None, filename=None):
         super(AlignMetrics, self).__init__(*args, identifier=identifier, filename=filename)
@@ -230,7 +220,7 @@ class InsertMetrics(PicardHistMetrics):
                                        ('WIDTH_OF_50_PERCENT', ('', int)), ('WIDTH_OF_60_PERCENT', ('', int)),
                                        ('WIDTH_OF_70_PERCENT', ('', int)), ('WIDTH_OF_80_PERCENT', ('', int)), 
                                        ('WIDTH_OF_90_PERCENT', ('', int)), ('WIDTH_OF_99_PERCENT', ('', int)),
-                                       ('SAMPLE', (':s', str)), ('LIBRARY', (':s', str)), ('READ_GROUP', (':s', str)), ('ID', (':s', str))])
+                                       ('SAMPLE', (':s', str)), ('LIBRARY', (':s', str)), ('READ_GROUP', (':s', str))])
     def __init__(self, *args, identifier=None, filename=None, hist=None):
         super(InsertMetrics, self).__init__(*args, identifier=identifier, filename=filename, hist=hist)
 
@@ -258,7 +248,7 @@ class HsMetrics(PicardMetrics):
                                        ('PCT_TARGET_BASES_100X', (':3.2f', float)), ('HS_LIBRARY_SIZE', (':3.2E', int)), ('HS_PENALTY_10X', (':3.2f', float)),
                                        ('HS_PENALTY_20X', (':3.2f', float)), ('HS_PENALTY_30X', (':3.2f', float)), ('HS_PENALTY_40X', (':3.2f', float)),
                                        ('HS_PENALTY_50X', (':3.2f', float)), ('HS_PENALTY_100X', (':3.2f', float)), ('AT_DROPOUT', (':3.2f', float)), 
-                                       ('GC_DROPOUT', (':3.2f', float)), ('SAMPLE', (':s', str)), ('LIBRARY',  (':s', str)), ('READ_GROUP',  (':s', str)), ('ID', (':s', str))])
+                                       ('GC_DROPOUT', (':3.2f', float)), ('SAMPLE', (':s', str)), ('LIBRARY',  (':s', str)), ('READ_GROUP',  (':s', str))])
 
     def __init__(self, *args, identifier=None, filename=None):
         super(HsMetrics, self).__init__(*args, identifier=identifier, filename=filename)
@@ -268,12 +258,14 @@ class HsMetrics(PicardMetrics):
         return HsMetrics(*a)
 
 
+
+
 class DuplicationMetrics(PicardHistMetrics):
     _format = collections.OrderedDict([('LIBRARY', (':s', str)), ('UNPAIRED_READS_EXAMINED', (':3.2E', int)), 
                                        ('READ_PAIRS_EXAMINED', (':3.2E', int)), ('UNMAPPED_READS', (':3.2E', int)),
                                        ('UNPAIRED_READ_DUPLICATES', (':3.2E', int)), ('READ_PAIR_DUPLICATES', (':3.2E', int)), 
                                        ('READ_PAIR_OPTICAL_DUPLICATES', (':3.2f', float)), 
-                                       ('PERCENT_DUPLICATION', (':3.2f', float)), ('ESTIMATED_LIBRARY_SIZE', (':3.2E', int)), ('ID', (':s', str))])
+                                       ('PERCENT_DUPLICATION', (':3.2f', float)), ('ESTIMATED_LIBRARY_SIZE', (':3.2E', int))])
 
     def __init__(self, *args, identifier=None, filename=None, hist=None):
         super(DuplicationMetrics, self).__init__(*args, identifier=identifier, filename=filename, hist=hist)

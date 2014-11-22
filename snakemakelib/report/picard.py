@@ -4,6 +4,7 @@ import sys
 import re
 import csv
 import collections
+from snakemakelib.report.utils import Template
 
 # http://stackoverflow.com/questions/2170900/get-first-list-index-containing-sub-string-in-python
 def index_containing_substring(the_list, substring):
@@ -56,6 +57,7 @@ def _indent_texttable_for_rst(ttab, indent=4, add_spacing=True):
             new_output.append(" " * indent + "".join(new_row))
     return "\n".join(new_output)
 
+
 class PicardMetrics(object):
     """Generic class to store metrics section from Picard Metrics reports.
     See also class PicardHistMetrics for reports that provide metrics
@@ -71,6 +73,7 @@ class PicardMetrics(object):
       An instance of class PicardMetrics
     """
     _format = collections.OrderedDict()
+    _tp = Template()
 
     def __init__(self, *args, filename=None, identifier=None):
         if filename is None and not args:
@@ -85,9 +88,14 @@ class PicardMetrics(object):
         self._filename = filename
 
     def _set_metrics(self, args):
-        reader = csv.DictReader([",".join([str(y) for y in x]) for x in args])
-        self._fieldnames = reader.fieldnames
-        self._metrics = [collections.OrderedDict([(k, row[k]) for k in self._fieldnames]) for row in reader]
+        # single-column case
+        if (len(args[0]) == 1):
+            self._fieldnames = args[0]
+            self._metrics = [collections.OrderedDict([(args[0][0], row[0])]) for row in args[1:]]
+        else:
+            reader = csv.DictReader([",".join([str(y) for y in x]) for x in args])
+            self._fieldnames = reader.fieldnames
+            self._metrics = [collections.OrderedDict([(k, row[k]) for k in self._fieldnames]) for row in reader]
 
     def __str__(self):
         return str(self._metrics)
@@ -106,6 +114,9 @@ class PicardMetrics(object):
     def __getitem__(self, columns):
         a = [columns] + [[row[c] for c in columns] for row in self._metrics]
         return PicardMetrics(*a, filename=self.filename, identifier=self.id)
+
+    def __setitem__(self, key, val):
+        _ = [row.update([(key, val)]) for row in self._metrics]
 
     def __add__(self, other):
         if not self.fieldnames == other.fieldnames:
@@ -134,8 +145,8 @@ class PicardMetrics(object):
         fmt = {k:v[0] for (k,v) in list(self._format.items()) if k in columns} if fmt is None else {k:v for (k,v) in zip(columns, fmt)}
         ctype = {k:v[1] for (k,v) in list(self._format.items()) if k in columns} if ctype is None else {k:v for (k,v) in zip(columns, ctype)}
         if not fmt:
-            raise ValueError("No format defined for {cls}; please used derived subclass".format(cls=__class__))
-        return "\n".join([sep.join([x for x in columns])] + [sep.join(["{{{}}}".format(fmt[c]).format(ctype[c](r[c])) for c in columns]) for r in self._metrics])
+            raise ValueError("No format defined for {cls}; please use derived subclass".format(cls=__class__))
+        return "\n".join([sep.join([x for x in columns])] + [sep.join([self._tp.format_field(ctype[c](r[c]), fmt[c]) for c in columns]) for r in self._metrics])
 
 
 class PicardHistMetrics(PicardMetrics):
@@ -191,17 +202,17 @@ class PicardHistMetrics(PicardMetrics):
         return self._histfieldnames
 
 class AlignMetrics(PicardMetrics):
-    _format = collections.OrderedDict([('CATEGORY', (':s', str)), ('TOTAL_READS', (':3.2E', int)), 
-                                       ('PF_READS', (':3.2E', int)), ('PCT_PF_READS', (':3.2f', float)), 
-                                       ('PF_NOISE_READS', (':3.2E', int)), ('PF_READS_ALIGNED', (':3.2E', int)), 
-                                       ('PCT_PF_READS_ALIGNED', (':3.2f', float)), ('PF_ALIGNED_BASES', (':3.2E', int)), 
-                                       ('PF_HQ_ALIGNED_READS', (':3.2E', int)), ('PF_HQ_ALIGNED_BASES', (':3.2E', int)), 
-                                       ('PF_HQ_ALIGNED_Q20_BASES', (':3.2E', int)), ('PF_HQ_MEDIAN_MISMATCHES', (':3.2E', int)), 
-                                       ('PF_MISMATCH_RATE', (':3.2f', float)), ('PF_HQ_ERROR_RATE', (':3.2f', float)), ('PF_INDEL_RATE', (':3.2f', float)), 
-                                       ('MEAN_READ_LENGTH', (':3.2f', float)), ('READS_ALIGNED_IN_PAIRS', (':3.2E', int)), 
-                                       ('PCT_READS_ALIGNED_IN_PAIRS', (':3.2f', float)), ('BAD_CYCLES', (':3.2E', int)), ('STRAND_BALANCE', (':3.2f', float)), 
-                                       ('PCT_CHIMERAS', (':3.2f', float)), ('PCT_ADAPTER', (':3.2f', float)), ('SAMPLE', (':s', str)), 
-                                       ('LIBRARY', (':s', str)), ('READ_GROUP', (':s', str))])
+    _format = collections.OrderedDict([('CATEGORY', ('s', str)), ('TOTAL_READS', ('3.2h', int)), 
+                                       ('PF_READS', ('3.2h', int)), ('PCT_PF_READS', ('3.2%', float)), 
+                                       ('PF_NOISE_READS', ('3.2h', int)), ('PF_READS_ALIGNED', ('3.2h', int)), 
+                                       ('PCT_PF_READS_ALIGNED', ('3.2%', float)), ('PF_ALIGNED_BASES', ('3.2h', int)), 
+                                       ('PF_HQ_ALIGNED_READS', ('3.2h', int)), ('PF_HQ_ALIGNED_BASES', ('3.2h', int)), 
+                                       ('PF_HQ_ALIGNED_Q20_BASES', ('3.2h', int)), ('PF_HQ_MEDIAN_MISMATCHES', ('', int)), 
+                                       ('PF_MISMATCH_RATE', ('3.2f', float)), ('PF_HQ_ERROR_RATE', ('3.2f', float)), ('PF_INDEL_RATE', ('3.2f', float)), 
+                                       ('MEAN_READ_LENGTH', ('3.2f', float)), ('READS_ALIGNED_IN_PAIRS', ('3.2h', int)), 
+                                       ('PCT_READS_ALIGNED_IN_PAIRS', ('3.2%', float)), ('BAD_CYCLES', ('3.2h', int)), ('STRAND_BALANCE', ('3.2f', float)), 
+                                       ('PCT_CHIMERAS', ('3.2%', float)), ('PCT_ADAPTER', ('3.2%', float)), ('SAMPLE', ('s', str)), 
+                                       ('LIBRARY', ('s', str)), ('READ_GROUP', ('s', str))])
 
     def __init__(self, *args, identifier=None, filename=None):
         super(AlignMetrics, self).__init__(*args, identifier=identifier, filename=filename)
@@ -213,14 +224,14 @@ class AlignMetrics(PicardMetrics):
 class InsertMetrics(PicardHistMetrics):
     _format = collections.OrderedDict([('MEDIAN_INSERT_SIZE', ('', int)), ('MEDIAN_ABSOLUTE_DEVIATION', ('', int)), 
                                        ('MIN_INSERT_SIZE', ('', int)), ('MAX_INSERT_SIZE', ('', int)), 
-                                       ('MEAN_INSERT_SIZE', (':3.3f', float)), ('STANDARD_DEVIATION', (':3.3f', float)), 
-                                       ('READ_PAIRS', (':3.2E', int)), ('PAIR_ORIENTATION', (':s', str)), 
+                                       ('MEAN_INSERT_SIZE', ('3.3f', float)), ('STANDARD_DEVIATION', ('3.3f', float)), 
+                                       ('READ_PAIRS', ('3.2h', int)), ('PAIR_ORIENTATION', ('s', str)), 
                                        ('WIDTH_OF_10_PERCENT', ('', int)), ('WIDTH_OF_20_PERCENT', ('', int)),
                                        ('WIDTH_OF_30_PERCENT', ('', int)), ('WIDTH_OF_40_PERCENT', ('', int)), 
                                        ('WIDTH_OF_50_PERCENT', ('', int)), ('WIDTH_OF_60_PERCENT', ('', int)),
                                        ('WIDTH_OF_70_PERCENT', ('', int)), ('WIDTH_OF_80_PERCENT', ('', int)), 
                                        ('WIDTH_OF_90_PERCENT', ('', int)), ('WIDTH_OF_99_PERCENT', ('', int)),
-                                       ('SAMPLE', (':s', str)), ('LIBRARY', (':s', str)), ('READ_GROUP', (':s', str))])
+                                       ('SAMPLE', ('s', str)), ('LIBRARY', ('s', str)), ('READ_GROUP', ('s', str))])
     def __init__(self, *args, identifier=None, filename=None, hist=None):
         super(InsertMetrics, self).__init__(*args, identifier=identifier, filename=filename, hist=hist)
 
@@ -230,25 +241,25 @@ class InsertMetrics(PicardHistMetrics):
 
 
 class HsMetrics(PicardMetrics):
-    _format = collections.OrderedDict([('BAIT_SET', (':s', str)), ('GENOME_SIZE', (':3.2E', int)), 
-                                       ('BAIT_TERRITORY', (':3.2E', int)), ('TARGET_TERRITORY', (':3.2E', int)), 
-                                       ('BAIT_DESIGN_EFFICIENCY', (':3.2f', float)), ('TOTAL_READS', (':3.2E', int)),
-                                       ('PF_READS', (':3.2E', int)), ('PF_UNIQUE_READS', (':3.2E', int)), ('PCT_PF_READS', (':3.2f', float)), 
-                                       ('PCT_PF_UQ_READS', (':3.2f', float)), ('PF_UQ_READS_ALIGNED', (':3.2E', int)), 
-                                       ('PCT_PF_UQ_READS_ALIGNED', (':3.2f', float)), ('PF_UQ_BASES_ALIGNED', (':3.2E', int)), 
-                                       ('ON_BAIT_BASES', (':3.2E', int)), ('NEAR_BAIT_BASES', (':3.2E', int)), ('OFF_BAIT_BASES', (':3.2E', int)),
-                                       ('ON_TARGET_BASES', (':3.2E', int)), ('PCT_SELECTED_BASES', (':3.2f', float)), ('PCT_OFF_BAIT', (':3.2f', float)),
-                                       ('ON_BAIT_VS_SELECTED', (':3.2f', float)), ('MEAN_BAIT_COVERAGE', (':3.2f', float)), 
-                                       ('MEAN_TARGET_COVERAGE', (':3.2f', float)), ('PCT_USABLE_BASES_ON_BAIT', (':3.2f', float)),
-                                       ('PCT_USABLE_BASES_ON_TARGET', (':3.2f', float)), ('FOLD_ENRICHMENT', (':3.2f', float)), 
-                                       ('ZERO_CVG_TARGETS_PCT', (':3.2f', float)), ('FOLD_80_BASE_PENALTY', (':3.2f', float)), 
-                                       ('PCT_TARGET_BASES_2X', (':3.2f', float)), ('PCT_TARGET_BASES_10X', (':3.2f', float)),
-                                       ('PCT_TARGET_BASES_20X', (':3.2f', float)), ('PCT_TARGET_BASES_30X', (':3.2f', float)), 
-                                       ('PCT_TARGET_BASES_40X', (':3.2f', float)), ('PCT_TARGET_BASES_50X', (':3.2f', float)), 
-                                       ('PCT_TARGET_BASES_100X', (':3.2f', float)), ('HS_LIBRARY_SIZE', (':3.2E', int)), ('HS_PENALTY_10X', (':3.2f', float)),
-                                       ('HS_PENALTY_20X', (':3.2f', float)), ('HS_PENALTY_30X', (':3.2f', float)), ('HS_PENALTY_40X', (':3.2f', float)),
-                                       ('HS_PENALTY_50X', (':3.2f', float)), ('HS_PENALTY_100X', (':3.2f', float)), ('AT_DROPOUT', (':3.2f', float)), 
-                                       ('GC_DROPOUT', (':3.2f', float)), ('SAMPLE', (':s', str)), ('LIBRARY',  (':s', str)), ('READ_GROUP',  (':s', str))])
+    _format = collections.OrderedDict([('BAIT_SET', ('s', str)), ('GENOME_SIZE', ('3.2h', int)), 
+                                       ('BAIT_TERRITORY', ('3.2h', int)), ('TARGET_TERRITORY', ('3.2h', int)), 
+                                       ('BAIT_DESIGN_EFFICIENCY', ('3.2f', float)), ('TOTAL_READS', ('3.2h', int)),
+                                       ('PF_READS', ('3.2h', int)), ('PF_UNIQUE_READS', ('3.2h', int)), ('PCT_PF_READS', ('3.2%', float)), 
+                                       ('PCT_PF_UQ_READS', ('3.2%', float)), ('PF_UQ_READS_ALIGNED', ('3.2h', int)), 
+                                       ('PCT_PF_UQ_READS_ALIGNED', ('3.2%', float)), ('PF_UQ_BASES_ALIGNED', ('3.2h', int)), 
+                                       ('ON_BAIT_BASES', ('3.2h', int)), ('NEAR_BAIT_BASES', ('3.2h', int)), ('OFF_BAIT_BASES', ('3.2h', int)),
+                                       ('ON_TARGET_BASES', ('3.2h', int)), ('PCT_SELECTED_BASES', ('3.2%', float)), ('PCT_OFF_BAIT', ('3.2%', float)),
+                                       ('ON_BAIT_VS_SELECTED', ('3.2f', float)), ('MEAN_BAIT_COVERAGE', ('3.2f', float)), 
+                                       ('MEAN_TARGET_COVERAGE', ('3.2f', float)), ('PCT_USABLE_BASES_ON_BAIT', ('3.2%', float)),
+                                       ('PCT_USABLE_BASES_ON_TARGET', ('3.2%', float)), ('FOLD_ENRICHMENT', ('3.2f', float)), 
+                                       ('ZERO_CVG_TARGETS_PCT', ('3.2%', float)), ('FOLD_80_BASE_PENALTY', ('3.2f', float)), 
+                                       ('PCT_TARGET_BASES_2X', ('3.2%', float)), ('PCT_TARGET_BASES_10X', ('3.2%', float)),
+                                       ('PCT_TARGET_BASES_20X', ('3.2%', float)), ('PCT_TARGET_BASES_30X', ('3.2%', float)), 
+                                       ('PCT_TARGET_BASES_40X', ('3.2%', float)), ('PCT_TARGET_BASES_50X', ('3.2%', float)), 
+                                       ('PCT_TARGET_BASES_100X', ('3.2%', float)), ('HS_LIBRARY_SIZE', ('3.2h', int)), ('HS_PENALTY_10X', ('3.2f', float)),
+                                       ('HS_PENALTY_20X', ('3.2f', float)), ('HS_PENALTY_30X', ('3.2f', float)), ('HS_PENALTY_40X', ('3.2f', float)),
+                                       ('HS_PENALTY_50X', ('3.2f', float)), ('HS_PENALTY_100X', ('3.2f', float)), ('AT_DROPOUT', ('3.2f', float)), 
+                                       ('GC_DROPOUT', ('3.2f', float)), ('SAMPLE', ('s', str)), ('LIBRARY',  ('s', str)), ('READ_GROUP',  ('s', str))])
 
     def __init__(self, *args, identifier=None, filename=None):
         super(HsMetrics, self).__init__(*args, identifier=identifier, filename=filename)
@@ -261,11 +272,11 @@ class HsMetrics(PicardMetrics):
 
 
 class DuplicationMetrics(PicardHistMetrics):
-    _format = collections.OrderedDict([('LIBRARY', (':s', str)), ('UNPAIRED_READS_EXAMINED', (':3.2E', int)), 
-                                       ('READ_PAIRS_EXAMINED', (':3.2E', int)), ('UNMAPPED_READS', (':3.2E', int)),
-                                       ('UNPAIRED_READ_DUPLICATES', (':3.2E', int)), ('READ_PAIR_DUPLICATES', (':3.2E', int)), 
-                                       ('READ_PAIR_OPTICAL_DUPLICATES', (':3.2f', float)), 
-                                       ('PERCENT_DUPLICATION', (':3.2f', float)), ('ESTIMATED_LIBRARY_SIZE', (':3.2E', int))])
+    _format = collections.OrderedDict([('LIBRARY', ('s', str)), ('UNPAIRED_READS_EXAMINED', ('3.2h', int)), 
+                                       ('READ_PAIRS_EXAMINED', ('3.2h', int)), ('UNMAPPED_READS', ('3.2h', int)),
+                                       ('UNPAIRED_READ_DUPLICATES', ('3.2h', int)), ('READ_PAIR_DUPLICATES', ('3.2h', int)), 
+                                       ('READ_PAIR_OPTICAL_DUPLICATES', ('3.2f', float)), 
+                                       ('PERCENT_DUPLICATION', ('3.2%', float)), ('ESTIMATED_LIBRARY_SIZE', ('3.2h', int))])
 
     def __init__(self, *args, identifier=None, filename=None, hist=None):
         super(DuplicationMetrics, self).__init__(*args, identifier=identifier, filename=filename, hist=hist)

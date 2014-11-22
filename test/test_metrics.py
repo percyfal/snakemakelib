@@ -38,10 +38,10 @@ def setUp():
     HMf = HsMetrics(identifier="HM", filename=hs_metrics[0])
     DMf = DuplicationMetrics(identifier="DM", filename=dup_metrics[0])
 
-    AMa = AlignMetrics(*alnmet)
-    IMa = InsertMetrics(*insmet, hist=inshist)
-    HMa = HsMetrics(*hsmet)
-    DMa = DuplicationMetrics(*dupmet, hist=duphist)
+    AMa = AlignMetrics(*alnmet, identifier="AM")
+    IMa = InsertMetrics(*insmet, hist=inshist, identifier="IM")
+    HMa = HsMetrics(*hsmet, identifier="HM")
+    DMa = DuplicationMetrics(*dupmet, hist=duphist, identifier="DM")
 
 
 class TestPicardMetrics(unittest.TestCase):
@@ -54,8 +54,8 @@ class TestPicardMetrics(unittest.TestCase):
 
     def test_init(self):
         """Test instantiating PicardMetrics in two ways"""
-        p1 = PicardMetrics(filename=align_metrics[0])
-        p2 = PicardMetrics(*alnmet)
+        p1 = PicardMetrics(filename=align_metrics[0], identifier="PM")
+        p2 = PicardMetrics(*alnmet, identifier="PM")
         self.assertListEqual(p1.metrics, p2.metrics)
 
     def test_iter(self):
@@ -65,33 +65,86 @@ class TestPicardMetrics(unittest.TestCase):
             self.assertListEqual(list(PM.metrics[i]), list(m))
             i += 1
 
-
-    def test_PicardMetrics_merge(self):
+    def test_merge(self):
         """Test merging two PicardMetrics objects"""
-        pass
+        PM2 = PicardMetrics(identifier="PM2", filename=align_metrics[1])
+        self.assertEqual(len(list(PM.metrics)), 3)
+        self.assertEqual(len(list(PM2.metrics)), 3)
+        PM3 = PM + PM2
+        self.assertEqual(len(list(PM3.metrics)), 6)
 
-    def test_PicardMetrics_merge_subset(self):
+        pm1_cat = [row['CATEGORY'] for row in PM.metrics]
+        pm2_cat = [row['CATEGORY'] for row in PM2.metrics]
+        pm3_cat = [row['CATEGORY'] for row in PM3.metrics]
+        
+        pm1_pct = [row['PCT_READS_ALIGNED_IN_PAIRS'] for row in PM.metrics]
+        pm2_pct = [row['PCT_READS_ALIGNED_IN_PAIRS'] for row in PM2.metrics]
+        pm3_pct = [row['PCT_READS_ALIGNED_IN_PAIRS'] for row in PM3.metrics]
+        self.assertListEqual(pm3_cat, pm1_cat + pm2_cat)
+        self.assertListEqual(pm3_pct, pm1_pct + pm2_pct)
+
+    def test_merge_subset(self):
         """Test merging two subsetted PicardMetrics objects"""
-        pass
+        PM2 = PicardMetrics(identifier="PM2", filename=align_metrics[1])
+        columns = ['CATEGORY', 'PCT_PF_READS_ALIGNED']
+        p1 = PM[columns]
+        p2 = PM2[columns]
+        self.assertEqual(len(list(p1.metrics)), 3)
+        self.assertEqual(len(list(p2.metrics)), 3)
+        p3 = p1 + p2
+        self.assertEqual(len(list(p3.metrics)), 6)
+        self.assertListEqual(p3.metrics, p1.metrics + p2.metrics)
+
+    @raises(TypeError)
+    def test_merge_different_columns(self):
+        """Test merging two PicardMetrics objects with different columns"""
+        (pm1, pm2) = (PicardMetrics(identifier="PM1", filename=align_metrics[0]), PicardMetrics(identifier="PM2", filename=align_metrics[1]))
+        pm1s = pm1[['CATEGORY']]
+        pm1s + pm2
+
+    def test_get_single_column(self):
+        """Test getting single column"""
+        pms = PM[['SAMPLE']]
+        self.assertEqual(pms.fieldnames, ['SAMPLE'])
+        self.assertListEqual([OrderedDict([('SAMPLE', '')]), OrderedDict([('SAMPLE', '')]), OrderedDict([('SAMPLE', '')])], pms.metrics)
+
+    def test_set_sample(self):
+        """Test updating SAMPLE key in PicardMetrics object"""
+        PM['SAMPLE'] = 'sample'
+        pms = PM[['SAMPLE']]
+        self.assertListEqual([OrderedDict([('SAMPLE', 'sample')]), OrderedDict([('SAMPLE', 'sample')]), OrderedDict([('SAMPLE', 'sample')])], pms.metrics)
 
 class TestPicardHistMetrics(unittest.TestCase):
     
     @raises(ValueError)
-    def test_PicardHistMetrics_missing_args(self):
+    def test_missing_args(self):
         """Test instantiating PicardHistMetrics with missing arguments"""
         PicardHistMetrics()
 
     @raises(ValueError)
-    def test_PicardHistMetrics_missing_hist(self):
+    def test_missing_hist(self):
         """Test instantiating PicardHistMetrics with missing hist argument"""
         args = [('MEDIAN_INSERT_SIZE', '156'), ('MEDIAN_ABSOLUTE_DEVIATION', '39')]
         p = PicardHistMetrics(*args)
 
-    def test_PicardHistMetrics_init(self):
+    def test_init(self):
         """Test instantiating PicardHistMetrics object"""
-        p1 = PicardHistMetrics(filename=insert_metrics[0], hist="test")
-        p2 = PicardHistMetrics(*insmet, hist="test")
+        p1 = PicardHistMetrics(filename=insert_metrics[0], hist="test", identifier="PM")
+        p2 = PicardHistMetrics(*insmet, hist="test", identifier="PM")
         self.assertListEqual(p1.metrics, p2.metrics)
+
+    def test_merge(self):
+        """Test merging two PicardHistMetrics objects"""
+        pass
+
+    def test_merge_subset(self):
+        """Test merging two subsetted PicardHistMetrics objects"""
+        pass
+
+    # @raises
+    def test_merge_subset_different_columns(self):
+        """Test merging two subsetted PicardHistMetrics objects with different columns"""
+        pass
 
 
 class TestAlignMetrics(unittest.TestCase):
@@ -109,26 +162,13 @@ class TestAlignMetrics(unittest.TestCase):
 
     def test_summary(self):
         """Test AlignMetrics summary"""
-        print (AMa.summary())
+        self.assertEqual('FIRST_OF_PAIR	2.00k	2.00k	100.00%', AMa.summary().split("\n")[1][0:33])
 
     def test_subset_summary(self):
         """Test AlignMetrics subset summary"""
-        columns = ['CATEGORY', 'TOTAL_READS', 'PF_READS']
+        columns = ['CATEGORY', 'TOTAL_READS', 'PF_READS_ALIGNED']
         am = AMa[columns]
-        print (am.summary())
-
-    def test_merge(self):
-        """Test merging two AlignMetrics objects"""
-        pass
-
-    def test_merge_subset(self):
-        """Test merging two subsetted AlignMetrics objects"""
-        pass
-
-    # @raises
-    def test_merge_subset_different_columns(self):
-        """Test merging two subsetted AlignMetrics objects with different columns"""
-        pass
+        self.assertEqual('SECOND_OF_PAIR	2.00k	1.95k', am.summary().split("\n")[2])
 
     def test_plot_tuple(self):
         """Test retrieval of plot tuple"""
@@ -149,26 +189,13 @@ class TestInsertMetrics(unittest.TestCase):
 
     def test_summary(self):
         """Test InsertMetrics summary"""
-        print (IMa.summary())
+        self.assertListEqual(IMa.summary().split("\n")[1].split("\t"), ['156', '39', '70', '485', '167.819', '61.549', '1.73k', 'FR', '15', '29', '43', '61', '79', '93', '111', '133', '195', '443', '', '', ''])
 
     def test_subset_summary(self):
         """Test InsertMetrics subset summary"""
         columns = ['MEDIAN_INSERT_SIZE', 'MEDIAN_ABSOLUTE_DEVIATION', 'MIN_INSERT_SIZE']
         im = IMa[columns]
-        print (im.summary())
-
-    def test_merge(self):
-        """Test merging two InsertMetrics objects"""
-        pass
-
-    def test_merge_subset(self):
-        """Test merging two subsetted InsertMetrics objects"""
-        pass
-
-    # @raises
-    def test_merge_subset_different_columns(self):
-        """Test merging two subsetted InsertMetrics objects with different columns"""
-        pass
+        self.assertListEqual(im.summary().split("\n")[1].split("\t"), ['156', '39', '70'])
 
     def test_plot_tuple(self):
         """Test retrieval of plot tuple"""
@@ -190,26 +217,13 @@ class TestDuplicationMetrics(unittest.TestCase):
 
     def test_summary(self):
         """Test DuplicationMetrics summary"""
-        print (DMa.summary())
+        self.assertEqual(DMa.summary().split("\n")[1].split("\t"), ['lib', '54.00', '1.95k', '60.00', '43.00', '215.00', '0.00', '11.99%', '8.14k'])
 
     def test_subset_summary(self):
         """Test DuplicationMetrics subset summary"""
-        columns = ['LIBRARY', 'UNPAIRED_READS_EXAMINED', 'READ_PAIRS_EXAMINED']
+        columns = ['LIBRARY', 'UNPAIRED_READS_EXAMINED', 'READ_PAIRS_EXAMINED', 'PERCENT_DUPLICATION']
         dm = DMa[columns]
-        print (dm.summary())
-
-    def test_merge(self):
-        """Test merging two DuplicationMetrics objects"""
-        pass
-
-    def test_merge_subset(self):
-        """Test merging two subsetted DuplicationMetrics objects"""
-        pass
-
-    # @raises
-    def test_merge_subset_different_columns(self):
-        """Test merging two subsetted DuplicationMetrics objects with different columns"""
-        pass
+        self.assertListEqual(['lib', '54.00', '1.95k', '11.99%'], dm.summary().split("\n")[1].split("\t"))
 
     def test_plot_tuple(self):
         """Test retrieval of plot tuple"""
@@ -231,26 +245,13 @@ class TestHsMetrics(unittest.TestCase):
 
     def test_summary(self):
         """Test HsMetrics summary"""
-        print (HMa.summary())
+        self.assertListEqual(HMa.summary().split("\n")[1].split("\t")[0:6], ['chr11_baits', '2.00M', '301.00', '301.00', '1.00', '4.00k'])
 
     def test_subset_summary(self):
         """Test HsMetrics subset summary"""
-        columns = ['BAIT_SET', 'GENOME_SIZE', 'BAIT_TERRITORY']
+        columns = ['GENOME_SIZE', 'BAIT_TERRITORY', 'TARGET_TERRITORY', 'ZERO_CVG_TARGETS_PCT', 'PCT_TARGET_BASES_2X', 'PCT_TARGET_BASES_10X', 'PCT_TARGET_BASES_30X']
         hm = HMa[columns]
-        print (hm.summary())
-
-    def test_merge(self):
-        """Test merging two HsMetrics objects"""
-        pass
-
-    def test_merge_subset(self):
-        """Test merging two subsetted HsMetrics objects"""
-        pass
-
-    # @raises
-    def test_merge_subset_different_columns(self):
-        """Test merging two subsetted HsMetrics objects with different columns"""
-        pass
+        self.assertListEqual(['2.00M', '301.00', '301.00', '0.00%', '76.41%', '50.83%', '16.61%'], hm.summary().split("\n")[1].split("\t"))
 
     def test_plot_tuple(self):
         """Test retrieval of plot tuple"""

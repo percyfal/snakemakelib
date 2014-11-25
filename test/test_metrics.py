@@ -1,13 +1,11 @@
 # Copyright (C) 2014 by Per Unneberg
 import os
-import sys 
-import csv
 import unittest
 import logging
 import texttable as tt
 from collections import OrderedDict
 from nose.tools import raises
-from snakemakelib.report.picard import PicardMetrics, PicardHistMetrics, AlignMetrics, InsertMetrics, HsMetrics, DuplicationMetrics, _read_picard_metrics, PicardMetricsSummary
+from snakemakelib.report.picard import PicardMetrics, PicardHistMetrics, AlignMetrics, InsertMetrics, HsMetrics, DuplicationMetrics, _read_picard_metrics, combine_metrics
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +14,8 @@ def setUp():
 
     global PM, PH, AMa, IMa, DMa, HMa, AMf, IMf, DMf, HMf, align_metrics, dup_metrics, insert_metrics, hs_metrics, alnmet, insmet, dupmet, hsmet, inshist, duphist
 
-    metricsroot = os.path.join(os.path.abspath(os.curdir), os.pardir, 'data', 'metrics', 'J.Doe_00_01')
+    metricsroot = os.path.join(os.path.abspath(os.curdir),
+                               os.pardir, 'data', 'metrics', 'J.Doe_00_01')
     metricsfiles = []
     for root, dirs, files in os.walk(metricsroot):
         metricsfiles += [os.path.join(root, x) for x in files if x.endswith('metrics')]
@@ -258,25 +257,33 @@ class TestHsMetrics(unittest.TestCase):
         pass
 
 
-class TestPicardMetricsSummary(unittest.TestCase):
-    """Test PicardMetricsSummary class"""
-    def test_empty_init(self):
-        """Test empty init"""
-        pms = PicardMetricsSummary()
-        self.assertListEqual(list(pms), [])
-        self.assertListEqual(pms.fieldnames, [])
-        self.assertListEqual(pms.metrics, [])
+class TestCombineMetrics(unittest.TestCase):
+    """Test methods for combining metrics"""
+    def test_combine_metrics(self):
+        """Test combining metrics"""
+        amsa = AMa.category()
+        pm = combine_metrics([DMa, IMa, amsa, HMa])
+        self.assertListEqual(pm.fieldnames[0:len(DMa.fieldnames)], DMa.fieldnames)
+        self.assertListEqual(pm.fieldnames[len(DMa.fieldnames): len(DMa.fieldnames) + len(IMa.fieldnames)], IMa.fieldnames)
+        self.assertListEqual(pm.fieldnames[len(DMa.fieldnames) + len(IMa.fieldnames): len(DMa.fieldnames) + len(IMa.fieldnames) + len(amsa.fieldnames)], amsa.fieldnames)
+        self.assertListEqual(pm.fieldnames[len(DMa.fieldnames) + len(IMa.fieldnames) + len(amsa.fieldnames):], HMa.fieldnames)
 
-    def test_summary(self):
-        """Test summary combining all metrics, all AlignMetrics rows"""
-        pms = PicardMetricsSummary(insertmetrics=IMa, hsmetrics=HMa, dupmetrics=DMa)
-        #print (pms.fieldnames)
-        #print (pms.metrics)
-        print (pms.summary())
+        # First LIBRARY element in pm is unset as LIBRARY occurs multiple times 
+        self.assertListEqual(DMa.summary().split("\n")[1].split("\t")[1:], pm.summary().split("\n")[1].split("\t")[1:len(DMa.fieldnames)])
+        self.assertListEqual(IMa.summary().split("\n")[1].split("\t"), pm.summary().split("\n")[1].split("\t")[len(DMa.fieldnames):len(DMa.fieldnames) + len(IMa.fieldnames)])
 
-    def test_summary_pairs(self):
-        """Test summary using only PAIRS category of AlignMetrics"""
-        pass
+        self.assertListEqual(amsa.summary().split("\n")[1].split("\t"), pm.summary().split("\n")[1].split("\t")[len(DMa.fieldnames) + len(IMa.fieldnames):len(DMa.fieldnames) + len(IMa.fieldnames) + len(amsa.fieldnames)])
+
+        self.assertListEqual(HMa.summary().split("\n")[1].split("\t"), pm.summary().split("\n")[1].split("\t")[len(DMa.fieldnames) + len(IMa.fieldnames) + len(amsa.fieldnames):])
+
+    def test_combine_multirow_metrics(self):
+        """Test combining multirow metrics"""
+        print(inshist)
+        dm2 = DuplicationMetrics(identifier="DM2", filename=dup_metrics[1])
+        dm = DMa 
+        hm = HMa + HsMetrics(identifier="HM2", filename=hs_metrics[1])
+        pm = combine_metrics([dm, hm])
+        print (pm.summary())
 
     def test_plot_tuple(self):
         """Test retrieval of plot tuple"""

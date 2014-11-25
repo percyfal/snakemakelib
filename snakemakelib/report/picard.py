@@ -57,7 +57,6 @@ def _indent_texttable_for_rst(ttab, indent=4, add_spacing=True):
             new_output.append(" " * indent + "".join(new_row))
     return "\n".join(new_output)
 
-
 class PicardMetrics(object):
     """Generic class to store metrics section from Picard Metrics reports.
     See also class PicardHistMetrics for reports that provide metrics
@@ -85,7 +84,7 @@ class PicardMetrics(object):
 
     def _set_vars(self, identifier, filename):
         self._id = identifier if not identifier is None else filename
-        self._filename = filename
+        self._filename = str(filename)
 
     def _set_metrics(self, args):
         # single-column case
@@ -113,7 +112,7 @@ class PicardMetrics(object):
 
     def __getitem__(self, columns):
         a = [columns] + [[row[c] for c in columns] for row in self._metrics]
-        return PicardMetrics(*a, filename=self.filename, identifier=self.id)
+        return self.__class__(*a, filename=self.filename, identifier=self.id)
 
     def __setitem__(self, key, val):
         _ = [row.update([(key, val)]) for row in self._metrics]
@@ -125,11 +124,15 @@ class PicardMetrics(object):
     # def __iadd__(self, other):
     #     pass
 
+    # remove? each metrics object should correspond to one file
     def __add__(self, other):
         if not self.fieldnames == other.fieldnames:
             raise TypeError("fieldnames differ between {id1} and {id2}: {fn1} != {fn2}; cannot merge objects with different fieldnames".format(id1=self.id, id2=other.id, fn1=self.fieldnames, fn2=other.fieldnames))
         a = [self.fieldnames] + [[row[c] for c in self.fieldnames] for row in self._metrics] + [[row[c] for c in other.fieldnames] for row in other.metrics]
-        return PicardMetrics(*a, filename=",".join([self.filename, other.filename]), identifier=",".join([self.id, other.id]))
+        return self.__class__(*a, filename=",".join([self.filename, other.filename]), identifier=",".join([self.id, other.id]))
+
+    def __radd__(self, other):
+        return self.__add__(other)
 
     @property
     def fieldnames(self):
@@ -194,12 +197,22 @@ class PicardHistMetrics(PicardMetrics):
             (args, hist) = _read_picard_metrics(self.filename)
         self._set_metrics(args)
         self._histfieldnames = hist[0]
+        # Must be a list for add operator to work
         self._hist = collections.OrderedDict([(y[0], y[1:]) for y in [[x[i] for x in hist] for i in range(0, len(self._histfieldnames))]])
 
     def __getitem__(self, columns):
         a = [columns] + [[row[c] for c in columns] for row in self._metrics]
-        return PicardHistMetrics(*a, filename=self.filename, identifier=self.id, hist=list(self.hist))
+        return self.__class__(*a, filename=self.filename, identifier=self.id, hist=list(self.hist))
         
+    def __add__(self, other):
+        if not self.fieldnames == other.fieldnames:
+            raise TypeError("fieldnames differ between {id1} and {id2}: {fn1} != {fn2}; cannot merge objects with different fieldnames".format(id1=self.id, id2=other.id, fn1=self.fieldnames, fn2=other.fieldnames))
+        a = [self.fieldnames] + [[row[c] for c in self.fieldnames] for row in self._metrics] + [[row[c] for c in other.fieldnames] for row in other.metrics]
+        return self.__class__(*a, filename=",".join([self.filename, other.filename]), identifier=",".join([self.id, other.id]))
+
+    def __radd__(self, other):
+        return self.__add__(other)
+
     @property
     def hist(self):
         return self._hist
@@ -224,8 +237,9 @@ class AlignMetrics(PicardMetrics):
     def __init__(self, *args, identifier=None, filename=None):
         super(AlignMetrics, self).__init__(*args, identifier=identifier, filename=filename)
 
-    def __getitem__(self, columns):
-        a = [columns] + [[row[c] for c in columns] for row in self._metrics]
+    def category(self, category="PAIR"):
+        """Retrieve subset object with only one alignment category"""
+        a = [self.fieldnames] + [[row[c] for c in self.fieldnames] for row in self._metrics if row['CATEGORY'] == category]
         return AlignMetrics(*a, filename=self.filename, identifier=self.id)
 
 class InsertMetrics(PicardHistMetrics):
@@ -241,10 +255,6 @@ class InsertMetrics(PicardHistMetrics):
                                        ('SAMPLE', ('s', str)), ('LIBRARY', ('s', str)), ('READ_GROUP', ('s', str))])
     def __init__(self, *args, identifier=None, filename=None, hist=None):
         super(InsertMetrics, self).__init__(*args, identifier=identifier, filename=filename, hist=hist)
-
-    def __getitem__(self, columns):
-        a = [columns] + [[row[c] for c in columns] for row in self._metrics]
-        return InsertMetrics(*a, filename=self.filename, identifier=self.id, hist=list(self.hist))
 
 
 class HsMetrics(PicardMetrics):
@@ -271,12 +281,6 @@ class HsMetrics(PicardMetrics):
     def __init__(self, *args, identifier=None, filename=None):
         super(HsMetrics, self).__init__(*args, identifier=identifier, filename=filename)
 
-    def __getitem__(self, columns):
-        a = [columns] + [[row[c] for c in columns] for row in self._metrics]
-        return HsMetrics(*a)
-
-
-
 
 class DuplicationMetrics(PicardHistMetrics):
     _format = collections.OrderedDict([('LIBRARY', ('s', str)), ('UNPAIRED_READS_EXAMINED', ('3.2h', int)), 
@@ -288,47 +292,34 @@ class DuplicationMetrics(PicardHistMetrics):
     def __init__(self, *args, identifier=None, filename=None, hist=None):
         super(DuplicationMetrics, self).__init__(*args, identifier=identifier, filename=filename, hist=hist)
 
-    def __getitem__(self, columns):
-        a = [columns] + [[row[c] for c in columns] for row in self._metrics]
-        return DuplicationMetrics(*a, filename=self.filename, identifier=self.id, hist=list(self.hist))
 
+def combine_metrics(metrics):
+    """Convert list of metrics object to PicardMetrics object
 
-class PicardMetricsSummary(PicardMetrics):
-    """Combine different picard metrics to one summary.
+    Args:
+      metrics (list of lists): list of metrics objects
 
-    Takes AlignMetrics etc as input and outputs the *metrics*
-    summaries only. If all alnmetrics lines chosen, replicate the
-    others three times.
-
+    Returns:
+      new PicardMetrics object with format specifications set for summary operations
     """
-    _format = []
-
-    def __init__(self, alnmetrics=None, hsmetrics=None, insertmetrics=None, dupmetrics=None):
-        self._fieldnames = []
-        self._fieldnames += alnmetrics.fieldnames if not alnmetrics is None else []
-        self._fieldnames += hsmetrics.fieldnames if not hsmetrics is None else []
-        self._fieldnames += insertmetrics.fieldnames if not insertmetrics is None else []
-        self._fieldnames += dupmetrics.fieldnames if not dupmetrics is None else []
-        self._set_metrics(alnmetrics, hsmetrics, insertmetrics, dupmetrics)
-
-    def _set_metrics(self, alnmetrics, hsmetrics, insertmetrics, dupmetrics):
-        self._metrics = []
-        args = []
+    n = []
+    fieldnames = []
+    for m in metrics:
+        fieldnames += m.fieldnames
+        n += [len(m.metrics)]
+    if len(set(n)) > 1:
+        raise ValueError("not all metrics of equal length; most probably you need to subset an AlignMetrics class to one category")
+    args = [fieldnames]
+    for i in range(0, n[0]):
+        rowargs = []
         fmtlist = []
-        if not hsmetrics is None:
-            args += list(([(k,row[k]) for k in hsmetrics.fieldnames] for row in hsmetrics.metrics))
-            fmtlist += list([(k,v) for k,v in hsmetrics._format.items()])
-        if not dupmetrics is None:
-            args += list(([(k,row[k]) for k in dupmetrics.fieldnames] for row in dupmetrics.metrics))
-            fmtlist += list([(k,v) for k,v in dupmetrics._format.items()])
-        if not insertmetrics is None:
-            args += list(([(k,row[k]) for k in insertmetrics.fieldnames] for row in insertmetrics.metrics))
-            fmtlist += list([(k,v) for k,v in insertmetrics._format.items()])
-        args = [item for sublist in args for item in sublist]
-        self._format = collections.OrderedDict(fmtlist)
-        self._metrics = collections.OrderedDict(args)
-        # for row in self._metrics:
-        #     print (list(self._metrics) + list(hsmetrics.metrics))
-        #     print ([(k,row[k] for k in alnmetrics.fieldnames)
-        
+        for m in metrics:
+            rowargs += [m.metrics[i][k] for k in m.fieldnames]
+            if i == 0:
+                fmtlist += [(k,v) for k,v in m._format.items()]
+        args.append(rowargs)
+    pm = PicardMetrics(*args)
+    pm._format = collections.OrderedDict(fmtlist)
+    return (pm)
+
 

@@ -7,19 +7,10 @@ import logging
 import texttable as tt
 from collections import OrderedDict
 from nose.tools import raises
-from snakemakelib.report.picard import PicardMetricsCollection, PicardMetrics, AlignMetrics, InsertMetrics, HsMetrics, DuplicationMetrics, AlignMetricsCollection, InsertMetricsCollection, HsMetricsCollection, DuplicationMetricsCollection, _read_picard_metrics, PicardMetrics, PicardHist
+from snakemakelib.report.picard import PicardMetrics, PicardHistMetrics, AlignMetrics, InsertMetrics, HsMetrics, DuplicationMetrics, AlignMetricsCollection, InsertMetricsCollection, HsMetricsCollection, DuplicationMetricsCollection, _read_picard_metrics, PicardMetrics, PicardHist,  PicardMetricsCollection
 
 logger = logging.getLogger(__name__)
 
-class TestMergeDict(unittest.TestCase):
-    def test_merge_two_dicts(self):
-        """Test merging two dictionaries where we know we have the same columns"""
-        print ("Merging")
-
-class TestSampleReport(unittest.TestCase):
-    def test_sample_report(self):
-        """Test sample report"""
-        print ("sample report")
 
 class TestCollectMetrics(unittest.TestCase):
     def setUp(self):
@@ -79,7 +70,6 @@ class TestCollectMetrics(unittest.TestCase):
         dsum = d.summary(columns=['LIBRARY', 'UNPAIRED_READS_EXAMINED', 'READ_PAIRS_EXAMINED'])
         self.assertEqual(dsum.split("\n")[1], 'lib\t5.40E+01\t1.94E+03')
 
-
     def test_PicardHist(self):
         """Test PicardHist class"""
         (metrics, hist) = _read_picard_metrics(self.insert_metrics[0])
@@ -138,3 +128,14 @@ class TestCollectMetrics(unittest.TestCase):
         """Test PicardMetrics._read_metrics"""
         print (self.alnmet.metrics())
         print (self.insmet.hist())
+
+class TestMergeDict(unittest.TestCase):
+    def test_merge_two_dicts(self):
+        """Test merging two dictionaries where we know we have the same columns"""
+        print ("Merging")
+
+class TestSampleReport(unittest.TestCase):
+    def test_sample_report(self):
+        """Test sample report"""
+        print ("sample report")
+

@@ -1,18 +1,19 @@
 # Copyright (C) 2014 by Per Unneberg
 import os
+import re
 import unittest
 import logging
 import texttable as tt
-from collections import OrderedDict
+from collections import OrderedDict, Counter
 from nose.tools import raises
-from snakemakelib.report.picard import PicardMetrics, PicardHistMetrics, AlignMetrics, InsertMetrics, HsMetrics, DuplicationMetrics, _read_picard_metrics, combine_metrics
+from snakemakelib.report.picard import PicardMetrics, PicardHistMetrics, AlignMetrics, InsertMetrics, HsMetrics, DuplicationMetrics, _read_picard_metrics, combine_metrics, DataFrame, _make_unique
 
 logger = logging.getLogger(__name__)
 
 def setUp():
     """Set up test fixtures for metrics test"""
 
-    global PM, PH, AMa, IMa, DMa, HMa, AMf, IMf, DMf, HMf, align_metrics, dup_metrics, insert_metrics, hs_metrics, alnmet, insmet, dupmet, hsmet, inshist, duphist
+    global PM, PH, AMa, IMa, DMa, HMa, AMf, IMf, DMf, HMf, align_metrics, dup_metrics, insert_metrics, hs_metrics, alnmet, insmet, dupmet, hsmet, inshist, duphist, Adf, Idf, Idfh, Ddf, Ddfh, Hdf
 
     metricsroot = os.path.join(os.path.abspath(os.curdir),
                                os.pardir, 'data', 'metrics', 'J.Doe_00_01')
@@ -42,6 +43,49 @@ def setUp():
     HMa = HsMetrics(*hsmet, identifier="HM")
     DMa = DuplicationMetrics(*dupmet, hist=duphist, identifier="DM")
 
+    Adf = DataFrame(*alnmet)
+    Idf = DataFrame(*insmet)
+    Idfh = DataFrame(*inshist)
+    Ddf = DataFrame(*dupmet)
+    Ddfh = DataFrame(*duphist)
+    Hdf = DataFrame(*hsmet)
+
+
+
+
+class TestDataFrame(unittest.TestCase):
+    """Test DataFrame object"""
+    def test_dataframe_init(self):
+        """Test initialization of DataFrame"""
+        df = DataFrame(*alnmet)
+        self.assertListEqual(df.colnames[0:3], ['CATEGORY', 'TOTAL_READS', 'PF_READS'])
+        self.assertTupleEqual((3,25), df.dim)
+        df = DataFrame(*inshist)
+        self.assertTupleEqual((257,2), df.dim)
+        self.assertListEqual(df.colnames, ['insert_size', 'All_Reads.fr_count'])
+
+    def test_x(self):
+        """Test getting x in two ways"""
+        self.assertListEqual(['FIRST_OF_PAIR', 'SECOND_OF_PAIR', 'PAIR'], Adf.x('CATEGORY'))
+        self.assertListEqual(['FIRST_OF_PAIR', 'SECOND_OF_PAIR', 'PAIR'], Adf[['CATEGORY']].x())
+
+    def test_y(self):
+        """Test getting y in two ways"""
+        self.assertListEqual(['FIRST_OF_PAIR', 'SECOND_OF_PAIR', 'PAIR'], Adf.y('CATEGORY'))
+        self.assertListEqual(['FIRST_OF_PAIR', 'SECOND_OF_PAIR', 'PAIR'], Adf[['CATEGORY']].y())
+
+    def test_slice_x(self):
+        """Test getting x as slice in two ways"""
+        self.assertListEqual(Adf.x('CATEGORY', [1]), ['SECOND_OF_PAIR'])
+        self.assertListEqual([86, 87, 88, 89, 90, 91, 92, 93, 94, 95], [int(x) for x in Idfh.x(indices=list(range(10,20)))])
+        self.assertListEqual([86, 87, 88, 89, 90, 91, 92, 93, 94, 95], [int(x) for x in Idfh.y()[10:20]])
+        
+    def test_slice_y(self):
+        """Test getting y as slice in two ways"""
+        self.assertListEqual(Adf.y('CATEGORY', [1]), ['SECOND_OF_PAIR'])
+        self.assertListEqual([int(x) for x in Idfh.y(indices=list(range(3,7)))], [79, 80, 81, 82])
+        self.assertListEqual([int(x) for x in Idfh.y()[3:7]], [79, 80, 81, 82])
+
 
 class TestPicardMetrics(unittest.TestCase):
     """Test PicardMetrics classes"""
@@ -55,63 +99,26 @@ class TestPicardMetrics(unittest.TestCase):
         """Test instantiating PicardMetrics in two ways"""
         p1 = PicardMetrics(filename=align_metrics[0], identifier="PM")
         p2 = PicardMetrics(*alnmet, identifier="PM")
-        self.assertListEqual(p1.metrics, p2.metrics)
+        self.assertListEqual(p1.metrics.data, p2.metrics.data)
 
     def test_iter(self):
         """Test PicardMetrics iteration"""
         i = 0
-        for m in PM:
-            self.assertListEqual(list(PM.metrics[i]), list(m))
+        for m in PM.metrics:
+            self.assertListEqual(list(PM.metrics.data[i]), list(m))
             i += 1
-
-    def test_merge(self):
-        """Test merging two PicardMetrics objects"""
-        PM2 = PicardMetrics(identifier="PM2", filename=align_metrics[1])
-        self.assertEqual(len(list(PM.metrics)), 3)
-        self.assertEqual(len(list(PM2.metrics)), 3)
-        PM3 = PM + PM2
-        self.assertEqual(len(list(PM3.metrics)), 6)
-
-        pm1_cat = [row['CATEGORY'] for row in PM.metrics]
-        pm2_cat = [row['CATEGORY'] for row in PM2.metrics]
-        pm3_cat = [row['CATEGORY'] for row in PM3.metrics]
-        
-        pm1_pct = [row['PCT_READS_ALIGNED_IN_PAIRS'] for row in PM.metrics]
-        pm2_pct = [row['PCT_READS_ALIGNED_IN_PAIRS'] for row in PM2.metrics]
-        pm3_pct = [row['PCT_READS_ALIGNED_IN_PAIRS'] for row in PM3.metrics]
-        self.assertListEqual(pm3_cat, pm1_cat + pm2_cat)
-        self.assertListEqual(pm3_pct, pm1_pct + pm2_pct)
-
-    def test_merge_subset(self):
-        """Test merging two subsetted PicardMetrics objects"""
-        PM2 = PicardMetrics(identifier="PM2", filename=align_metrics[1])
-        columns = ['CATEGORY', 'PCT_PF_READS_ALIGNED']
-        p1 = PM[columns]
-        p2 = PM2[columns]
-        self.assertEqual(len(list(p1.metrics)), 3)
-        self.assertEqual(len(list(p2.metrics)), 3)
-        p3 = p1 + p2
-        self.assertEqual(len(list(p3.metrics)), 6)
-        self.assertListEqual(p3.metrics, p1.metrics + p2.metrics)
-
-    @raises(TypeError)
-    def test_merge_different_columns(self):
-        """Test merging two PicardMetrics objects with different columns"""
-        (pm1, pm2) = (PicardMetrics(identifier="PM1", filename=align_metrics[0]), PicardMetrics(identifier="PM2", filename=align_metrics[1]))
-        pm1s = pm1[['CATEGORY']]
-        pm1s + pm2
 
     def test_get_single_column(self):
         """Test getting single column"""
-        pms = PM[['SAMPLE']]
-        self.assertEqual(pms.fieldnames, ['SAMPLE'])
-        self.assertListEqual([OrderedDict([('SAMPLE', '')]), OrderedDict([('SAMPLE', '')]), OrderedDict([('SAMPLE', '')])], pms.metrics)
+        pms = PM.metrics[['SAMPLE']]
+        self.assertEqual(pms.colnames, ['SAMPLE'])
+        self.assertListEqual([OrderedDict([('SAMPLE', '')]), OrderedDict([('SAMPLE', '')]), OrderedDict([('SAMPLE', '')])], pms.data)
 
     def test_set_sample(self):
         """Test updating SAMPLE key in PicardMetrics object"""
-        PM['SAMPLE'] = 'sample'
-        pms = PM[['SAMPLE']]
-        self.assertListEqual([OrderedDict([('SAMPLE', 'sample')]), OrderedDict([('SAMPLE', 'sample')]), OrderedDict([('SAMPLE', 'sample')])], pms.metrics)
+        PM.metrics['SAMPLE'] = 'sample'
+        pms = PM.metrics[['SAMPLE']]
+        self.assertListEqual([OrderedDict([('SAMPLE', 'sample')]), OrderedDict([('SAMPLE', 'sample')]), OrderedDict([('SAMPLE', 'sample')])], pms.data)
 
 class TestPicardHistMetrics(unittest.TestCase):
     
@@ -130,34 +137,14 @@ class TestPicardHistMetrics(unittest.TestCase):
         """Test instantiating PicardHistMetrics object"""
         p1 = PicardHistMetrics(filename=insert_metrics[0], hist="test", identifier="PM")
         p2 = PicardHistMetrics(*insmet, hist="test", identifier="PM")
-        self.assertListEqual(p1.metrics, p2.metrics)
-
-    def test_merge(self):
-        """Test merging two PicardHistMetrics objects"""
-        pass
-
-    def test_merge_subset(self):
-        """Test merging two subsetted PicardHistMetrics objects"""
-        pass
-
-    # @raises
-    def test_merge_subset_different_columns(self):
-        """Test merging two subsetted PicardHistMetrics objects with different columns"""
-        pass
+        self.assertListEqual(p1.metrics.data, p2.metrics.data)
 
 
 class TestAlignMetrics(unittest.TestCase):
     """Test AlignMetrics classes"""
     def test_equality(self):
         """Test that two instances have identical metrics"""
-        self.assertListEqual(AMa.metrics, AMf.metrics)
-
-    def test_subset_type(self):
-        """Test subsetting an AlignMetrics object"""
-        columns = ['CATEGORY', 'TOTAL_READS', 'PF_READS']
-        am = AMa[columns]
-        self.assertListEqual(am.fieldnames, columns)
-        self.assertIsInstance(am, AlignMetrics)
+        self.assertListEqual(AMa.metrics.data, AMf.metrics.data)
 
     def test_summary(self):
         """Test AlignMetrics summary"""
@@ -169,6 +156,16 @@ class TestAlignMetrics(unittest.TestCase):
         am = AMa[columns]
         self.assertEqual('SECOND_OF_PAIR	2.00k	1.95k', am.summary().split("\n")[2])
 
+    def test_category(self):
+        """Test AlignMetrics category retrieval"""
+        AMc = AMa.category()
+        self.assertTupleEqual(AMc.metrics.dim, (1, 25))
+        self.assertEqual(AMc.summary().split("\n")[1].split("\t")[0], "PAIR")
+        AMc = AMa.category('FIRST_OF_PAIR')
+        self.assertTupleEqual(AMc.metrics.dim, (1, 25))
+        self.assertEqual(AMc.summary().split("\n")[1].split("\t")[0], "FIRST_OF_PAIR")
+
+
     def test_plot_tuple(self):
         """Test retrieval of plot tuple"""
         pass
@@ -177,15 +174,15 @@ class TestInsertMetrics(unittest.TestCase):
     """Test InsertMetrics classes"""
     def test_equality(self):
         """Test that two instances have identical metrics"""
-        self.assertListEqual(IMa.metrics, IMf.metrics)
+        self.assertListEqual(IMa.metrics.data, IMf.metrics.data)
 
     def test_subset_type(self):
         """Test subsetting an InsertMetrics object"""
         columns = ['MEDIAN_INSERT_SIZE', 'MEDIAN_ABSOLUTE_DEVIATION', 'MIN_INSERT_SIZE']
         im = IMa[columns]
-        self.assertListEqual(im.fieldnames, columns)
+        self.assertListEqual(im.metrics.colnames, columns)
         self.assertIsInstance(im, InsertMetrics)
-
+        
     def test_summary(self):
         """Test InsertMetrics summary"""
         self.assertListEqual(IMa.summary().split("\n")[1].split("\t"), ['156', '39', '70', '485', '167.819', '61.549', '1.73k', 'FR', '15', '29', '43', '61', '79', '93', '111', '133', '195', '443', '', '', ''])
@@ -205,13 +202,13 @@ class TestDuplicationMetrics(unittest.TestCase):
     """Test DuplicationMetrics classes"""
     def test_equality(self):
         """Test that two instances have identical metrics"""
-        self.assertListEqual(DMa.metrics, DMf.metrics)
+        self.assertListEqual(DMa.metrics.data, DMf.metrics.data)
 
     def test_subset_type(self):
         """Test subsetting an DuplicationMetrics object"""
         columns = ['LIBRARY', 'UNPAIRED_READS_EXAMINED', 'READ_PAIRS_EXAMINED']
         dm = DMa[columns]
-        self.assertListEqual(dm.fieldnames, columns)
+        self.assertListEqual(dm.metrics.colnames, columns)
         self.assertIsInstance(dm, DuplicationMetrics)
 
     def test_summary(self):
@@ -233,13 +230,13 @@ class TestHsMetrics(unittest.TestCase):
     """Test HsMetrics classes"""
     def test_equality(self):
         """Test that two instances have identical metrics"""
-        self.assertListEqual(HMa.metrics, HMf.metrics)
+        self.assertListEqual(HMa.metrics.data, HMf.metrics.data)
 
     def test_subset_type(self):
         """Test subsetting an HsMetrics object"""
         columns = ['BAIT_SET', 'GENOME_SIZE', 'BAIT_TERRITORY']
         hm = HMa[columns]
-        self.assertListEqual(hm.fieldnames, columns)
+        self.assertListEqual(hm.metrics.colnames, columns)
         self.assertIsInstance(hm, HsMetrics)
 
     def test_summary(self):
@@ -259,33 +256,37 @@ class TestHsMetrics(unittest.TestCase):
 
 class TestCombineMetrics(unittest.TestCase):
     """Test methods for combining metrics"""
+
     def test_combine_metrics(self):
         """Test combining metrics"""
         amsa = AMa.category()
-        pm = combine_metrics([DMa, IMa, amsa, HMa])
-        self.assertListEqual(pm.fieldnames[0:len(DMa.fieldnames)], DMa.fieldnames)
-        self.assertListEqual(pm.fieldnames[len(DMa.fieldnames): len(DMa.fieldnames) + len(IMa.fieldnames)], IMa.fieldnames)
-        self.assertListEqual(pm.fieldnames[len(DMa.fieldnames) + len(IMa.fieldnames): len(DMa.fieldnames) + len(IMa.fieldnames) + len(amsa.fieldnames)], amsa.fieldnames)
-        self.assertListEqual(pm.fieldnames[len(DMa.fieldnames) + len(IMa.fieldnames) + len(amsa.fieldnames):], HMa.fieldnames)
+        mlist = list(zip([DMa],[IMa],[amsa],[HMa]))
+        colnames = [c for sublist in [m.metrics.colnames for mtup in mlist for m in mtup] for c in sublist]
+        cnt = Counter(colnames)
+        
+        # Merge colnames
+        pm = combine_metrics(mlist)
+        self.assertEqual((len(cnt)), pm.metrics.dim[1])
+        # Make colnames unique
+        pm = combine_metrics(mlist, uniquify=True)
+        self.assertEqual((len(colnames)), pm.metrics.dim[1])
 
-        # First LIBRARY element in pm is unset as LIBRARY occurs multiple times 
-        self.assertListEqual(DMa.summary().split("\n")[1].split("\t")[1:], pm.summary().split("\n")[1].split("\t")[1:len(DMa.fieldnames)])
-        self.assertListEqual(IMa.summary().split("\n")[1].split("\t"), pm.summary().split("\n")[1].split("\t")[len(DMa.fieldnames):len(DMa.fieldnames) + len(IMa.fieldnames)])
+    def test_combine_multiple_metrics(self):
+        """Test combining multiple metrics"""
+        mlist =(list(
+            zip(
+                [AlignMetrics(filename=x).category() for x in align_metrics],
+                [InsertMetrics(filename=x) for x in insert_metrics],
+                [DuplicationMetrics(filename=x) for x in dup_metrics],
+                [HsMetrics(filename=x) for x in hs_metrics]
+            )
+        ))
+        pm = combine_metrics(mlist)
+        self.assertTupleEqual(pm.metrics.dim, (2,91))
+        pm = combine_metrics(mlist)
+        self.assertListEqual(pm.summary(raw=True).split("\n")[1].split("\t")[:25], [v for k,v in AMa.metrics.data[2].items()])
 
-        self.assertListEqual(amsa.summary().split("\n")[1].split("\t"), pm.summary().split("\n")[1].split("\t")[len(DMa.fieldnames) + len(IMa.fieldnames):len(DMa.fieldnames) + len(IMa.fieldnames) + len(amsa.fieldnames)])
-
-        self.assertListEqual(HMa.summary().split("\n")[1].split("\t"), pm.summary().split("\n")[1].split("\t")[len(DMa.fieldnames) + len(IMa.fieldnames) + len(amsa.fieldnames):])
-
-    def test_combine_multirow_metrics(self):
-        """Test combining multirow metrics"""
-        print(inshist)
-        dm2 = DuplicationMetrics(identifier="DM2", filename=dup_metrics[1])
-        dm = DMa 
-        hm = HMa + HsMetrics(identifier="HM2", filename=hs_metrics[1])
-        pm = combine_metrics([dm, hm])
-        print (pm.summary())
 
     def test_plot_tuple(self):
         """Test retrieval of plot tuple"""
         pass
-

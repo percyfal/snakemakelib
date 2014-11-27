@@ -38,10 +38,6 @@ ngs_cfg = get_sml_config('bio.ngs.settings')
 
 config_default = { 
     'bio.ngs.qc.picard' : {
-        # 'insertmetrics_targets' : "$(subst .bam,.insert_metrics,$(wildcard $(inputdir)/*/*recal.bam))",
-        #'alignmetrics_targets' : "$(subst .bam,.align_metrics,$(wildcard $(inputdir)/*/*recal.bam))",
-        #'dupmetrics_targets' : "$(subst .bam,.dup_metrics,$(wildcard $(inputdir)/*/*recal.bam))",
-        #'hsmetrics_targets' : "$(subst .bam,.hs_metrics,$(wildcard $(inputdir)/*/*recal.bam))",
         'add_or_replace_read_groups_options' : "sort_order=coordinate create_index=true",
         'alignmetrics_targets' : [],
         'bait_regions' : ngs_cfg['sequence_capture']['bait_regions'],
@@ -136,9 +132,9 @@ rule picard_collect_insert_size_metrics:
     """Picard: collect insertion size metrics"""
     params: cmd = picard_config['cmd'] + COLLECT_INSERT_SIZE_METRICS,
             options = picard_config['options']
-    input: "{prefix}.bam", "{prefix}.bai"
+    input: "{prefix}.bam", "{prefix}.bai", picard_config['ref']
     output: "{prefix}.insert_metrics"
-    shell: "{params.cmd} {params.options} H={wildcards.prefix}.hist I={input[0]} O={output} R={input[1]}"
+    shell: "{params.cmd} {params.options} H={wildcards.prefix}.hist I={input[0]} O={output} R={input[2]}"
 
 rule picard_mark_duplicates_metrics:
     """Picard: mark duplicates metrics. See also picard_mark_duplicates."""
@@ -156,7 +152,7 @@ rule picard_collect_alignment_summary_metrics:
             options = picard_config['options']
     input: "{prefix}.bam", "{prefix}.bai", picard_config['ref']
     output: "{prefix}.align_metrics"
-    shell: "{params.cmd} {params.options} I={input} O={output[0]} R={input[2]}"
+    shell: "{params.cmd} {params.options} I={input[0]} O={output[0]} R={input[2]}"
 
 rule picard_calculate_hs_metrics:
     """Picard: calculate hybrid selection metrics"""

@@ -211,8 +211,8 @@ rule gatk_print_reads:
             options = " ".join(["-R", gatk_config['print_reads']['ref'],
             gatk_config['print_reads']['options']])
     input: "{prefix}.bam", "{prefix}.recal_data.grp"
-    output: "{prefix}.recal.bam"
-    shell: "{params.cmd} {params.options} -I {input[0]} -BQSR {input[1]} -o {output}"
+    output: "{prefix}.recal.bam", "{prefix}.recal.bai"
+    shell: "{params.cmd} {params.options} -I {input[0]} -BQSR {input[1]} -o {output[0]}"
 
 rule gatk_clip_reads:
     """Run GATK ClipReads"""

@@ -14,6 +14,8 @@ setup(name = "snakemakelib",
           "pyyaml",
           "matplotlib>=1.3.1",
           "snakemake>=3.1",
+          "texttable",
+          "sphinx",
           ## Required for testing
           "nose",
       ],

@@ -78,7 +78,10 @@ class DataFrame(object):
     Args:
       *args: if provided, must be a list of lists that upon initialization is converted to an OrderedDict. The first list is treated as a header.
     """
-    def __init__(self, *args):
+    _format = collections.OrderedDict()
+    _tp = Template()
+
+    def __init__(self, *args, **fmt):
         if (len(args[0]) == 1):
             self._colnames = args[0]
             self._data = [collections.OrderedDict([(args[0][0], row[0])]) for row in args[1:]]
@@ -86,6 +89,8 @@ class DataFrame(object):
             reader = csv.DictReader([",".join([str(y) for y in x]) for x in args])
             self._colnames = reader.fieldnames
             self._data = [collections.OrderedDict([(k, row[k]) for k in self._colnames]) for row in reader]
+        if fmt:
+            self._format = collections.OrderedDict(fmt)
 
     def __str__(self):
         return "{cls} object with {rows} rows, {columns} columns".format(cls=self.__class__, rows=self.dim[0], columns=self.dim[1])
@@ -134,6 +139,30 @@ class DataFrame(object):
 
     def as_list(self):
         return [self._colnames] + [[row[c] for c in self._colnames] for row in self._data]        
+
+    def _format_field(self, value, spec, ctype):
+        if value == '?':
+            spec = 's'
+            ctype = str
+        elif value == "":
+            spec = 's'
+            ctype = str
+        value = ctype(value)
+        return self._tp.format_field(value, spec)
+
+    def set_format(self, **fmt):
+        self._format = collections.OrderedDict(fmt)
+
+    def summary(self, fmt = None, ctype = None, sep="\t", raw=False):
+        columns = self.colnames
+        fmt = {k:v[0] for (k,v) in list(self._format.items()) if k in columns} if fmt is None else {k:v for (k,v) in zip(columns, fmt)}
+        ctype = {k:v[1] for (k,v) in list(self._format.items()) if k in columns} if ctype is None else {k:v for (k,v) in zip(columns, ctype)}
+        if not fmt:
+            raise ValueError("No format defined for {cls}; please use derived subclass".format(cls=__class__))
+        if raw:
+            return "\n".join([sep.join([x for x in columns])] + [sep.join([r[c] for c in columns]) for r in self])
+        return "\n".join([sep.join([x for x in columns])] + [sep.join([self._format_field(r[c], fmt[c], ctype[c]) for c in columns]) for r in self])
+
     
 class PicardMetrics(object):
     """Generic class to store metrics section from Picard Metrics reports.
@@ -158,7 +187,7 @@ class PicardMetrics(object):
         self._set_vars(identifier, filename)
         if not self.filename is None and not args:
             (args, _) = _read_picard_metrics(self.filename)
-        self._metrics = DataFrame(*args)
+        self._metrics = DataFrame(*args, **self._format)
 
     def _set_vars(self, identifier, filename):
         self._id = identifier if not identifier is None else filename
@@ -170,8 +199,8 @@ class PicardMetrics(object):
     def __getitem__(self, columns):
         a = [columns] + [[row[c] for c in columns] for row in self._metrics._data]
         m = self.__class__(*a, identifier=self.id, filename=self.filename)
-        fmtlist = [(c, self._format[c]) for c in columns]
-        m._format = collections.OrderedDict(fmtlist)
+        fmt = collections.OrderedDict([(c, self._format[c]) for c in columns])
+        m.set_format(**fmt)
         return m
 
     @property
@@ -191,29 +220,14 @@ class PicardMetrics(object):
 
     y=x
 
-    def _format_field(self, value, spec, ctype):
-        if value == '?':
-            spec = 's'
-            ctype = str
-        elif value == "":
-            spec = 's'
-            ctype = str
-        value = ctype(value)
-        return self._tp.format_field(value, spec)
-
     def summary(self, fmt = None, ctype = None, sep="\t", raw=False):
-        columns = self.metrics.colnames
-        fmt = {k:v[0] for (k,v) in list(self._format.items()) if k in columns} if fmt is None else {k:v for (k,v) in zip(columns, fmt)}
-        ctype = {k:v[1] for (k,v) in list(self._format.items()) if k in columns} if ctype is None else {k:v for (k,v) in zip(columns, ctype)}
-        if not fmt:
-            raise ValueError("No format defined for {cls}; please use derived subclass".format(cls=__class__))
-        if raw:
-            return "\n".join([sep.join([x for x in columns])] + [sep.join([r[c] for c in columns]) for r in self._metrics])
-        return "\n".join([sep.join([x for x in columns])] + [sep.join([self._format_field(r[c], fmt[c], ctype[c]) for c in columns]) for r in self._metrics])
+        return self.metrics.summary(fmt, ctype, sep, raw)
 
     def as_list(self):
-        return [self.metrics._colnames] + [[self._format[c][1](row[c]) for c in self.metrics._colnames] for row in self.metrics._data]
+        return self.metrics.as_list()
 
+    def set_format(self, **fmt):
+        self._metrics.set_format(**fmt)
 
 class PicardHistMetrics(PicardMetrics):
     """Generic class to store metrics section from Picard Histogram
@@ -238,7 +252,6 @@ class PicardHistMetrics(PicardMetrics):
       An instance of class PicardHistMetrics
 
     """
-
     def __init__(self, *args, identifier=None, filename=None, hist=None):
         # NB: __init__ should call super, but with current
         # implementation would require reading the metrics file twice!
@@ -249,8 +262,9 @@ class PicardHistMetrics(PicardMetrics):
         self._set_vars(identifier, filename)
         if not self.filename is None and not args:
             (args, hist) = _read_picard_metrics(self.filename)
-        self._metrics = DataFrame(*args)
-        self._hist = DataFrame(*hist)
+        self._metrics = DataFrame(*args, **self._format)
+        fmt = collections.OrderedDict([(x, type(y)) for x,y in zip(hist[0], hist[1])])
+        self._hist = DataFrame(*hist, **fmt)
 
     def __getitem__(self, columns):
         a = [columns] + [[row[c] for c in columns] for row in self.metrics._data]
@@ -260,7 +274,6 @@ class PicardHistMetrics(PicardMetrics):
     @property
     def hist(self):
         return self._hist
-
 
 class AlignMetrics(PicardMetrics):
     _format = collections.OrderedDict([('CATEGORY', ('s', str)), ('TOTAL_READS', ('3.2h', int)), 
@@ -294,6 +307,7 @@ class InsertMetrics(PicardHistMetrics):
                                        ('WIDTH_OF_70_PERCENT', ('', int)), ('WIDTH_OF_80_PERCENT', ('', int)), 
                                        ('WIDTH_OF_90_PERCENT', ('', int)), ('WIDTH_OF_99_PERCENT', ('', int)),
                                        ('SAMPLE', ('s', str)), ('LIBRARY', ('s', str)), ('READ_GROUP', ('s', str))])
+
     def __init__(self, *args, identifier=None, filename=None, hist=None):
         super(InsertMetrics, self).__init__(*args, identifier=identifier, filename=filename, hist=hist)
 
@@ -361,12 +375,13 @@ def combine_metrics(metrics, mergename = "PicardMetrics_merge", uniquify=False):
             fmtlist += [(k,v) for k,v in m._format.items()]
         args.append(rowargs)
     pm = PicardMetrics(*args, identifier=mergename)
-    pm._format = collections.OrderedDict(fmtlist)
+    fmt = collections.OrderedDict(fmtlist)
     if uniquify:
         for c in args[0]:
             m = re.match("(.*)\.[0-9]+$", c)
             if m:
-                pm._format[c] = pm._format[m.group(1)]
+                fmt[c] = fmt[m.group(1)]
+    pm.set_format(**fmt)
     return (pm)
 
 

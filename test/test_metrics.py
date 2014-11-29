@@ -84,6 +84,16 @@ class TestDataFrame(unittest.TestCase):
         self.assertListEqual([int(x) for x in Idfh.y(indices=list(range(3,7)))], [79, 80, 81, 82])
         self.assertListEqual([int(x) for x in Idfh.y()[3:7]], [79, 80, 81, 82])
 
+    def test_format(self):
+        """Test formatting output of data frame"""
+        fmt = OrderedDict([('LIBRARY', ('s', str)), ('UNPAIRED_READS_EXAMINED', ('3.2h', int)), 
+                                       ('READ_PAIRS_EXAMINED', ('3.2h', int)), ('UNMAPPED_READS', ('3.2h', int)),
+                                       ('UNPAIRED_READ_DUPLICATES', ('3.2h', int)), ('READ_PAIR_DUPLICATES', ('3.2h', int)), 
+                                       ('READ_PAIR_OPTICAL_DUPLICATES', ('3.2f', float)), 
+                                       ('PERCENT_DUPLICATION', ('3.2%', float)), ('ESTIMATED_LIBRARY_SIZE', ('3.2h', int))])
+        df = DataFrame(*dupmet, **fmt)
+        self.assertListEqual(sorted(list(df._format.items())), sorted(list(fmt.items())))
+
 class TestReadPicardMetrics(unittest.TestCase):
     """Test reading picard metrics"""
 

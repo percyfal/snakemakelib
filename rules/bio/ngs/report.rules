@@ -1,19 +1,29 @@
 # -*- snakemake -*-
 import os
 from collections import namedtuple
+from snakemake.utils import report
 from snakemakelib.config import update_sml_config, sml_rules_path, get_sml_config
-from snakemakelib.report.sphinx import sphinx_sample_metrics_report
 from snakemakelib.utils import utc_time
-from snakemakelib.report.picard import PicardMetricsCollection, PicardMetrics, AlignMetrics, InsertMetrics, AlignMetricsCollection, HsMetrics, DuplicationMetrics
+from snakemakelib.report.picard import PicardMetrics, AlignMetrics, InsertMetrics, HsMetrics, DuplicationMetrics, combine_metrics
+import matplotlib
+matplotlib.use('Agg')
+from pylab import *
+import matplotlib.pyplot as plt
+import numpy as np
 
 # Start by including the general snakefile
 include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
-            
+
 def find_sample_metrics(wildcards):
     """Simple sample metrics finding function"""
+    extensions = [report_cfg['picard']['alnmetrics'], 
+                  report_cfg['picard']['dupmetrics'], 
+                  report_cfg['picard']['hsmetrics'], 
+                  report_cfg['picard']['insmetrics']]
     metrics = []
-    for root, dirs, files in os.walk(workflow._workdir):
-        metrics += [os.path.join(root, x) for x in files if x.endswith('metrics')]
+    if cfg['bio.ngs.settings']['samples']:
+        for s in cfg['bio.ngs.settings']['samples']:
+            metrics += [os.path.join(workflow._workdir, s, "".join([s, report_cfg['picard']['bamlabel'], ext])) for ext in extensions]
     return metrics
 
 config_default = { 
@@ -21,12 +31,17 @@ config_default = {
         'project_id' : "",
         'project_name' : "",
         'basedir' : os.curdir,
+        'reportdir' : 'report',
         'application':"",
         'date':utc_time(),
-        'docroot' : 'sphinx_report',
         'picard' : {
-            'columns' : [],
-            'extensions' : ['.align_metrics', '.dup_metrics', '.hs_metrics', '.insert_metrics'],
+            'columns' : ["ZERO_CVG_TARGETS_PCT", "PCT_TARGET_BASES_2X", "PCT_TARGET_BASES_10X", "PCT_TARGET_BASES_20X", "PCT_TARGET_BASES_30X", "PCT_TARGET_BASES_40X", "PCT_TARGET_BASES_50X", "PCT_TARGET_BASES_100X"],
+            'hticks' : ["0X", "2X", "10X", "20X", "30X", "40X", "50X", "100X"],
+            'bamlabel' : '.sort.merge.rg',
+            'alnmetrics' : '.dup.align_metrics',
+            'dupmetrics' : '.dup_metrics',
+            'hsmetrics' : '.dup.hs_metrics',
+            'insmetrics' : '.dup.insert_metrics',
             'inputfun' : find_sample_metrics,
         },
     },
@@ -36,30 +51,94 @@ update_sml_config(config_default)
 
 cfg = get_sml_config()
 
+report_cfg = get_sml_config('bio.ngs.report')
 
-
-
-rule sphinx_sample_metrics_report:
-    """sphinx: Collect metrics for samples and generate a simple metrics report"""
-    input: ["{path}{sep}{sample}".format(path=cfg['bio.ngs.report']['basedir'], sep=os.sep, sample=x) for x in cfg['bio.ngs.settings']['samples']]
+rule report_generate_qc_plots:
+    """Generate qc plots"""
+    input: report_cfg['picard']['inputfun']
+    output: seqstats = 'seqstats.png',
+            alnmet = 'alnmet.png',
+            dupmet = 'dupmet.png',
+            hsmet = 'hsmet.png',
+            hsmetsub = 'hsmetsub.png'
     run:
-      sphinx_sample_metrics_report(input, cfg['bio.ngs.report'])
+      samples = cfg['bio.ngs.settings']['samples']
+      # Collect pm metrics and plot
+      mlist =(list(
+          zip(
+              [AlignMetrics(filename=x).category() for x in input if x.endswith(report_cfg['picard']['alnmetrics'])],
+              [InsertMetrics(filename=x) for x in input if x.endswith(report_cfg['picard']['insmetrics'])],
+              [DuplicationMetrics(filename=x) for x in input if x.endswith(report_cfg['picard']['dupmetrics'])],
+              [HsMetrics(filename=x) for x in input if x.endswith(report_cfg['picard']['hsmetrics'])]
+          )
+      ))
+      pm = combine_metrics(mlist)
 
-rule sample_metrics_report:
-    """report: simple text-based report based on picard metrics"""
-    input: cfg['bio.ngs.report']['picard']['inputfun']
-    run:
-      amc = AlignMetricsCollection([AlignMetrics(pmid=os.path.basename(x).split(".")[0], file=x) for x in input if x.endswith('.align_metrics')])
-      dmc = PicardMetricsCollection([DuplicationMetrics(pmid=os.path.basename(x).split(".")[0], file=x) for x in input if x.endswith('.dup_metrics')])
-      hsmc = PicardMetricsCollection([HsMetrics(pmid=os.path.basename(x).split(".")[0], file=x) for x in input if x.endswith('.hs_metrics')])
-      imc = PicardMetricsCollection([InsertMetrics(pmid=os.path.basename(x).split(".")[0], file=x) for x in input if x.endswith('.insert_metrics')])
-      acol = ['ID', 'PCT_PF_READS_ALIGNED']
-      amcmetrics = amc.merge(category=['PAIR'], columns=acol)
-      hcol = ['PCT_TARGET_BASES_10X', 'PCT_TARGET_BASES_30X', 'ZERO_CVG_TARGETS_PCT']
-      hsmetrics = hsmc.merge(columns=hcol)
-      print("\t".join(["{:10}".format(a) for a in acol + hcol]))
-      for i in range(0,len(amcmetrics)):
-          s = "\t".join(["{:10}".format(amcmetrics[i][a]) for a in acol]) + \
-              "\t".join(["{:10}".format(hsmetrics[i][h]) for h in hcol])
-          print (s)
+      # Sequence statistics plot
+      sdup = [int(100 + 100 * x) for x in pm.x('PERCENT_DUPLICATION')]
+      plt.scatter(pm.x('PCT_PF_READS_ALIGNED'), pm.y('TOTAL_READS'), s=sdup, alpha=0.75)
+      plt.xlabel(r'Percent aligned', fontsize=14)
+      plt.yscale('log', **{'basey':10})
+      plt.xticks(arange(0,1.1,0.1), range(0,110,10))
+      plt.ylabel(r'Read count', fontsize=14)
+      plt.title("Sequence summary.\nPoint sizes correspond to duplication levels.", fontsize=14)
+      plt.tight_layout()
+      plt.savefig(output['seqstats'])
+      plt.close()
 
+      # Alignment metrics
+
+      n = len(samples)
+      plt.xlim(-.1, (n-1)*1.1)
+      plt.xticks(range(0,n), [x for x in samples], rotation=45)
+      plt.ylim(0,1)
+      plt.yticks(arange(0,1.1,0.1), range(0,110,10))
+      plt.plot(range(0,n), pm.x('PCT_PF_READS_ALIGNED'), "o")
+      plt.xlabel(r'Sample', fontsize=14)
+      plt.ylabel(r'Percent aligned', fontsize=14)
+      plt.tight_layout()
+      plt.savefig(output['alnmet'])
+      plt.close()
+
+      # Duplication metrics
+      plt.xlim(-.1, (n-1)*1.1)
+      plt.xticks(range(0,n), [x for x in samples], rotation=45)
+      plt.ylim(0,1)
+      plt.yticks(arange(0,1.1,0.1), range(0,110,10))
+      plt.plot(range(0,n), pm.x('PERCENT_DUPLICATION'), "o")
+      plt.xlabel(r'Sample', fontsize=14)
+      plt.ylabel(r'Percent duplication', fontsize=14)
+      plt.tight_layout()
+      plt.savefig(output['dupmet'])
+      plt.close()
+      
+      # Hs metrics
+      columns = report_cfg['picard']['columns']
+      hticks = report_cfg['picard']['hticks']
+      hsmetrics = pm[columns]
+      plt.ylim(0,1)
+      plt.yticks(arange(0,1.1,0.1), range(0,110,10))
+      plt.boxplot(np.array(hsmetrics.as_list()[1:]))
+      plt.xticks(range(0,len(hticks)), [x for x in hticks])
+      plt.savefig(output['hsmet'])
+      plt.close()
+
+      nsubplots = int(math.ceil(n/9))
+      k = 0
+      for i_subplot in range(0, nsubplots):
+          f, axarr = plt.subplots(3, 3, sharex='col', sharey='row')
+          for i in range(0, 3):
+              for j in range(0, 3):
+                  if k < n:
+                      x = range(0, len(hticks))
+                      axarr[i,j].plot(x, hsmetrics.as_list()[1:][k], "o")
+                      axarr[i,j].set_xticks(x)
+                      axarr[i,j].set_title(samples[k])
+                      axarr[i,j].set_xlim(-.1, (len(hticks)-1)*1.1)
+                      axarr[i,j].set_ylim(-5, 105)
+                      axarr[i,j].set_xticklabels(hticks)
+                  else:
+                      axarr[i,j].axis('off')
+                  k += 1
+      plt.savefig(output['hsmetsub'])
+      plt.close()

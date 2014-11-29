@@ -1,141 +1,114 @@
 # Copyright (C) 2014 by Per Unneberg
+# pylint: disable=R0904
 import os
-import sys 
-import csv
 import unittest
 import logging
-import texttable as tt
-from collections import OrderedDict
 from nose.tools import raises
-from snakemakelib.report.picard import PicardMetrics, PicardHistMetrics, AlignMetrics, InsertMetrics, HsMetrics, DuplicationMetrics, AlignMetricsCollection, InsertMetricsCollection, HsMetricsCollection, DuplicationMetricsCollection, _read_picard_metrics, PicardMetrics, PicardHist,  PicardMetricsCollection
+from collections import namedtuple
+from mako.template import Template
+from snakemake.utils import report
+import matplotlib
+#from matplotlib.backends.backend_pdf import PdfPages
+from pylab import *
+import matplotlib.pyplot as plt
+
+from snakemakelib.report.picard import PicardMetrics, PicardHistMetrics, AlignMetrics, InsertMetrics, HsMetrics, DuplicationMetrics, combine_metrics
 
 logger = logging.getLogger(__name__)
 
+TEMPLATEPATH = os.path.join(os.path.dirname(__file__), os.pardir, "snakemakelib", "data", "templates", "doc")
 
-class TestCollectMetrics(unittest.TestCase):
-    def setUp(self):
-        metricsroot = os.path.join(os.path.abspath(os.curdir), os.pardir, 'data', 'metrics', 'J.Doe_00_01')
-        self.metricsfiles = []
-        for root, dirs, files in os.walk(metricsroot):
-            self.metricsfiles += [os.path.join(root, x) for x in files if x.endswith('metrics')]
-        self.align_metrics = [x for x in self.metricsfiles if x.endswith('align_metrics')]
-        self.hs_metrics = [x for x in self.metricsfiles if x.endswith('hs_metrics')]
-        self.insert_metrics = [x for x in self.metricsfiles if x.endswith('insert_metrics')]
-        self.dup_metrics = [x for x in self.metricsfiles if x.endswith('dup_metrics')]
-        self.alnmet = AlignMetricsCollection(pmid="ID1", file=self.align_metrics[0])
-        self.insmet = InsertMetricsCollection(pmid="ID1", file=self.insert_metrics[0])
-        self.hsmet = HsMetricsCollection(pmid="ID1", file=self.hs_metrics[0])
-        self.dupmet = DuplicationMetricsCollection(pmid="ID1", file=self.dup_metrics[0])
+TEMPLATES = {
+    'make' : Template(filename=os.path.join(TEMPLATEPATH, "Makefile.mako")),
+    'sample' : Template(filename=os.path.join(TEMPLATEPATH, "source", "samples", "sample.mako")),
+    'index' : Template(filename=os.path.join(TEMPLATEPATH, "source", "index.mako")),
+    'sampleindex' : Template(filename=os.path.join(TEMPLATEPATH, "source", "samples", "index.mako")),
+    'conf' : Template(filename=os.path.join(TEMPLATEPATH, "source", "conf.mako")),
+}
 
-        
-    def test_picard_read_metrics(self):
-        """Test function _read_picard_metrics"""
-        (metrics, hist) = _read_picard_metrics(self.align_metrics[0])
-        self.assertIsNone(hist)
-        self.assertEqual(len(metrics), 4)
-        (metrics, hist) = _read_picard_metrics(self.insert_metrics[0])
-        self.assertListEqual(sorted(hist[0]), sorted(['insert_size', 'All_Reads.fr_count']))
-        self.assertEqual(metrics[1][0], 156)
+def setUp():
+    """Set up test fixtures"""
 
-    def test_AlignMetrics(self):
-        """Test AlignMetrics class"""
-        (metrics, hist) = _read_picard_metrics(self.align_metrics[0])
-        m = AlignMetrics(*metrics)
-        self.assertListEqual(m._fieldnames[0:3], ['CATEGORY', 'TOTAL_READS', 'PF_READS'])
-        msum = m.summary(columns=['CATEGORY', 'PCT_PF_READS', 'PF_READS_ALIGNED', 'PCT_PF_READS_ALIGNED'])
-        self.assertEqual(msum.split("\n")[1], 'FIRST_OF_PAIR\t1.00\t1.99E+03\t1.00')
+    global mlist, Sample, pm
 
-    def test_InsertMetrics(self):
-        """Test InsertMetrics class"""
-        (metrics, hist) = _read_picard_metrics(self.insert_metrics[0])
-        i = InsertMetrics(*metrics)
-        self.assertListEqual(i.fieldnames[0:3], ['MEDIAN_INSERT_SIZE', 'MEDIAN_ABSOLUTE_DEVIATION', 'MIN_INSERT_SIZE'])
-        isum = i.summary(columns=['MEDIAN_INSERT_SIZE', 'MEDIAN_ABSOLUTE_DEVIATION'])
-        self.assertEqual(isum.split("\n")[1], '156\t39')
+    Sample = namedtuple('Sample', ['sample_id', 'project_id', 'pm'])
+    
+    metricsroot = os.path.join(os.path.abspath(os.curdir),
+                               os.pardir, 'data', 'metrics', 'J.Doe_00_01')
+    metricsfiles = []
+    for root, dirs, files in os.walk(metricsroot):
+        metricsfiles += [os.path.join(root, x) for x in files if x.endswith('metrics')]
 
-    def test_HsMetrics(self):
-        """Test HsMetrics class"""
-        (metrics, hist) = _read_picard_metrics(self.hs_metrics[0])
-        h = HsMetrics(*metrics)
-        self.assertListEqual(h.fieldnames[0:3],['BAIT_SET', 'GENOME_SIZE', 'BAIT_TERRITORY'])
-        hsum = h.summary(columns=['BAIT_SET', 'GENOME_SIZE', 'BAIT_TERRITORY'])
-        self.assertEqual(hsum.split("\n")[1], 'chr11_baits\t2.00E+06\t3.01E+02')
+    align_metrics = [x for x in metricsfiles if x.endswith('align_metrics')]
+    hs_metrics = [x for x in metricsfiles if x.endswith('hs_metrics')]
+    insert_metrics = [x for x in metricsfiles if x.endswith('insert_metrics')]
+    dup_metrics = [x for x in metricsfiles if x.endswith('dup_metrics')]
 
-
-    def test_DuplicationMetrics(self):
-        """Test DuplicationMetrics class"""
-        (metrics, hist) = _read_picard_metrics(self.dup_metrics[0])
-        d = DuplicationMetrics(*metrics)
-        self.assertListEqual(d.fieldnames[0:3],['LIBRARY', 'UNPAIRED_READS_EXAMINED', 'READ_PAIRS_EXAMINED'])
-        dsum = d.summary(columns=['LIBRARY', 'UNPAIRED_READS_EXAMINED', 'READ_PAIRS_EXAMINED'])
-        self.assertEqual(dsum.split("\n")[1], 'lib\t5.40E+01\t1.94E+03')
-
-    def test_PicardHist(self):
-        """Test PicardHist class"""
-        (metrics, hist) = _read_picard_metrics(self.insert_metrics[0])
-        h = PicardHist(*hist)
-        self.assertListEqual(list(h.hist.keys()), ['insert_size', 'All_Reads.fr_count'])
-        self.assertEqual(h.hist['insert_size'][0], 70)
-        (metrics, hist) = _read_picard_metrics(self.dup_metrics[0])
-        h = PicardHist(*hist)
-        self.assertListEqual(list(h.hist.keys()), ['BIN', 'VALUE'])
-        self.assertEqual(h.hist['VALUE'][0], 0.99999)
-
-        
-
-    def test_picard_metrics_get_columns(self):
-        alnmet = self.alnmet.metrics(columns=['MEAN_READ_LENGTH'])
-        print (alnmet)
-        self.assertDictEqual(alnmet[0], {'MEAN_READ_LENGTH': '76'})
-
-    @raises(KeyError)
-    def test_picard_metrics_get_nonexisting_columns(self):
-        alnmet = self.alnmet.metrics(columns=['mMEAN_READ_LENGTH'])
-        
-    def test_picard_metrics_hist(self):
-        insmet = self.insmet.hist()
-        self.assertListEqual(sorted(list(insmet.keys())), sorted(['All_Reads.fr_count', 'insert_size']))
-
-    def test_picard_metrics_id(self):
-        alnmet = self.alnmet.metrics(columns=['ID', 'MEAN_READ_LENGTH'])
-        self.assertDictEqual(alnmet[0], {'ID':'ID1', 'MEAN_READ_LENGTH':'76'})
-
-    # def test_picard_metrics_collection(self):
-    #     amc = AlignMetricsCollection([AlignMetrics(pmid=os.path.basename(x).split(".")[0], file=x) for x in self.align_metrics])
-    #     am = amc.merge(columns=['ID', 'CATEGORY', 'PCT_PF_READS_ALIGNED'], category=['PAIR'])
-    #     self.assertListEqual(am, [{'ID': 'P001_101_index3', 'CATEGORY': 'PAIR', 'PCT_PF_READS_ALIGNED': '0.985015'}, {'ID': 'P001_102_index6', 'CATEGORY': 'PAIR', 'PCT_PF_READS_ALIGNED': '0.981'}])
-
-    def test_align_metrics_category(self):
-        """Make sure alignmetrics returns only elements of category"""
-        alnmet = self.alnmet.metrics(columns=['ID', 'MEAN_READ_LENGTH', 'CATEGORY'], category=['FIRST_OF_PAIR'])
-        self.assertListEqual(alnmet, [{'ID': 'ID1', 'CATEGORY': 'FIRST_OF_PAIR', 'MEAN_READ_LENGTH': '76'}])
-
-    def test_metrics(self):
-        print (self.hsmet.metrics())
-        print (self.hsmet.hist())
-        print (self.dupmet.metrics())
-        print (self.dupmet.hist())
-        print (self.insmet.metrics())
-        print (self.insmet.hist())
-
-    def test_add_metrics(self):
-        aml = [AlignMetricsCollection(pmid=os.path.basename(x), file=x) for x in self.align_metrics]
-        aml_sum = aml[0] + aml[1]
-        print(aml)
-        print(aml[0] )
-        
-    def test_picard_metrics_read_metrics(self):
-        """Test PicardMetrics._read_metrics"""
-        print (self.alnmet.metrics())
-        print (self.insmet.hist())
-
-class TestMergeDict(unittest.TestCase):
-    def test_merge_two_dicts(self):
-        """Test merging two dictionaries where we know we have the same columns"""
-        print ("Merging")
+    mlist =(list(
+        zip(
+            [AlignMetrics(filename=x).category() for x in align_metrics],
+            [InsertMetrics(filename=x) for x in insert_metrics],
+            [DuplicationMetrics(filename=x) for x in dup_metrics],
+            [HsMetrics(filename=x) for x in hs_metrics]
+        )
+    ))
+    pm = combine_metrics(mlist)
 
 class TestSampleReport(unittest.TestCase):
+    """Test sample reports"""
+    def test_index(self):
+        """Test the index page"""
+        pct_aligned = ([100 * float(x) for x in pm.metrics.x('PCT_PF_READS_ALIGNED')])
+        nseq = ([int(x) for x in pm.metrics.x('TOTAL_READS')])
+        sdup = ([100 * float(x) for x in pm.metrics.x('PERCENT_DUPLICATION')])
+        plt.scatter(pct_aligned, nseq, s=sdup, alpha=0.75)
+        plt.xlabel(r'Percent aligned', fontsize=14)
+        plt.yscale('log', **{'basey':10})
+        plt.ylabel(r'Read count', fontsize=14)
+        plt.title("Sequence summary.\nPoint sizes correspond to duplication levels.", fontsize=14)
+        plt.tight_layout()
+        savefig('test.png')
+
+
     def test_sample_report(self):
         """Test sample report"""
-        print ("sample report")
+        pct_aligned = ([100 * float(x) for x in pm.metrics.x('PCT_PF_READS_ALIGNED')])
+        nseq = ([int(x) for x in pm.metrics.x('TOTAL_READS')])
+        sdup = ([100 * float(x) for x in pm.metrics.x('PERCENT_DUPLICATION')])
+        input = {'test' : 'test.png'}
+        kw = {'pct_aligned' : pct_aligned,
+              'nseq' : nseq,
+              'sdup' : sdup,
+              'project_name' : 'J.Doe_00_01',
+              'application' : 'application',
+              'date' : 'date',
+        }
+        kw.update(input)
+
+        tmp = TEMPLATES['index'].render(**kw)
+        print (tmp)
+
+        report("""
+Project summary
+=============================
+
+:Project: {project_name}
+:Application: {application}
+:Date: {date}
+
+Samples
+--------
+
+QC Metrics
+----------
+
+Sequence statistics
+^^^^^^^^^^^^^^^^^^^
+
+.. figure:: {test}
+
+
+
+        """.format(**kw), "test.html", **input)
+
 

@@ -108,11 +108,14 @@ class DataFrame(object):
     def __setitem__(self, key, val):
         _ = [row.update([(key, val)]) for row in self._data]
 
-    def x(self, column=None, indices=None):
+    def x(self, column=None, indices=None, ctype=None):
         column = self.colnames[0] if not column else column
+        x = [row[column] for row in self._data]
         if indices:
-            return [self._data[i][column] for i in indices]
-        return [row[column] for row in self._data]
+            x = [self._data[i][column] for i in indices]
+        if ctype:
+            x = [ctype(y) for y in x]
+        return x
     
     # Copy definition of x
     y=x
@@ -128,6 +131,9 @@ class DataFrame(object):
     @property
     def dim(self):
         return (len(self._data), len(self._data[0]))
+
+    def as_list(self):
+        return [self._colnames] + [[row[c] for c in self._colnames] for row in self._data]        
     
 class PicardMetrics(object):
     """Generic class to store metrics section from Picard Metrics reports.
@@ -163,7 +169,10 @@ class PicardMetrics(object):
 
     def __getitem__(self, columns):
         a = [columns] + [[row[c] for c in columns] for row in self._metrics._data]
-        return self.__class__(*a, identifier=self.id, filename=self.filename)
+        m = self.__class__(*a, identifier=self.id, filename=self.filename)
+        fmtlist = [(c, self._format[c]) for c in columns]
+        m._format = collections.OrderedDict(fmtlist)
+        return m
 
     @property
     def metrics(self):
@@ -176,6 +185,11 @@ class PicardMetrics(object):
     @property
     def filename(self):
         return self._filename
+
+    def x(self, column=None, indices=None):
+        return self.metrics.x(column, indices, ctype=self._format[column][1])
+
+    y=x
 
     def _format_field(self, value, spec, ctype):
         if value == '?':
@@ -196,6 +210,9 @@ class PicardMetrics(object):
         if raw:
             return "\n".join([sep.join([x for x in columns])] + [sep.join([r[c] for c in columns]) for r in self._metrics])
         return "\n".join([sep.join([x for x in columns])] + [sep.join([self._format_field(r[c], fmt[c], ctype[c]) for c in columns]) for r in self._metrics])
+
+    def as_list(self):
+        return [self.metrics._colnames] + [[self._format[c][1](row[c]) for c in self.metrics._colnames] for row in self.metrics._data]
 
 
 class PicardHistMetrics(PicardMetrics):

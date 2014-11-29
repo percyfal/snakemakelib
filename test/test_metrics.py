@@ -1,4 +1,5 @@
 # Copyright (C) 2014 by Per Unneberg
+# pylint: disable=R0904
 import os
 import re
 import unittest
@@ -50,9 +51,6 @@ def setUp():
     Ddfh = DataFrame(*duphist)
     Hdf = DataFrame(*hsmet)
 
-
-
-
 class TestDataFrame(unittest.TestCase):
     """Test DataFrame object"""
     def test_dataframe_init(self):
@@ -86,6 +84,17 @@ class TestDataFrame(unittest.TestCase):
         self.assertListEqual([int(x) for x in Idfh.y(indices=list(range(3,7)))], [79, 80, 81, 82])
         self.assertListEqual([int(x) for x in Idfh.y()[3:7]], [79, 80, 81, 82])
 
+class TestReadPicardMetrics(unittest.TestCase):
+    """Test reading picard metrics"""
+
+    def test_picard_read_metrics(self):
+        """Test function _read_picard_metrics"""
+        (metrics, hist) = _read_picard_metrics(align_metrics[0])
+        self.assertIsNone(hist)
+        self.assertEqual(len(metrics), 4)
+        (metrics, hist) = _read_picard_metrics(insert_metrics[0])
+        self.assertListEqual(sorted(hist[0]), sorted(['insert_size', 'All_Reads.fr_count']))
+        self.assertEqual(metrics[1][0], 156)
 
 class TestPicardMetrics(unittest.TestCase):
     """Test PicardMetrics classes"""
@@ -283,7 +292,6 @@ class TestCombineMetrics(unittest.TestCase):
         ))
         pm = combine_metrics(mlist)
         self.assertTupleEqual(pm.metrics.dim, (2,91))
-        pm = combine_metrics(mlist)
         self.assertListEqual(pm.summary(raw=True).split("\n")[1].split("\t")[:25], [v for k,v in AMa.metrics.data[2].items()])
 
 

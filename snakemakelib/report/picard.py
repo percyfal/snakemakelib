@@ -3,6 +3,7 @@ import os
 import sys
 import re
 import csv
+import texttable as tt
 import collections
 from snakemakelib.report.utils import Template
 
@@ -69,6 +70,30 @@ def _make_unique(l):
         luniq.append("{c}.{sfx}".format(c=c, sfx=d[c]) if d[c]>0 else c)
     return luniq
 
+def make_rst_table(data, header=None, indent=True):
+    """Make rst table with :py:mod:`Texttable`. 
+
+    Args:
+      data (list): data frame to be printed
+      header (list): column header names
+      indent (bool): indent table for rst
+
+    Returns:
+      rst-formatted table
+    """
+    if data is None:
+        return ""
+    else:
+        tab_tt = tt.Texttable()
+        tab_tt.set_precision(2)
+        if not header is None:
+            data[0] = header
+        tab_tt.add_rows(data)
+        if indent:
+            return _indent_texttable_for_rst(tab_tt)
+        else:
+            return tab_tt.draw()
+
 class DataFrame(object):
     """Light weight data frame object
 
@@ -111,7 +136,14 @@ class DataFrame(object):
         return self.__class__(*a)
 
     def __setitem__(self, key, val):
-        _ = [row.update([(key, val)]) for row in self._data]
+        # if val is a list must be equal in length to no. rows
+        if isinstance(val, list):
+            for (row,v) in zip(self._data, val):
+                row.update([(key, v)])
+        else:
+            _ = [row.update([(key, val)]) for row in self._data]
+        if not key in self.colnames:
+            self.colnames.append(key)
 
     def x(self, column=None, indices=None, ctype=None):
         column = self.colnames[0] if not column else column
@@ -138,7 +170,7 @@ class DataFrame(object):
         return (len(self._data), len(self._data[0]))
 
     def as_list(self):
-        return [self._colnames] + [[row[c] for c in self._colnames] for row in self._data]        
+        return [self._colnames] + [[self._format[c][1](row[c]) for c in self._colnames] for row in self._data]
 
     def _format_field(self, value, spec, ctype):
         if value == '?':
@@ -152,6 +184,10 @@ class DataFrame(object):
 
     def set_format(self, **fmt):
         self._format = collections.OrderedDict(fmt)
+
+    def rst(self, raw=False):
+        ttab = make_rst_table(self.summary.split("\n"))
+        return _indent_texttable_for_rst(ttab)
 
     def summary(self, fmt = None, ctype = None, sep="\t", raw=False):
         columns = self.colnames
@@ -199,7 +235,7 @@ class PicardMetrics(object):
     def __getitem__(self, columns):
         a = [columns] + [[row[c] for c in columns] for row in self._metrics._data]
         m = self.__class__(*a, identifier=self.id, filename=self.filename)
-        fmt = collections.OrderedDict([(c, self._format[c]) for c in columns])
+        fmt = collections.OrderedDict([(c, self.metrics._format[c]) for c in columns])
         m.set_format(**fmt)
         return m
 
@@ -227,7 +263,13 @@ class PicardMetrics(object):
         return self.metrics.as_list()
 
     def set_format(self, **fmt):
+        self._format = collections.OrderedDict(fmt)
         self._metrics.set_format(**fmt)
+
+    def add_column(self, col, val, **fmt):
+        """Add column to metrics"""
+        self.metrics[col] = val
+        self._metrics._format.update(fmt)
 
 class PicardHistMetrics(PicardMetrics):
     """Generic class to store metrics section from Picard Histogram

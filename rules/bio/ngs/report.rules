@@ -1,15 +1,69 @@
 # -*- snakemake -*-
 import os
 from collections import namedtuple
+from mako.template import Template
 from snakemake.utils import report
 from snakemakelib.config import update_sml_config, sml_rules_path, get_sml_config
 from snakemakelib.utils import utc_time
-from snakemakelib.report.picard import PicardMetrics, AlignMetrics, InsertMetrics, HsMetrics, DuplicationMetrics, combine_metrics
+from snakemakelib.report.picard import PicardMetrics, AlignMetrics, InsertMetrics, HsMetrics, DuplicationMetrics, combine_metrics, make_rst_table
 import matplotlib
 matplotlib.use('Agg')
 from pylab import *
 import matplotlib.pyplot as plt
 import numpy as np
+
+# Templates
+picard_qc_report = Template("""
+Project summary
+=============================
+
+:Project: ${project_name}
+:Application: ${application}
+
+Samples
+--------
+
+.. table::
+
+${summarytable}
+
+QC Metrics
+----------
+
+Sequence statistics
+^^^^^^^^^^^^^^^^^^^
+
+.. figure:: ${seqstats}
+
+
+Alignment metrics
+^^^^^^^^^^^^^^^^^
+
+.. figure:: ${alnmet}
+
+Duplication metrics
+^^^^^^^^^^^^^^^^^^^^
+
+.. figure:: ${dupmet}
+
+Hybridization metrics
+^^^^^^^^^^^^^^^^^^^^^
+
+.. figure:: ${hsmet}
+
+
+Sample-based hybridization metrics
+----------------------------------
+
+% for f in hsmetsub:
+.. figure:: ${f}
+
+
+% endfor
+
+
+""")
+
 
 # Start by including the general snakefile
 include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
@@ -31,6 +85,7 @@ config_default = {
         'project_id' : "",
         'project_name' : "",
         'basedir' : os.curdir,
+        'graphicsdir' : 'report/grf',
         'reportdir' : 'report',
         'application':"",
         'date':utc_time(),
@@ -43,6 +98,8 @@ config_default = {
             'hsmetrics' : '.dup.hs_metrics',
             'insmetrics' : '.dup.insert_metrics',
             'inputfun' : find_sample_metrics,
+            'summarycolumns' : ["SAMPLE", "TOTAL_READS", "PCT_PF_READS_ALIGNED", "PERCENT_DUPLICATION", "MEAN_INSERT_SIZE", "MEAN_TARGET_COVERAGE", "PCT_ON_TARGET", "PCT_TARGET_BASES_10X", "PCT_TARGET_BASES_30X"],
+            'summarycolumn_names' : ['sample', 'total', '%aligned', '%dup', 'insert', 'meancov', '%ontarget', '10X', '30X'],
         },
     },
 }
@@ -56,12 +113,15 @@ report_cfg = get_sml_config('bio.ngs.report')
 rule report_generate_qc_plots:
     """Generate qc plots"""
     input: report_cfg['picard']['inputfun']
-    output: seqstats = 'seqstats.png',
-            alnmet = 'alnmet.png',
-            dupmet = 'dupmet.png',
-            hsmet = 'hsmet.png',
-            hsmetsub = 'hsmetsub.png'
+    output: seqstats = os.path.join(report_cfg['graphicsdir'], 'seqstats.png'),
+            alnmet = os.path.join(report_cfg['graphicsdir'], 'alnmet.png'),
+            dupmet = os.path.join(report_cfg['graphicsdir'], 'dupmet.png'),
+            hsmet = os.path.join(report_cfg['graphicsdir'], 'hsmet.png'),
+            hsmetsub = [os.path.join(report_cfg['graphicsdir'], 'hsmetsub-' + str(x) + '.png') for x in range(0, math.ceil(len(cfg['bio.ngs.settings']['samples'])/9))],
+            metricstable = os.path.join(report_cfg['reportdir'], 'picardmetrics.csv'),
+            summarytable = os.path.join(report_cfg['reportdir'], 'picardmetricssummary.csv')
     run:
+      """collect metrics and return PicardMetrics object"""
       samples = cfg['bio.ngs.settings']['samples']
       # Collect pm metrics and plot
       mlist =(list(
@@ -73,10 +133,10 @@ rule report_generate_qc_plots:
           )
       ))
       pm = combine_metrics(mlist)
-
+      pm.metrics['SAMPLE'] = samples
       # Sequence statistics plot
-      sdup = [int(100 + 100 * x) for x in pm.x('PERCENT_DUPLICATION')]
-      plt.scatter(pm.x('PCT_PF_READS_ALIGNED'), pm.y('TOTAL_READS'), s=sdup, alpha=0.75)
+      sdup = [int(50 + 500 * x) for x in pm.x('PERCENT_DUPLICATION')]
+      plt.scatter(pm.x('PCT_PF_READS_ALIGNED'), pm.y('TOTAL_READS'), s=sdup, alpha=0.5)
       plt.xlabel(r'Percent aligned', fontsize=14)
       plt.yscale('log', **{'basey':10})
       plt.xticks(arange(0,1.1,0.1), range(0,110,10))
@@ -87,13 +147,12 @@ rule report_generate_qc_plots:
       plt.close()
 
       # Alignment metrics
-
       n = len(samples)
-      plt.xlim(-.1, (n-1)*1.1)
-      plt.xticks(range(0,n), [x for x in samples], rotation=45)
+      plt.xlim(0, n+2)
+      plt.xticks(range(1,n+1), [x for x in samples], rotation=90)
       plt.ylim(0,1)
       plt.yticks(arange(0,1.1,0.1), range(0,110,10))
-      plt.plot(range(0,n), pm.x('PCT_PF_READS_ALIGNED'), "o")
+      plt.plot(range(1,n+1), pm.x('PCT_PF_READS_ALIGNED'), "o")
       plt.xlabel(r'Sample', fontsize=14)
       plt.ylabel(r'Percent aligned', fontsize=14)
       plt.tight_layout()
@@ -101,11 +160,11 @@ rule report_generate_qc_plots:
       plt.close()
 
       # Duplication metrics
-      plt.xlim(-.1, (n-1)*1.1)
-      plt.xticks(range(0,n), [x for x in samples], rotation=45)
+      plt.xlim(0, n+2)
+      plt.xticks(range(1,n+1), [x for x in samples], rotation=90)
       plt.ylim(0,1)
       plt.yticks(arange(0,1.1,0.1), range(0,110,10))
-      plt.plot(range(0,n), pm.x('PERCENT_DUPLICATION'), "o")
+      plt.plot(range(1,n+1), pm.x('PERCENT_DUPLICATION'), "o")
       plt.xlabel(r'Sample', fontsize=14)
       plt.ylabel(r'Percent duplication', fontsize=14)
       plt.tight_layout()
@@ -116,10 +175,11 @@ rule report_generate_qc_plots:
       columns = report_cfg['picard']['columns']
       hticks = report_cfg['picard']['hticks']
       hsmetrics = pm[columns]
+      pm.add_column('PCT_ON_TARGET', [str(100 * float(x)/float(y)) for (x,y) in zip(pm.x('ON_TARGET_BASES'), pm.y('PF_UQ_BASES_ALIGNED'))], **{'PCT_ON_TARGET' : ('3.2f', float)})
       plt.ylim(0,1)
       plt.yticks(arange(0,1.1,0.1), range(0,110,10))
       plt.boxplot(np.array(hsmetrics.as_list()[1:]))
-      plt.xticks(range(0,len(hticks)), [x for x in hticks])
+      plt.xticks(range(1,len(hticks)+1), [x for x in hticks])
       plt.savefig(output['hsmet'])
       plt.close()
 
@@ -130,15 +190,50 @@ rule report_generate_qc_plots:
           for i in range(0, 3):
               for j in range(0, 3):
                   if k < n:
-                      x = range(0, len(hticks))
+                      x = range(1, len(hticks) + 1)
                       axarr[i,j].plot(x, hsmetrics.as_list()[1:][k], "o")
                       axarr[i,j].set_xticks(x)
                       axarr[i,j].set_title(samples[k])
-                      axarr[i,j].set_xlim(-.1, (len(hticks)-1)*1.1)
-                      axarr[i,j].set_ylim(-5, 105)
-                      axarr[i,j].set_xticklabels(hticks)
+                      axarr[i,j].set_xlim(0, (len(hticks) + 1))
+                      axarr[i,j].set_ylim(-0.05, 1.05)
+                      axarr[i,j].set_yticks(arange(0,1.1,0.1))
+                      axarr[i,j].set_yticklabels(range(0,110,10))
+                      axarr[i,j].set_xticklabels([h for h in hticks], rotation=45)
                   else:
                       axarr[i,j].axis('off')
                   k += 1
-      plt.savefig(output['hsmetsub'])
+          plt.savefig(output['hsmetsub'][i_subplot])
       plt.close()
+
+      # Write csv summary file
+      pmsum = pm[report_cfg['picard']['summarycolumns']]
+      with open(output['summarytable'], "w") as fh:
+          fh.write(pmsum.metrics.summary(sep=","))
+
+      # Finally write entire merged metrics data frame
+      with open(output['metricstable'], "w") as fh:
+          fh.write(pm.metrics.summary(raw=True, sep=","))
+
+
+rule picard_qc_report:
+    input: rules.report_generate_qc_plots.output
+    output: os.path.join(report_cfg['reportdir'], 'picard_qc_report.html')
+    run:
+      kw = {
+          'project_name' : report_cfg['project_name'],
+          'application' : report_cfg['application']
+      }
+      reportdir = report_cfg['reportdir'] + os.sep if not report_cfg['reportdir'].endswith(os.sep) else report_cfg['reportdir']
+
+      d = dict(rules.report_generate_qc_plots.output.items())
+      i = 0
+      for x in d['hsmetsub']:
+          d['hsmetsub_' + str(i)] = x
+          i += 1
+      kw.update ([(k, str(v).replace(reportdir, '')) for k,v in d.items()])
+      kw['hsmetsub'] = kw['hsmetsub'].split(" ")
+      with open (rules.report_generate_qc_plots.output['summarytable']) as fh:
+          kw['summarytable'] = make_rst_table([x.split(",") for x in fh.readlines()], header=report_cfg['picard']['summarycolumn_names'])
+      s = picard_qc_report.render(**kw)
+      del d['hsmetsub']
+      report(s, str(output), **d)

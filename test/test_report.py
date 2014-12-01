@@ -3,12 +3,9 @@
 import os
 import unittest
 import logging
-from nose.tools import raises
 from collections import namedtuple
 from mako.template import Template
 from snakemake.utils import report
-import matplotlib
-#from matplotlib.backends.backend_pdf import PdfPages
 from pylab import *
 import matplotlib.pyplot as plt
 
@@ -58,57 +55,8 @@ class TestSampleReport(unittest.TestCase):
     """Test sample reports"""
     def test_index(self):
         """Test the index page"""
-        pct_aligned = ([100 * float(x) for x in pm.metrics.x('PCT_PF_READS_ALIGNED')])
-        nseq = ([int(x) for x in pm.metrics.x('TOTAL_READS')])
-        sdup = ([100 * float(x) for x in pm.metrics.x('PERCENT_DUPLICATION')])
-        plt.scatter(pct_aligned, nseq, s=sdup, alpha=0.75)
-        plt.xlabel(r'Percent aligned', fontsize=14)
-        plt.yscale('log', **{'basey':10})
-        plt.ylabel(r'Read count', fontsize=14)
-        plt.title("Sequence summary.\nPoint sizes correspond to duplication levels.", fontsize=14)
-        plt.tight_layout()
-        savefig('test.png')
-
+        pass
 
     def test_sample_report(self):
         """Test sample report"""
-        pct_aligned = ([100 * float(x) for x in pm.metrics.x('PCT_PF_READS_ALIGNED')])
-        nseq = ([int(x) for x in pm.metrics.x('TOTAL_READS')])
-        sdup = ([100 * float(x) for x in pm.metrics.x('PERCENT_DUPLICATION')])
-        input = {'test' : 'test.png'}
-        kw = {'pct_aligned' : pct_aligned,
-              'nseq' : nseq,
-              'sdup' : sdup,
-              'project_name' : 'J.Doe_00_01',
-              'application' : 'application',
-              'date' : 'date',
-        }
-        kw.update(input)
-
-        tmp = TEMPLATES['index'].render(**kw)
-        print (tmp)
-
-        report("""
-Project summary
-=============================
-
-:Project: {project_name}
-:Application: {application}
-:Date: {date}
-
-Samples
---------
-
-QC Metrics
-----------
-
-Sequence statistics
-^^^^^^^^^^^^^^^^^^^
-
-.. figure:: {test}
-
-
-
-        """.format(**kw), "test.html", **input)
-
-
+        pass

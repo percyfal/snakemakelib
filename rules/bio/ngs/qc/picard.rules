@@ -11,9 +11,10 @@ def find_merge_inputs(wildcards):
     for d in subdirs:
         # Assume we start from fastq sources; could be more than one barcode, more than one lane
         fqsrc = sorted(glob.glob("{path}{sep}*{prefix}*{suffix}".format(path=os.path.join(wildcards.path, d), sep=os.sep, prefix=wildcards.prefix, suffix=sml_config['bio.ngs.settings']['fastq_suffix'])))
-        pfx = fqsrc[0].replace(sml_config['bio.ngs.settings']['fastq_suffix'], "").replace(sml_config['bio.ngs.settings']['read1_label'], "")
-        src = "{prefix}{suffix}".format(prefix=pfx, suffix=picard_config['merge_sam']['suffix'])
-        sources.append(src)
+        if (fqsrc):
+            pfx = fqsrc[0].replace(sml_config['bio.ngs.settings']['fastq_suffix'], "").replace(sml_config['bio.ngs.settings']['read1_label'], "")
+            src = "{prefix}{suffix}".format(prefix=pfx, suffix=picard_config['merge_sam']['suffix'])
+            sources.append(src)
     return sources
 
 # Start by including the general snakefile

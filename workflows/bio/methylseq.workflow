@@ -2,7 +2,6 @@
 import os
 from snakemakelib.config import update_sml_config, sml_rules_path, get_sml_config
 
-
 def find_meth_merge_inputs(wildcards):
     """Find bismark aligned bam files as input to picard merge.
 
@@ -32,6 +31,7 @@ methylation_config = {
             'suffix' : '_bismark_bt2_pe.bam',
             'label' : 'merge',
             'inputfun' : find_meth_merge_inputs,
+            'options' : "SORT_ORDER=unsorted", # methylation extraction requires unsorted file
         },
     },
 }
@@ -53,7 +53,7 @@ path = cfg.get('path') if not cfg.get('path') is None else os.curdir
 
 FASTQC_TARGETS = expand("{path}/{sample}/{flowcell}/{lane}_{flowcell}_{sample}_1_fastqc.html {path}/{sample}/{flowcell}/{lane}_{flowcell}_{sample}_2_fastqc.html".split(), sample=cfg['samples'], flowcell=cfg['flowcells'], lane=cfg['lanes'], path=path)
 
-BISMARK_TARGETS = expand("{path}/{sample}/{sample}_bismark_bt2_pe.merge.deduplicated.bismark.cov", sample=cfg['samples'], flowcell=cfg['flowcells'], lane=cfg['lanes'], path=path)
+BISMARK_TARGETS = expand("{path}/{sample}/{sample}.merge.deduplicated.bismark.cov", sample=cfg['samples'], flowcell=cfg['flowcells'], lane=cfg['lanes'], path=path)
 
 #BISMARK_REPORT_TARGETS = expand("{path}/{sample}/{flowcell}/{lane}_{flowcell}_{sample}_bismark_bt2_PE_report.html", sample=cfg['samples'], flowcell=cfg['flowcells'], lane=cfg['lanes'], path=path)
 
@@ -91,5 +91,5 @@ rule methylseq_bismark_align:
     threads: bismark_cfg['align']['threads']
     input: "{path}" + os.sep + "{prefix}" + ngs_cfg['read1_label'] + qc_cfg['trim_galore']['read1_suffix'],\
            "{path}" + os.sep + "{prefix}" + ngs_cfg['read2_label'] + qc_cfg['trim_galore']['read2_suffix']
-    output: "{path}" + os.sep + "{prefix}" + bismark_cfg['align']['suffix'], "{path}" + os.sep + "{prefix}_bismark_bt2_PE_report.txt"
+    output: "{path}" + os.sep + "{prefix}" + bismark_cfg['align']['suffix'], "{path}" + os.sep + "{prefix}_PE_report.txt"
     shell: "{params.cmd} {params.options} {params.ref} -1 {input[0]} -2 {input[1]} -o {wildcards.path} -p {threads} -B {wildcards.prefix}"

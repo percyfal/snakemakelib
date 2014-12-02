@@ -12,6 +12,8 @@ def gatk_read_backed_phasing_find_input(wildcards):
 
 # Start by including the general snakefile
 include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
+# Include required picard rules
+include: os.path.join(sml_rules_path(), 'bio/ngs/qc', 'picard.rules')
 
 sml_config = get_sml_config()
 
@@ -85,7 +87,7 @@ config_default['bio.ngs.tools.gatk']['clip_reads'] = {
 config_default['bio.ngs.tools.gatk']['variant_eval'] = {
     'cmd' : 'VariantEval',
     'ref' : sml_config['bio.ngs.tools.gatk']['ref'],
-    'options' : "-ST Filter -l INFO --doNotUseAllStandardModules --evalModule CompOverlap --evalModule CountVariants --evalModule GenotypeConcordance --evalModule TiTvVariantEvaluator --evalModule ValidationReport --stratificationModule Filter",
+    'options' : "-ST Filter -l INFO --doNotUseAllStandardModules --evalModule CompOverlap --evalModule CountVariants --evalModule TiTvVariantEvaluator --evalModule ValidationReport",
 }
 
 config_default['bio.ngs.tools.gatk']['select_variants'] = {
@@ -273,7 +275,6 @@ rule gatk_variant_eval:
     input: "{prefix}.vcf"
     output: "{prefix}.eval_metrics"
     shell: "{params.cmd} {params.options} --eval {input} -o {output}"
-
 
 rule gatk_read_backed_phasing:
     """Run GATK ReadBackedPhasing"""

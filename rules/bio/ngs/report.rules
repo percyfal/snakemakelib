@@ -361,13 +361,13 @@ rule report_rulegraphs:
 
 rule sample_dag:
     """Utility rule to generate dag for first sample in sample list"""
-    input: "{prefix}.html", cfg['bio.ngs.settings']['samples'][0]
+    input: "{prefix}", cfg['bio.ngs.settings']['samples'][0]
     output: "{prefix}_dag.png"
-    shell: "snakemake -F --dag {input[0]} --config samples=['{input[1]}'] | dot -Tpng -o {output}"
+    shell: "snakemake  --dag {input[0]} --config samples=\"['{input[1]}']\" | dot -Tpng -o {output}"
 
 rule rulegraph:
     """Generate rulegraph for a specific rule"""
-    input: "{prefix}.html"
+    input: "{prefix}"
     output: "{prefix}.png"
     shell: "snakemake -F --rulegraph {input} | dot -Tpng -o {output}"
 

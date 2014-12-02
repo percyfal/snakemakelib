@@ -72,7 +72,7 @@ Sample-based hybridization metrics
 
 % for f in hsmetsub:
 .. figure:: ${f}
-
+   :align: center
 
 % endfor
 
@@ -98,12 +98,21 @@ Table 1 shows a variant summary stratified by sample.
 """)
 
 rule_report = Template("""
+:Project: ${project_name}
+:Application: ${application}
+
 Rule graphs and DAGs
 ---------------------
 
 % for r in rulegraphs:
-.. figure:: ${r}
 
+${r}
+${"^" * (len(r) + 1)}
+
+.. figure:: ${r}
+   :align: center
+
+   Rulegraph for ${r}
 
 % endfor
 
@@ -137,6 +146,7 @@ config_default = {
         'reportdir' : 'report',
         'application':"",
         'date':utc_time(),
+        'rulegraphs' : [], 
         'picard' : {
             'columns' : ["ZERO_CVG_TARGETS_PCT", "PCT_TARGET_BASES_2X", "PCT_TARGET_BASES_10X", "PCT_TARGET_BASES_20X", "PCT_TARGET_BASES_30X", "PCT_TARGET_BASES_40X", "PCT_TARGET_BASES_50X", "PCT_TARGET_BASES_100X"],
             'hticks' : ["0X", "2X", "10X", "20X", "30X", "40X", "50X", "100X"],
@@ -333,13 +343,30 @@ rule gatk_eval_report:
       s = gatk_eval_report.render(**kw)
       report(s, str(output), **d)
 
+rule report_rulegraphs:
+    """Generate rulegraphs for targets specified by report_cfg['rulegraphs']"""
+    input: [os.path.join(report_cfg['reportdir'], x) for x in report_cfg['rulegraphs']]
+    output: os.path.join(report_cfg['reportdir'], "rules.html")
+    run:
+      kw = {
+          'project_name' : report_cfg['project_name'],
+          'application' : report_cfg['application'],
+          'rulegraphs' : [x for x in report_cfg['rulegraphs']],
+      }
+      d = {}
+      d.update([(x,os.path.join(report_cfg['reportdir'], x)) for x in report_cfg['rulegraphs']])
+      s = rule_report.render(**kw)
+      report(s, str(output), **d)
+      
 
 rule sample_dag:
-    input: "{prefix}.html"
-    output: "{prefix}.png"
-    shell: "snakemake -F --dag {input} | dot -Tpng -o {output}"
+    """Utility rule to generate dag for first sample in sample list"""
+    input: "{prefix}.html", cfg['bio.ngs.settings']['samples'][0]
+    output: "{prefix}_dag.png"
+    shell: "snakemake -F --dag {input[0]} --config samples=['{input[1]}'] | dot -Tpng -o {output}"
 
 rule rulegraph:
+    """Generate rulegraph for a specific rule"""
     input: "{prefix}.html"
     output: "{prefix}.png"
     shell: "snakemake -F --rulegraph {input} | dot -Tpng -o {output}"

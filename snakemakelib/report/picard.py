@@ -88,7 +88,13 @@ def make_rst_table(data, header=None, indent=True):
         tab_tt.set_precision(2)
         if not header is None:
             data[0] = header
+        w = [len(c) + 2 for c in data[0]]
+        for r in data:
+            for i in range(0, len(r)):
+                w[i] = max(w[i], len(r[i]) + 2)
         tab_tt.add_rows(data)
+        tab_tt.set_cols_width(w)
+        tab_tt.set_cols_align("r" * len(data[0]))
         if indent:
             return _indent_texttable_for_rst(tab_tt)
         else:
@@ -270,6 +276,7 @@ class PicardMetrics(object):
         """Add column to metrics"""
         self.metrics[col] = val
         self._metrics._format.update(fmt)
+        self._format.update(fmt)
 
 class PicardHistMetrics(PicardMetrics):
     """Generic class to store metrics section from Picard Histogram

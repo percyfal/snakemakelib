@@ -79,9 +79,42 @@ Sample-based hybridization metrics
 
 """)
 
+gatk_eval_report = Template("""
+
+:Project: ${project_name}
+:Application: ${application}
+:Input: {input}
+
+
+Sample-based variant summary
+-----------------------------
+
+Table 1 shows a variant summary stratified by sample. 
+
+
+
+
+
+""")
+
+rule_report = Template("""
+Rule graphs and DAGs
+---------------------
+
+% for r in rulegraphs:
+.. figure:: ${r}
+
+
+% endfor
+
+
+""")
+
 
 # Start by including the general snakefile
 include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
+include: os.path.join(sml_rules_path(), 'bio/ngs/qc', 'picard.rules')
+include: os.path.join(sml_rules_path(), 'bio/ngs/tools', 'gatk.rules')
 
 def find_sample_metrics(wildcards):
     """Simple sample metrics finding function"""
@@ -264,6 +297,7 @@ rule report_generate_qc_plots:
 
 
 rule picard_qc_report:
+    """Generate QC report for picard metrics data"""
     input: rules.report_generate_qc_plots.output
     output: os.path.join(report_cfg['reportdir'], 'picard_qc_report.html')
     run:
@@ -272,7 +306,6 @@ rule picard_qc_report:
           'application' : report_cfg['application']
       }
       reportdir = report_cfg['reportdir'] + os.sep if not report_cfg['reportdir'].endswith(os.sep) else report_cfg['reportdir']
-
       d = dict(rules.report_generate_qc_plots.output.items())
       i = 0
       for x in d['hsmetsub']:
@@ -283,3 +316,32 @@ rule picard_qc_report:
       s = picard_qc_report.render(**kw)
       del d['hsmetsub']
       report(s, str(output), **d)
+
+rule gatk_eval_report:
+    """Generate variant summary report based on GATK VariantEval metrics"""
+    input: "{prefix}.eval_metrics"
+    output: os.path.join(report_cfg['reportdir'], "{prefix}.html")
+    run:
+      kw = {
+          'project_name' : report_cfg['project_name'],
+          'application' : report_cfg['application'],
+          'input' : input[0],
+      }
+      d = {
+          'input' : input[0],
+      }
+      s = gatk_eval_report.render(**kw)
+      report(s, str(output), **d)
+
+
+rule sample_dag:
+    input: "{prefix}.html"
+    output: "{prefix}.png"
+    shell: "snakemake -F --dag {input} | dot -Tpng -o {output}"
+
+rule rulegraph:
+    input: "{prefix}.html"
+    output: "{prefix}.png"
+    shell: "snakemake -F --rulegraph {input} | dot -Tpng -o {output}"
+
+ruleorder: rulegraph > sample_dag

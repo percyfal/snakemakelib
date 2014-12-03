@@ -87,7 +87,8 @@ config_default['bio.ngs.tools.gatk']['clip_reads'] = {
 config_default['bio.ngs.tools.gatk']['variant_eval'] = {
     'cmd' : 'VariantEval',
     'ref' : sml_config['bio.ngs.tools.gatk']['ref'],
-    'options' : "-ST Filter -l INFO --doNotUseAllStandardModules --evalModule CompOverlap --evalModule CountVariants --evalModule TiTvVariantEvaluator --evalModule ValidationReport",
+    'options' : " ".join(["-ST Filter -l INFO --doNotUseAllStandardModules --evalModule CompOverlap --evalModule CountVariants --evalModule TiTvVariantEvaluator --evalModule ValidationReport",
+                          ]),
 }
 
 config_default['bio.ngs.tools.gatk']['select_variants'] = {
@@ -271,7 +272,8 @@ rule gatk_variant_eval:
     """Run GATK VariantEval"""
     params: cmd = gatk_config['cmd'] + " -T " + gatk_config['variant_eval']['cmd'],
             options = " ".join(["-R", gatk_config['variant_eval']['ref'],
-            gatk_config['variant_eval']['options']])
+                                gatk_config['variant_eval']['options'],
+                                "--dbsnp {known}".format(known=gatk_config['known_sites'] if not gatk_config['known_sites'] == "" else "")])
     input: "{prefix}.vcf"
     output: "{prefix}.eval_metrics"
     shell: "{params.cmd} {params.options} --eval {input} -o {output}"

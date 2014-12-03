@@ -114,20 +114,13 @@ rule picard_mark_duplicates:
 
 ruleorder: picard_mark_duplicates > picard_build_bam_index
 
-# rule picard_create_sequence_dictionary:
-#     params: cmd = picard_config['cmd'] + CREATE_SEQUENCE_DICTIONARY,
-#             options = picard_config['options']
-#     input: picard_config['ref']
-#     output: "{prefix}.interval_list"
-#     shell: "{params.cmd} R={input} O={output}"
-
 rule picard_create_interval_list_awk:
     """Picard: create interval list using awk"""
     params: cmd = picard_config['cmd'] + CREATE_SEQUENCE_DICTIONARY,
             options = picard_config['options']
-    input: "{prefix}.bed", picard_config['ref'].replace(".fa", ".interval_list")
+    input: bed="{prefix}.bed", dict=picard_config['ref'].replace(".fa", ".dict")
     output: "{prefix}.interval_list"
-    shell: sml_config['comp.settings']['awk'] + " '{{printf(\"%s\\t%s\\t%s\\t%s\\t%s\\n\", $$1,$$2,$$3,\"+\",$$4)}}' $< >> {output}"
+    shell: sml_config['comp.settings']['cat'] + " {input.dict} > {output}; " + sml_config['comp.settings']['awk'] + " '{{printf(\"%s\\t%s\\t%s\\t%s\\t%s\\n\", $1,$2,$3,\"+\",$4); FS=\"\t\"}}' {input.bed} >> {output}"
 
 rule picard_collect_insert_size_metrics:
     """Picard: collect insertion size metrics"""

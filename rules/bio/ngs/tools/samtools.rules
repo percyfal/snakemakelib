@@ -21,8 +21,19 @@ update_sml_config(config_default)
 samtools_config = sml_config['bio.ngs.tools.samtools']
 
 rule samtools_sam2bam:
-    params: cmd=samtools_config['cmd']
+    """Convert sam file to bam"""
+    params: cmd = samtools_config['cmd'],
+            options = samtools_config['options']
     input: "{prefix}.sam"
     output: "{prefix}.bam"
-    threads: samtools_config['threads']
-    shell: "{params.cmd} view -Sb {input} > {output}"
+    shell: "{params.cmd} view {params.options} -Sb {input} > {output}"
+
+rule samtools_gene_region_from_bam:
+    """Extract gene region from bam file"""
+    params: cmd = samtools_config['cmd'],
+            options = samtools_config['options']
+    input: bam = "{prefix}.bam", bed = "{prefix}.{gene}.bed"
+    output: temp("{prefix}.{gene}.bam")
+    shell: "{params.cmd} view {params.options} -b -L {input.bed} {input.bam} > {output}"
+
+ruleorder: samtools_gene_region_from_bam > samtools_sam2bam

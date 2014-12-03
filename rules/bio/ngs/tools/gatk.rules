@@ -278,6 +278,18 @@ rule gatk_variant_eval:
     output: "{prefix}.eval_metrics"
     shell: "{params.cmd} {params.options} --eval {input} -o {output}"
 
+rule gatk_variant_eval_region:
+    """Run GATK VariantEval on a region"""
+    params: cmd = gatk_config['cmd'] + " -T " + gatk_config['variant_eval']['cmd'],
+            options = " ".join(["-R", gatk_config['variant_eval']['ref'],
+                                gatk_config['variant_eval']['options'],
+                                "--dbsnp {known}".format(known=gatk_config['known_sites'] if not gatk_config['known_sites'] == "" else "")])
+    input: vcf="{prefix}.vcf", bed="{prefix}.bed"
+    output: "{prefix}.eval_metrics"
+    shell: "{params.cmd} {params.options} -L {input.bed} --eval {input.vcf} -o {output}"
+
+ruleorder: gatk_variant_eval_region > gatk_variant_eval
+
 rule gatk_read_backed_phasing:
     """Run GATK ReadBackedPhasing"""
     params: cmd = gatk_config['cmd'] + " -T " + gatk_config['read_backed_phasing']['cmd'],
@@ -296,6 +308,18 @@ rule gatk_select_variants:
     input: "{prefix}.vcf"
     output: "{prefix}.all.vcf"
     shell: "{params.cmd} {params.options} --variant {input} --out {output}"
+
+
+rule gatk_select_variants_region:
+    """Run GATK SelectVariants to select variants based on a region"""
+    params: cmd = gatk_config['cmd'] + " -T " + gatk_config['select_variants']['cmd'],
+            options = " ".join(["-R", gatk_config['select_variants']['ref'],
+                                gatk_config['select_variants']['options']])
+    input: vcf="{prefix}.vcf", bed="{prefix}.{region}.bed"
+    output: "{prefix}.{region}.vcf"
+    shell: "{params.cmd} {params.options} -L {input.bed} --variant {input.vcf} --out {output}"
+
+ruleorder: gatk_select_variants_region > gatk_unified_genotyper
 
 rule gatk_select_snp_variants:
     """Run GATK SelectVariants to select SNPs"""

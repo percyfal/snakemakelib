@@ -1,0 +1,68 @@
+# -*- snakemake -*-
+import os
+import glob
+from snakemakelib.config import update_sml_config, sml_rules_path, get_sml_config
+
+
+# Start by including the general snakefile
+include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
+# Include required gatk rules
+include: os.path.join(sml_rules_path(), 'bio/ngs/tools', 'samtools.rules')
+include: os.path.join(sml_rules_path(), 'bio/ngs/tools', 'bedtools.rules')
+include: os.path.join(sml_rules_path(), 'bio/ngs/qc', 'picard.rules')
+
+sml_config = get_sml_config()
+
+config_default = {
+    'bio.ngs.reports.variant_evaluation_per_gene' : {
+        'reportdir' : 'report',
+    },
+}
+
+update_sml_config(config_default)
+
+sml_config = get_sml_config()
+settings_cfg = sml_config['bio.ngs.settings']
+samtools_cfg = sml_config['bio.ngs.tools.samtools']
+bedtools_cfg = sml_config['bio.ngs.tools.bedtools']
+picard_cfg = sml_config['bio.ngs.qc.picard']
+report_cfg = sml_config['bio.ngs.reports.variant_evaluation_per_gene']
+
+rule variant_evaluation_per_gene_overlapping_baits:
+    """Generate overlapping bed file for bait definition file"""
+    params: cmd=os.path.join(bedtools_cfg['home'], bedtools_cfg['intersectbed']['cmd']),
+            options = bedtools_cfg['intersectbed']['options']
+    input: a="{prefix}.{gene}.bed", b=bedtools_cfg['sequence_capture']['bait_regions']
+    output: "{prefix}.{gene}.baits.bed"
+    shell: "{params.cmd} -a {input.a} -b {input.b} > {output}"
+
+rule variant_evaluation_per_gene_overlapping_targets:
+    """Generate overlapping bed file for target definition file"""
+    params: cmd=os.path.join(bedtools_cfg['home'], bedtools_cfg['intersectbed']['cmd']),
+            options = bedtools_cfg['intersectbed']['options']
+    input: a="{prefix}.{gene}.bed", b=bedtools_cfg['sequence_capture']['target_regions']
+    output: "{prefix}.{gene}.targets.bed"
+    shell: "{params.cmd} -a {input.a} -b {input.b} > {output}"
+
+rule variant_evaluation_per_gene_picard_qc_report:
+    """Generate gene-based picard report"""
+    input: align_metrics="{prefix}.{gene}.dup.align_metrics", insert_metrics="{prefix}.{gene}.dup.insert_metrics", dup_metrics="{prefix}.{gene}.dup_metrics", hs_metrics="{prefix}.{gene}.dup.hs_metrics"
+    output: report = os.path.join(report_cfg['reportdir'], "{prefix}.{gene}_picard_qc.html"),
+    run:
+      print (input)
+
+rule variant_evaluation_per_gene_picard_hs_metrics:
+    """Run picard hsmetrics on a specific region"""
+    params: cmd = picard_config['cmd'] + CALCULATE_HS_METRICS,
+            options = picard_config['options']
+    input: bam = "{prefix}.{gene}.bam", targets="{prefix}.{gene}.targets.interval_list", baits="{prefix}.{gene}.baits.interval_list"
+
+rule variant_evaluation_per_gene_picard_create_interval_list_awk:
+    """Variant Evaluation, Picard: create interval list using awk"""
+    params: cmd = picard_config['cmd'] + CREATE_SEQUENCE_DICTIONARY,
+            options = picard_config['options']
+    input: bed="{prefix}.{gene}.bed", dict=picard_config['ref'].replace(".fa", ".dict")
+    output: "{prefix}.{gene}.interval_list"
+    shell: sml_config['comp.settings']['cat'] + " {input.dict} > {output}; " + sml_config['comp.settings']['awk'] + " '{{printf(\"%s\\t%s\\t%s\\t%s\\t%s\\n\", $1,$2,$3,\"+\",$4); FS=\"\t\"}}' {input.bed} >> {output}"
+
+ruleorder: variant_evaluation_per_gene_picard_create_interval_list_awk > picard_create_interval_list_awk

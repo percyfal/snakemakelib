@@ -15,6 +15,14 @@ config_default = {
         'coveragebed' : {
             'cmd' : 'coverageBed',
         },
+        'intersectbed' : {
+            'cmd' : 'intersectBed',
+            'options' : "",
+        },
+        'sequence_capture' : {
+            'bait_regions' : sml_config['bio.ngs.settings']['sequence_capture']['bait_regions'],
+            'target_regions' : sml_config['bio.ngs.settings']['sequence_capture']['target_regions'],
+        },
     },
 }
 

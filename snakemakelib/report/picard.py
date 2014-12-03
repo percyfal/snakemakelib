@@ -5,6 +5,7 @@ import re
 import csv
 import texttable as tt
 import collections
+from mako.template import Template as makoTemplate
 from snakemakelib.report.utils import Template
 
 # http://stackoverflow.com/questions/2170900/get-first-list-index-containing-sub-string-in-python
@@ -434,3 +435,197 @@ def combine_metrics(metrics, mergename = "PicardMetrics_merge", uniquify=False):
     return (pm)
 
 
+def qc_plots(inputfiles, samples, report_cfg, output):
+    """Generate qc plots for picard QC summary report"""
+    samples = cfg['bio.ngs.settings']['samples']
+    # Collect pm metrics and plot
+    mlist =(list(
+        zip(
+            [AlignMetrics(filename=x).category() for x in inputfiles if x.endswith(report_cfg['picard']['alnmetrics'])],
+            [InsertMetrics(filename=x) for x in inputfiles if x.endswith(report_cfg['picard']['insmetrics'])],
+            [DuplicationMetrics(filename=x) for x in inputfiles if x.endswith(report_cfg['picard']['dupmetrics'])],
+            [HsMetrics(filename=x) for x in inputfiles if x.endswith(report_cfg['picard']['hsmetrics'])]
+        )
+    ))
+    pm = combine_metrics(mlist)
+    pm.add_column('PCT_ON_TARGET', [str(100 * float(x)/float(y)) for (x,y) in zip(pm.x('ON_TARGET_BASES'), pm.y('PF_UQ_BASES_ALIGNED'))], **{'PCT_ON_TARGET' : ('3.2f', float)})
+    pm.metrics['SAMPLE'] = samples
+    
+    # Sequence statistics plot
+    sdup = [int(50 + 500 * x) for x in pm.x('PERCENT_DUPLICATION')]
+    plt.scatter(pm.x('PCT_PF_READS_ALIGNED'), pm.y('TOTAL_READS'), s=sdup, alpha=0.5)
+    plt.xlabel(r'Percent aligned', fontsize=14)
+    plt.yscale('log', **{'basey':10})
+    plt.xticks(arange(0,1.1,0.1), range(0,110,10))
+    plt.ylabel(r'Read count', fontsize=14)
+    plt.title("Sequence summary.\nPoint sizes correspond to duplication levels.", fontsize=14)
+    plt.tight_layout()
+    plt.savefig(output.seqstats)
+    plt.close()
+    
+    # Alignment metrics
+    n = len(samples)
+    plt.xlim(0, n+2)
+    plt.xticks(range(1,n+1), [x for x in samples], rotation=90)
+    plt.ylim(0,1)
+    plt.yticks(arange(0,1.1,0.1), range(0,110,10))
+    plt.plot(range(1,n+1), pm.x('PCT_PF_READS_ALIGNED'), "o")
+    plt.xlabel(r'Sample', fontsize=14)
+    plt.ylabel(r'Percent aligned', fontsize=14)
+    plt.tight_layout()
+    plt.savefig(output.alnmet)
+    plt.close()
+    
+    # Duplication metrics
+    plt.xlim(0, n+2)
+    plt.xticks(range(1,n+1), [x for x in samples], rotation=90)
+    plt.ylim(0,1)
+    plt.yticks(arange(0,1.1,0.1), range(0,110,10))
+    plt.plot(range(1,n+1), pm.x('PERCENT_DUPLICATION'), "o")
+    plt.xlabel(r'Sample', fontsize=14)
+    plt.ylabel(r'Percent duplication', fontsize=14)
+    plt.tight_layout()
+    plt.savefig(output.dupmet)
+    plt.close()
+    
+    # Insert metrics
+    plt.xlim(0, n+2)
+    plt.xticks(range(1,n+1), [x for x in samples], rotation=90)
+    plt.plot(range(1,n+1), pm.x('MEAN_INSERT_SIZE'), "o")
+    plt.xlabel(r'Sample', fontsize=14)
+    plt.ylabel(r'Mean insert size', fontsize=14)
+    plt.tight_layout()
+    plt.savefig(output.insmet)
+    plt.close()
+    
+    # Target metrics
+    plt.xlim(0, n+2)
+    plt.xticks(range(1,n+1), [x for x in samples], rotation=90)
+    plt.plot(range(1,n+1), pm.x('PCT_ON_TARGET'), "o")
+    plt.xlabel(r'Sample', fontsize=14)
+    plt.ylabel(r'Percent on target', fontsize=14)
+    plt.tight_layout()
+    plt.savefig(output.targetmet)
+    plt.close()
+    
+    # Target metrics
+    plt.plot(pm.x('PERCENT_DUPLICATION'), pm.y('PCT_ON_TARGET'), "o")
+    plt.xlabel(r'Percent duplication', fontsize=14)
+    plt.ylabel(r'Percent on target', fontsize=14)
+    plt.tight_layout()
+    plt.savefig(output.target2dup)
+    plt.close()
+    
+    # Hs metrics
+    columns = report_cfg['picard']['columns']
+    hticks = report_cfg['picard']['hticks']
+    hsmetrics = pm[columns]
+    
+    # Hs boxplot metrics
+    plt.ylim(0,1)
+    plt.yticks(arange(0,1.1,0.1), range(0,110,10))
+    plt.boxplot(np.array(hsmetrics.as_list()[1:]))
+    plt.xticks(range(1,len(hticks)+1), [x for x in hticks])
+    plt.savefig(output.hsmet)
+    plt.close()
+    
+    nsubplots = int(math.ceil(n/9))
+    k = 0
+    for i_subplot in range(0, nsubplots):
+        f, axarr = plt.subplots(3, 3, sharex='col', sharey='row')
+        for i in range(0, 3):
+            for j in range(0, 3):
+                if k < n:
+                    x = range(1, len(hticks) + 1)
+                    axarr[i,j].plot(x, hsmetrics.as_list()[1:][k], "o")
+                    axarr[i,j].set_xticks(x)
+                    axarr[i,j].set_title(samples[k])
+                    axarr[i,j].set_xlim(0, (len(hticks) + 1))
+                    axarr[i,j].set_ylim(-0.05, 1.05)
+                    axarr[i,j].set_yticks(arange(0,1.1,0.1))
+                    axarr[i,j].set_yticklabels(range(0,110,10))
+                    axarr[i,j].set_xticklabels([h for h in hticks], rotation=45)
+                else:
+                    axarr[i,j].axis('off')
+                k += 1
+        plt.savefig(output.hsmetsub[i_subplot])
+    plt.close()
+
+    # Write csv summary file
+    pmsum = pm[report_cfg['picard']['summarycolumns']]
+    with open(output['summarytable'], "w") as fh:
+        fh.write(pmsum.metrics.summary(sep=","))
+
+    # Finally write entire merged metrics data frame
+    with open(output['metricstable'], "w") as fh:
+        fh.write(pm.metrics.summary(raw=True, sep=","))
+
+picard_qc_report = makoTemplate("""
+Picard QC report
+=============================
+
+:Project: ${project_name}
+:Application: ${application}
+% if region:
+:Region: ${region}
+% endif
+
+
+Sample QC summary
+------------------
+
+.. csv-table:: Sample QC summary. Columns show sample name, total number of reads, percent aligned reads, percent duplication, mean insert size, mean coverage over target regions, percent sequenced bases that have aligned to target, followed by the percent bases in target regions covered at 10X and 30X
+   :class: docutils
+   :file: report/picardmetricssummary.csv
+   :header-rows: 1
+
+QC Metrics
+----------
+
+Sequence statistics
+^^^^^^^^^^^^^^^^^^^
+
+.. figure:: ${seqstats}
+
+
+Alignment metrics
+^^^^^^^^^^^^^^^^^
+
+.. figure:: ${alnmet}
+
+Duplication metrics
+^^^^^^^^^^^^^^^^^^^^
+
+.. figure:: ${dupmet}
+
+Insert metrics
+^^^^^^^^^^^^^^^^^^^^
+
+.. figure:: ${insmet}
+
+Target metrics
+^^^^^^^^^^^^^^^^^^^^
+
+.. figure:: ${targetmet}
+
+
+.. figure:: ${target2dup}
+
+
+Hybridization metrics
+^^^^^^^^^^^^^^^^^^^^^
+
+.. figure:: ${hsmet}
+
+
+Sample-based hybridization metrics
+----------------------------------
+
+% for f in hsmetsub:
+.. figure:: ${f}
+   :align: center
+
+% endfor
+
+
+""")

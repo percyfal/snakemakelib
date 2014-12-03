@@ -332,6 +332,25 @@ rule gatk_eval_report:
     input: "{prefix}.eval_metrics"
     output: os.path.join(report_cfg['reportdir'], "{prefix}.html")
     run:
+      R("""
+      library(gsalib)
+      library(lattice)
+      
+      ev <- gsa.read.gatkreport({input})
+      
+      x <- ev$CompOverlap
+      x <- x[x$Sample != "all", ]
+      
+      png({output['variants_per_sample']})
+      print(stripplot(nEvalVariants ~ Sample | Filter + Novelty, data=x,
+      subset=(Filter != "raw" & Novelty != "all"),
+      scales=list(x=list(draw=FALSE)),
+      main="Number of variants per sample\n(variants are classified as known/novel and called/filtered)",
+      ylab="Number of variants", xlab="Sample"
+      ))
+      dev.off()
+
+    """)
       kw = {
           'project_name' : report_cfg['project_name'],
           'application' : report_cfg['application'],
@@ -342,6 +361,7 @@ rule gatk_eval_report:
       }
       s = gatk_eval_report.render(**kw)
       report(s, str(output), **d)
+
 
 rule report_rulegraphs:
     """Generate rulegraphs for targets specified by report_cfg['rulegraphs']"""

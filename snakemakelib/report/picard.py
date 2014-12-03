@@ -5,8 +5,12 @@ import re
 import csv
 import texttable as tt
 import collections
-from mako.template import Template as makoTemplate
 from snakemakelib.report.utils import Template
+import matplotlib
+matplotlib.use('Agg')
+from pylab import *
+import matplotlib.pyplot as plt
+import numpy as np
 
 # http://stackoverflow.com/questions/2170900/get-first-list-index-containing-sub-string-in-python
 def index_containing_substring(the_list, substring):
@@ -435,16 +439,16 @@ def combine_metrics(metrics, mergename = "PicardMetrics_merge", uniquify=False):
     return (pm)
 
 
-def qc_plots(inputfiles, samples, report_cfg, output):
+def qc_plots(inputfiles, cfg, output):
     """Generate qc plots for picard QC summary report"""
-    samples = cfg['bio.ngs.settings']['samples']
+    samples = cfg['samples']
     # Collect pm metrics and plot
     mlist =(list(
         zip(
-            [AlignMetrics(filename=x).category() for x in inputfiles if x.endswith(report_cfg['picard']['alnmetrics'])],
-            [InsertMetrics(filename=x) for x in inputfiles if x.endswith(report_cfg['picard']['insmetrics'])],
-            [DuplicationMetrics(filename=x) for x in inputfiles if x.endswith(report_cfg['picard']['dupmetrics'])],
-            [HsMetrics(filename=x) for x in inputfiles if x.endswith(report_cfg['picard']['hsmetrics'])]
+            [AlignMetrics(filename=x).category() for x in inputfiles if x.endswith(cfg['alnmetrics'])],
+            [InsertMetrics(filename=x) for x in inputfiles if x.endswith(cfg['insmetrics'])],
+            [DuplicationMetrics(filename=x) for x in inputfiles if x.endswith(cfg['dupmetrics'])],
+            [HsMetrics(filename=x) for x in inputfiles if x.endswith(cfg['hsmetrics'])]
         )
     ))
     pm = combine_metrics(mlist)
@@ -517,8 +521,8 @@ def qc_plots(inputfiles, samples, report_cfg, output):
     plt.close()
     
     # Hs metrics
-    columns = report_cfg['picard']['columns']
-    hticks = report_cfg['picard']['hticks']
+    columns = cfg['columns']
+    hticks = cfg['hticks']
     hsmetrics = pm[columns]
     
     # Hs boxplot metrics
@@ -552,80 +556,11 @@ def qc_plots(inputfiles, samples, report_cfg, output):
     plt.close()
 
     # Write csv summary file
-    pmsum = pm[report_cfg['picard']['summarycolumns']]
-    with open(output['summarytable'], "w") as fh:
+    pmsum = pm[cfg['summarycolumns']]
+    with open(output.summarytable, "w") as fh:
         fh.write(pmsum.metrics.summary(sep=","))
 
     # Finally write entire merged metrics data frame
-    with open(output['metricstable'], "w") as fh:
+    with open(output.metricstable, "w") as fh:
         fh.write(pm.metrics.summary(raw=True, sep=","))
 
-picard_qc_report = makoTemplate("""
-Picard QC report
-=============================
-
-:Project: ${project_name}
-:Application: ${application}
-% if region:
-:Region: ${region}
-% endif
-
-
-Sample QC summary
-------------------
-
-.. csv-table:: Sample QC summary. Columns show sample name, total number of reads, percent aligned reads, percent duplication, mean insert size, mean coverage over target regions, percent sequenced bases that have aligned to target, followed by the percent bases in target regions covered at 10X and 30X
-   :class: docutils
-   :file: report/picardmetricssummary.csv
-   :header-rows: 1
-
-QC Metrics
-----------
-
-Sequence statistics
-^^^^^^^^^^^^^^^^^^^
-
-.. figure:: ${seqstats}
-
-
-Alignment metrics
-^^^^^^^^^^^^^^^^^
-
-.. figure:: ${alnmet}
-
-Duplication metrics
-^^^^^^^^^^^^^^^^^^^^
-
-.. figure:: ${dupmet}
-
-Insert metrics
-^^^^^^^^^^^^^^^^^^^^
-
-.. figure:: ${insmet}
-
-Target metrics
-^^^^^^^^^^^^^^^^^^^^
-
-.. figure:: ${targetmet}
-
-
-.. figure:: ${target2dup}
-
-
-Hybridization metrics
-^^^^^^^^^^^^^^^^^^^^^
-
-.. figure:: ${hsmet}
-
-
-Sample-based hybridization metrics
-----------------------------------
-
-% for f in hsmetsub:
-.. figure:: ${f}
-   :align: center
-
-% endfor
-
-
-""")

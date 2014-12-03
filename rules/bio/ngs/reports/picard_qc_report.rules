@@ -3,104 +3,32 @@ import os
 import glob
 import math
 from mako.template import Template
+from snakemake.utils import report
 from snakemakelib.config import update_sml_config, sml_rules_path, get_sml_config
 from snakemakelib.report.picard import qc_plots
 
 # Templates
-picard_qc_report = Template("""
-Project summary
-=============================
-
-:Project: ${project_name}
-:Application: ${application}
-
-Sample QC summary
-------------------
-
-.. csv-table:: Sample QC summary. Columns show sample name, total number of reads, percent aligned reads, percent duplication, mean insert size, mean coverage over target regions, percent sequenced bases that have aligned to target, followed by the percent bases in target regions covered at 10X and 30X
-   :class: docutils
-   :file: report/picardmetricssummary.csv
-   :header-rows: 1
-
-QC Metrics
-----------
-
-Sequence statistics
-^^^^^^^^^^^^^^^^^^^
-
-.. figure:: ${seqstats}
-
-
-Alignment metrics
-^^^^^^^^^^^^^^^^^
-
-.. figure:: ${alnmet}
-
-Duplication metrics
-^^^^^^^^^^^^^^^^^^^^
-
-.. figure:: ${dupmet}
-
-Insert metrics
-^^^^^^^^^^^^^^^^^^^^
-
-.. figure:: ${insmet}
-
-Target metrics
-^^^^^^^^^^^^^^^^^^^^
-
-.. figure:: ${targetmet}
-
-
-.. figure:: ${target2dup}
-
-
-Hybridization metrics
-^^^^^^^^^^^^^^^^^^^^^
-
-.. figure:: ${hsmet}
-
-
-Sample-based hybridization metrics
-----------------------------------
-
-% for f in hsmetsub:
-.. figure:: ${f}
-   :align: center
-
-% endfor
-
-
-""")
+picard_qc_report = Template(filename=os.path.join(sml_rules_path(), 'bio/ngs/reports', 'picard_qc_report.mako'))
 
 # Start by including the general snakefile
 include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
 include: os.path.join(sml_rules_path(), 'bio/ngs/reports', 'settings.rules')
 include: os.path.join(sml_rules_path(), 'bio/ngs/qc', 'picard.rules')
 
-cfg = get_sml_config('bio.ngs.reports.settings')
-
 def find_sample_metrics(wildcards):
     """Simple sample metrics finding function"""
-    extensions = [report_cfg['alnmetrics'], 
-                  report_cfg['dupmetrics'], 
-                  report_cfg['hsmetrics'], 
-                  report_cfg['insmetrics']]
+    extensions = [picard_report_cfg['alnmetrics'], 
+                  picard_report_cfg['dupmetrics'], 
+                  picard_report_cfg['hsmetrics'], 
+                  picard_report_cfg['insmetrics']]
     metrics = []
     if cfg['bio.ngs.settings']['samples']:
         for s in cfg['bio.ngs.settings']['samples']:
-            metrics += [os.path.join(workflow._workdir, s, "".join([s, report_cfg['bamlabel'], ext])) for ext in extensions]
+            metrics += [os.path.join(workflow._workdir, s, "".join([s, picard_report_cfg['bamlabel'], ext])) for ext in extensions]
     return metrics
 
 config_default = { 
     'bio.ngs.reports.picard_qc_report' : {
-        'project_id' : cfg['project_id'],
-        'project_name' : cfg['project_name'],
-        'basedir' : cfg['basedir'],
-        'graphicsdir' : cfg['graphicsdir'],
-        'reportdir' : cfg['reportdir'],
-        'application': cfg['application'],
-        'date' : cfg['date'],
         'columns' : ["ZERO_CVG_TARGETS_PCT", "PCT_TARGET_BASES_2X", "PCT_TARGET_BASES_10X", "PCT_TARGET_BASES_20X", "PCT_TARGET_BASES_30X", "PCT_TARGET_BASES_40X", "PCT_TARGET_BASES_50X", "PCT_TARGET_BASES_100X"],
         'hticks' : ["0X", "2X", "10X", "20X", "30X", "40X", "50X", "100X"],
         'bamlabel' : '.sort.merge.rg',
@@ -117,12 +45,12 @@ config_default = {
 update_sml_config(config_default)
 
 cfg = get_sml_config()
-
-report_cfg = get_sml_config('bio.ngs.reports.picard_qc_report')
+report_cfg = get_sml_config('bio.ngs.reports.settings')
+picard_report_cfg = get_sml_config('bio.ngs.reports.picard_qc_report')
 
 rule picard_qc_report:
     """Generate picard qc report"""
-    input: report_cfg['inputfun']
+    input: picard_report_cfg['inputfun']
     output: seqstats = os.path.join(report_cfg['graphicsdir'], 'seqstats.png'),
             alnmet = os.path.join(report_cfg['graphicsdir'], 'alnmet.png'),
             dupmet = os.path.join(report_cfg['graphicsdir'], 'dupmet.png'),
@@ -135,14 +63,14 @@ rule picard_qc_report:
             summarytable = os.path.join(report_cfg['reportdir'], 'picardmetricssummary.csv'),
             report = os.path.join(report_cfg['reportdir'], 'picard_qc_report.html')
     run:
-      samples = cfg['bio.ngs.settings']['samples']
-      qc_plots(list(input), samples, report_cfg, output)
+      d = dict(list(cfg['bio.ngs.settings'].items()) + list(report_cfg.items()) + list(picard_report_cfg.items()))
+      qc_plots(list(input), d, output)
       kw = {
           'project_name' : report_cfg['project_name'],
           'application' : report_cfg['application']
       }
       reportdir = report_cfg['reportdir'] + os.sep if not report_cfg['reportdir'].endswith(os.sep) else report_cfg['reportdir']
-      d = dict(rules.report_generate_qc_plots.output.items())
+      d = dict(output.items())
       i = 0
       for x in d['hsmetsub']:
           d['hsmetsub_' + str(i)] = x
@@ -151,4 +79,5 @@ rule picard_qc_report:
       kw['hsmetsub'] = kw['hsmetsub'].split(" ")
       s = picard_qc_report.render(**kw)
       del d['hsmetsub']
-      report(s, str(output.report), **d)
+      del d['report']
+      report(s, output.report, **d)

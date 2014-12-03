@@ -17,44 +17,7 @@ config_default = {
         'reportdir' : 'report',
         'application' : "",
         'date' : utc_time(),
-	'rulegraphs' : [],
     },
 }
 
 update_sml_config(config_default)
-
-cfg = get_sml_config()
-report_cfg = get_sml_config('bio.ngs.reports.settings')
-
-rule report_rulegraphs:
-    """Generate rulegraphs for targets specified by report_cfg['rulegraphs']"""
-    input: [os.path.join(report_cfg['reportdir'], x) for x in report_cfg['rulegraphs']]
-    output: os.path.join(report_cfg['reportdir'], "rules.html")
-    run:
-      kw = {
-          'project_name' : report_cfg['project_name'],
-          'application' : report_cfg['application'],
-          'rulegraphs' : [x for x in report_cfg['rulegraphs']],
-      }
-      d = {}
-      d.update([(x,os.path.join(report_cfg['reportdir'], x)) for x in report_cfg['rulegraphs']])
-      s = rule_report.render(**kw)
-      report(s, str(output), **d)
-      
-
-rule sample_dag:
-    """Utility rule to generate dag for first sample in sample list"""
-    input: "{prefix}", cfg['bio.ngs.settings']['samples'][0]
-    output: "{prefix}_dag.png"
-    shell: "snakemake  --dag {input[0]} --config samples=\"['{input[1]}']\" | dot -Tpng -o {output}"
-
-rule rulegraph:
-    """Generate rulegraph for a specific rule"""
-    input: "{prefix}"
-    output: "{prefix}.png"
-    shell: "snakemake -F --rulegraph {input} | dot -Tpng -o {output}"
-
-ruleorder: rulegraph > sample_dag
-
-
-

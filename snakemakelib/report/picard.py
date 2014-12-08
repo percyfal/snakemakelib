@@ -317,8 +317,9 @@ class PicardHistMetrics(PicardMetrics):
         if not self.filename is None and not args:
             (args, hist) = _read_picard_metrics(self.filename)
         self._metrics = DataFrame(*args, **self._format)
-        fmt = collections.OrderedDict([(x, type(y)) for x,y in zip(hist[0], hist[1])])
-        self._hist = DataFrame(*hist, **fmt)
+        if hist:
+            fmt = collections.OrderedDict([(x, type(y)) for x,y in zip(hist[0], hist[1])])
+            self._hist = DataFrame(*hist, **fmt)
 
     def __getitem__(self, columns):
         a = [columns] + [[row[c] for c in columns] for row in self.metrics._data]
@@ -400,7 +401,16 @@ class DuplicationMetrics(PicardHistMetrics):
 
     def __init__(self, *args, identifier=None, filename=None, hist=None):
         super(DuplicationMetrics, self).__init__(*args, identifier=identifier, filename=filename, hist=hist)
+        self._prune_empty_rows()
 
+    def _prune_empty_rows(self):
+        """Prune empty rows in metrics. This could happen if there is no read
+        group information and all metrics are stored in 'Unknown
+        library'
+        """
+        if (self.metrics.dim[0] != 2):
+            return
+        self.metrics._data = [self._metrics.data[1]]
 
 def combine_metrics(metrics, mergename = "PicardMetrics_merge", uniquify=False):
     """Convert list of metrics objects to PicardMetrics object

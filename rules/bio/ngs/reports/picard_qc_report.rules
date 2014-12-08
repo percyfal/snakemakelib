@@ -1,9 +1,10 @@
 # -*- snakemake -*-
 import os
+import re
 import glob
 import math
 from mako.template import Template
-from snakemake.utils import report
+from snakemake.utils import report, R
 from snakemakelib.config import update_sml_config, sml_rules_path, get_sml_config
 from snakemakelib.report.picard import qc_plots
 
@@ -49,7 +50,10 @@ report_cfg = get_sml_config('bio.ngs.reports.settings')
 picard_report_cfg = get_sml_config('bio.ngs.reports.picard_qc_report')
 
 rule picard_qc_report:
-    """Generate picard qc report"""
+    """Generate picard qc report. If the label contains a string
+    'region_LABEL', where LABEL is the name of a gene or region, LABEL
+    will be extracted and inserted into the header.
+    """
     input: picard_report_cfg['inputfun']
     output: seqstats = os.path.join(report_cfg['graphicsdir'], '{label}_seqstats.png'),
             alnmet = os.path.join(report_cfg['graphicsdir'], '{label}_alnmet.png'),
@@ -63,24 +67,67 @@ rule picard_qc_report:
             summarytable = os.path.join(report_cfg['reportdir'], '{label}_picardmetricssummary.csv'),
             report = os.path.join(report_cfg['reportdir'], '{label}_picard_qc_report.html')
     run:
+      m = re.search('region_(\w+)\.?', wildcards.label)
       cfg = get_sml_config()
       d = dict(list(cfg['bio.ngs.settings'].items()) + list(report_cfg.items()) + list(picard_report_cfg.items()))
       qc_plots(list(input), d, output)
       kw = {
           'project_name' : report_cfg['project_name'],
-          'application' : report_cfg['application']
+          'application' : report_cfg['application'],
+          'reportdir' : report_cfg['reportdir'] + os.sep if not report_cfg['reportdir'].endswith(os.sep) else report_cfg['reportdir'],
+          'region' : m.group(1),
+          'regionsummary' : None,
       }
-      reportdir = report_cfg['reportdir'] + os.sep if not report_cfg['reportdir'].endswith(os.sep) else report_cfg['reportdir']
       d = dict(output.items())
       i = 0
       for x in d['hsmetsub']:
           d['hsmetsub_' + str(i)] = x
           i += 1
-      kw.update ([(k, str(v).replace(reportdir, '')) for k,v in d.items()])
+      kw.update ([(k, str(v).replace(kw['reportdir'], '')) for k,v in d.items()])
       kw['hsmetsub'] = kw['hsmetsub'].split(" ")
       s = picard_qc_report.render(**kw)
       del d['hsmetsub']
       del d['report']
       report(s, output.report, **d)
 
-# #rule picard_qc_report_per_gene:
+rule picard_qc_report_region_summary:
+    """Generate picard_qc_report summary of regions.
+
+    Loads summary tables and computes means of requested columns using
+    R.
+    """
+    input: [os.path.join(report_cfg['reportdir'], "{prefix}.region_" + "{region}".format(region=r) + ".{sfx}_picardmetrics.csv")  for r in cfg['bio.ngs.settings']['regions']]
+    output: summarytable = os.path.join(report_cfg['reportdir'], "{prefix}.region_summary.{sfx}_picardmetricssummary.csv"),
+            report = os.path.join(report_cfg['reportdir'], "{prefix}.region_summary.{sfx}_picard_qc_report.html")
+    run:
+          inputfiles = ",".join(input)
+          columns = ",".join(picard_report_cfg['summarycolumns'] )
+          R("""
+          f <- '{inputfiles}'
+          cols <- strsplit('{columns}', ",")[[1]]
+          infiles <- strsplit(f, ",")[[1]]
+          regions <- do.call("c", lapply(infiles, function (f) {{gsub("[.].*", "", gsub(".*region_", "", f))}}))
+          dfout <- data.frame()
+          for (fn in infiles) {{
+          df <- read.csv(fn, header=TRUE)
+          df.sum <- df[,cols]
+          dfout <- rbind(dfout, apply(df.sum[,2:length(cols)], 2, mean))
+          }}
+          colnames(dfout) <- cols[2:length(cols)]
+          dfout <- cbind(regions = regions, dfout)
+          write.csv(format(dfout, digits=3), file="{output.summarytable}", sep="\t", row.names=FALSE)
+          """)
+          kw = {
+              'project_name' : report_cfg['project_name'],
+              'application' : report_cfg['application'],
+              'reportdir' : report_cfg['reportdir'] + os.sep if not report_cfg['reportdir'].endswith(os.sep) else report_cfg['reportdir'],
+              'region' : "summary",
+              'regionsummary' : True,
+              'samples' : cfg['samples']
+          }
+          d = dict(output.items())
+          kw.update ([(k, str(v).replace(kw['reportdir'], '')) for k,v in d.items()])
+          s = picard_qc_report.render(**kw)
+          del d['report']
+          report(s, output.report, **d)
+          

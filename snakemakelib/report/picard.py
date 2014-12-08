@@ -466,6 +466,7 @@ def qc_plots(inputfiles, cfg, output):
     pm.metrics['SAMPLE'] = samples
     
     # Sequence statistics plot
+    plt.clf()
     sdup = [int(50 + 500 * x) for x in pm.x('PERCENT_DUPLICATION')]
     plt.scatter(pm.x('PCT_PF_READS_ALIGNED'), pm.y('TOTAL_READS'), s=sdup, alpha=0.5)
     plt.xlabel(r'Percent aligned', fontsize=14)
@@ -478,6 +479,7 @@ def qc_plots(inputfiles, cfg, output):
     plt.close()
     
     # Alignment metrics
+    plt.clf()
     n = len(samples)
     plt.xlim(0, n+2)
     plt.xticks(range(1,n+1), [x for x in samples], rotation=90)
@@ -491,6 +493,7 @@ def qc_plots(inputfiles, cfg, output):
     plt.close()
     
     # Duplication metrics
+    plt.clf()
     plt.xlim(0, n+2)
     plt.xticks(range(1,n+1), [x for x in samples], rotation=90)
     plt.ylim(0,1)
@@ -503,6 +506,7 @@ def qc_plots(inputfiles, cfg, output):
     plt.close()
     
     # Insert metrics
+    plt.clf()
     plt.xlim(0, n+2)
     plt.xticks(range(1,n+1), [x for x in samples], rotation=90)
     plt.plot(range(1,n+1), pm.x('MEAN_INSERT_SIZE'), "o")
@@ -513,6 +517,7 @@ def qc_plots(inputfiles, cfg, output):
     plt.close()
     
     # Target metrics
+    plt.clf()
     plt.xlim(0, n+2)
     plt.xticks(range(1,n+1), [x for x in samples], rotation=90)
     plt.plot(range(1,n+1), pm.x('PCT_ON_TARGET'), "o")
@@ -523,6 +528,7 @@ def qc_plots(inputfiles, cfg, output):
     plt.close()
     
     # Target metrics
+    plt.clf()
     plt.plot(pm.x('PERCENT_DUPLICATION'), pm.y('PCT_ON_TARGET'), "o")
     plt.xlabel(r'Percent duplication', fontsize=14)
     plt.ylabel(r'Percent on target', fontsize=14)
@@ -536,6 +542,7 @@ def qc_plots(inputfiles, cfg, output):
     hsmetrics = pm[columns]
     
     # Hs boxplot metrics
+    plt.clf()
     plt.ylim(0,1)
     plt.yticks(arange(0,1.1,0.1), range(0,110,10))
     plt.boxplot(np.array(hsmetrics.as_list()[1:]))
@@ -546,6 +553,7 @@ def qc_plots(inputfiles, cfg, output):
     nsubplots = int(math.ceil(n/9))
     k = 0
     for i_subplot in range(0, nsubplots):
+        plt.clf()
         f, axarr = plt.subplots(3, 3, sharex='col', sharey='row')
         for i in range(0, 3):
             for j in range(0, 3):

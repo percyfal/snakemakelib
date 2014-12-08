@@ -28,18 +28,36 @@ config_default = {
 
 update_sml_config(config_default)
 
-sml_config = get_sml_config()
+sml_cfg = get_sml_config()
 
-bedtools_config = sml_config['bio.ngs.tools.bedtools']
+bedtools_cfg = get_sml_config('bio.ngs.tools.bedtools')
 
 rule bedtools_bam2coverage:
     """Calculate coverage for a bam file.
 
     Input: {prefix}.bam; output: {prefix}.coverage
     """
-    params: cmd=os.path.join(bedtools_config['home'], bedtools_config['coveragebed']['cmd']),
-            options=bedtools_config['options'],
-            bfile = bedtools_config['bfile']
+    params: cmd=os.path.join(bedtools_cfg['home'], bedtools_cfg['coveragebed']['cmd']),
+            options=bedtools_cfg['options'],
+            bfile = bedtools_cfg['bfile']
     input: "{prefix}.bam"
     output: "{prefix}.coverage"
     shell: "{params.cmd} {params.options} -abam {input} -b {params.bfile} > {output}"
+
+
+rule bedtools_intersectbed_make_region_baits:
+    """Generate overlapping bed file for bait definition file"""
+    params: cmd=os.path.join(bedtools_cfg['home'], bedtools_cfg['intersectbed']['cmd']),
+            options = bedtools_cfg['intersectbed']['options']
+    input: a="{prefix}.region_{gene}.bed", b=bedtools_cfg['sequence_capture']['bait_regions']
+    output: "{prefix}.region_{gene}.baits.bed"
+    shell: "{params.cmd} -a {input.a} -b {input.b} > {output}"
+
+rule bedtools_intersectbed_make_region_targets:
+    """Generate overlapping bed file for target definition file"""
+    params: cmd=os.path.join(bedtools_cfg['home'], bedtools_cfg['intersectbed']['cmd']),
+            options = bedtools_cfg['intersectbed']['options']
+    input: a="{prefix}.region_{gene}.bed", b=bedtools_cfg['sequence_capture']['target_regions']
+    output: "{prefix}.region_{gene}.targets.bed"
+    shell: "{params.cmd} -a {input.a} -b {input.b} > {output}"
+

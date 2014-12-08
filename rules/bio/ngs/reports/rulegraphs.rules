@@ -43,7 +43,7 @@ rule sample_dag:
 rule rulegraph:
     """Generate rulegraph for a specific rule"""
     input: "{prefix}"
-    output: "{prefix}.png"
+    output: "{prefix}_rulegraph.png"
     shell: "snakemake --rulegraph {input} | dot -Tpng -o {output}"
 
 ruleorder: rulegraph > sample_dag

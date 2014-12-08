@@ -114,13 +114,23 @@ rule picard_mark_duplicates:
 
 ruleorder: picard_mark_duplicates > picard_build_bam_index
 
-rule picard_create_interval_list_awk:
-    """Picard: create interval list using awk"""
+rule picard_create_dict_awk:
+    """Picard: create interval list dict using awk"""
     params: cmd = picard_config['cmd'] + CREATE_SEQUENCE_DICTIONARY,
             options = picard_config['options']
     input: bed="{prefix}.bed", dict=picard_config['ref'].replace(".fa", ".dict")
-    output: "{prefix}.interval_list"
+    output: "{prefix}.dict"
     shell: sml_config['comp.settings']['cat'] + " {input.dict} > {output}; " + sml_config['comp.settings']['awk'] + " '{{printf(\"%s\\t%s\\t%s\\t%s\\t%s\\n\", $1,$2,$3,\"+\",$4); FS=\"\t\"}}' {input.bed} >> {output}"
+
+rule picard_create_region_dict_awk:
+    """Picard: create interval list dict for region using awk"""
+    params: cmd = picard_config['cmd'] + CREATE_SEQUENCE_DICTIONARY,
+            options = picard_config['options']
+    input: bed="{prefix}.region_{gene}.bed", dict=picard_config['ref'].replace(".fa", ".dict")
+    output: "{prefix}.region_{gene}.dict"
+    shell: sml_config['comp.settings']['cat'] + " {input.dict} > {output}; " + sml_config['comp.settings']['awk'] + " '{{printf(\"%s\\t%s\\t%s\\t%s\\t%s\\n\", $1,$2,$3,\"+\",$4); FS=\"\t\"}}' {input.bed} >> {output}"
+
+ruleorder: picard_create_region_dict_awk > picard_create_dict_awk
 
 rule picard_collect_insert_size_metrics:
     """Picard: collect insertion size metrics"""
@@ -157,6 +167,16 @@ rule picard_calculate_hs_metrics:
     input: "{prefix}.bam", "{prefix}.bai", picard_config['ref']
     output: "{prefix}.hs_metrics"
     shell: "{params.cmd} {params.options} TI={params.target_regions} BI={params.bait_regions} I={input[0]} O={output} R={input[2]}"
+
+rule picard_calculate_region_hs_metrics:
+    """Picard: calculate hybrid selection metrics based on regions"""
+    params: cmd = picard_config['cmd'] + CALCULATE_HS_METRICS,
+            options = picard_config['options'],
+    input: bam = "{prefix}.region_{gene}{sfx}.bam", targets="{prefix}.region_{gene}.targets.dict", baits="{prefix}.region_{gene}.baits.dict", ref=picard_config['ref']
+    output: "{prefix}.region_{gene}.{sfx}.hs_metrics"
+    shell: "{params.cmd} {params.options} TI={input.targets} BI={input.baits} I={input.bam} O={output} R={input.ref}"
+
+ruleorder: picard_calculate_region_hs_metrics > picard_calculate_hs_metrics
 
 rule picard_plot_metrics:
     """Picard: plot metrics using custom R script """

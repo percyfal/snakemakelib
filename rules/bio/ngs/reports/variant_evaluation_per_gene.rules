@@ -3,7 +3,7 @@ import os
 import glob
 import math
 from snakemakelib.config import update_sml_config, sml_rules_path, get_sml_config
-from snakemakelib.report.picard import qc_plots, picard_qc_report
+from snakemakelib.report.picard import qc_plots
 
 # Start by including the general snakefile
 include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')

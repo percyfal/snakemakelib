@@ -1,9 +1,13 @@
 # -*- snakemake -*-
 import os
-import mako.template as Template
+from mako.template import Template
 from snakemakelib.config import update_sml_config, sml_rules_path, get_sml_config
 
-rule_report = Template('rulegraphs.mako')
+# Start by including the general snakefile
+include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
+include: os.path.join(sml_rules_path(), 'bio/ngs/reports', 'settings.rules')
+
+rule_report = Template(filename=os.path.join(sml_rules_path(), 'bio/ngs/reports', 'rulegraphs.mako'))
 
 config_default = {
     'bio.ngs.reports.rulegraphs' : {
@@ -17,7 +21,7 @@ report_cfg = get_sml_config('bio.ngs.reports.settings')
 
 rule report_rulegraphs:
     """Generate rulegraphs for targets specified by cfg['bio.ngs.reports.rulegraphs']['rulegraphs']"""
-    input: [os.path.join(report_cfg['reportdir'], x) for x in report_cfg['rulegraphs']]
+    input: [os.path.join(report_cfg['reportdir'], x) for x in cfg['bio.ngs.reports.rulegraphs']['rulegraphs']]
     output: os.path.join(report_cfg['reportdir'], "rules.html")
     run:
       kw = {
@@ -40,6 +44,6 @@ rule rulegraph:
     """Generate rulegraph for a specific rule"""
     input: "{prefix}"
     output: "{prefix}.png"
-    shell: "snakemake -F --rulegraph {input} | dot -Tpng -o {output}"
+    shell: "snakemake --rulegraph {input} | dot -Tpng -o {output}"
 
 ruleorder: rulegraph > sample_dag

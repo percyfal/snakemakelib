@@ -278,15 +278,25 @@ rule gatk_variant_eval:
     output: "{prefix}.eval_metrics"
     shell: "{params.cmd} {params.options} --eval {input} -o {output}"
 
-rule gatk_variant_eval_region:
-    """Run GATK VariantEval on a region"""
+rule gatk_variant_eval_stratify_by_region:
+    """Run GATK VariantEval on a region and stratify results by region
+
+    The input should be a vcf on which select variants has been run to
+    select variants in a given region. This region may or may not be
+    equivalent to the region by which this rule stratifies variants.
+    One example could be that the select variants region corresponds
+    to gene coordinates, with exons and introns, and the
+    stratification regions correspond to baits used in a sequence
+    capture.
+
+    """
     params: cmd = gatk_config['cmd'] + " -T " + gatk_config['variant_eval']['cmd'],
             options = " ".join(["-R", gatk_config['variant_eval']['ref'],
                                 gatk_config['variant_eval']['options'],
                                 "--dbsnp {known}".format(known=gatk_config['known_sites'] if not gatk_config['known_sites'] == "" else "")])
-    input: vcf="{prefix}.vcf", bed="{prefix}.bed"
-    output: "{prefix}.eval_metrics"
-    shell: "{params.cmd} {params.options} -L {input.bed} --eval {input.vcf} -o {output}"
+    input: vcf="{prefix}.region_{region}.vcf", bed="{prefix}.region_{region}.bed"
+    output: "{prefix}.region_{region}.eval_metrics"
+    shell: "{params.cmd} {params.options} --eval {input.vcf} -o {output} --stratIntervals {input.bed}"
 
 ruleorder: gatk_variant_eval_region > gatk_variant_eval
 
@@ -315,8 +325,8 @@ rule gatk_select_variants_region:
     params: cmd = gatk_config['cmd'] + " -T " + gatk_config['select_variants']['cmd'],
             options = " ".join(["-R", gatk_config['select_variants']['ref'],
                                 gatk_config['select_variants']['options']])
-    input: vcf="{prefix}.vcf", bed="{prefix}.{region}.bed"
-    output: "{prefix}.{region}.vcf"
+    input: vcf="{prefix}.vcf", bed="{prefix}.region_{region}.bed"
+    output: "{prefix}.region_{region}.vcf"
     shell: "{params.cmd} {params.options} -L {input.bed} --variant {input.vcf} --out {output}"
 
 ruleorder: gatk_select_variants_region > gatk_unified_genotyper

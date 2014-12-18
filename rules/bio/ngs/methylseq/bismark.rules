@@ -23,7 +23,7 @@ config_default = {
         },
         'methXtract' : {
             'cmd' : 'bismark_methylation_extractor',
-            'options' : "--counts  --gzip -p --no_overlap",
+            'options' : "--counts -p --no_overlap",
         },
         'report' : {
             'cmd' : 'bismark2report',
@@ -64,14 +64,15 @@ rule bismark_methXtract:
     """bismark: Run bismark methylation extractor
 
     The option '--report' is hardcoded so that a report is *always*
-    generated
+    generated. Also, the option '--gzip' is hardcoded as it makes
+    little sense to generate unzipped output.
 
     """
     params: options = cfg['methXtract']['options'],
-            cmd = cfg['methXtract']['cmd'],
+            cmd = cfg['methXtract']['cmd']
     input: "{path}" + os.sep + "{prefix}" + ".bam"
-    output: "{path}" + os.sep + "{prefix}.bismark.cov", "{path}" + os.sep + "{prefix}.M-bias.txt", "{path}" + os.sep + "{prefix}.bam_splitting_report.txt"
-    shell: "{params.cmd} {params.options} {input} -o {wildcards.path} --report"
+    output: "{path}" + os.sep + "CpG_OB_" + "{prefix}" + ".txt.gz", "{path}" + os.sep + "CpG_OT_" + "{prefix}" + ".txt.gz", "{path}" + os.sep + "CHG_OB_" + "{prefix}" + ".txt.gz", "{path}" + os.sep + "CHG_OT_" + "{prefix}" + ".txt.gz", "{path}" + os.sep + "CHH_OB_" + "{prefix}" + ".txt.gz", "{path}" + os.sep + "CHH_OT_" + "{prefix}" + ".txt.gz"
+    shell: "{params.cmd} {params.options} {input} -o {wildcards.path} --report --gzip"
 
 rule bismark_report:
     """bismark: Run bismark report. 

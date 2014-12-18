@@ -5,7 +5,6 @@ import unittest
 import logging
 from nose.tools import raises
 from snakemakelib.config import BaseConfig, init_sml_config, update_sml_config, get_sml_config
-from snakemake.logging import logger
 
 logging.basicConfig(level=logging.DEBUG)
 

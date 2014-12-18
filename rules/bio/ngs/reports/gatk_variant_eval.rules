@@ -1,0 +1,53 @@
+# -*- snakemake -*-
+import os
+from mako.template import Template
+from snakemake.utils import report
+from snakemakelib.report.gatk import gatk_eval_report_plots_R
+
+# Start by including the general snakefile
+include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
+include: os.path.join(sml_rules_path(), 'bio/ngs/reports', 'settings.rules')
+include: os.path.join(sml_rules_path(), 'bio/ngs/tools', 'gatk.rules')
+
+gatk_eval_report = Template(filename=os.path.join(sml_rules_path(), 'bio/ngs/reports', 'gatk_variant_eval.mako'))
+
+config_default = { 
+    'bio.ngs.reports.gatk_variant_eval' : {
+    },
+}
+	      
+update_sml_config(config_default)
+
+report_cfg = get_sml_config('bio.ngs.reports.settings')
+
+rule gatk_eval_report:
+    """Generate variant summary report based on GATK VariantEval metrics"""
+    input: "{prefix}.eval_metrics"
+    output: report = os.path.join(report_cfg['reportdir'], "{prefix}.html"),
+            variants_per_sample = os.path.join(report_cfg['graphicsdir'], "{prefix}-gatk-eval-variants-per-sample.png"),
+            known_site_freq = os.path.join(report_cfg['graphicsdir'], "{prefix}-gatk-eval-known-site-freq.png"),
+            dbsnp_concordance_known = os.path.join(report_cfg['graphicsdir'], "{prefix}-gatk-eval-dbsnp-concordance-known.png"),
+            nSNP = os.path.join(report_cfg['graphicsdir'], "{prefix}-gatk-eval-nSNP.png"),
+            nIns = os.path.join(report_cfg['graphicsdir'], "{prefix}-gatk-eval-nIns.png"),
+            nDel = os.path.join(report_cfg['graphicsdir'], "{prefix}-gatk-eval-nDel.png"),
+            nComp = os.path.join(report_cfg['graphicsdir'], "{prefix}-gatk-eval-nComp.png"),
+            nMNP = os.path.join(report_cfg['graphicsdir'], "{prefix}-gatk-eval-nMNP.png"),
+            nHets = os.path.join(report_cfg['graphicsdir'], "{prefix}-gatk-eval-nHets.png"),
+            nHomRef = os.path.join(report_cfg['graphicsdir'], "{prefix}-gatk-eval-nHomRef.png"),
+            nHomVar = os.path.join(report_cfg['graphicsdir'], "{prefix}-gatk-eval-nHomVar.png"),
+            nNoCalls = os.path.join(report_cfg['graphicsdir'], "{prefix}-gatk-eval-nNoCalls.png"),
+            nSingletons = os.path.join(report_cfg['graphicsdir'], "{prefix}-gatk-eval-nSingletons.png"),
+            TiTv = os.path.join(report_cfg['graphicsdir'], "{prefix}-gatk-eval-TiTv.png")
+    run:
+      gatk_eval_report_plots_R(input, output)
+      reportdir = report_cfg['reportdir'] + os.sep if not report_cfg['reportdir'].endswith(os.sep) else report_cfg['reportdir']
+      kw = {
+          'project_name' : report_cfg['project_name'],
+          'application' : report_cfg['application'],
+          'input' : input,
+      }
+      kw.update({k:v.replace(reportdir, '') for k,v in dict(output).items()})
+      d = dict(output.items())
+      s = gatk_eval_report.render(**kw)
+      del d['report']
+      report(s, str(output.report), **d)

@@ -26,23 +26,41 @@ include: os.path.join(sml_rules_path(), 'bio/ngs/tools', 'gatk.rules')
 include: os.path.join(sml_rules_path(), 'bio/ngs/qc', 'picard.rules')
 include: os.path.join(sml_rules_path(), 'bio/ngs/align', 'bwa.rules')
 
-
 cfg = get_sml_config()
 
-# Default targets: expand samples and flowcells
+ruleorder: gatk_print_reads > picard_build_bam_index
+
+# Target suffices
 TARGET_SUFFIX=".sort.merge.rg.dup.realign.recal.bp_variants.phased.annotated.vcf"
+DUP_METRICS_SUFFIX=".sort.merge.rg.dup_metrics"
+ALIGN_METRICS_SUFFIX=".sort.merge.rg.dup.align_metrics"
+INSERT_METRICS_SUFFIX=".sort.merge.rg.dup.insert_metrics"
+HS_METRICS_SUFFIX=".sort.merge.rg.dup.hs_metrics"
+
+# Default targets: expand samples and flowcells
+VCF_TARGETS = ["{sample}{sep}{sample}{sfx}".format(sep=os.sep, sample=x, sfx=TARGET_SUFFIX) for x in cfg['bio.ngs.settings']['samples']]
+VCF_TXT_TARGETS = ["{sample}{sep}{sample}{sfx}".format(sep=os.sep, sample=x, sfx=TARGET_SUFFIX).replace(".vcf", ".txt") for x in cfg['bio.ngs.settings']['samples']]
+DUP_METRICS_TARGETS = ["{sample}{sep}{sample}{sfx}".format(sep=os.sep, sample=x, sfx=DUP_METRICS_SUFFIX) for x in cfg['bio.ngs.settings']['samples']]
+ALIGN_METRICS_TARGETS = ["{sample}{sep}{sample}{sfx}".format(sep=os.sep, sample=x, sfx=ALIGN_METRICS_SUFFIX) for x in cfg['bio.ngs.settings']['samples']]
+INSERT_METRICS_TARGETS = ["{sample}{sep}{sample}{sfx}".format(sep=os.sep, sample=x, sfx=INSERT_METRICS_SUFFIX) for x in cfg['bio.ngs.settings']['samples']]
+HS_METRICS_TARGETS = ["{sample}{sep}{sample}{sfx}".format(sep=os.sep, sample=x, sfx=HS_METRICS_SUFFIX) for x in cfg['bio.ngs.settings']['samples']] 
+
 
 rule all:
-    input: ["{sample}{sep}{sample}{sfx}".format(sep=os.sep, sample=x, sfx=TARGET_SUFFIX) for x in cfg['bio.ngs.settings']['samples']] + ["{sample}{sep}{sample}{sfx}".format(sep=os.sep, sample=x, sfx=TARGET_SUFFIX).replace(".vcf", ".txt") for x in cfg['bio.ngs.settings']['samples']]
+    input: VCF_TARGETS + VCF_TXT_TARGETS + DUP_METRICS_TARGETS + ALIGN_METRICS_TARGETS + INSERT_METRICS_TARGETS + HS_METRICS_TARGETS
+
+# Run metrics only
+rule metrics:
+    input: DUP_METRICS_TARGETS + ALIGN_METRICS_TARGETS + INSERT_METRICS_TARGETS + HS_METRICS_TARGETS
 
 rule variation_snp_filtration:
     """Run variant filtration and variant recalibration
 
 
-    The FiltrationWrapper wraps snp and indel variant filtration
-    tasks. It sets up different filtration tasks depending on the
-    *cov_interval* setting, which can be one of "regional", "exome",
-    or None. The effects of the different choices are as follows:
+    The rule does snp variant filtration/variant recalibration. It
+    sets up different filtration tasks depending on the *cov_interval*
+    setting, which can be one of "regional", "exome", or None. The
+    effects of the different choices are as follows:
 
     regional
       Do filtering based on JEXL-expressions. See `section 3, subtitle Recommendations for very small data sets <http://www.broadinstitute.org/gatk/guide/topic?name=best-practices>`_
@@ -52,6 +70,7 @@ rule variation_snp_filtration:
 
     None
       Perform "standard" VQSR
+
     """
     input: "{prefix}.snp.vcf"
     output: "{prefix}.snp.filtSNP.vcf"
@@ -132,3 +151,10 @@ rule variation_combine_variants:
     run: 
         inputstr = " ".join(["-V {}".format(x) for x in input])
         shell("{cmd} {ips} -o {out} {opt}".format(cmd=params.cmd, ips=inputstr, out=output, opt=params.options))
+
+rule clean:
+    """Clean working directory. WARNING: will remove all files except
+    (.fastq|.fastq.gz) and csv files
+    """
+    params: d = workflow._workdir
+    shell: 'for f in `find  {params.d} -type f -name "*" | grep -v ".fastq$" | grep -v ".fastq.gz$" | grep -v ".csv$"`; do echo removing $f; rm -f $f; done'

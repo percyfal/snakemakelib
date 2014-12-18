@@ -1,0 +1,18 @@
+##fileformat=VCFv4.1
+##FILTER=<ID=NOT_POLY_IN_1000G,Description="Alternate allele count = 0">
+##FILTER=<ID=badAssayMapping,Description="The mapping information for the SNP assay is internally inconsistent in the chip metadata">
+##FILTER=<ID=dup,Description="Duplicate assay at same position with worse Gentrain Score">
+##FILTER=<ID=id10,Description="Within 10 bp of an known indel">
+##FILTER=<ID=id20,Description="Within 20 bp of an known indel">
+##FILTER=<ID=id5,Description="Within 5 bp of an known indel">
+##FILTER=<ID=id50,Description="Within 50 bp of an known indel">
+##FILTER=<ID=refN,Description="Reference base is N. Assay is designed for 2 alt alleles">
+##FORMAT=<ID=GC,Number=.,Type=Float,Description="Gencall Score">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FilterLiftedVariants="analysis_type=FilterLiftedVariants input_file=[] sample_metadata=[] read_buffer_size=null phone_home=STANDARD read_filter=[] intervals=null excludeIntervals=null reference_sequence=/humgen/1kg/reference/human_g1k_v37.fasta rodBind=[/gap/birdsuite/1kg/0.928975161471502.sorted.vcf] rodToIntervalTrackName=null BTI_merge_rule=UNION DBSNP=null downsampling_type=null downsample_to_fraction=null downsample_to_coverage=null baq=OFF baqGapOpenPenalty=40.0 performanceLog=null useOriginalQualities=false defaultBaseQualities=-1 validation_strictness=SILENT unsafe=null num_threads=1 interval_merging=ALL read_group_black_list=null processingTracker=null restartProcessingTracker=false processingTrackerStatusFile=null processingTrackerID=-1 allow_intervals_with_unindexed_bam=false enable_experimental_low_memory_sharding=false logging_level=INFO log_to_file=null quiet_output_mode=false debug_mode=false help=false out=org.broadinstitute.sting.gatk.io.stubs.VCFWriterStub NO_HEADER=org.broadinstitute.sting.gatk.io.stubs.VCFWriterStub sites_only=org.broadinstitute.sting.gatk.io.stubs.VCFWriterStub"
+##INFO=<ID=CR,Number=.,Type=Float,Description="SNP Callrate">
+##INFO=<ID=GentrainScore,Number=.,Type=Float,Description="Gentrain Score">
+##INFO=<ID=HW,Number=.,Type=Float,Description="Hardy-Weinberg Equilibrium">
+##reference=human_g1k_v37.fasta
+##source=infiniumFinalReportConverterV1.0
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO

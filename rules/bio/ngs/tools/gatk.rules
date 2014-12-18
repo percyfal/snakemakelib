@@ -12,6 +12,8 @@ def gatk_read_backed_phasing_find_input(wildcards):
 
 # Start by including the general snakefile
 include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
+# Include required picard rules
+include: os.path.join(sml_rules_path(), 'bio/ngs/qc', 'picard.rules')
 
 sml_config = get_sml_config()
 
@@ -85,7 +87,8 @@ config_default['bio.ngs.tools.gatk']['clip_reads'] = {
 config_default['bio.ngs.tools.gatk']['variant_eval'] = {
     'cmd' : 'VariantEval',
     'ref' : sml_config['bio.ngs.tools.gatk']['ref'],
-    'options' : "-ST Filter -l INFO --doNotUseAllStandardModules --evalModule CompOverlap --evalModule CountVariants --evalModule GenotypeConcordance --evalModule TiTvVariantEvaluator --evalModule ValidationReport --stratificationModule Filter",
+    'options' : " ".join(["-ST Filter -l INFO --doNotUseAllStandardModules --evalModule CompOverlap --evalModule CountVariants --evalModule TiTvVariantEvaluator --evalModule ValidationReport",
+                          ]),
 }
 
 config_default['bio.ngs.tools.gatk']['select_variants'] = {
@@ -211,8 +214,8 @@ rule gatk_print_reads:
             options = " ".join(["-R", gatk_config['print_reads']['ref'],
             gatk_config['print_reads']['options']])
     input: "{prefix}.bam", "{prefix}.recal_data.grp"
-    output: "{prefix}.recal.bam"
-    shell: "{params.cmd} {params.options} -I {input[0]} -BQSR {input[1]} -o {output}"
+    output: "{prefix}.recal.bam", "{prefix}.recal.bai"
+    shell: "{params.cmd} {params.options} -I {input[0]} -BQSR {input[1]} -o {output[0]}"
 
 rule gatk_clip_reads:
     """Run GATK ClipReads"""
@@ -269,11 +272,30 @@ rule gatk_variant_eval:
     """Run GATK VariantEval"""
     params: cmd = gatk_config['cmd'] + " -T " + gatk_config['variant_eval']['cmd'],
             options = " ".join(["-R", gatk_config['variant_eval']['ref'],
-            gatk_config['variant_eval']['options']])
+                                gatk_config['variant_eval']['options'],
+                                "--dbsnp {known}".format(known=gatk_config['known_sites'] if not gatk_config['known_sites'] == "" else "")])
     input: "{prefix}.vcf"
     output: "{prefix}.eval_metrics"
     shell: "{params.cmd} {params.options} --eval {input} -o {output}"
 
+rule gatk_variant_eval_stratify_by_baits:
+    """Run GATK VariantEval on a region and stratify results by baits
+
+    The input should be a vcf on which select variants has been run to
+    select variants in a given region, typically a gene with exons and
+    introns. The stratification regions correspond to baits used
+    in a sequence capture.
+
+    """
+    params: cmd = gatk_config['cmd'] + " -T " + gatk_config['variant_eval']['cmd'],
+            options = " ".join(["-R", gatk_config['variant_eval']['ref'],
+                                gatk_config['variant_eval']['options'],
+                                "--dbsnp {known}".format(known=gatk_config['known_sites'] if not gatk_config['known_sites'] == "" else "")])
+    input: vcf="{prefix}.region_{region}.vcf", bed="{prefix}.region_{region}.baits.bed"
+    output: "{prefix}.region_{region}.eval_metrics"
+    shell: "{params.cmd} {params.options} --eval {input.vcf} -o {output} --stratIntervals {input.bed} -ST IntervalStratification"
+
+ruleorder: gatk_variant_eval_stratify_by_baits > gatk_variant_eval
 
 rule gatk_read_backed_phasing:
     """Run GATK ReadBackedPhasing"""
@@ -293,6 +315,18 @@ rule gatk_select_variants:
     input: "{prefix}.vcf"
     output: "{prefix}.all.vcf"
     shell: "{params.cmd} {params.options} --variant {input} --out {output}"
+
+
+rule gatk_select_variants_region:
+    """Run GATK SelectVariants to select variants based on a region"""
+    params: cmd = gatk_config['cmd'] + " -T " + gatk_config['select_variants']['cmd'],
+            options = " ".join(["-R", gatk_config['select_variants']['ref'],
+                                gatk_config['select_variants']['options']])
+    input: vcf="{prefix}.vcf", bed="{prefix}.region_{region}.bed"
+    output: "{prefix}.region_{region}.vcf"
+    shell: "{params.cmd} {params.options} -L {input.bed} --variant {input.vcf} --out {output}"
+
+ruleorder: gatk_select_variants_region > gatk_unified_genotyper
 
 rule gatk_select_snp_variants:
     """Run GATK SelectVariants to select SNPs"""

@@ -31,7 +31,7 @@ methylation_config = {
             'suffix' : '_bismark_bt2_pe.bam',
             'label' : 'merge',
             'inputfun' : find_meth_merge_inputs,
-            'options' : "SORT_ORDER=unsorted", # methylation extraction requires unsorted file
+            'options' : "SORT_ORDER=queryname", # methylation extraction requires queries to be adjacent
         },
     },
 }
@@ -53,7 +53,7 @@ path = cfg.get('path') if not cfg.get('path') is None else os.curdir
 
 FASTQC_TARGETS = expand("{path}/{sample}/{flowcell}/{lane}_{flowcell}_{sample}_1_fastqc.html {path}/{sample}/{flowcell}/{lane}_{flowcell}_{sample}_2_fastqc.html".split(), sample=cfg['samples'], flowcell=cfg['flowcells'], lane=cfg['lanes'], path=path)
 
-BISMARK_TARGETS = expand("{path}/{sample}/{sample}.merge.deduplicated.bismark.cov", sample=cfg['samples'], flowcell=cfg['flowcells'], lane=cfg['lanes'], path=path)
+BISMARK_TARGETS = expand("{path}/{sample}/CpG_OB_{sample}.merge.deduplicated.txt.gz", sample=cfg['samples'], flowcell=cfg['flowcells'], lane=cfg['lanes'], path=path)
 
 #BISMARK_REPORT_TARGETS = expand("{path}/{sample}/{flowcell}/{lane}_{flowcell}_{sample}_bismark_bt2_PE_report.html", sample=cfg['samples'], flowcell=cfg['flowcells'], lane=cfg['lanes'], path=path)
 

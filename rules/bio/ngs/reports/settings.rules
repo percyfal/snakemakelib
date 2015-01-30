@@ -14,6 +14,7 @@ config_default = {
         'project_name' : "",
         'basedir' : os.curdir,
         'graphicsdir' : 'report/grf',
+        'datadir' : 'report/data',
         'reportdir' : 'report',
         'application' : "",
         'date' : utc_time(),

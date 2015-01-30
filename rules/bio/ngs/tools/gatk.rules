@@ -326,6 +326,15 @@ rule gatk_select_variants_region:
     output: "{prefix}.region_{region}.vcf"
     shell: "{params.cmd} {params.options} -L {input.bed} --variant {input.vcf} --out {output}"
 
+rule gatk_select_variants_sample:
+    """Run GATK SelectVariants to select variants based on a sample"""
+    params: cmd = gatk_config['cmd'] + " -T " + gatk_config['select_variants']['cmd'],
+            options = " ".join(["-R", gatk_config['select_variants']['ref'],
+                                gatk_config['select_variants']['options']])
+    input: vcf="{prefix}.vcf"
+    output: "{prefix}.sample_{sample}.vcf"
+    shell: "{params.cmd} {params.options} -sn {wildcards.sample} --variant {input.vcf} --out {output}"
+
 ruleorder: gatk_select_variants_region > gatk_unified_genotyper
 
 rule gatk_select_snp_variants:

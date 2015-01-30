@@ -9,11 +9,11 @@ GATK variant evaluation summary report
 % endif
 
 Method overview
-===============
+----------------
 
 This document contains plots of metrics that can be obtained by
-running `GATK VariantEval
-<https://www.broadinstitute.org/gatk/gatkdocs/org_broadinstitute_gatk_tools_walkers_varianteval_VariantEval.php>`.
+running 
+`GATK VariantEval <https://www.broadinstitute.org/gatk/gatkdocs/org_broadinstitute_gatk_tools_walkers_varianteval_VariantEval.php>`_.
 The output consists of a number of tables from which the plots have
 been generated:
 
@@ -39,6 +39,12 @@ Region-based variant summary
 
 Table 1 shows a variant summary stratified for the region.
 
+.. csv-table:: Variant summary for region ${region}.
+   :class: docutils
+   :file: ${reportdir}${varianttable}
+   :header-rows: 1
+
+
 % else:
 
 Sample-based variant summary
@@ -46,7 +52,14 @@ Sample-based variant summary
 
 Table 1 shows a variant summary stratified by sample. 
 
-% end if
+.. csv-table:: Variant summary for each sample.
+   :class: docutils
+   :file: ${reportdir}${varianttable}
+   :header-rows: 1
+
+
+
+% endif
 
 Results from CompOverlap
 -------------------------
@@ -63,9 +76,23 @@ Results from CompOverlap
 
    dbSNP concordance for raw, called, and filtered calls.
 
+% if region:
+
+.. figure:: ${variants_in_regions}
+
+  Number of variants in different regions.
+
+% endif 
+
 
 Results from CountVariants
 ---------------------------
+
+.. figure:: ${nVariants}
+
+   Total number of variants, stratified by dbSNP status and call
+   status
+
 
 .. figure:: ${nSNP}
 

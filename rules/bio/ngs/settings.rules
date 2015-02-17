@@ -9,6 +9,7 @@ config_default = {
         'flowcellruns' : [],
         'flowcell_suffix' : "XX",
         'inputdir' : ".",
+        'lanes' : [],
         'read1_label' : "_R1_001",
         'read2_label' : "_R2_001",
         'read1_suffix' : ".fastq.gz",
@@ -39,8 +40,8 @@ config_default = {
 update_sml_config(config_default)
 
 # Add configuration variable to snakemake global config object
-config['lanes'] = []
-config['samples'] = []
-config['regions'] = []
-config['flowcells'] = []
+config['lanes'] = config.get("lanes", [])
+config['samples'] = config.get("samples", [])
+config['regions'] = config.get("regions", []) 
+config['flowcells'] = config.get("flowcells", [])  
 

@@ -7,4 +7,4 @@ settings for all rules.
 """
 
 # Add configuration variable to snakemake global config object
-config['section'] = ""
+config['section'] = config.get("section", "")

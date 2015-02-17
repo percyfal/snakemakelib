@@ -41,7 +41,7 @@ config_default = {
 	},
 }
 
-config = update_config(config, config_default)
+update_sml_config(config_default)
 
 rule rule_1:
 	input: ""

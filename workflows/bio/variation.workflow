@@ -32,7 +32,7 @@ ruleorder: gatk_print_reads > picard_build_bam_index
 
 # Target suffices
 TARGET_SUFFIX=".sort.merge.rg.dup.realign.recal.bp_variants.phased.annotated.vcf"
-DUP_METRICS_SUFFIX=".sort.merge.rg.dup_metrics"
+DUP_METRICS_SUFFIX=".sort.merge.rg.dup.dup_metrics"
 ALIGN_METRICS_SUFFIX=".sort.merge.rg.dup.align_metrics"
 INSERT_METRICS_SUFFIX=".sort.merge.rg.dup.insert_metrics"
 HS_METRICS_SUFFIX=".sort.merge.rg.dup.hs_metrics"

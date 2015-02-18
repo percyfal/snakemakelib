@@ -20,7 +20,7 @@ workdir: '{workdir}'
 local_config = {{
     'bio.ngs.settings' : {{
         'fastq_suffix' : ".fastq.gz",
-        'samples' : config.get("samples", ['P001_101_index3', 'P001_102_index6']),
+        'samples' : config.get("samples", ['P001_101', 'P001_102']),
         'flowcells' : config.get("flowcells", ['120924_AC003CCCXX', '121015_BB002BBBXX']),
         'db' : {{
             'ref' : '{ref}',
@@ -89,8 +89,8 @@ class TestVariationWorkflow(unittest.TestCase):
         Don't run snpEff as this step may fail on low-memory machines,
         such as laptops.
         """
-        outputs = ['P001_101_index3/P001_101_index3.sort.merge.rg.dup.realign.recal.bp_variants.phased.vcf',
-                   'P001_102_index6/P001_102_index6.sort.merge.rg.dup.realign.recal.bp_variants.phased.vcf']
+        outputs = ['P001_101/P001_101.sort.merge.rg.dup.realign.recal.bp_variants.phased.vcf',
+                   'P001_102/P001_102.sort.merge.rg.dup.realign.recal.bp_variants.phased.vcf']
         subprocess.check_call(['snakemake'] + outputs)
         subprocess.check_call(['snakemake', 'metrics'])
 
@@ -98,6 +98,6 @@ class TestVariationWorkflow(unittest.TestCase):
 class TestBwaAlign(unittest.TestCase):
     def test_bwa_align(self):
         """Test bwa alignment"""
-        bwaout = 'P001_101_index3/120924_AC003CCCXX/P001_101_index3_TGACCA_L001.bam'
+        bwaout = 'P001_101/120924_AC003CCCXX/1_120924_AC003CCCXX_P001_101.bam'
         subprocess.check_call(['snakemake', '-F', bwaout])
-        subprocess.check_call(['rm', '-f', os.path.join(os.path.abspath(os.curdir), os.pardir, 'data', 'projects', 'J.Doe_00_01', 'P001_101_index3/120924_AC003CCCXX/P001_101_index3_TGACCA_L001.bam')])
+        subprocess.check_call(['rm', '-f', os.path.join(os.path.abspath(os.curdir), os.pardir, 'data', 'projects', 'J.Doe_00_01', 'P001_101/120924_AC003CCCXX/1_120924_AC003CCCXX_P001_101.bam')])

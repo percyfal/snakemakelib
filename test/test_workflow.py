@@ -109,3 +109,11 @@ class TestBwaAlign(unittest.TestCase):
         bwaout = 'P001_101/120924_AC003CCCXX/1_120924_AC003CCCXX_P001_101.bam'
         subprocess.check_call(['snakemake', '-F', bwaout])
         subprocess.check_call(['rm', '-f', os.path.join(os.path.abspath(os.curdir), os.pardir, 'data', 'projects', 'J.Doe_00_01', 'P001_101/120924_AC003CCCXX/1_120924_AC003CCCXX_P001_101.bam')])
+
+@unittest.skipIf(shutil.which('fastqc') is None, "No executable fastqc found; skipping")
+@unittest.skipIf(shutil.which('bismark') is None, "No executable bismark found; skipping")
+class TestMethylSeq(unittest.TestCase):
+    def test_bismark(self):
+        """Test bismark"""
+        pass
+

@@ -29,3 +29,5 @@ wiki
 *.hs_metrics
 *.annotated.txt
 *insert_metrics
+*_report.txt
+*-bias.txt

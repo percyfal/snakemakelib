@@ -12,7 +12,7 @@ def find_merge_inputs(wildcards):
         # Assume we start from fastq sources; could be more than one barcode, more than one lane
         fqsrc = sorted(glob.glob("{path}{sep}*{prefix}*{suffix}".format(path=os.path.join(wildcards.path, d), sep=os.sep, prefix=wildcards.prefix, suffix=sml_config['bio.ngs.settings']['fastq_suffix'])))
         if (fqsrc):
-            pfx = fqsrc[0].replace(sml_config['bio.ngs.settings']['fastq_suffix'], "").replace(sml_config['bio.ngs.settings']['read1_label'], "")
+            pfx = fqsrc[0].replace(sml_config['bio.ngs.settings']['read1_label'] + sml_config['bio.ngs.settings']['fastq_suffix'], "")
             src = "{prefix}{suffix}".format(prefix=pfx, suffix=picard_config['merge_sam']['suffix'])
             sources.append(src)
     return sources

@@ -24,7 +24,7 @@ config_default = {
             'java_mem' : bio_cfg['java']['java_mem'],
             'java_tmpdir' : bio_cfg['java']['java_tmpdir'],
             'dblist' : "hg19",
-            'genome_version' : bio_cfg['db']['ref'],
+            'genome_version' : bio_cfg['db']['build'],
         },
         'vcftools' : {
             'path' : os.curdir,
@@ -68,7 +68,7 @@ var_cfg = get_sml_config('bio.ngs.variation.variation')
 config_default = {
     'bio.ngs.variation.variation' : {
         'snpeff' : {
-            'options' : "-c {config} -o gatk".format(config=var_cfg['snpeff']['config']),
+            'options' : "-c {config}".format(config=var_cfg['snpeff']['config']),
             'cmd' : "java -Xmx{java_mem} -Djava.io.tmpdir={java_tmpdir} -jar {jar}".format(java_mem=var_cfg['snpeff']['java_mem'],
                                                                                            java_tmpdir=var_cfg['snpeff']['java_tmpdir'],
                                                                                            jar=var_cfg['snpeff']['jar']),

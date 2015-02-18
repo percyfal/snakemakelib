@@ -24,3 +24,8 @@ wiki
 *dup_metrics
 *intervals
 *recal_data.grp
+*align_metrics
+*hist
+*.hs_metrics
+*.annotated.txt
+*insert_metrics

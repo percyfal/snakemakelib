@@ -43,6 +43,12 @@ local_config = {{
     'bio.ngs.tools.gatk' : {{
         'home' : '{gatk}',
     }},
+    'bio.ngs.variation.variation' : {{
+        'snpeff' : {{
+             'path' : '{snpeff}',
+             'genome_version' : 'hg19',
+        }},
+    }},
 }}
 
 init_sml_config(local_config)
@@ -53,6 +59,7 @@ include: '{variation}'
          
 @unittest.skipIf((os.getenv("PICARD_HOME") is None or os.getenv("PICARD_HOME") == ""), "No Environment PICARD_HOME set; skipping")
 @unittest.skipIf((os.getenv("GATK_HOME") is None or os.getenv("GATK_HOME") == ""), "No Environment GATK_HOME set; skipping")
+@unittest.skipIf((os.getenv("SNPEFF_HOME") is None or os.getenv("SNPEFF_HOME") == ""), "No Environment SNPEFF_HOME set; skipping")
 @unittest.skipIf(shutil.which('bwa') is None, "No executable bwa found; skipping")
 #@unittest.skipIf(shutil.which('bowtie') is None, "No executable bowtie found; skipping")
 @unittest.skipIf(shutil.which('samtools') is None, "No executable samtools found; skipping")
@@ -69,6 +76,7 @@ def setUp():
                                   bwaref=os.path.join(os.path.abspath(os.curdir), os.pardir, 'data', 'genomes', 'Hsapiens', 'hg19', 'bwa', 'chr11.fa'),
                                   picard=os.getenv("PICARD_HOME"),
                                   gatk=os.getenv("GATK_HOME"),
+                                  snpeff=os.getenv("SNPEFF_HOME"),
                                   baits=os.path.join(os.path.abspath(os.curdir), os.pardir, 'data', 'genomes', 'Hsapiens', 'hg19', 'seqcap', 'chr11_baits.interval_list'),
                                   targets=os.path.join(os.path.abspath(os.curdir), os.pardir, 'data', 'genomes', 'Hsapiens', 'hg19', 'seqcap', 'chr11_targets.interval_list')
                               ))

@@ -4,7 +4,6 @@ import os
 import unittest
 import logging
 from collections import namedtuple
-from mako.template import Template
 from snakemake.utils import report
 from pylab import *
 import matplotlib.pyplot as plt
@@ -12,16 +11,6 @@ import matplotlib.pyplot as plt
 from snakemakelib.report.picard import PicardMetrics, PicardHistMetrics, AlignMetrics, InsertMetrics, HsMetrics, DuplicationMetrics, combine_metrics
 
 logger = logging.getLogger(__name__)
-
-TEMPLATEPATH = os.path.join(os.path.dirname(__file__), os.pardir, "snakemakelib", "data", "templates", "doc")
-
-TEMPLATES = {
-    'make' : Template(filename=os.path.join(TEMPLATEPATH, "Makefile.mako")),
-    'sample' : Template(filename=os.path.join(TEMPLATEPATH, "source", "samples", "sample.mako")),
-    'index' : Template(filename=os.path.join(TEMPLATEPATH, "source", "index.mako")),
-    'sampleindex' : Template(filename=os.path.join(TEMPLATEPATH, "source", "samples", "index.mako")),
-    'conf' : Template(filename=os.path.join(TEMPLATEPATH, "source", "conf.mako")),
-}
 
 def setUp():
     """Set up test fixtures"""

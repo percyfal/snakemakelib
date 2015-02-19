@@ -1,7 +1,8 @@
 # -*- snakemake -*-
 import os
+import re
 from snakemakelib.config import update_sml_config, sml_rules_path, get_sml_config
-from snakemakelib.bio.ngs.methylseq.bismark import ref
+from snakemakelib.bio.ngs.methylseq.bismark import ref, report_label, align_suffix
 
 # Start by including the general bio.ngs snakefile
 include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
@@ -15,11 +16,11 @@ config_default = {
         'ref' : ref(),
         'bowtie2' : True,
         'trim_galore' : True,
+        'paired_end' : True,
         'align' : {
             'cmd' : 'bismark',
             'options' : '--bam --phred33-quals',
             'threads' : 8,
-            'suffix'  : '_pe.bam',
         },
         'deduplicate' : {
             'cmd' : 'deduplicate_bismark',
@@ -33,7 +34,6 @@ config_default = {
             'cmd' : 'bismark2report',
             'options' : "",
             'inputfun' : "",
-            'label' : "_PE_report",
         },
         'genome_preparation' : {
             'cmd' : 'bismark_genome_preparation',
@@ -69,13 +69,12 @@ rule bismark_PE_align:
     params: options = cfg['align']['options'] + " --bowtie2 -p {}".format(cfg['align']['threads']) if cfg['bowtie2'] else '',
             cmd = cfg['align']['cmd'],
             ref = os.path.dirname(cfg['ref']),
-            sfx = cfg['align']['suffix'],
+            sfx = align_suffix()
     threads: cfg['align']['threads']
     input: read1="{path}" + os.sep + "{prefix}" + ngs_cfg['read1_label'] + qc_cfg['trim_galore']['read1_suffix'] if cfg['trim_galore'] else ngs_cfg['read1_suffix'],\
-           read2="{path}" + os.sep + "{prefix}" + ngs_cfg['read2_label'] + qc_cfg['trim_galore']['read2_suffix'] if cfg['trim_galore'] else ngs_cfg['read2_suffix'],\
-           refdir=os.path.join(os.path.dirname(cfg['ref']), cfg['genome_preparation']['outdir'])
-    output: alignout="{path}" + os.sep + "{prefix}" + cfg['align']['suffix'], report="{path}" + os.sep + "{prefix}" + cfg['report']['label'] + ".txt"
-    shell: "{params.cmd} {params.options} {params.ref} -1 {input.read1} -2 {input.read2} -o {wildcards.path} -B {wildcards.prefix}"
+           read2="{path}" + os.sep + "{prefix}" + ngs_cfg['read2_label'] + qc_cfg['trim_galore']['read2_suffix'] if cfg['trim_galore'] else ngs_cfg['read2_suffix']
+    output: alignout="{path}" + os.sep + "{prefix}" + align_suffix(), report="{path}" + os.sep + "{prefix}" + report_label() + ".txt"
+    shell: "{params.cmd} {params.options} {params.ref} -1 {input.read1} -2 {input.read2} -o {wildcards.path} -B {wildcards.prefix}" + align_suffix(basename=True)
 
 rule bismark_deduplicate:
     """bismark: Run bismark deduplication."""
@@ -97,27 +96,32 @@ rule bismark_methXtract:
     params: options = cfg['methXtract']['options'],
             cmd = cfg['methXtract']['cmd']
     input: "{path}" + os.sep + "{prefix}" + ".bam"
-    output: "{path}" + os.sep + "CpG_OB_" + "{prefix}" + ".txt.gz", "{path}" + os.sep + "CpG_OT_" + "{prefix}" + ".txt.gz", "{path}" + os.sep + "CHG_OB_" + "{prefix}" + ".txt.gz", "{path}" + os.sep + "CHG_OT_" + "{prefix}" + ".txt.gz", "{path}" + os.sep + "CHH_OB_" + "{prefix}" + ".txt.gz", "{path}" + os.sep + "CHH_OT_" + "{prefix}" + ".txt.gz"
+    output: "{path}" + os.sep + "CpG_OB_" + "{prefix}" + ".txt.gz", "{path}" + os.sep + "CpG_OT_" + "{prefix}" + ".txt.gz", "{path}" + os.sep + "CHG_OB_" + "{prefix}" + ".txt.gz", "{path}" + os.sep + "CHG_OT_" + "{prefix}" + ".txt.gz", "{path}" + os.sep + "CHH_OB_" + "{prefix}" + ".txt.gz", "{path}" + os.sep + "CHH_OT_" + "{prefix}" + ".txt.gz", "{path}" + os.sep + "{prefix}.bam_splitting_report.txt"
     shell: "{params.cmd} {params.options} {input} -o {wildcards.path} --report --gzip"
 
 rule bismark_report:
     """bismark: Run bismark report. 
 
+    This rule requires deduplication to be run in a previous step.
+    Currently this behaviour is hard-coded.
+
     """
     params: options = cfg['report']['options'],
             cmd = cfg['report']['cmd']
-    input: "{path}" + os.sep + "{prefix}" + cfg['report']['label'] + ".txt", "{path}" + os.sep + "{prefix}" + "_pe.deduplicated.M-bias.txt", "{path}" + os.sep + "{prefix}" + "_pe.deduplicated.bam_splitting_report.txt", "{path}" + os.sep + "{prefix}" + "_pe.deduplication_report.txt"
-    output: "{path}" + os.sep + "{prefix}" + cfg['report']['label'] + ".html"
-    shell: "{params.cmd} {params.options} --dir {wildcards.path} --alignment_report {input[0]} --mbias {input[1]} --splitting_report {input[2]} --dedup_report {input[3]}"
+    input:  align_report = "{path}" + os.sep + "{prefix}" + ".deduplicated.bam" + report_label() + ".txt",\
+            mbias_report = "{path}" + os.sep + "{prefix}" + ".deduplicated.M-bias.txt",\
+            splitting_report = "{path}" + os.sep + "{prefix}" + ".deduplicated.bam_splitting_report.txt",\
+            deduplication_report = "{path}" + os.sep + "{prefix}" + ".deduplication_report.txt"
+    output: "{path}" + os.sep + "{prefix}" + ".deduplicated.bam" + report_label() + ".html"
+    shell: "{params.cmd} {params.options} --dir {wildcards.path} --alignment_report {input.align_report} --mbias {input.mbias_report} --splitting_report {input.splitting_report} --dedup_report {input.deduplication_report}"
 
 rule bismark_merge_alignment_reports:
     """bismark: Merge alignment reports from separate runs for a sample.
 
     """
     input: cfg['report']['inputfun']
-    output: report="{path}" + os.sep + "{prefix}" + picard_config['merge_sam']['label'] + cfg['report']['label'] + ".txt"
+    output: report="{path}" + os.sep + "{prefix}" + picard_config['merge_sam']['label'] + "{suffix}" + ".bam" + report_label() + ".txt"
     run:
-        import re
         order = []
         first = True
         d = {}

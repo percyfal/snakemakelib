@@ -22,6 +22,7 @@ local_config = {{
         'fastq_suffix' : ".fastq.gz",
         'samples' : config.get("samples", ['P001_101', 'P001_102']),
         'flowcells' : config.get("flowcells", ['120924_AC003CCCXX', '121015_BB002BBBXX']),
+        'lanes' : [1],
         'db' : {{
             'ref' : '{ref}',
             'dbsnp' : '{dbsnp}',
@@ -49,11 +50,24 @@ local_config = {{
              'genome_version' : 'hg19',
         }},
     }},
+    'bio.ngs.methylseq.bismark' : {{
+        'ref' : '{bismarkref}',
+    }},
 }}
 
 init_sml_config(local_config)
 
+include: '{methylseq}'
 include: '{variation}'
+
+cfg = get_sml_config('bio.ngs.settings')
+
+# Update FASTQC_TARGETS
+FASTQC_TARGETS = expand("{{path}}/{{sample}}/{{flowcell}}/{{lane}}_{{flowcell}}_{{sample}}_1_fastqc.html {{path}}/{{sample}}/{{flowcell}}/{{lane}}_{{flowcell}}_{{sample}}_2_fastqc.html".split(), sample=cfg['samples'][0], flowcell=cfg['flowcells'][0], lane=cfg['lanes'], path=os.curdir)
+
+BISMARK_TARGETS = expand("{{path}}/{{sample}}/CpG_OB_{{sample}}.merge.deduplicated.txt.gz", sample=cfg['samples'][0], flowcell=cfg['flowcells'][0], lane=cfg['lanes'], path=os.curdir)
+
+BISMARK_REPORT_TARGETS = expand("{{path}}/{{sample}}/{{sample}}.merge.deduplicated.bam{{report_label}}.html", sample=cfg['samples'][0], flowcell=cfg['flowcells'][0], lane=cfg['lanes'], path=os.curdir, report_label=report_label())
 
 """
          
@@ -61,7 +75,6 @@ include: '{variation}'
 @unittest.skipIf((os.getenv("GATK_HOME") is None or os.getenv("GATK_HOME") == ""), "No Environment GATK_HOME set; skipping")
 @unittest.skipIf((os.getenv("SNPEFF_HOME") is None or os.getenv("SNPEFF_HOME") == ""), "No Environment SNPEFF_HOME set; skipping")
 @unittest.skipIf(shutil.which('bwa') is None, "No executable bwa found; skipping")
-#@unittest.skipIf(shutil.which('bowtie') is None, "No executable bowtie found; skipping")
 @unittest.skipIf(shutil.which('samtools') is None, "No executable samtools found; skipping")
 
 def setUp():
@@ -71,9 +84,11 @@ def setUp():
     with open("Snakefile", "w") as fh:
         fh.write(snakefile.format(workdir=os.path.join(os.path.abspath(os.curdir), os.pardir, 'data', 'projects', 'J.Doe_00_01'),
                                   variation=os.path.join(os.path.abspath(os.curdir), os.pardir, 'workflows', 'bio', 'variation.workflow'),
+                                  methylseq=os.path.join(os.path.abspath(os.curdir), os.pardir, 'workflows', 'bio', 'methylseq.workflow'),
                                   ref=os.path.join(os.path.abspath(os.curdir), os.pardir, 'data', 'genomes', 'Hsapiens', 'hg19', 'seq', 'chr11.fa'),
                                   dbsnp=os.path.join(os.path.abspath(os.curdir), os.pardir, 'data', 'genomes', 'Hsapiens', 'hg19', 'variation', 'dbsnp132_chr11.vcf'),
                                   bwaref=os.path.join(os.path.abspath(os.curdir), os.pardir, 'data', 'genomes', 'Hsapiens', 'hg19', 'bwa', 'chr11.fa'),
+                                  bismarkref=os.path.join(os.path.abspath(os.curdir), os.pardir, 'data', 'genomes', 'Hsapiens', 'hg19', 'bismark', 'chr11.fa'),
                                   picard=os.getenv("PICARD_HOME"),
                                   gatk=os.getenv("GATK_HOME"),
                                   snpeff=os.getenv("SNPEFF_HOME"),
@@ -102,7 +117,6 @@ class TestVariationWorkflow(unittest.TestCase):
         subprocess.check_call(['snakemake'] + outputs)
         subprocess.check_call(['snakemake', 'metrics'])
 
-
 class TestBwaAlign(unittest.TestCase):
     def test_bwa_align(self):
         """Test bwa alignment"""
@@ -112,8 +126,14 @@ class TestBwaAlign(unittest.TestCase):
 
 @unittest.skipIf(shutil.which('fastqc') is None, "No executable fastqc found; skipping")
 @unittest.skipIf(shutil.which('bismark') is None, "No executable bismark found; skipping")
+@unittest.skipIf(shutil.which('bowtie2') is None, "No executable bowtie2 found; skipping")
 class TestMethylSeq(unittest.TestCase):
+    def setUp(self):
+        bismarkdir = os.path.join(os.path.abspath(os.curdir), os.pardir, 'data', 'genomes', 'Hsapiens', 'hg19', 'bismark')
+        if not os.path.exists(os.path.join(bismarkdir, 'Bisulfite_Genome')):
+            subprocess.check_call(['bismark_genome_preparation', '--bowtie2', os.path.join(bismarkdir)])
+
     def test_bismark(self):
         """Test bismark"""
-        pass
+        subprocess.check_call(['snakemake', '-F', 'run_bismark'])
 

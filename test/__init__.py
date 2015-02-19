@@ -46,8 +46,8 @@ def install_ucsc_genome(build, chr, start=None, end=None):
                 raise Exception("{} failed: \n{}".format(cmd, " ".join([stderr])))
     except:
         logger.info("Failed to download {}".format(os.path.join(genomedir, os.path.basename(url))))
-    # Add links to bwa, bowtie
-    for d in ['bwa', 'bowtie']:
+    # Add links to bwa, bowtie, bismark
+    for d in ['bwa', 'bowtie', 'bismark']:
         if not os.path.exists(os.path.join(genomedir, os.pardir, d)):
             os.mkdir(os.path.join(genomedir, os.pardir, d))
         if not os.path.exists(os.path.join(genomedir, os.pardir, d, os.path.basename(outfile).replace(".gz", ""))):

@@ -1,21 +1,26 @@
 # -*- snakemake -*-
 import os
+import re
 from snakemakelib.config import update_sml_config, sml_rules_path, get_sml_config
-from snakemakelib.bio.ngs.methylseq.bismark import ref
+from snakemakelib.bio.ngs.methylseq.bismark import ref, report_label, align_suffix
 
 # Start by including the general bio.ngs snakefile
 include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
+include: os.path.join(os.pardir, 'qc', 'sequenceprocessing.rules')
+include: os.path.join(os.pardir, 'qc', 'picard.rules')
 
 ngs_cfg = get_sml_config('bio.ngs.settings')
 
 config_default = {
     'bio.ngs.methylseq.bismark' : {
         'ref' : ref(),
+        'bowtie2' : True,
+        'trim_galore' : True,
+        'paired_end' : True,
         'align' : {
             'cmd' : 'bismark',
             'options' : '--bam --phred33-quals',
             'threads' : 8,
-            'suffix'  : '.bam',
         },
         'deduplicate' : {
             'cmd' : 'deduplicate_bismark',
@@ -28,6 +33,12 @@ config_default = {
         'report' : {
             'cmd' : 'bismark2report',
             'options' : "",
+            'inputfun' : "",
+        },
+        'genome_preparation' : {
+            'cmd' : 'bismark_genome_preparation',
+            'options' : "",
+            'outdir' : "Bisulfite_Genome",
         },
     },
 }
@@ -36,20 +47,34 @@ update_sml_config(config_default)
 
 cfg = get_sml_config('bio.ngs.methylseq.bismark')
 ngs_cfg = get_sml_config('bio.ngs.settings')
+qc_cfg = get_sml_config('bio.ngs.qc.sequenceprocessing')
+picard_cfg = get_sml_config('bio.ngs.qc.picard')
 
-# Prefix: 8_140228_BC3TYRACXX_P923_101
-# Input: 8_140207_AC3NVGACXX_P923_101_1_val_1.fq.gz, 8_140207_AC3NVGACXX_P923_101_2_val_2.fq.gz
-rule bismark_bowtie2_PE_align:
-    """bismark: Run bismark paired-end alignment with bowtie2."""
-    params: options = cfg['align']['options'],
+rule bismark_genome_preparation:
+    """bismark: Prepare genome sequence"""
+    params: cmd = cfg['genome_preparation']['cmd'],
+            options = cfg['genome_preparation']['options'] + ' --bowtie2' if cfg['bowtie2'] else ''
+    input: ref = os.path.dirname(cfg['ref'])
+    output: os.path.join(os.path.dirname(cfg['ref']), cfg['genome_preparation']['outdir'])
+    shell: "{params.cmd} {params.options} {input.ref}" 
+
+rule bismark_PE_align:
+    """bismark: Run bismark paired-end alignment.
+
+    NB: the threads option is treated differently here as the key
+    cfg['bowtie2'] is undefined if tested for in the shell:
+    section.
+
+    """
+    params: options = cfg['align']['options'] + " --bowtie2 -p {}".format(cfg['align']['threads']) if cfg['bowtie2'] else '',
             cmd = cfg['align']['cmd'],
-            ref = cfg['ref'],
-            sfx = cfg['align']['suffix'],
+            ref = os.path.dirname(cfg['ref']),
+            sfx = align_suffix()
     threads: cfg['align']['threads']
-    input: read1="{path}" + os.sep + "{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['read1_suffix'],\
-           read2="{path}" + os.sep + "{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['read2_suffix']
-    output: alignout="{path}" + os.sep + "{prefix}" + "_bismark_bt2" + cfg['align']['suffix'], report="{path}" + os.sep + "{prefix}" + "_bismark_bt2_PE_report.txt"
-    shell: "{params.cmd} {params.options} {params.ref} -1 {input.read1} -2 {input.read2} -o {wildcards.path} -p {threads} -B {wildcards.prefix} --bowtie2"
+    input: read1="{path}" + os.sep + "{prefix}" + ngs_cfg['read1_label'] + qc_cfg['trim_galore']['read1_suffix'] if cfg['trim_galore'] else ngs_cfg['read1_suffix'],\
+           read2="{path}" + os.sep + "{prefix}" + ngs_cfg['read2_label'] + qc_cfg['trim_galore']['read2_suffix'] if cfg['trim_galore'] else ngs_cfg['read2_suffix']
+    output: alignout="{path}" + os.sep + "{prefix}" + align_suffix(), report="{path}" + os.sep + "{prefix}" + report_label() + ".txt"
+    shell: "{params.cmd} {params.options} {params.ref} -1 {input.read1} -2 {input.read2} -o {wildcards.path} -B {wildcards.prefix}" + align_suffix(basename=True)
 
 rule bismark_deduplicate:
     """bismark: Run bismark deduplication."""
@@ -71,15 +96,76 @@ rule bismark_methXtract:
     params: options = cfg['methXtract']['options'],
             cmd = cfg['methXtract']['cmd']
     input: "{path}" + os.sep + "{prefix}" + ".bam"
-    output: "{path}" + os.sep + "CpG_OB_" + "{prefix}" + ".txt.gz", "{path}" + os.sep + "CpG_OT_" + "{prefix}" + ".txt.gz", "{path}" + os.sep + "CHG_OB_" + "{prefix}" + ".txt.gz", "{path}" + os.sep + "CHG_OT_" + "{prefix}" + ".txt.gz", "{path}" + os.sep + "CHH_OB_" + "{prefix}" + ".txt.gz", "{path}" + os.sep + "CHH_OT_" + "{prefix}" + ".txt.gz"
+    output: "{path}" + os.sep + "CpG_OB_" + "{prefix}" + ".txt.gz", "{path}" + os.sep + "CpG_OT_" + "{prefix}" + ".txt.gz", "{path}" + os.sep + "CHG_OB_" + "{prefix}" + ".txt.gz", "{path}" + os.sep + "CHG_OT_" + "{prefix}" + ".txt.gz", "{path}" + os.sep + "CHH_OB_" + "{prefix}" + ".txt.gz", "{path}" + os.sep + "CHH_OT_" + "{prefix}" + ".txt.gz", "{path}" + os.sep + "{prefix}.bam_splitting_report.txt"
     shell: "{params.cmd} {params.options} {input} -o {wildcards.path} --report --gzip"
 
 rule bismark_report:
     """bismark: Run bismark report. 
 
+    This rule requires deduplication to be run in a previous step.
+    Currently this behaviour is hard-coded.
+
     """
     params: options = cfg['report']['options'],
             cmd = cfg['report']['cmd']
-    input: "{path}" + os.sep + "{prefix}" + "_PE_report.txt", "{path}" + os.sep + "{prefix}" + "_pe.deduplicated.M-bias.txt", "{path}" + os.sep + "{prefix}" + "_pe.deduplicated.bam_splitting_report.txt", "{path}" + os.sep + "{prefix}" + "_pe.deduplication_report.txt"
-    output: "{path}" + os.sep + "{prefix}" + "_PE_report.html"
-    shell: "{params.cmd} {params.options} --dir {wildcards.path} --alignment_report {input[0]} --mbias {input[1]} --splitting_report {input[2]} --dedup_report {input[3]}"
+    input:  align_report = "{path}" + os.sep + "{prefix}" + ".deduplicated.bam" + report_label() + ".txt",\
+            mbias_report = "{path}" + os.sep + "{prefix}" + ".deduplicated.M-bias.txt",\
+            splitting_report = "{path}" + os.sep + "{prefix}" + ".deduplicated.bam_splitting_report.txt",\
+            deduplication_report = "{path}" + os.sep + "{prefix}" + ".deduplication_report.txt"
+    output: "{path}" + os.sep + "{prefix}" + ".deduplicated.bam" + report_label() + ".html"
+    shell: "{params.cmd} {params.options} --dir {wildcards.path} --alignment_report {input.align_report} --mbias {input.mbias_report} --splitting_report {input.splitting_report} --dedup_report {input.deduplication_report}"
+
+rule bismark_merge_alignment_reports:
+    """bismark: Merge alignment reports from separate runs for a sample.
+
+    """
+    input: cfg['report']['inputfun']
+    output: report="{path}" + os.sep + "{prefix}" + picard_config['merge_sam']['label'] + "{suffix}" + ".bam" + report_label() + ".txt"
+    run:
+        order = []
+        first = True
+        d = {}
+        for f in input:
+            with open(f) as fh:
+                for l in fh.readlines():
+                    if l.find(":"):
+                        c = l.strip().split(":")
+                        if first:
+                            order += [c[0]]
+                        if (len(c) >= 2):
+                            (k, v) = c[0], ":".join(c[1:])
+                            if not k in d:
+                                d[k] = []
+                            d[k] += [v.strip()]
+                        else:
+                            pass
+            first = False
+        def frac(a, b, d, fmt = "{:.1f}%", dsum=True):
+            denom = sum([int(x) for x in d[a]]) + sum([int(x) for x in d[b]]) if dsum else sum([int(x) for x in d[a]])
+            nom = sum([int(x) for x in d[a]])
+            return fmt.format(100.0 * nom / denom)
+        with open(output.report, 'w') as outfh:
+            for k in order:
+                if k in d:
+                    v = d[k]
+                    if re.search("%", d[k][0]):
+                        if k == "Mapping efficiency":
+                            v = frac("Sequence pairs analysed in total", "Number of paired-end alignments with a unique best hit", d, dsum=False)
+                        elif k == "C methylated in CpG context":
+                            v = frac("Total methylated C's in CpG context", "Total unmethylated C's in CpG context", d)
+                        elif k == "C methylated in CHG context":
+                            v = frac("Total methylated C's in CHG context", "Total unmethylated C's in CHG context", d)
+                        elif k == "C methylated in CHH context":
+                            v = frac("Total methylated C's in CHH context", "Total unmethylated C's in CHH context", d)
+                    elif re.search("\t", d[k][0]):
+                        v = "{}:\t{}\t{}".format(k, sum([int(x.split("\t")[0]) for x in d[k]]), d[k][0].split("\t")[1])
+                    elif re.match("[0-9]+", d[k][0]):
+                        v = sum([int(x) for x in d[k]])
+                    else:
+                        v = ",".join(d[k]) if d[k][0] != "" else ""
+                    outfh.write("{}:\t{}\n".format(k, v))
+                else:
+                    outfh.write(k + "\n")
+                
+
+ruleorder: bismark_merge_alignment_reports > bismark_PE_align

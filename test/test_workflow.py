@@ -20,7 +20,7 @@ workdir: '{workdir}'
 local_config = {{
     'bio.ngs.settings' : {{
         'fastq_suffix' : ".fastq.gz",
-        'samples' : config.get("samples", ['P001_101_index3', 'P001_102_index6']),
+        'samples' : config.get("samples", ['P001_101', 'P001_102']),
         'flowcells' : config.get("flowcells", ['120924_AC003CCCXX', '121015_BB002BBBXX']),
         'db' : {{
             'ref' : '{ref}',
@@ -43,6 +43,12 @@ local_config = {{
     'bio.ngs.tools.gatk' : {{
         'home' : '{gatk}',
     }},
+    'bio.ngs.variation.variation' : {{
+        'snpeff' : {{
+             'path' : '{snpeff}',
+             'genome_version' : 'hg19',
+        }},
+    }},
 }}
 
 init_sml_config(local_config)
@@ -53,6 +59,7 @@ include: '{variation}'
          
 @unittest.skipIf((os.getenv("PICARD_HOME") is None or os.getenv("PICARD_HOME") == ""), "No Environment PICARD_HOME set; skipping")
 @unittest.skipIf((os.getenv("GATK_HOME") is None or os.getenv("GATK_HOME") == ""), "No Environment GATK_HOME set; skipping")
+@unittest.skipIf((os.getenv("SNPEFF_HOME") is None or os.getenv("SNPEFF_HOME") == ""), "No Environment SNPEFF_HOME set; skipping")
 @unittest.skipIf(shutil.which('bwa') is None, "No executable bwa found; skipping")
 #@unittest.skipIf(shutil.which('bowtie') is None, "No executable bowtie found; skipping")
 @unittest.skipIf(shutil.which('samtools') is None, "No executable samtools found; skipping")
@@ -69,6 +76,7 @@ def setUp():
                                   bwaref=os.path.join(os.path.abspath(os.curdir), os.pardir, 'data', 'genomes', 'Hsapiens', 'hg19', 'bwa', 'chr11.fa'),
                                   picard=os.getenv("PICARD_HOME"),
                                   gatk=os.getenv("GATK_HOME"),
+                                  snpeff=os.getenv("SNPEFF_HOME"),
                                   baits=os.path.join(os.path.abspath(os.curdir), os.pardir, 'data', 'genomes', 'Hsapiens', 'hg19', 'seqcap', 'chr11_baits.interval_list'),
                                   targets=os.path.join(os.path.abspath(os.curdir), os.pardir, 'data', 'genomes', 'Hsapiens', 'hg19', 'seqcap', 'chr11_targets.interval_list')
                               ))
@@ -89,8 +97,8 @@ class TestVariationWorkflow(unittest.TestCase):
         Don't run snpEff as this step may fail on low-memory machines,
         such as laptops.
         """
-        outputs = ['P001_101_index3/P001_101_index3.sort.merge.rg.dup.realign.recal.bp_variants.phased.vcf',
-                   'P001_102_index6/P001_102_index6.sort.merge.rg.dup.realign.recal.bp_variants.phased.vcf']
+        outputs = ['P001_101/P001_101.sort.merge.rg.dup.realign.recal.bp_variants.phased.vcf',
+                   'P001_102/P001_102.sort.merge.rg.dup.realign.recal.bp_variants.phased.vcf']
         subprocess.check_call(['snakemake'] + outputs)
         subprocess.check_call(['snakemake', 'metrics'])
 
@@ -98,6 +106,14 @@ class TestVariationWorkflow(unittest.TestCase):
 class TestBwaAlign(unittest.TestCase):
     def test_bwa_align(self):
         """Test bwa alignment"""
-        bwaout = 'P001_101_index3/120924_AC003CCCXX/P001_101_index3_TGACCA_L001.bam'
+        bwaout = 'P001_101/120924_AC003CCCXX/1_120924_AC003CCCXX_P001_101.bam'
         subprocess.check_call(['snakemake', '-F', bwaout])
-        subprocess.check_call(['rm', '-f', os.path.join(os.path.abspath(os.curdir), os.pardir, 'data', 'projects', 'J.Doe_00_01', 'P001_101_index3/120924_AC003CCCXX/P001_101_index3_TGACCA_L001.bam')])
+        subprocess.check_call(['rm', '-f', os.path.join(os.path.abspath(os.curdir), os.pardir, 'data', 'projects', 'J.Doe_00_01', 'P001_101/120924_AC003CCCXX/1_120924_AC003CCCXX_P001_101.bam')])
+
+@unittest.skipIf(shutil.which('fastqc') is None, "No executable fastqc found; skipping")
+@unittest.skipIf(shutil.which('bismark') is None, "No executable bismark found; skipping")
+class TestMethylSeq(unittest.TestCase):
+    def test_bismark(self):
+        """Test bismark"""
+        pass
+

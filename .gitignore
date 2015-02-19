@@ -21,3 +21,13 @@ wiki
 /data/projects/J.Doe_00_01/P001_102_index6/P001_102_index6.sort.merge.rg.dup.realign.recal_data.grp
 /data/projects/J.Doe_00_01/P001_102_index6/P001_102_index6.sort.merge.rg.dup_metrics
 /snakemakelib/data/templates/doc/source/index_orig.mako
+*dup_metrics
+*intervals
+*recal_data.grp
+*align_metrics
+*hist
+*.hs_metrics
+*.annotated.txt
+*insert_metrics
+*_report.txt
+*-bias.txt

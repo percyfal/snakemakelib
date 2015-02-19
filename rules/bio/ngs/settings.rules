@@ -10,13 +10,14 @@ config_default = {
         'flowcell_suffix' : "XX",
         'inputdir' : ".",
         'lanes' : [],
-        'read1_label' : "_R1_001",
-        'read2_label' : "_R2_001",
+        'read1_label' : "_1",
+        'read2_label' : "_2",
         'read1_suffix' : ".fastq.gz",
         'read2_suffix' : ".fastq.gz",
         'regions' : [],
+        'run_id_re' : "[0-9]_[0-9]+_[A-Z0-9]+XX_P[0-9]+_[0-9]+",
         'samples' : [],
-        'sample_prefix' : "P00",
+        'sample_prefix' : "P",
         'threads' : 8,
         'annotation' : {
             'annot_label' : "",
@@ -24,7 +25,8 @@ config_default = {
         },
         'db' : {
             'dbsnp' : "",
-            'ref' : "hg19",
+            'ref' : "",
+            'build' : 'hg19',
         },
         'java' : {
             'java_mem' : "6g",

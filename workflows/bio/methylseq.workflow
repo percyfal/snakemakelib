@@ -1,8 +1,25 @@
 # -*- snakemake -*-
 import os
 from snakemakelib.config import update_sml_config, get_sml_config
+from snakemakelib.bio.ngs.methylseq.bismark import report_label, align_suffix
+
+def find_report_inputs(wildcards):
+    """Find bismark align report files to use as input to
+    bismark_merge_alignment_reports.
+
+    Assumes folder structure:
+
+    {path}/{flowcell}/{prefix}_[PE|SE]_report.txt
+    """
+    subdirs = [d for d in os.listdir(wildcards.path) if os.path.isdir(os.path.join(wildcards.path, d))]
+    sources = []
+    for d in subdirs:
+        reportsrc = sorted(glob.glob("{path}{sep}*{suffix}".format(path=os.path.join(wildcards.path, d), sep=os.sep, suffix=report_label() + ".txt")))
+        sources += reportsrc
+    return sources
 
 def find_meth_merge_inputs(wildcards):
+
     """Find bismark aligned bam files as input to picard merge.
 
     Assumes folder structure:
@@ -16,7 +33,7 @@ def find_meth_merge_inputs(wildcards):
     for d in subdirs:
         fqsrc = sorted(glob.glob("{path}{sep}*{suffix}".format(path=os.path.join(wildcards.path, d), sep=os.sep, suffix=sml_config['bio.ngs.settings']['fastq_suffix'])))
         sfx = sml_config['bio.ngs.settings']['read1_label'] + sml_config['bio.ngs.settings']['fastq_suffix']
-        bismarkbam = [x.replace(sfx, "") + sml_config['bio.ngs.methylseq.bismark']['align']['suffix'] for x in fqsrc if x.endswith(sfx)]
+        bismarkbam = [x.replace(sfx, "") + align_suffix() for x in fqsrc if x.endswith(sfx)]
         sources += bismarkbam
     return sources
 
@@ -25,10 +42,13 @@ methylation_config = {
         'methXtract' : {
             'options' : "--ignore_r2 2 --counts  --gzip -p --no_overlap",
         },
+        'report' : {
+            'inputfun' : find_report_inputs,
+        },
     },
     'bio.ngs.qc.picard' : {
         'merge_sam' : {
-            'suffix' : '_bismark_bt2_pe.bam',
+            'suffix' : align_suffix,
             'label' : 'merge',
             'inputfun' : find_meth_merge_inputs,
             'options' : "SORT_ORDER=queryname", # methylation extraction requires queries to be adjacent
@@ -38,14 +58,16 @@ methylation_config = {
 
 update_sml_config(methylation_config)
 
+# Include necessary snakemakelib rules
 p = os.path.join(os.pardir, os.pardir, 'rules')
 include: os.path.join(p, 'settings.rules')
 include: os.path.join(p, 'utils.rules')
-include: os.path.join(p, "bio/ngs/methylseq", "bismark.rules")
 include: os.path.join(p, "bio/ngs/qc", "sequenceprocessing.rules")
+include: os.path.join(p, "bio/ngs/methylseq", "bismark.rules")
 include: os.path.join(p, "bio/ngs/qc", "picard.rules")
 include: os.path.join(p, "bio/ngs", "settings.rules")
 
+# Get relevant config sections
 bismark_cfg = get_sml_config('bio.ngs.methylseq.bismark')
 qc_cfg = get_sml_config('bio.ngs.qc.sequenceprocessing')
 cfg = get_sml_config('bio.ngs.settings')
@@ -55,14 +77,12 @@ FASTQC_TARGETS = expand("{path}/{sample}/{flowcell}/{lane}_{flowcell}_{sample}_1
 
 BISMARK_TARGETS = expand("{path}/{sample}/CpG_OB_{sample}.merge.deduplicated.txt.gz", sample=cfg['samples'], flowcell=cfg['flowcells'], lane=cfg['lanes'], path=path)
 
-#BISMARK_REPORT_TARGETS = expand("{path}/{sample}/{flowcell}/{lane}_{flowcell}_{sample}_bismark_bt2_PE_report.html", sample=cfg['samples'], flowcell=cfg['flowcells'], lane=cfg['lanes'], path=path)
-
-#BISMARK_REPORT_TARGETS = expand("{path}/{sample}/{sample}_PE_report.html", sample=cfg['samples'], flowcell=cfg['flowcells'], lane=cfg['lanes'], path=path)
+BISMARK_REPORT_TARGETS = expand("{path}/{sample}/{sample}.merge.deduplicated.bam{report_label}.html", sample=cfg['samples'], flowcell=cfg['flowcells'], lane=cfg['lanes'], path=path, report_label=report_label())
 
 # All rules
 rule all:
     """Run all the analyses"""
-    input: FASTQC_TARGETS + BISMARK_TARGETS# + BISMARK_REPORT_TARGETS
+    input: FASTQC_TARGETS + BISMARK_TARGETS + BISMARK_REPORT_TARGETS
 
 rule run_fastqc:
     """Fastqc target rule. Run fastqc on files defined in FASTQC_TARGETS"""
@@ -72,24 +92,14 @@ rule run_bismark:
     """bismark target rule. Run bismark on files defined in BISMARK_TARGETS"""
     input: BISMARK_TARGETS
 
-# TODO: generic rule
+rule run_bismark_report:
+    """bismark report target rule. Run bismark on files defined in BISMARK_TARGETS"""
+    input: BISMARK_REPORT_TARGETS
+
 rule list_targets:
     """List currently defined targets"""
     run:
-      print ("In list_targets")
-      print (SAMPLE_TARGETS)
-      print (FASTQC_TARGETS)
-      print (BISMARK_TARGETS)
-      print (BISMARK_REPORT_TARGETS)
-
-# Redefine this rule for now as the input are files from trim_galore
-rule methylseq_bismark_align:
-    """methylseq.workflow: Run bismark align."""
-    params: options = bismark_cfg['align']['options'],
-            cmd = bismark_cfg['align']['cmd'],
-            ref = bismark_cfg['ref'],
-    threads: bismark_cfg['align']['threads']
-    input: "{path}" + os.sep + "{prefix}" + ngs_cfg['read1_label'] + qc_cfg['trim_galore']['read1_suffix'],\
-           "{path}" + os.sep + "{prefix}" + ngs_cfg['read2_label'] + qc_cfg['trim_galore']['read2_suffix']
-    output: "{path}" + os.sep + "{prefix}" + bismark_cfg['align']['suffix'], "{path}" + os.sep + "{prefix}_PE_report.txt"
-    shell: "{params.cmd} {params.options} {params.ref} -1 {input[0]} -2 {input[1]} -o {wildcards.path} -p {threads} -B {wildcards.prefix}"
+      print ("Sample targets: ", SAMPLE_TARGETS)
+      print ("Fastqc targets: ", FASTQC_TARGETS)
+      print ("Bismark targets: ", BISMARK_TARGETS)
+      print ("Bismark report targets: ", BISMARK_REPORT_TARGETS)

@@ -8,6 +8,7 @@ import logging
 import shutil
 import subprocess
 from nose.tools import raises
+from nose.plugins.attrib import attr
 
 logger = logging.getLogger(__name__)
 
@@ -105,6 +106,7 @@ def setUp():
     if not os.path.exists(os.path.join(genomedir, 'chr11.fa.fai')):
         subprocess.check_call(['samtools', 'faidx', os.path.join(genomedir, 'chr11.fa')])
 
+@attr('slow')
 class TestVariationWorkflow(unittest.TestCase):
     def test_variation_workflow(self):
         """Test variation.workflow.
@@ -127,6 +129,7 @@ class TestBwaAlign(unittest.TestCase):
 @unittest.skipIf(shutil.which('fastqc') is None, "No executable fastqc found; skipping")
 @unittest.skipIf(shutil.which('bismark') is None, "No executable bismark found; skipping")
 @unittest.skipIf(shutil.which('bowtie2') is None, "No executable bowtie2 found; skipping")
+@attr('slow')
 class TestMethylSeq(unittest.TestCase):
     def setUp(self):
         bismarkdir = os.path.join(os.path.abspath(os.curdir), os.pardir, 'data', 'genomes', 'Hsapiens', 'hg19', 'bismark')

@@ -11,10 +11,9 @@ from snakemakelib.report.picard import qc_plots
 # Templates
 picard_qc_report = Template(filename=os.path.join(sml_rules_path(), 'bio/ngs/reports', 'picard_qc_report.mako'))
 
-# Start by including the general snakefile
-include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
-include: os.path.join(sml_rules_path(), 'bio/ngs/reports', 'settings.rules')
-include: os.path.join(sml_rules_path(), 'bio/ngs/qc', 'picard.rules')
+include: '../settings.rules'
+include: './settings.rules'
+include: '../qc/picard.rules'
 
 def find_sample_metrics(wildcards):
     """Simple sample metrics finding function"""

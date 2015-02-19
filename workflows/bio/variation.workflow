@@ -1,6 +1,6 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.config import update_sml_config, sml_rules_path, get_sml_config, init_sml_config
+from snakemakelib.config import update_sml_config, get_sml_config, init_sml_config
 
 def read_backed_phasing_create_input(wildcards):
     bamfile = wildcards.prefix.replace(".bp_variants", ".bam")
@@ -19,12 +19,13 @@ variation_config = {
 
 update_sml_config(variation_config)
 
-include: os.path.join(sml_rules_path(), 'settings.rules')
-include: os.path.join(sml_rules_path(), 'utils.rules')
-include: os.path.join(sml_rules_path(), 'bio/ngs/variation', 'variation.rules')
-include: os.path.join(sml_rules_path(), 'bio/ngs/tools', 'gatk.rules')
-include: os.path.join(sml_rules_path(), 'bio/ngs/qc', 'picard.rules')
-include: os.path.join(sml_rules_path(), 'bio/ngs/align', 'bwa.rules')
+p = os.path.join(os.pardir, os.pardir, 'rules')
+include: os.path.join(p, 'settings.rules')
+include: os.path.join(p, 'utils.rules')
+include: os.path.join(p, 'bio/ngs/variation', 'variation.rules')
+include: os.path.join(p, 'bio/ngs/tools', 'gatk.rules')
+include: os.path.join(p, 'bio/ngs/qc', 'picard.rules')
+include: os.path.join(p, 'bio/ngs/align', 'bwa.rules')
 
 cfg = get_sml_config()
 

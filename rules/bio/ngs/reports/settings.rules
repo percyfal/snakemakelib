@@ -2,11 +2,10 @@
 import os
 import glob
 import math
-from snakemakelib.config import update_sml_config, sml_rules_path, get_sml_config
+from snakemakelib.config import update_sml_config, get_sml_config
 from snakemakelib.utils import utc_time
 
-# Start by including the general snakefile
-include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
+include: '../settings.rules'
 
 config_default = { 
     'bio.ngs.reports.settings' : {

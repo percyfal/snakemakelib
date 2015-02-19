@@ -3,9 +3,8 @@ import os
 from mako.template import Template
 from snakemakelib.config import update_sml_config, sml_rules_path, get_sml_config
 
-# Start by including the general snakefile
-include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
-include: os.path.join(sml_rules_path(), 'bio/ngs/reports', 'settings.rules')
+include: '../settings.rules'
+include: './settings.rules'
 
 rule_report = Template(filename=os.path.join(sml_rules_path(), 'bio/ngs/reports', 'rulegraphs.mako'))
 

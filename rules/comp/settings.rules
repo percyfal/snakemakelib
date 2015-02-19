@@ -1,6 +1,6 @@
 # -*- snakemake -*- 
 import os
-from snakemakelib.config import update_sml_config, sml_rules_path, get_sml_config
+from snakemakelib.config import update_sml_config
 
 """
 Main settings for snakemakelib.comp. Defines top-level configuration

@@ -1,8 +1,8 @@
 # -*- snakemake -*- 
 import os
-from snakemakelib.utils import update_sml_config, sml_rules_path
+from snakemakelib.utils import update_sml_config
 
-include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
+include: '../settings.rules'
 
 config_default = {
     'bio.ngs.platform.illumina' : {

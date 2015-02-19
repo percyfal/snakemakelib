@@ -1,13 +1,12 @@
 # -*- snakemake -*-
 import os
 import re
-from snakemakelib.config import update_sml_config, sml_rules_path, get_sml_config
+from snakemakelib.config import update_sml_config, get_sml_config
 from snakemakelib.bio.ngs.methylseq.bismark import ref, report_label, align_suffix
 
-# Start by including the general bio.ngs snakefile
-include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
-include: os.path.join(os.pardir, 'qc', 'sequenceprocessing.rules')
-include: os.path.join(os.pardir, 'qc', 'picard.rules')
+include: '../settings.rules'
+include: '../qc/sequenceprocessing.rules'
+include: '../qc/picard.rules'
 
 ngs_cfg = get_sml_config('bio.ngs.settings')
 

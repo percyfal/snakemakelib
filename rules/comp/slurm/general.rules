@@ -1,10 +1,8 @@
-
 # -*- snakemake -*-
 import os
-from snakemakelib.utils import update_config, sml_rules_path
+from snakemakelib.utils import update_config
 
-# Start by including the general snakefile
-include: os.path.join(sml_rules_path(), 'base_settings.rules')
+include: '../../settings.rules'
 
 config_default = { 
 	"general" : {

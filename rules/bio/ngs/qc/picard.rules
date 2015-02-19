@@ -1,7 +1,7 @@
 # -*- snakemake -*-
 import os
 import glob
-from snakemakelib.config import update_sml_config, sml_rules_path, get_sml_config, sml_path
+from snakemakelib.config import update_sml_config, get_sml_config, sml_path
 
 # FIXME: this is hacky at the moment but is a proof of principle
 def find_merge_inputs(wildcards):
@@ -17,11 +17,9 @@ def find_merge_inputs(wildcards):
             sources.append(src)
     return sources
 
-# Start by including the general snakefile
-include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
+include: '../settings.rules'
 # Include comp settings to gain access to awk and friends
-include: os.path.join(sml_rules_path(), 'comp', 'settings.rules')
-
+include: '../../../comp/settings.rules'
 
 # Jar program names
 BUILD_BAM_INDEX = "BuildBamIndex"

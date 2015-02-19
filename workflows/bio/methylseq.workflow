@@ -40,7 +40,7 @@ def find_meth_merge_inputs(wildcards):
 methylation_config = {
     'bio.ngs.methylseq.bismark' : {
         'methXtract' : {
-            'options' : "--ignore_r2 2 --counts  --gzip -p --no_overlap",
+            'options' : "--ignore_r2 2 --counts  --gzip -p --no_overlap --bedGraph --report",
         },
         'report' : {
             'inputfun' : find_report_inputs,
@@ -73,6 +73,7 @@ qc_cfg = get_sml_config('bio.ngs.qc.sequenceprocessing')
 cfg = get_sml_config('bio.ngs.settings')
 path = cfg.get('path') if not cfg.get('path') is None else os.curdir
 
+
 FASTQC_TARGETS = expand("{path}/{sample}/{flowcell}/{lane}_{flowcell}_{sample}_1_fastqc.html {path}/{sample}/{flowcell}/{lane}_{flowcell}_{sample}_2_fastqc.html".split(), sample=cfg['samples'], flowcell=cfg['flowcells'], lane=cfg['lanes'], path=path)
 
 BISMARK_TARGETS = expand("{path}/{sample}/CpG_OB_{sample}.merge.deduplicated.txt.gz", sample=cfg['samples'], flowcell=cfg['flowcells'], lane=cfg['lanes'], path=path)
@@ -80,7 +81,7 @@ BISMARK_TARGETS = expand("{path}/{sample}/CpG_OB_{sample}.merge.deduplicated.txt
 BISMARK_REPORT_TARGETS = expand("{path}/{sample}/{sample}.merge.deduplicated.bam{report_label}.html", sample=cfg['samples'], flowcell=cfg['flowcells'], lane=cfg['lanes'], path=path, report_label=report_label())
 
 # All rules
-rule all:
+rule bismark_all:
     """Run all the analyses"""
     input: FASTQC_TARGETS + BISMARK_TARGETS + BISMARK_REPORT_TARGETS
 
@@ -99,7 +100,6 @@ rule run_bismark_report:
 rule list_targets:
     """List currently defined targets"""
     run:
-      print ("Sample targets: ", SAMPLE_TARGETS)
       print ("Fastqc targets: ", FASTQC_TARGETS)
       print ("Bismark targets: ", BISMARK_TARGETS)
       print ("Bismark report targets: ", BISMARK_REPORT_TARGETS)

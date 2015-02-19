@@ -17,7 +17,6 @@ config_default = {
         'regions' : [],
         'run_id_re' : "[0-9]_[0-9]+_[A-Z0-9]+XX_P[0-9]+_[0-9]+",
         'samples' : [],
-        'sample_prefix' : "P",
         'threads' : 8,
         'annotation' : {
             'annot_label' : "",

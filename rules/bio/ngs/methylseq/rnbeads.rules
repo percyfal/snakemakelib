@@ -1,0 +1,165 @@
+# -*- snakemake -*-
+import os
+from snakemake.utils import R
+from snakemakelib.config import update_sml_config, get_sml_config
+
+include: '../../../utils.rules'
+include: '../settings.rules'
+
+config_default = {
+    'bio.ngs.methylseq.rnbeads' : {
+        'analysisdir' : os.curdir,
+        'reportdirname' : 'reports_details',
+        'samplesheet' : 'sample_annotation.csv',
+        # Obtained by write(toJSON(rnb.options(), pretty=TRUE, asIs=FALSE))
+        # Version RnBeads_0.99.18
+        'options' : {
+            "analysis.name" : None,
+            "logging" : True,
+            "email" : None,
+            "assembly" : "hg19",
+            "columns.pairing" : None,
+            "analyze.sites" : True,
+            "region.types" : None,
+            "region.aggregation" : "mean",
+            "region.subsegments" : 0,
+            "region.subsegments.types" : None,
+            "identifiers.column" : None,
+            "points.category" : [16,17,3,15,4,7,8],
+            "colors.category" : ["#1B9E77","#D95F02","#7570B3","#E7298A","#66A61E","#E6AB02","#A6761D", "#666666"],
+            "colors.gradient" : ["#132B43","#56B1F7"],
+            "min.group.size" : 2,
+            "max.group.count" : None,
+            "gz.large.files" : False,
+            "strand.specific" : False,
+            "replicate.id.column" : None,
+            "import" : True,
+            "import.default.data.type" : "idat.dir",
+            "import.table.separator" : ",",
+            "import.bed.style" : "BisSNP",
+            "import.bed.columns" : {
+		"chr" : 1,
+		"start" : 2,
+		"end" : 3,
+		"strand" : 6,
+		"meth" : 4,
+		"coverage" : 5
+            },
+            "import.bed.frame.shift" : 1,
+            "import.bed.test" : True,
+            "import.bed.test.only" : False,
+            "import.idat.chunk.size" : None,
+            "qc" : True,
+            "qc.boxplots" : True,
+            "qc.barplots" : True,
+            "qc.negative.boxplot" : True,
+            "qc.snp.heatmap" : True,
+            "qc.snp.distances" : True,
+            "qc.snp.boxplot" : False,
+            "qc.snp.barplot" : False,
+            "qc.coverage.plots" : False,
+            "qc.coverage.threshold.plot" : [1,2,3,4,5,6,7,8,9,10],
+            "qc.coverage.histograms" : True,
+            "qc.coverage.violins" : True,
+            "qc.sample.batch.size" : 500,
+            "preprocessing" : True,
+            "normalization" : None,
+            "normalization.method" : "swan",
+            "normalization.background.method" : "methylumi.noob",
+            "normalization.plot.shifts" : True,
+            "filtering.whitelist" : None,
+            "filtering.blacklist" : None,
+            "filtering.context.removal" : ["CC","CAG","CAH","CTG","CTH","Other"],
+            "filtering.snp" : "3",
+            "filtering.sex.chromosomes.removal" : False,
+            "filtering.missing.value.quantile" : 1,
+            "filtering.coverage.threshold" : 5,
+            "filtering.low.coverage.masking" : False,
+            "filtering.high.coverage.outliers" : False,
+            "filtering.greedycut" : True,
+            "filtering.greedycut.pvalue.threshold" : 0.05,
+            "filtering.greedycut.rc.ties" : "row",
+            "filtering.deviation.threshold" : 0,
+            "inference" : False,
+            "inference.targets.sva" : [],
+            "inference.reference.methylome.column" : None,
+            "inference.max.cell.type.markers" : 10000,
+            "inference.top.cell.type.markers" : 500,
+            "inference.sva.num.method" : "leek",
+            "exploratory" : True,
+            "exploratory.columns" : None,
+            "exploratory.top.dimensions" : 0,
+            "exploratory.principal.components" : 8,
+            "exploratory.correlation.pvalue.threshold" : 0.01,
+            "exploratory.correlation.permutations" : 10000,
+            "exploratory.correlation.qc" : True,
+            "exploratory.beta.distribution" : True,
+            "exploratory.intersample" : True,
+            "exploratory.deviation.plots" : None,
+            "exploratory.clustering" : "all",
+            "exploratory.clustering.top.sites" : 1000,
+            "exploratory.clustering.heatmaps.pdf" : False,
+            "exploratory.region.profiles" : ["genes","promoters","cpgislands"],
+            "exploratory.gene.symbols" : None,
+            "exploratory.custom.loci.bed" : None,
+            "differential" : True,
+            "differential.site.test.method" : "limma",
+            "differential.permutations" : 0,
+            "differential.comparison.columns" : None,
+            "differential.comparison.columns.all.pairwise" : None,
+            "covariate.adjustment.columns" : None,
+            "differential.adjustment.sva" : True,
+            "differential.adjustment.celltype" : True,
+            "differential.enrichment" : False,
+            "export.to.bed" : True,
+            "export.to.trackhub" : ["bigBed","bigWig"],
+            "export.to.csv" : False,
+            "export.to.ewasher" : False,
+            "export.types" : "sites",
+            "colors.meth" : ["#AD0021", "#909090", "#39278C"],
+            "colors.3.gradient" : ["#832424", "#FFFFFF", "#3A3A98"],
+            "logging.memory" : True,
+            "logging.disk" : False,
+            "logging.exit.on.error" : False,
+            "distribution.subsample" : 1000000,
+            "disk.dump.big.matrices" : True,
+            "enforce.memory.management" : False,
+            "enforce.destroy.disk.dumps" : False
+        },
+    },
+}		
+
+update_sml_config(config_default)
+
+cfg = get_sml_config('bio.ngs.methylseq.rnbeads')
+
+rule rnbeads_list_options:
+    run:
+      print (cfg)
+      
+rule rnbeads_create_reportdir:
+    """Create report directory.
+    
+    Run rnb.initialize.reports
+    """
+    run:
+      reportdir = os.path.join(cfg['analysisdir'], cfg['reportdirname'])
+      R("""
+      library(RnBeads)
+      report.dir <- file.path('{reportdir}')
+      rnb.initialize.reports(report.dir)
+      """)
+
+rule rnbeads_run_analysis:
+    """Rnbeads run analysis
+
+    Run command rnb.run.analysis.
+    """
+    input: samplesheet=cfg['samplesheet']
+    run:
+      reportdir = os.path.join(cfg['analysisdir'], cfg['reportdirname'])
+      samplesheet = input.samplesheet
+      R("""
+      library(RnBeads)
+      report.dir <- file.path('{reportdir}')
+      rnb.run.analysis(dir.reports=report.dir, sample.sheet='{samplesheet}', data.dir=

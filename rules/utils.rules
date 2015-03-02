@@ -1,6 +1,6 @@
 # -*- snakemake -*- 
 import os
-from snakemakelib.config import get_sml_config
+from snakemakelib.config import get_sml_config, sml_rules_path
 from snakemake.io import Wildcards, Namedlist
 
 include: './settings.rules'

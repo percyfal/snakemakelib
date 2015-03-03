@@ -1,0 +1,51 @@
+# -*- snakemake -*-
+import os
+from snakemakelib.utils import update_sml_config, get_sml_config
+
+include: '../settings.rules'
+
+bio_cfg = get_sml_config('bio.ngs.settings')
+
+config_default = { 
+	'bio.ngs.rnaseq.rsem' : {
+            'rsem' : {
+                'options' :  {
+                    'bwa_rRNA' = "",
+                    'prepare_referenc' =
+                },
+                'ref' : bio_cfg['db']['ref'],
+            },
+            "RSEM_PREPARE_REFERENCE_OPTION_REF" : "$(REF)",
+            "RSEM_CALCULATE_EXPRESSION" : "$(RSEM_HOME)/rsem-calculate-expression",
+		"RNASEQC_COMMAND" : "java -Xmx$(RNASEQC_JAVA_MEM) -Djava.io.tmpdir=$(RNASEQC_JAVA_TMPDIR) -jar $(RNASEQC_JAR)",
+		"RSEM_PREPARE_REFERENCE_OPTIONS" : "",
+		"RSEM_HOME" : ".",
+		"RSEM_CALCULATE_EXPRESSION_OPTIONS" : "--no-bam-output --bowtie-chunkmbs 512",
+		"RSEM_THREADS" : "$(THREADS)",
+		"RSEM_PREPARE_REFERENCE" : "$(RSEM_HOME)/rsem-prepare-reference",
+		},
+	},
+}
+
+update_sml_config(config_default)
+
+rnaseq_conf = get_sml_config('bio.ngs.rnaseq.rnaseq')
+
+config_default['bio.ngs.rnaseq.rnaseq']['rnaseqqc']['jar'] = os.path.join(rnaseq_conf['home'], RNASEQC_JAR_PROGRAM)
+
+update_sml_config(config_default)
+
+sml_config = get_sml_config()
+
+config_default['bio.ngs.rnaseq.rnaseq']['rnaseqqc']['cmd'] = "java -Xmx" + rnaseq_conf['java_mem'] + " -Djava.io.tmpdir=" + rnaseq_conf['java_tmpdir'] +  " -jar " + rnaseq_conf['jar']
+
+update_sml_config(config_default)
+
+# rule rule_1:
+# 	input: " {prefix}$(READ1_LABEL)$(FASTQ_SUFFIX).gz {prefix}$(READ2_LABEL)$(FASTQ_SUFFIX).gz"
+# 	output: "{prefix}.rsem"
+# 	shell: "rm -f $(dir $(word 1, $^))read1.fifo $(dir $(word 2, $^))read2.fifo"
+# rule rule_2:
+# 	input: " {prefix}.bam {prefix}.bai"
+# 	output: "{prefix}.rnaseqc"
+# 	shell: "$(RNASEQC_COMMAND) $(RNASEQC_OPTIONS) -o $@.tmp -s "sample|$<|rnaseqQC" && mv $@.tmp $@"

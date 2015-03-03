@@ -1,0 +1,39 @@
+# -*- snakemake -*-
+import os
+from snakemakelib.config import update_sml_config, get_sml_config
+
+include: '../settings.rules'
+include: '../tools/samtools.rules'
+
+ngs_conf = get_sml_config('bio.ngs.settings')
+
+config_default = { 
+    'bio.ngs.align.star' : {
+        'cmd' : "STAR",
+        'ref' : ngs_conf['db']['ref'],
+        'index' : '',
+        'star_index' : {
+            'threads' : ngs_conf['threads'],
+            'options' : "",
+            'sjdbGTFfile' : "",
+        },
+        'align' : {
+            'threads' : ngs_conf['threads'],
+            'options' : "",
+        },
+    },
+}
+
+update_sml_config(config_default)
+
+cfg = get_sml_config('bio.ngs.align.star')
+
+rule star_index:
+    params: cmd = cfg['cmd'],\
+            options = " ".join(["--sjdbGTFfile {}".format(cfg['star_index']['sjdbGTFfile']) if cfg['star_index']['sjdbGTFfile'] else "",\
+            "--sjdbOverhang {}".format(cfg['star_index']['sjdbGTFfile'])]),\
+            genomedir = os.path.dirname(cfg['index'])
+    input: "{prefix}" + ".fa"
+    output: "{prefix}"
+    threads: cfg['star_index']['threads']
+    shell: "{params.cmd} --runThreadN {threads} --runMode genomeGenerate --genomeDir {params.genomedir}"

@@ -1,57 +1,84 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.utils import update_sml_config
+from snakemakelib.config import update_sml_config, get_sml_config
 
 include: '../settings.rules'
+include: '../tools/samtools.rules'
+
+ngs_cfg = get_sml_config('bio.ngs.settings')
 
 config_default = { 
-	"tuxedo" : {
-		"TOPHAT2_OPTIONS" : "-p $(TOPHAT2_OPTION_THREADS) -o $(TOPHAT2_OPTION_OUTPUT_DIR).tmp",
-		"CUFFLINKS_OPTIONS" : "",
-		"BOWTIE_OPTION_INDEX" : "",
-		"BOWTIE_OPTION_THREADS" : "$(THREADS)",
-		"BOWTIE2_OPTIONS" : "-p $(BOWTIE2_OPTION_THREADS)",
-		"BOWTIE" : "bowtie",
-		"TOPHAT2_OPTION_THREADS" : "$(THREADS)",
-		"TOPHAT2_OPTION_OUTPUT_DIR" : "./tophat_out",
-		"CUFFLINKS" : "cufflinks",
-		"BOWTIE_OPTIONS" : "-p $(BOWTIE_OPTION_THREADS)",
-		"BOWTIE2" : "bowtie2",
-		"CUFFLINKS_OPTION_TRANSCRIPT_ANNOT_GTF" : "$(TRANSCRIPT_ANNOT_GTF)",
-		"CUFFLINKS_ANNOT_LABEL" : "$(ANNOT_LABEL)",
-		"BOWTIE2_OPTION_THREADS" : "$(THREADS)",
-		"BOWTIE2_OPTION_INDEX" : "$(BOWTIE_OPTION_INDEX)",
-		"TOPHAT2_OPTION_INDEX" : "$(BOWTIE2_OPTION_INDEX)",
-		"BOWTIE2_BUILD" : "bowtie2-build",
-		"CUFFLINKS_OPTION_OUTPUT_DIR" : "./",
-		"TOPHAT2" : "tophat2",
-		},
-	},
+    "bio.ngs.rnaseq.tuxedo" : {
+        'ref' : ngs_cfg['db']['ref'],
+        'version2' : True, # Run version 2 by default
+        'index' : '',
+        'tophat' : {
+            'options' : '',
+            'threads' : ngs_cfg['threads'],
+            'output_dir' : os.path.join(os.curdir, "tophat_out"),
+        },
+        'cufflinks' : {
+            'cmd' : 'cufflinks', 
+            'options' : '',
+            'transcript_annot_gtf' : ngs_cfg['annotation']['transcript_annot_gtf'],
+            'annot_label' : ngs_cfg['db']['build'],
+            'output_dir' : os.curdir,
+        },
+        'bowtie' : {
+            'threads' : ngs_cfg['threads'],
+            'options' : '',
+        },
+    },
 }
 
-config = update_config(config, config_default)
+update_sml_config(config_default)
 
-rule rule_1:
-	input: " {prefix}$(READ1_LABEL).fastq.gz {prefix}$(READ2_LABEL).fastq.gz"
-	output: "{prefix}.bam"
-	shell: "$(BOWTIE) mem $(BOWTIE_OPTIONS) $(BOWTIE_OPTION_INDEX) $^ | $(SAMTOOLS) view -Sbh - > $@.tmp && mv $@.tmp $@"
-rule rule_2:
-	input: " {prefix}.fa"
-	output: "{prefix}"
-	shell: "$(BOWTIE2_BUILD) $< $@.tmp && rename $@.tmp $@ $(@)*"
-rule rule_3:
-	input: " {prefix}$(READ1_LABEL)$(FASTQ_SUFFIX).gz {prefix}$(READ2_LABEL)$(FASTQ_SUFFIX).gz"
-	output: "{prefix}.tophat2"
-	shell: "$(TOPHAT2) $(TOPHAT2_OPTIONS) $(TOPHAT2_OPTION_INDEX) $^ &> $@.tmp && mv $@.tmp $@ && mv $(dir $@)$(TOPHAT2_OPTION_OUTPUT_DIR).tmp $(dir $@)$(TOPHAT2_OPTION_OUTPUT_DIR)"
-rule rule_4:
-	input: " {prefix}.tophat2 $(CUFFLINKS_OPTION_TRANSCRIPT_ANNOT_GTF)"
+ngs_cfg = get_sml_config('bio.ngs.settings')
+tux_cfg = get_sml_config('bio.ngs.rnaseq.tuxedo')
+samtools_cfg = get_sml_config('bio.ngs.tools.samtools')
+
+rule tuxedo_bowtie_align:
+    """Bowtie paired end alignment"""
+    params: cmd = 'bowtie2' if tux_cfg['version2'] else 'bowtie',
+            options = tux_cfg['bowtie']['options'],
+            index = ("-x " if tux_cfg['version2'] else "") + tux_cfg['index']
+    input: read1="{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],\
+           read2="{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['fastq_suffix']
+    output: "{prefix}.bam"
+    threads: tux_cfg['bowtie']['threads']
+    shell: "{params.cmd} -p {threads} {params.options} {params.index} -1 {input.read1} -2 {input.read2} | " + samtools_cfg['cmd'] + " view -Sb - > {output}.tmp && mv {output}.tmp {output}"
+
+rule tuxedo_bowtie_build:
+    """Bowtie build index"""
+    params: ref = tux_cfg['ref'],
+            cmd = 'bowtie2-build' if tux_cfg['version2'] else 'bowtie-build'
+    input: "{prefix}" + ".fa"
+    output: ["{prefix}.1.bt2", "{prefix}.2.bt2", "{prefix}.3.bt2", "{prefix}.4.bt2", "{prefix}.rev.1.bt2", "{prefix}.rev.2.bt2"] if tux_cfg['version2'] else []
+    shell: "{params.cmd} {input} {wildcards.prefix}"
+
+rule tuxedo_tophat:
+    """Run tophat paired end alignment"""
+    params: cmd = 'tophat2' if tux_cfg['version2'] else 'tophat',
+            options = tux_cfg['tophat']['options'],
+            index = tux_cfg['index'],
+            outdir = tux_cfg['tophat']['output_dir']
+    input: read1 = "{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], 
+           read2 = "{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['fastq_suffix']
+    output: "{prefix}.tophat2" if tux_cfg['version2'] else "{prefix}.tophat"
+    shell: "{params.cmd} {params.options} {params.index} {input.read1} {input.read2} &> {output}.tmp && mv {output}.tmp {output} && mv $(dir {output}){params.outdir}.tmp $(dir {output}){params.outdir}"
+
+rule tuxedo_cufflinks_quant:
+	input: "{prefix}.tophat2 $(CUFFLINKS_OPTION_TRANSCRIPT_ANNOT_GTF)"
 	output: "{prefix}.cufflinks_quant"
 	shell: "$(CUFFLINKS) $(CUFFLINKS_OPTIONS) --GTF $(word 2, $^) $(dir $<)$(TOPHAT2_OPTION_OUTPUT_DIR)/accepted_hits.bam -o $(dir $@)$(CUFFLINKS_OPTION_OUTPUT_DIR)_$(CUFFLINKS_ANNOT_LABEL).tmp &> $@.tmp && mv $@.tmp $@ && mv $(dir $@)$(CUFFLINKS_OPTION_OUTPUT_DIR)_$(CUFFLINKS_ANNOT_LABEL).tmp $(dir $@)$(CUFFLINKS_OPTION_OUTPUT_DIR)_$(CUFFLINKS_ANNOT_LABEL)"
-rule rule_5:
-	input: " {prefix}.tophat2"
+
+rule tuxedo_cufflinks_from_tophat2:
+	input: "{prefix}.tophat2"
 	output: "{prefix}.cufflinks"
 	shell: "$(CUFFLINKS) $(CUFFLINKS_OPTIONS) $(dir $<)$(TOPHAT2_OPTION_OUTPUT_DIR)/accepted_hits.bam -o $(dir $@)$(CUFFLINKS_OPTION_OUTPUT_DIR).tmp &> $@.tmp && mv $@.tmp $@ && mv $(dir $@)$(CUFFLINKS_OPTION_OUTPUT_DIR).tmp $(dir $@)$(CUFFLINKS_OPTION_OUTPUT_DIR)"
-rule rule_6:
-	input: " {prefix}.bam"
+
+# NB: usually {prefix}.bam is accepted_hits.bam from tophat
+rule tuxedo_cufflinks_from_bam:
+	input: "{prefix}.bam"
 	output: "{prefix}.cufflinks"
 	shell: "$(CUFFLINKS) $(CUFFLINKS_OPTIONS) $< -o $(dir $@)$(CUFFLINKS_OPTION_OUTPUT_DIR).tmp &> $@.tmp && mv $@.tmp $@ && mv $(dir $@)$(CUFFLINKS_OPTION_OUTPUT_DIR).tmp $(dir $@)$(CUFFLINKS_OPTION_OUTPUT_DIR)"

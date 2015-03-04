@@ -211,7 +211,7 @@ rule picard_merge_sam:
     params: cmd = picard_config['cmd'] + MERGE_SAM_FILES,
             options = " ".join([picard_config['options'],
                                 picard_config['merge_sam']['options']])
-    input: picard_config['merge_sam']['inputfun']
+    input: dict(picard_config['merge_sam'])['inputfun']
     output: "{path}" + os.sep + "{prefix}." + picard_config['merge_sam']['label'] + ".bam"
     run: 
       inputstr = " ".join(["INPUT={}".format(x) for x in input])

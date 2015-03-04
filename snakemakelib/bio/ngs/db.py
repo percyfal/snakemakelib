@@ -35,15 +35,20 @@ def index(application):
     Returns:
       index: a <string> representing the index in the format required by the particular application
     """
-    cfg = get_sml_config("bio.ngs.settings")
-    if not cfg['db']['build_config']:
+    sml_cfg = get_sml_config()
+    ngs_cfg = sml_cfg["bio.ngs.settings"]
+
+    if not ngs_cfg['db']['build_config']:
         logger.info("No build_config present: assuming index locations are organized according to cloudbiolinux conventions")
         if application in ["bwa"]:
-            prefix, _ = os.path.splitext(cfg['db']['ref'])
+            prefix, _ = os.path.splitext(ngs_cfg['db']['ref'])
         else:
-            prefix = cfg['db']['ref']
+            prefix = ngs_cfg['db']['ref']
         index_root = os.path.dirname(os.path.dirname(prefix))
         basename = os.path.basename(prefix)
-        return os.path.join(index_root, application, basename)
+        if application in ["star"]:
+            return os.path.join(index_root, application, sml_cfg['bio.ngs.align.star']['star_index']['genome'])
+        else:
+            return os.path.join(index_root, application, basename)
     else:
         return None

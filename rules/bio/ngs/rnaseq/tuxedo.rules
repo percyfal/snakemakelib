@@ -1,6 +1,7 @@
 # -*- snakemake -*-
 import os
 from snakemakelib.config import update_sml_config, get_sml_config
+from snakemakelib.bio.ngs.db import index
 
 include: '../settings.rules'
 include: '../tools/samtools.rules'
@@ -11,7 +12,7 @@ config_default = {
     "bio.ngs.rnaseq.tuxedo" : {
         'ref' : ngs_cfg['db']['ref'],
         'version2' : True, # Run version 2 by default
-        'index' : '',
+        'index' : index,
         'tophat' : {
             'options' : '',
             'threads' : ngs_cfg['threads'],
@@ -36,6 +37,7 @@ update_sml_config(config_default)
 ngs_cfg = get_sml_config('bio.ngs.settings')
 tux_cfg = get_sml_config('bio.ngs.rnaseq.tuxedo')
 samtools_cfg = get_sml_config('bio.ngs.tools.samtools')
+comp_cfg = get_sml_config('comp.settings')
 
 rule tuxedo_bowtie_align:
     """Bowtie paired end alignment"""
@@ -57,28 +59,43 @@ rule tuxedo_bowtie_build:
     shell: "{params.cmd} {input} {wildcards.prefix}"
 
 rule tuxedo_tophat:
-    """Run tophat paired end alignment"""
+    """Run tophat paired end alignment.
+
+    NB: requires python2 so need to activate a virtual environment or
+    the like to run.
+
+    """
     params: cmd = 'tophat2' if tux_cfg['version2'] else 'tophat',
             options = tux_cfg['tophat']['options'],
             index = tux_cfg['index'],
-            outdir = tux_cfg['tophat']['output_dir']
+            outdir = tux_cfg['tophat']['output_dir'],
+            python2 = comp_cfg['python2']['activate_cmd']
     input: read1 = "{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], 
            read2 = "{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['fastq_suffix']
     output: "{prefix}.tophat2" if tux_cfg['version2'] else "{prefix}.tophat"
-    shell: "{params.cmd} {params.options} {params.index} {input.read1} {input.read2} &> {output}.tmp && mv {output}.tmp {output} && mv $(dir {output}){params.outdir}.tmp $(dir {output}){params.outdir}"
+    shell: "{params.python2} && {params.cmd} {params.options} -o {output}.tmp {params.index} {input.read1} {input.read2} &> {output}.log && mv {output}.tmp {output} && mv {output}.log {output}"
 
 rule tuxedo_cufflinks_quant:
-	input: "{prefix}.tophat2 $(CUFFLINKS_OPTION_TRANSCRIPT_ANNOT_GTF)"
-	output: "{prefix}.cufflinks_quant"
-	shell: "$(CUFFLINKS) $(CUFFLINKS_OPTIONS) --GTF $(word 2, $^) $(dir $<)$(TOPHAT2_OPTION_OUTPUT_DIR)/accepted_hits.bam -o $(dir $@)$(CUFFLINKS_OPTION_OUTPUT_DIR)_$(CUFFLINKS_ANNOT_LABEL).tmp &> $@.tmp && mv $@.tmp $@ && mv $(dir $@)$(CUFFLINKS_OPTION_OUTPUT_DIR)_$(CUFFLINKS_ANNOT_LABEL).tmp $(dir $@)$(CUFFLINKS_OPTION_OUTPUT_DIR)_$(CUFFLINKS_ANNOT_LABEL)"
+    """Run cufflinks quantification"""
+    params: cmd = tux_cfg['cufflinks']['cmd'],
+            options = tux_cfg['cufflinks']['options']
+    input: tophat2="{prefix}.tophat2", annot_gtf=tux_cfg['cufflinks']['transcript_annot_gtf']
+    output: "{prefix}.cufflinks_quant"
+    shell: "{params.cmd} {params.options} --GTF {input.annot_gtf} {input.tophat2}/accepted_hits.bam -o {output}.tmp &> {output}.log && mv {output}.tmp {output} && mv {output}.log {output}"
 
 rule tuxedo_cufflinks_from_tophat2:
-	input: "{prefix}.tophat2"
-	output: "{prefix}.cufflinks"
-	shell: "$(CUFFLINKS) $(CUFFLINKS_OPTIONS) $(dir $<)$(TOPHAT2_OPTION_OUTPUT_DIR)/accepted_hits.bam -o $(dir $@)$(CUFFLINKS_OPTION_OUTPUT_DIR).tmp &> $@.tmp && mv $@.tmp $@ && mv $(dir $@)$(CUFFLINKS_OPTION_OUTPUT_DIR).tmp $(dir $@)$(CUFFLINKS_OPTION_OUTPUT_DIR)"
+    params: cmd = tux_cfg['cufflinks']['cmd'],
+            options = tux_cfg['cufflinks']['options']
+    input: tophat2 = os.path.join("{prefix}.tophat2", "accepted_hits.bam")
+    output: "{prefix}.cufflinks"
+    shell: "{params.cmd} {params.options} {input.tophat2} -o {output}.tmp &> {output}.log && mv {output}.tmp {output} && mv {output}.log {output}"
 
 # NB: usually {prefix}.bam is accepted_hits.bam from tophat
 rule tuxedo_cufflinks_from_bam:
-	input: "{prefix}.bam"
-	output: "{prefix}.cufflinks"
-	shell: "$(CUFFLINKS) $(CUFFLINKS_OPTIONS) $< -o $(dir $@)$(CUFFLINKS_OPTION_OUTPUT_DIR).tmp &> $@.tmp && mv $@.tmp $@ && mv $(dir $@)$(CUFFLINKS_OPTION_OUTPUT_DIR).tmp $(dir $@)$(CUFFLINKS_OPTION_OUTPUT_DIR)"
+    params: cmd = tux_cfg['cufflinks']['cmd'],
+            options = tux_cfg['cufflinks']['options']
+    input: bam="{prefix}.bam"
+    output: "{prefix}.cufflinks"
+    shell: "{params.cmd} {params.options} {input.bam} -o {output}.tmp &> {output}.log && mv {output}.tmp {output} && mv {output}.log {output}"
+
+ruleorder: tuxedo_cufflinks_from_tophat2 > tuxedo_cufflinks_from_bam

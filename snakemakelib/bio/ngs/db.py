@@ -26,7 +26,7 @@ def ref():
     # TODO: make sure build_config points to a file; read file and parse to find reference
     return None
     
-def index(application):
+def index(application=None):
     """Return the index files for a given application.
 
     Args:

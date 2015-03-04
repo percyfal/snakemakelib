@@ -55,7 +55,6 @@ class TestBaseConfig(unittest.TestCase):
         self.cfg.add_section('foobar')
         self.assertSetEqual(set(self.cfg.sections), set(['foo', 'foobar']))
 
-
     def test_update_config(self):
         """Test updating configuration with another configuration object. """
         cfg2 = BaseConfig({'bar':'foo'})
@@ -64,7 +63,10 @@ class TestBaseConfig(unittest.TestCase):
         del cfg2
 
     def test_update_config_same_section(self):
-        """Test updating configuration with another configuration object whose sections overlap. Note that this will overwrite the first configuration. FIXME: should this be intended behaviour?"""
+        """Test updating configuration with another configuration object whose
+        sections overlap. Note that this will overwrite the first
+        configuration. FIXME: should this be intended behaviour?
+        """
         cfg2 = BaseConfig({'foo':'foobar'})
         self.cfg.update(cfg2)
         self.assertDictEqual(self.cfg, {'foo':'foobar'})
@@ -137,11 +139,17 @@ class TestSmlConfig(unittest.TestCase):
                 })
             })
         })
+        self.cfg_list = BaseConfig({
+            'foo' : 'bar',
+            'bar' : ['foo', 'bar'],
+        })
         
     def tearDown(self):
         del self.cfg
+        del self.cfg_list
+        del self.cfg_nested
         del self.default
-
+        del self.default_nested
 
     def test_init_sml_config_from_dict(self):
         init_sml_config({'foo':'bar'})
@@ -163,13 +171,18 @@ class TestSmlConfig(unittest.TestCase):
         self.assertDictEqual(cfg, {'bar': {'bar': {'bar': 'customfoo'}, 'foo': 'customfoo'}})
 
     def test_update_sml_config_with_default(self):
-        """Test updating a configuration object skipping values that are already in use. Overriding dict.update will not do as its original intedend behaviour is needed.
+        """Test updating a configuration object skipping values that are
+        already in use. Overriding dict.update will not do as its original
+        intedend behaviour is needed.
 
-        What is the desired behaviour? 
+        What is the desired behaviour?
 
         1. In Snakefile user modifies a custom configuration object
         2. Relevant include files are loaded with default settings.
-        3. Default settings need to be updated with custom config at once so that custom changes are reflected in rules (is this true?)
+
+        3. Default settings need to be updated with custom config at
+           once so that custom changes are reflected in rules (is this
+           true?)
         """
         init_sml_config(self.cfg)
         update_sml_config(self.default)
@@ -213,3 +226,14 @@ class TestSmlConfig(unittest.TestCase):
         cfg = get_sml_config(section="bar")
         self.assertDictEqual(cfg, {'bar': {'bar': 'customfoo', 'foo': 'bar'}, 'foo': 'foobar'})
 
+    def test_set_sml_config_with_list(self):
+        """Test setting an sml_config object with a list value"""
+        init_sml_config(self.cfg_list)
+        cfg = get_sml_config()
+        self.assertIsInstance(cfg['bar'], list)
+        self.assertListEqual(cfg['bar'], ['foo', 'bar'])
+
+    def test_update_sml_config_with_function(self):
+        """Test setting an sml_config object with a function that requires a parameter"""
+        init_sml_config(self.cfg)
+        update_sml_config({'foo':lambda x: x})

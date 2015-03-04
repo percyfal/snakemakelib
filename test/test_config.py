@@ -1,6 +1,5 @@
 # Copyright (C) 2014 by Per Unneberg
-import os
-import sys 
+# pylint: disable=R0904
 import unittest
 import logging
 from nose.tools import raises
@@ -8,10 +7,8 @@ from snakemakelib.config import BaseConfig, init_sml_config, update_sml_config, 
 
 logging.basicConfig(level=logging.DEBUG)
 
-def fun1():
-    return "fun1"
-
 class TestBaseConfig(unittest.TestCase):
+    """Test BaseConfig class"""
     def setUp(self):
         self.cfg = BaseConfig({'foo':'bar'})
 
@@ -94,6 +91,20 @@ class TestBaseConfig(unittest.TestCase):
                     self.assertIsInstance(v, BaseConfig)
         assert_sections(d)
 
+    def test_getitem(self):
+        """Test getting an item from BaseConfig"""
+        d = BaseConfig({'foo' : {'bar' : 'foo'}, 'bar' : lambda: "bar", 'foobar' : lambda x: x, 'barfoo' : lambda x: x['foo'], 'foofoo' : None})
+        self.assertIsInstance(d['foo'], BaseConfig)
+        self.assertDictEqual(d['foo'], {'bar' : 'foo'})
+        self.assertIsInstance(d['foo']['bar'], str)
+        self.assertEqual(d['foo']['bar'], 'foo')
+        self.assertIsInstance(d['bar'], str)
+        self.assertEqual(d['bar'], 'bar')
+        self.assertIsInstance(d['foobar', "test"], str)
+        self.assertEqual(d['foobar', "test"], "test")
+        self.assertIsInstance(d['barfoo', {'foo' : "test"}], str)
+        self.assertEqual(d['barfoo', {'foo' : "test"}], "test")
+        self.assertIsNone (d['foofoo'])
 
 class TestSmlConfig(unittest.TestCase):
     def setUp(self):

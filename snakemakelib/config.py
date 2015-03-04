@@ -27,6 +27,20 @@ class BaseConfig(dict):
             val = BaseConfig(val)
         dict.__setitem__(self, key, val)
 
+    def __getitem__(self, k):
+        param = None
+        if isinstance(k, tuple):
+            key, param = k
+        else:
+            key = k
+        val = dict.__getitem__(self, key)
+        if isinstance(val, BaseConfig) or isinstance(val, str) or val is None:
+            return val
+        # Else: we have a function
+        if not param is None:
+            return val(param)
+        return val()
+
     def update(self, *args, **kwargs):
         self._sections += [kk for k in args for kk in list(k)] + list(kwargs)
         dict.update(self, *args, **kwargs)
@@ -159,4 +173,3 @@ def sml_base_path():
 
 def sml_rules_path():
     return os.path.join(os.path.dirname(os.path.dirname(__file__)), "rules")
-

@@ -25,7 +25,8 @@ config_default = {
         'db' : {
             'dbsnp' : "",
             'ref' : "",
-            'build' : 'hg19',
+            'build' : '',
+            'build_config' : None,
         },
         'java' : {
             'java_mem' : "6g",

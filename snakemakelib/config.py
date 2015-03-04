@@ -34,12 +34,12 @@ class BaseConfig(dict):
         else:
             key = k
         val = dict.__getitem__(self, key)
-        if isinstance(val, BaseConfig) or isinstance(val, str) or val is None:
+        if str(type(val)) == "<class 'function'>":
+            if not param is None:
+                return val(param)
+            return val()
+        else:
             return val
-        # Else: we have a function
-        if not param is None:
-            return val(param)
-        return val()
 
     def update(self, *args, **kwargs):
         self._sections += [kk for k in args for kk in list(k)] + list(kwargs)
@@ -152,12 +152,12 @@ settings.
     for (section, value) in config_default.items():
         if not sml_config.has_section(section):
             sml_config.add_section(section)
-        if (not isinstance(config_default[section], BaseConfig)):
+        if (not isinstance(dict(config_default)[section], BaseConfig)):
             # if config has no value set to default
             if sml_config.get(section) is None:
-                sml_config[section] = config_default[section]
+                sml_config[section] = dict(config_default)[section]
         else:
-            sml_config[section] = _update_sml_config(sml_config[section], config_default[section])
+            sml_config[section] = _update_sml_config(sml_config[section], dict(config_default)[section])
     # if not set(list(config)).issuperset(set(list(default))):
     #     print(list(config))
     #     print(list(default))

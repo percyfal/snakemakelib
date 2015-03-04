@@ -1,9 +1,13 @@
 # -*- snakemake -*-
 import os
 from snakemakelib.config import update_sml_config, get_sml_config
+from snakemakelib.utils import is_compressed
+from snakemakelib.bio.ngs.db import index
 
+include: '../../../comp/settings.rules'
 include: '../settings.rules'
 include: '../tools/samtools.rules'
+
 
 ngs_conf = get_sml_config('bio.ngs.settings')
 
@@ -11,11 +15,12 @@ config_default = {
     'bio.ngs.align.star' : {
         'cmd' : "STAR",
         'ref' : ngs_conf['db']['ref'],
-        'index' : '',
+        'index' : index,
         'star_index' : {
             'threads' : ngs_conf['threads'],
-            'options' : "",
+            'options' : "--genomeSAindexNbases 14",
             'sjdbGTFfile' : "",
+            'sjdbOverhang' : 100,
         },
         'align' : {
             'threads' : ngs_conf['threads'],
@@ -26,14 +31,41 @@ config_default = {
 
 update_sml_config(config_default)
 
-cfg = get_sml_config('bio.ngs.align.star')
+star_cfg = get_sml_config('bio.ngs.align.star')
+ngs_cfg = get_sml_config('bio.ngs.settings')
+comp_cfg = get_sml_config('comp.settings')
 
 rule star_index:
-    params: cmd = cfg['cmd'],\
-            options = " ".join(["--sjdbGTFfile {}".format(cfg['star_index']['sjdbGTFfile']) if cfg['star_index']['sjdbGTFfile'] else "",\
-            "--sjdbOverhang {}".format(cfg['star_index']['sjdbGTFfile'])]),\
-            genomedir = os.path.dirname(cfg['index'])
-    input: "{prefix}" + ".fa"
-    output: "{prefix}"
-    threads: cfg['star_index']['threads']
-    shell: "{params.cmd} --runThreadN {threads} --runMode genomeGenerate --genomeDir {params.genomedir}"
+    """Generate STAR genome index. By default will generate index in a
+    directory '../star' relative to the directory of the reference
+    sequence.
+
+    Remember: for small genomes the parameter --genomeSAindexNbases
+    must be adjusted; it is calculated as min(14, log2(GenomeLength)/2 - 1)
+
+    """
+    params: cmd = star_cfg['cmd'],
+            options = " ".join([\
+                                star_cfg['star_index']['options'],\
+                                "--sjdbGTFfile {}".format(star_cfg['star_index']['sjdbGTFfile']) if star_cfg['star_index']['sjdbGTFfile'] else "",\
+                                "--sjdbOverhang {}".format(star_cfg['star_index']['sjdbOverhang']) if star_cfg['star_index']['sjdbGTFfile'] else ""\
+                                ]),
+            genomedir = os.path.dirname(star_cfg['index', 'star'])
+    input: ref = star_cfg['ref']
+    output: Genome=os.path.join(os.path.dirname(star_cfg['index', "star"]), "Genome"), SA=os.path.join(os.path.dirname(star_cfg['index', "star"]), "SA")
+    threads: star_cfg['star_index']['threads']
+    shell: "{params.cmd} --runThreadN {threads} --runMode genomeGenerate --genomeDir {params.genomedir} --genomeFastaFiles {input.ref} {params.options}"
+
+rule star_align:
+    """Run STAR alignment"""
+    params: cmd = star_cfg['cmd'],
+            genomedir = os.path.dirname(star_cfg['index', 'star']),
+            options = " ".join([\
+            star_cfg['align']['options'],\
+                                "--readFilesCommand {cmd}".format(cmd=comp_cfg['compression']['prog_map'][os.path.splitext(ngs_cfg['fastq_suffix'])[1]]) if is_compressed(ngs_cfg['fastq_suffix']) else "",
+                            ])
+    input: "{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],\ 
+           "{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['fastq_suffix']
+    output: "{prefix}.bam"
+    threads: star_cfg['align']['threads']
+    shell: "{params.cmd} --runThreadN {threads} --genomeDir {params.genomedir} --readFilesIn {input} {params.options}"

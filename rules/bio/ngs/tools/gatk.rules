@@ -301,7 +301,7 @@ rule gatk_read_backed_phasing:
     params: cmd = gatk_config['cmd'] + " -T " + gatk_config['read_backed_phasing']['cmd'],
             options = " ".join(["-R", gatk_config['read_backed_phasing']['ref'],
                                 gatk_config['read_backed_phasing']['options']])
-    input: gatk_config['read_backed_phasing']['inputfun']
+    input: dict(gatk_config['read_backed_phasing'])['inputfun']
     output: "{prefix}.phased.vcf"
     shell: "{params.cmd} {params.options} -I {input[1]} -o {output} --variant {input[0]}"
 

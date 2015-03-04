@@ -2,7 +2,7 @@
 import os
 import re
 from snakemakelib.config import update_sml_config, get_sml_config
-from snakemakelib.bio.ngs.methylseq.bismark import ref, report_label, align_suffix
+from snakemakelib.bio.ngs.methylseq.bismark import report_label, align_suffix
 
 include: '../settings.rules'
 include: '../qc/sequenceprocessing.rules'
@@ -12,7 +12,6 @@ ngs_cfg = get_sml_config('bio.ngs.settings')
 
 config_default = {
     'bio.ngs.methylseq.bismark' : {
-        'ref' : ref(),
         'bowtie2' : True,
         'trim_galore' : True,
         'paired_end' : True,
@@ -118,7 +117,7 @@ rule bismark_merge_alignment_reports:
     """bismark: Merge alignment reports from separate runs for a sample.
 
     """
-    input: cfg['report']['inputfun']
+    input: dict(cfg['report'])['inputfun']
     output: report="{path}" + os.sep + "{prefix}" + picard_config['merge_sam']['label'] + "{suffix}" + ".bam" + report_label() + ".txt"
     run:
         order = []

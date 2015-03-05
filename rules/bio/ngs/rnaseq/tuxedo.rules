@@ -31,6 +31,10 @@ config_default = {
             'threads' : ngs_cfg['threads'],
             'options' : '',
         },
+        'build' : {
+            'ext_v1' : [".1.ebwt", ".2.ebwt", ".3.ebwt", ".4.ebwt", ".rev.1.ebwt", ".rev.2.ebwt"],
+            'ext_v2' : [".1.bt2", ".2.bt2", ".3.bt2", ".4.bt2", ".rev.1.bt2", ".rev.2.bt2"],
+        },
     },
 }
 
@@ -57,7 +61,7 @@ rule tuxedo_bowtie_build:
     params: ref = tux_cfg['ref'],
             cmd = 'bowtie-build'
     input: "{prefix}" + ".fa"
-    output: protected(["{prefix}.1.ebwt", "{prefix}.2.ebwt", "{prefix}.3.ebwt", "{prefix}.4.ebwt", "{prefix}.rev.1.ebwt", "{prefix}.rev.2.ebwt"])
+    output: expand("{{prefix}}{ext}", ext=tux_cfg['build']['ext_v1'])
     shell: "{params.cmd} {input} {wildcards.prefix}"
 
 rule tuxedo_bowtie_build2:
@@ -65,15 +69,13 @@ rule tuxedo_bowtie_build2:
     params: ref = tux_cfg['ref'],
             cmd = 'bowtie2-build'
     input: "{prefix}" + ".fa"
-    output: ["{prefix}.1.bt2", "{prefix}.2.bt2", "{prefix}.3.bt2", "{prefix}.4.bt2", "{prefix}.rev.1.bt2", "{prefix}.rev.2.bt2"]
+    output: expand("{{prefix}}{ext}", ext=tux_cfg['build']['ext_v2'])
     shell: "{params.cmd} {input} {wildcards.prefix}"
 
 rule tuxedo_tophat:
     """Run tophat paired end alignment.
-
     NB: requires python2 so need to activate a virtual environment or
     the like to run.
-
     """
     params: cmd = 'tophat2' if tux_cfg['version2'] else 'tophat',
             options = tux_cfg['tophat']['options'],
@@ -83,19 +85,21 @@ rule tuxedo_tophat:
     input: read1 = "{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],\
            read2 = "{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['fastq_suffix'],\
            index = tux_cfg['index'] + ".1.bt2" if tux_cfg['version2'] else tux_cfg['index'] + ".1.ebwt"
-    output: "{prefix}.tophat2" if tux_cfg['version2'] else "{prefix}.tophat"
+    output: tophatdir = "{prefix}.tophat2" if tux_cfg['version2'] else "{prefix}.tophat",
+            hits = os.path.join("{prefix}.tophat2" if tux_cfg['version2'] else "{prefix}.tophat", "accepted_hits.bam")
     run: 
         rg = dict(tux_cfg)['rg_fn'](os.path.basename(wildcards.prefix))
-        shell ("{python2} && {cmd} {opt} {rg} -o {out}.tmp {index} {read1} {read2} &> {out}.log && mv {out}.tmp {out} && mv {out}.log {out}".format(python2=params.python2, cmd=params.cmd, opt=params.options, rg=rg, out=output, index=params.index, read1=input.read1, read2=input.read2))
+        shell("{python2} && {cmd} {opt} {rg} -o {out}.tmp {index} {read1} {read2} 2> {out}.log && mv {out}.tmp/* {out} && mv {out}.log {out}".format(python2=params.python2, cmd=params.cmd, opt=params.options, rg=rg, out=output.tophatdir, prefix=wildcards.prefix, index=params.index, read1=input.read1, read2=input.read2))
 
 rule tuxedo_cufflinks_quant:
     """Run cufflinks quantification"""
     params: cmd = tux_cfg['cufflinks']['cmd'],
-            options = tux_cfg['cufflinks']['options']
-    input: tophat = os.path.join("{prefix}.tophat2", "accepted_hits.bam") if tux_cfg['version2'] else os.path.join("{prefix}.tophat", "accepted_hits.bam"),\
+            options = tux_cfg['cufflinks']['options'],
+            hits = os.path.join("{prefix}.tophat2" if tux_cfg['version2'] else "{prefix}.tophat", "accepted_hits.bam")
+    input: tophat = "{prefix}.tophat2" if tux_cfg['version2'] else "{prefix}.tophat",\
            annot_gtf=tux_cfg['cufflinks']['transcript_annot_gtf']
     output: "{prefix}.cufflinks_quant"
-    shell: "{params.cmd} {params.options} --GTF {input.annot_gtf} {input.tophat} -o {output}.tmp &> {output}.log && mv {output}.tmp {output} && mv {output}.log {output}"
+    shell: "{params.cmd} {params.options} --GTF {input.annot_gtf} {params.hits} -o {output}.tmp &> {output}.log && mv {output}.tmp {output} && mv {output}.log {output}"
 
 rule tuxedo_cufflinks_from_tophat:
     """Run cufflinks based on tophat output directory"""

@@ -51,7 +51,6 @@ rule rsem_transcripts:
     output: rsem_cfg['index', 'rsem'] + rsem_cfg['ref_sfx']
     shell: "{params.cmd} {params.options} {input.ref} {params.index}"
 
-
 rule rsem_from_bowtie:
     """Run RSEM on bowtie output. Requires a fifo hack to work: see
     http://atgcio.blogspot.se/2013/08/fifos-and-mapping-with-bowtie-using.html
@@ -62,7 +61,7 @@ rule rsem_from_bowtie:
     input: read1 = "{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],\ 
            read2 = "{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['fastq_suffix'],\
            index = rsem_cfg['index', 'rsem'] + rsem_cfg['ref_sfx'],
-           bowtie_index = expand(rsem_cfg['index', 'rsem'] + "{ext}", ext=[".1.ebwt", ".2.ebwt", ".3.ebwt", ".4.ebwt", ".rev.1.ebwt", ".rev.2.ebwt"])
+           bowtie_index = expand(rsem_cfg['index', 'rsem'] + "{ext}", ext=tux_cfg['build']['ext_v1'])
     output: "{prefix}.rsem"
     threads: ngs_cfg["threads"]
     run: 

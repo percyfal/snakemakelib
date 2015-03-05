@@ -1,26 +1,38 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.utils import update_sml_config
+from snakemakelib.config import update_sml_config, get_sml_config
 
 include: '../settings.rules'
 
 config_default = { 
-	"sratools" : {
-		"SRATOOLS_HOME" : ".",
-		"SRATOOLS_FASTQDUMP" : "$(SRATOOLS_HOME)/fastq-dump",
-		"SRATOOLS_FASTQDUMP_OPTIONS" : "--split-3 -F -O $(dir $<)",
-		"SRATOOLS_OPTIONS" : "",
-		},
-	},
+    "bio.ngs.tools.sratools" : {
+        "home" : ".",
+        "fastq-dump" : {
+            'cmd' : "fastq-dump",
+            "options" : "--split-3 -F",
+        }
+        'options' : "",,
+    },
 }
 
-config = update_sml_config(config_default)
+update_sml_config(config_default)
 
-rule rule_1:
-	input: " {prefix}.sra"
-	output: "{prefix}_1.fq"
-	shell: "$(SRATOOLS_FASTQDUMP) $(SRATOOLS_FASTQDUMP_OPTIONS) $< && mv ${*}_1.fastq $@ && if [ -e ${*}_2.fastq ]; then mv ${*}_2.fastq ${*}_2.fq; fi"
-rule rule_2:
-	input: " {prefix}.sra"
-	output: "{prefix}_1.fq.gz"
-	shell: "$(SRATOOLS_FASTQDUMP) $(SRATOOLS_FASTQDUMP_OPTIONS) $< && mv ${*}_1.fastq.gz $@ && if [ -e ${*}_2.fastq.gz ]; then mv ${*}_2.fastq.gz ${*}_2.fq.gz; fi"
+sra_cfg = get_sml_config('bio.ngs.tools.sratools')
+ngs_cfg = get_sml_config('bio.ngs.settings')
+
+rule sratools_fastq_dump:
+    """Run sratools fastq-dump"""
+    params: cmd = sra_cfg['fastq-dump']['cmd'],
+            options = sra_cfg['fastq-dump']['options']
+    input: "{prefix}.sra"
+    output: read1 = "{prefix}" + ngs_cfg["read1_label"] + ngs_cfg["fastq_suffix"],
+            read2 = "{prefix}" + ngs_cfg["read2_label"] + ngs_cfg["fastq_suffix"]
+    shell: "{params.cmd} {params.options} {input}"
+
+rule sratools_fastq_dump_zip:
+    params: cmd = sra_cfg['fastq-dump']['cmd'],
+            options = sra_cfg['fastq-dump']['options'] + " --gzip"
+    input: "{prefix}.sra"
+    output: read1 = "{prefix}" + ngs_cfg["read1_label"] + ngs_cfg["fastq_suffix"] + ".gz",
+            read2 = "{prefix}" + ngs_cfg["read2_label"] + ngs_cfg["fastq_suffix"] + ".gz"
+    shell: "{params.cmd} {params.options} {input}"

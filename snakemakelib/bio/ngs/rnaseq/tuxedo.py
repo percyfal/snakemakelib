@@ -25,6 +25,6 @@ def opt_read_group(prefix):
       opt: tophat-formatted <string> to be used in options
     """
     d = read_group_from_str(prefix)
-    s = " ".join(["--rg-{k} {v}".format(k=k, v=v) for (k,v) in sorted(d.items()) if not v is None])
+    s = " ".join(["--rg-{k} {v}".format(k=k, v=v) for (k,v) in sorted(d.items()) if not v == ""])
     return s
     

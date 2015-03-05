@@ -2,6 +2,7 @@
 import os
 from snakemakelib.config import update_sml_config, get_sml_config
 from snakemakelib.bio.ngs.db import index
+from snakemakelib.bio.ngs.rnaseq.tuxedo import opt_read_group
 
 include: '../settings.rules'
 include: '../tools/samtools.rules'
@@ -11,6 +12,7 @@ ngs_cfg = get_sml_config('bio.ngs.settings')
 config_default = { 
     "bio.ngs.rnaseq.tuxedo" : {
         'ref' : ngs_cfg['db']['ref'],
+        'rg_fn' : opt_read_group,
         'version2' : True, # Run version 2 by default
         'index' : index,
         'tophat' : {
@@ -70,16 +72,19 @@ rule tuxedo_tophat:
             index = tux_cfg['index'],
             outdir = tux_cfg['tophat']['output_dir'],
             python2 = comp_cfg['python2']['activate_cmd']
-    input: read1 = "{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], 
-           read2 = "{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['fastq_suffix']
+    input: read1 = "{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],\
+           read2 = "{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['fastq_suffix'],\
+           index = tux_cfg['index'] + ".1.bt2" if tux_cfg['version2'] else tux_cfg['index'] + ".1.ebwt"
     output: "{prefix}.tophat2" if tux_cfg['version2'] else "{prefix}.tophat"
-    shell: "{params.python2} && {params.cmd} {params.options} -o {output}.tmp {params.index} {input.read1} {input.read2} &> {output}.log && mv {output}.tmp {output} && mv {output}.log {output}"
+    run: 
+        rg = dict(tux_cfg)['rg_fn'](os.path.basename(wildcards.prefix))
+        shell ("{python2} && {cmd} {opt} {rg} -o {out}.tmp {index} {read1} {read2} &> {out}.log && mv {out}.tmp {out} && mv {out}.log {out}".format(python2=params.python2, cmd=params.cmd, opt=params.options, rg=rg, out=output, index=params.index, read1=input.read1, read2=input.read2))
 
 rule tuxedo_cufflinks_quant:
     """Run cufflinks quantification"""
     params: cmd = tux_cfg['cufflinks']['cmd'],
             options = tux_cfg['cufflinks']['options']
-    input: tophat = os.path.join("{prefix}.tophat2", "accepted_hits.bam") if tux_cfg['version2'] else os.path.join("{prefix}.tophat", "accepted_hits.bam")
+    input: tophat = os.path.join("{prefix}.tophat2", "accepted_hits.bam") if tux_cfg['version2'] else os.path.join("{prefix}.tophat", "accepted_hits.bam"),\
            annot_gtf=tux_cfg['cufflinks']['transcript_annot_gtf']
     output: "{prefix}.cufflinks_quant"
     shell: "{params.cmd} {params.options} --GTF {input.annot_gtf} {input.tophat} -o {output}.tmp &> {output}.log && mv {output}.tmp {output} && mv {output}.log {output}"
@@ -101,4 +106,4 @@ rule tuxedo_cufflinks_from_bam:
     output: "{prefix}.cufflinks"
     shell: "{params.cmd} {params.options} {input.bam} -o {output}.tmp &> {output}.log && mv {output}.tmp {output} && mv {output}.log {output}"
 
-ruleorder: tuxedo_cufflinks_from_tophat2 > tuxedo_cufflinks_from_bam
+ruleorder: tuxedo_cufflinks_from_tophat > tuxedo_cufflinks_from_bam

@@ -26,7 +26,7 @@ def ref():
     # TODO: make sure build_config points to a file; read file and parse to find reference
     return None
     
-def index(application=None):
+def index(application):
     """Return the index files for a given application.
 
     Args:
@@ -39,7 +39,7 @@ def index(application=None):
     ngs_cfg = sml_cfg["bio.ngs.settings"]
 
     if not ngs_cfg['db']['build_config']:
-        logger.info("No build_config present: assuming index locations are organized according to cloudbiolinux conventions")
+        logger.debug("No build_config present: assuming index locations are organized according to cloudbiolinux conventions")
         if application in ["bwa"]:
             prefix, _ = os.path.splitext(ngs_cfg['db']['ref'])
         else:

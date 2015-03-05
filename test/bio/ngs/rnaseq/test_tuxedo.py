@@ -13,7 +13,7 @@ def setUp():
         'bio.ngs.settings' : {
             'run_id_re' : (("platform-unit", "date", "_", "sample"), "([0-9])_([0-9]+)_([A-Z0-9]+XX)_(P[0-9]+_[0-9]+)"), 
             'read_group_keys' : ("id", "sample", "library", "description", "platform-unit", "center", "date", "platform"),
-            'center' : 'mycenter',
+            'center' : '',
             'platform' : 'Illumina',
         },
     }
@@ -28,4 +28,4 @@ class TestTuxedo(unittest.TestCase):
     def test_opt_read_group(self):
         """Test generating read group"""
         s = opt_read_group("2_120924_AC003CCCXX_P001_102")
-        self.assertEqual(s, "--rg-center mycenter --rg-date 2012-09-24 --rg-description 2_120924_AC003CCCXX_P001_102 --rg-id 2_120924_AC003CCCXX_P001_102 --rg-platform Illumina --rg-platform-unit 2 --rg-sample P001_102")
+        self.assertEqual(s, "--rg-date 2012-09-24 --rg-description 2_120924_AC003CCCXX_P001_102 --rg-id 2_120924_AC003CCCXX_P001_102 --rg-platform Illumina --rg-platform-unit 2 --rg-sample P001_102")

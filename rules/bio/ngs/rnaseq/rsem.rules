@@ -1,51 +1,79 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.utils import update_sml_config, get_sml_config
+from snakemakelib.config import update_sml_config, get_sml_config
+from snakemakelib.bio.ngs.db import index
 
 include: '../settings.rules'
+include: 'tuxedo.rules'
 
 bio_cfg = get_sml_config('bio.ngs.settings')
 
 config_default = { 
-	'bio.ngs.rnaseq.rsem' : {
-            'rsem' : {
-                'options' :  {
-                    'bwa_rRNA' = "",
-                    'prepare_referenc' =
-                },
-                'ref' : bio_cfg['db']['ref'],
-            },
-            "RSEM_PREPARE_REFERENCE_OPTION_REF" : "$(REF)",
-            "RSEM_CALCULATE_EXPRESSION" : "$(RSEM_HOME)/rsem-calculate-expression",
-		"RNASEQC_COMMAND" : "java -Xmx$(RNASEQC_JAVA_MEM) -Djava.io.tmpdir=$(RNASEQC_JAVA_TMPDIR) -jar $(RNASEQC_JAR)",
-		"RSEM_PREPARE_REFERENCE_OPTIONS" : "",
-		"RSEM_HOME" : ".",
-		"RSEM_CALCULATE_EXPRESSION_OPTIONS" : "--no-bam-output --bowtie-chunkmbs 512",
-		"RSEM_THREADS" : "$(THREADS)",
-		"RSEM_PREPARE_REFERENCE" : "$(RSEM_HOME)/rsem-prepare-reference",
-		},
-	},
+    'bio.ngs.rnaseq.rsem' : {
+        'annot_gtf' : "",
+        'threads' : bio_cfg['threads'],
+        'ref' : bio_cfg['db']['ref'],
+        'ref_sfx' : '.transcripts.fa',
+        'index' : index,
+        'prepare-reference' : {
+            'cmd' : 'rsem-prepare-reference',
+            'options' : "",
+            'reference_name' : "rsem",
+        },
+        'calculate-expression' : {
+            'cmd' : 'rsem-calculate-expression',
+            'options' : "--no-bam-output --bowtie-chunkmbs 512",
+        },
+    },
 }
 
 update_sml_config(config_default)
 
-rnaseq_conf = get_sml_config('bio.ngs.rnaseq.rnaseq')
+rsem_cfg = get_sml_config('bio.ngs.rnaseq.rsem')
+tux_cfg = get_sml_config('bio.ngs.rnaseq.tuxedo')
+ngs_cfg = get_sml_config('bio.ngs.settings')
 
-config_default['bio.ngs.rnaseq.rnaseq']['rnaseqqc']['jar'] = os.path.join(rnaseq_conf['home'], RNASEQC_JAR_PROGRAM)
+rule rsem_link_bowtie_index:
+    """Hack to link from bowtie reference directory"""
+    input: tux_cfg["index", "bowtie"] + "{ext}"
+    output: rsem_cfg["index", "rsem"] + "{ext}"
+    shell: "ln -s {input} {output}"
 
-update_sml_config(config_default)
+ruleorder: rsem_link_bowtie_index > tuxedo_bowtie_build
 
-sml_config = get_sml_config()
+rule rsem_transcripts:
+    """Prepare RSEM transcripts file"""
+    params: cmd = rsem_cfg['prepare-reference']['cmd'],
+            options = rsem_cfg['prepare-reference']['options'],
+            ref = rsem_cfg['ref'],
+            index = rsem_cfg['index', 'rsem']
+    input: ref = rsem_cfg['ref']
+    output: rsem_cfg['index', 'rsem'] + rsem_cfg['ref_sfx']
+    shell: "{params.cmd} {params.options} {input.ref} {params.index}"
 
-config_default['bio.ngs.rnaseq.rnaseq']['rnaseqqc']['cmd'] = "java -Xmx" + rnaseq_conf['java_mem'] + " -Djava.io.tmpdir=" + rnaseq_conf['java_tmpdir'] +  " -jar " + rnaseq_conf['jar']
 
-update_sml_config(config_default)
-
-# rule rule_1:
-# 	input: " {prefix}$(READ1_LABEL)$(FASTQ_SUFFIX).gz {prefix}$(READ2_LABEL)$(FASTQ_SUFFIX).gz"
-# 	output: "{prefix}.rsem"
-# 	shell: "rm -f $(dir $(word 1, $^))read1.fifo $(dir $(word 2, $^))read2.fifo"
-# rule rule_2:
-# 	input: " {prefix}.bam {prefix}.bai"
-# 	output: "{prefix}.rnaseqc"
-# 	shell: "$(RNASEQC_COMMAND) $(RNASEQC_OPTIONS) -o $@.tmp -s "sample|$<|rnaseqQC" && mv $@.tmp $@"
+rule rsem_from_bowtie:
+    """Run RSEM on bowtie output. Requires a fifo hack to work: see
+    http://atgcio.blogspot.se/2013/08/fifos-and-mapping-with-bowtie-using.html
+    """
+    params: cmd = rsem_cfg['calculate-expression']['cmd'],
+            options = rsem_cfg['calculate-expression']['options'],
+            index = rsem_cfg['index', 'rsem'] + rsem_cfg['ref_sfx']
+    input: read1 = "{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],\ 
+           read2 = "{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['fastq_suffix'],\
+           index = rsem_cfg['index', 'rsem'] + rsem_cfg['ref_sfx'],
+           bowtie_index = expand(rsem_cfg['index', 'rsem'] + "{ext}", ext=[".1.ebwt", ".2.ebwt", ".3.ebwt", ".4.ebwt", ".rev.1.ebwt", ".rev.2.ebwt"])
+    output: "{prefix}.rsem"
+    threads: ngs_cfg["threads"]
+    run: 
+      fifo1 = input.read1 + ".read1.fifo"
+      fifo2 = input.read2 + ".read2.fifo"
+      shell("rm -f " + fifo1)
+      shell("rm -f " + fifo2)
+      shell("mkfifo " + fifo1)
+      shell("mkfifo " + fifo2)
+      shell("zcat " + input.read1 + " > " + fifo1 + " &")
+      shell("zcat " + input.read2 + " > " + fifo2 + " &")
+      shell("{cmd} {options} -p {threads} --paired-end {fifo1} {fifo2} {index} {sample} &> {log}.tmp && mv {log}.tmp {log}.rsem".format(cmd=params.cmd, options=params.options, threads=threads, fifo1=fifo1, fifo2=fifo2, index=rsem_cfg['index', 'rsem'], sample=wildcards.prefix, log=wildcards.prefix))
+      shell("rm -f " + fifo1)
+      shell("rm -f " + fifo2)

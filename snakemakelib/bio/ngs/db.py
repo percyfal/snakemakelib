@@ -40,7 +40,7 @@ def index(application):
 
     if not ngs_cfg['db']['build_config']:
         logger.debug("No build_config present: assuming index locations are organized according to cloudbiolinux conventions")
-        if application in ["bwa"]:
+        if application in ["bwa", "rsem", "bowtie"]:
             prefix, _ = os.path.splitext(ngs_cfg['db']['ref'])
         else:
             prefix = ngs_cfg['db']['ref']

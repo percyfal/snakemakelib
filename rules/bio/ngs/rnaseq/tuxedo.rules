@@ -55,9 +55,17 @@ rule tuxedo_bowtie_align:
 rule tuxedo_bowtie_build:
     """Bowtie build index"""
     params: ref = tux_cfg['ref'],
-            cmd = 'bowtie2-build' if tux_cfg['version2'] else 'bowtie-build'
+            cmd = 'bowtie-build'
     input: "{prefix}" + ".fa"
-    output: ["{prefix}.1.bt2", "{prefix}.2.bt2", "{prefix}.3.bt2", "{prefix}.4.bt2", "{prefix}.rev.1.bt2", "{prefix}.rev.2.bt2"] if tux_cfg['version2'] else []
+    output: protected(["{prefix}.1.ebwt", "{prefix}.2.ebwt", "{prefix}.3.ebwt", "{prefix}.4.ebwt", "{prefix}.rev.1.ebwt", "{prefix}.rev.2.ebwt"])
+    shell: "{params.cmd} {input} {wildcards.prefix}"
+
+rule tuxedo_bowtie_build2:
+    """Bowtie build index"""
+    params: ref = tux_cfg['ref'],
+            cmd = 'bowtie2-build'
+    input: "{prefix}" + ".fa"
+    output: ["{prefix}.1.bt2", "{prefix}.2.bt2", "{prefix}.3.bt2", "{prefix}.4.bt2", "{prefix}.rev.1.bt2", "{prefix}.rev.2.bt2"]
     shell: "{params.cmd} {input} {wildcards.prefix}"
 
 rule tuxedo_tophat:

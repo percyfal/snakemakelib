@@ -79,19 +79,22 @@ rule tuxedo_cufflinks_quant:
     """Run cufflinks quantification"""
     params: cmd = tux_cfg['cufflinks']['cmd'],
             options = tux_cfg['cufflinks']['options']
-    input: tophat2="{prefix}.tophat2", annot_gtf=tux_cfg['cufflinks']['transcript_annot_gtf']
+    input: tophat = os.path.join("{prefix}.tophat2", "accepted_hits.bam") if tux_cfg['version2'] else os.path.join("{prefix}.tophat", "accepted_hits.bam")
+           annot_gtf=tux_cfg['cufflinks']['transcript_annot_gtf']
     output: "{prefix}.cufflinks_quant"
-    shell: "{params.cmd} {params.options} --GTF {input.annot_gtf} {input.tophat2}/accepted_hits.bam -o {output}.tmp &> {output}.log && mv {output}.tmp {output} && mv {output}.log {output}"
+    shell: "{params.cmd} {params.options} --GTF {input.annot_gtf} {input.tophat} -o {output}.tmp &> {output}.log && mv {output}.tmp {output} && mv {output}.log {output}"
 
-rule tuxedo_cufflinks_from_tophat2:
+rule tuxedo_cufflinks_from_tophat:
+    """Run cufflinks based on tophat output directory"""
     params: cmd = tux_cfg['cufflinks']['cmd'],
             options = tux_cfg['cufflinks']['options']
-    input: tophat2 = os.path.join("{prefix}.tophat2", "accepted_hits.bam")
+    input: tophat = os.path.join("{prefix}.tophat2", "accepted_hits.bam") if tux_cfg['version2'] else os.path.join("{prefix}.tophat", "accepted_hits.bam")
     output: "{prefix}.cufflinks"
-    shell: "{params.cmd} {params.options} {input.tophat2} -o {output}.tmp &> {output}.log && mv {output}.tmp {output} && mv {output}.log {output}"
+    shell: "{params.cmd} {params.options} {input.tophat} -o {output}.tmp &> {output}.log && mv {output}.tmp {output} && mv {output}.log {output}"
 
 # NB: usually {prefix}.bam is accepted_hits.bam from tophat
 rule tuxedo_cufflinks_from_bam:
+    """Run cufflinks on bam file"""
     params: cmd = tux_cfg['cufflinks']['cmd'],
             options = tux_cfg['cufflinks']['options']
     input: bam="{prefix}.bam"

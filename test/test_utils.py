@@ -1,16 +1,18 @@
 # Copyright (C) 2014 by Per Unneberg
-import os
-import sys 
+# pylint: disable=R0904
 import unittest
-import math
 import logging
-from nose.tools import raises
+from snakemakelib.config import init_sml_config
 from snakemakelib.report.utils import Template
+from snakemakelib.bio.ngs.utils import read_group_from_str
+from snakemakelib.utils import isoformat
 
 logger = logging.getLogger(__name__)
 
-class TestUtils(unittest.TestCase):
+class TestReportUtils(unittest.TestCase):
+    """Test report utilities"""
     def test_format(self):
+        """Test number formatting function"""
         tp = Template()
         T = 12121414141232
         G = 12121414141.235
@@ -37,5 +39,33 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(us, '12.12u')
         self.assertEqual(ns, '12.12n')
 
+class TestBioNgsUtils(unittest.TestCase):
+    """Test snakemakelib.bio.ngs.utils functions"""
+    def setUp(self):
+        """Setup test fixtures"""
+        cfg = {
+            'bio.ngs.settings' : {
+                'run_id_re' : (("platform-unit", "date", "_", "sample"), "([0-9])_([0-9]+)_([A-Z0-9]+XX)_(P[0-9]+_[0-9]+)"), 
+                'read_group_keys' : ("id", "sample", "library", "description", "platform-unit", "center", "date", "platform"),
+                'center' : 'mycenter',
+                'platform' : 'Illumina',
+            },
+        }
+        init_sml_config(cfg)
 
-        
+    def tearDown(self):
+        init_sml_config({})
+
+    def test_read_group_from_str(self):
+        """Test creating read group information from strings"""
+        d = read_group_from_str("2_120924_AC003CCCXX_P001_102")
+        self.assertEqual(d['date'], "2012-09-24")
+        self.assertEqual(d['platform-unit'], "2")
+        self.assertEqual(d['id'], "2_120924_AC003CCCXX_P001_102")
+
+class TestUtils(unittest.TestCase):
+    """Test snakemakelib.utils functions"""
+    def test_isoformat(self):
+        """Test isoformatting function"""
+        s = "120924"
+        self.assertEqual(isoformat(s), "2012-09-24")

@@ -3,7 +3,9 @@
 Configuration module
 """
 import os
-from snakemake.logging import logger
+from snakemakelib.log import get_logger
+
+logger = get_logger()
 
 class BaseConfig(dict):
     def _inspect_sections(self):

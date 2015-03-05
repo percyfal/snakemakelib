@@ -1,21 +1,46 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.config import update_sml_config
+from snakemakelib.config import update_sml_config, get_sml_config
+
+# Predefined settings for various platforms
+# FIXME: move to module?
+platforms = {
+    'generic' : {
+        'flowcell_suffix' : "",
+        'read_group_keys' : (),
+        'run_id_re' : (),
+    },
+    'Illumina' : {
+        'flowcell_suffix' : "XX",
+        'read_group_keys' : ("id", "sample", "library", "description", "platform-unit", "center", "date", "platform"),
+        'run_id_re' :  (("platform-unit", "date", "_", "sample"), "([0-9])_([0-9]+)_([A-Z0-9]+XX)_(P[0-9]+_[0-9]+)"),
+    },
+    'PacBio' : {
+        'flowcell_suffix' : "",
+        'read_group_keys' : (),
+        'run_id_re' : (),
+    },
+    'SOLiD' : {
+        'flowcell_suffix' : "",
+        'read_group_keys' : (),
+        'run_id_re' : (),
+    },
+}
 
 config_default = { 
     'bio.ngs.settings' : {
+        'center' : "",
         'fastq_suffix' : ".fastq",
         'flowcells' : [],
         'flowcellruns' : [],
-        'flowcell_suffix' : "XX",
         'inputdir' : ".",
         'lanes' : [],
+        'platform' : "generic",
         'read1_label' : "_1",
         'read2_label' : "_2",
         'read1_suffix' : ".fastq.gz",
         'read2_suffix' : ".fastq.gz",
         'regions' : [],
-        'run_id_re' : "[0-9]_[0-9]+_[A-Z0-9]+XX_P[0-9]+_[0-9]+",
         'samples' : [],
         'threads' : 8,
         'annotation' : {
@@ -40,6 +65,10 @@ config_default = {
 }
 
 update_sml_config(config_default)
+
+ngs_conf = get_sml_config('bio.ngs.settings')
+
+update_sml_config({'bio.ngs.settings' : platforms[ngs_conf['platform']]})
 
 # Add configuration variable to snakemake global config object
 config['lanes'] = config.get("lanes", [])

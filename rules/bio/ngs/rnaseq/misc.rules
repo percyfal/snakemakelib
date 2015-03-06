@@ -1,0 +1,40 @@
+# -*- snakemake -*-
+import os
+from snakemakelib.config import update_sml_config, get_sml_config
+
+include: '../settings.rules'
+include: '../tools/bedtools.rules'
+
+ngs_cfg = get_sml_config('bio.ngs.settings')
+
+config_default = {
+    'bio.ngs.rnaseq.misc' : {
+        'rpkmforgenes' : {
+            'cmd' : 'rpkmforgenes.py',
+            'annot_gtf' : ngs_cfg['annotation']['transcript_annot_gtf'],
+            'options' : "-ulen -exportann -readcount -fulltranscript -mRNAnorm -rmnameoverlap -bothendsceil",
+        },
+    },
+}
+
+update_sml_config(config_default)
+
+misc_cfg = get_sml_config('bio.ngs.rnaseq.misc')
+
+rule rnaseq_misc_rpkmforgenes_from_bam:
+    """Run rpkmforgenes from bam input"""
+    params: cmd = misc_cfg['rpkmforgenes']['cmd'],
+            options = " ".join(["-a", misc_cfg['rpkmforgenes']['annot_gtf'],\
+            misc_cfg['rpkmforgenes']['options']])
+    input: "{prefix}.bam"
+    output: "{prefix}.rpkmforgenes"
+    shell: "{params.cmd} {params.options} -bamu -i {input} -o {output}"
+
+rule rnaseq_misc_rpkmforgenes_from_bed:
+    """Run rpkmforgenes from bed input"""
+    params: cmd = misc_cfg['rpkmforgenes']['cmd'],
+            options = " ".join(["-a", misc_cfg['rpkmforgenes']['annot_gtf'],\
+            misc_cfg['rpkmforgenes']['options']])
+    input: "{prefix}.bed"
+    output: "{prefix}.rpkmforgenes"
+    shell: "{params.cmd} {params.options} -i {input} -o {output}"

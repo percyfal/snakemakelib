@@ -8,7 +8,6 @@ include: '../../../comp/settings.rules'
 include: '../settings.rules'
 include: '../tools/samtools.rules'
 
-
 ngs_conf = get_sml_config('bio.ngs.settings')
 
 config_default = { 
@@ -74,3 +73,4 @@ rule star_align:
     output: (["{prefix}.Aligned.out.bam"] if star_cfg['align']['outSAMtype'].find("Unsorted") > -1 else []) + (["{prefix}.Aligned.sortedByCoord.out.bam"] if star_cfg['align']['outSAMtype'].find("SortedByCoordinate") > -1 else [])
     threads: star_cfg['align']['threads']
     shell: "{params.cmd} --runThreadN {threads} --genomeDir {params.genomedir} --readFilesIn {input.read1} {input.read2} {params.options} --outFileNamePrefix {wildcards.prefix}."
+

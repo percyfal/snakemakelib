@@ -17,11 +17,11 @@ def read_group_from_str(s):
       d: <dict> of read group key:value mappings
     """
     ngs_cfg = get_sml_config('bio.ngs.settings')
-    if not len(ngs_cfg['run_id_re']):
+    if not len(ngs_cfg['run_id_re']) == 2:
         raise IndexError("bio.ngs.settings.run_id_re key must be a tuple of length 2! Either reimplement the read group function or set the platform")
     m = re.match(ngs_cfg['run_id_re'][1], s)
     d = {k:"" for k in ngs_cfg['read_group_keys']}
-    d.update({k:v for (k,v) in (zip(ngs_cfg['run_id_re'][0], m.groups())) if not k=="_"})
+    d.update({k:v for (k,v) in (zip(ngs_cfg['run_id_re'][0], m.groups())) if k in ngs_cfg['read_group_keys']})
     d['date'] = isoformat(d['date'])
     if "center" in list(d):
         d["center"] = ngs_cfg.get('center', "")

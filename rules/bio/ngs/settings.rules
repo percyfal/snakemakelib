@@ -13,7 +13,7 @@ platforms = {
     'Illumina' : {
         'flowcell_suffix' : "XX",
         'read_group_keys' : ("id", "sample", "library", "description", "platform-unit", "center", "date", "platform"),
-        'run_id_re' :  (("platform-unit", "date", "_", "sample"), "([0-9])_([0-9]+)_([A-Z0-9]+XX)_(P[0-9]+_[0-9]+)"),
+        'run_id_re' :  (("punit", "date", "flowcell", "sample"), "([0-9])_([0-9]+)_([A-Z0-9]+XX)_(P[0-9]+_[0-9]+)"),
     },
     'PacBio' : {
         'flowcell_suffix' : "",
@@ -34,7 +34,7 @@ config_default = {
         'flowcells' : [],
         'flowcellruns' : [],
         'inputdir' : ".",
-        'lanes' : [],
+        'punits' : [],
         'platform' : "generic",
         'read1_label' : "_1",
         'read2_label' : "_2",
@@ -42,6 +42,7 @@ config_default = {
         'read2_suffix' : ".fastq.gz",
         'regions' : [],
         'samples' : [],
+        'sampleinfo' : "", # generic; samplesheet could be Illuminas csv samplesheet; treat elsewhere
         'threads' : 8,
         'annotation' : {
             'annot_label' : "",
@@ -71,7 +72,7 @@ ngs_conf = get_sml_config('bio.ngs.settings')
 update_sml_config({'bio.ngs.settings' : platforms[ngs_conf['platform']]})
 
 # Add configuration variable to snakemake global config object
-config['lanes'] = config.get("lanes", [])
+config['punits'] = config.get("punits", [])
 config['samples'] = config.get("samples", [])
 config['regions'] = config.get("regions", []) 
 config['flowcells'] = config.get("flowcells", [])  

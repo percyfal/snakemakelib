@@ -23,7 +23,7 @@ local_config = {{
         'fastq_suffix' : ".fastq.gz",
         'samples' : config.get("samples", ['P001_101', 'P001_102']),
         'flowcells' : config.get("flowcells", ['120924_AC003CCCXX', '121015_BB002BBBXX']),
-        'lanes' : [1],
+        'punits' : [1],
         'db' : {{
             'ref' : '{ref}',
             'dbsnp' : '{dbsnp}',
@@ -64,11 +64,11 @@ include: '{variation}'
 cfg = get_sml_config('bio.ngs.settings')
 
 # Update FASTQC_TARGETS
-FASTQC_TARGETS = expand("{{path}}/{{sample}}/{{flowcell}}/{{lane}}_{{flowcell}}_{{sample}}_1_fastqc.html {{path}}/{{sample}}/{{flowcell}}/{{lane}}_{{flowcell}}_{{sample}}_2_fastqc.html".split(), sample=cfg['samples'][0], flowcell=cfg['flowcells'][0], lane=cfg['lanes'], path=os.curdir)
+FASTQC_TARGETS = expand("{{path}}/{{sample}}/{{flowcell}}/{{punit}}_{{flowcell}}_{{sample}}_1_fastqc.html {{path}}/{{sample}}/{{flowcell}}/{{punit}}_{{flowcell}}_{{sample}}_2_fastqc.html".split(), sample=cfg['samples'][0], flowcell=cfg['flowcells'][0], punit=cfg['punits'], path=os.curdir)
 
-BISMARK_TARGETS = expand("{{path}}/{{sample}}/CpG_OB_{{sample}}.merge.deduplicated.txt.gz", sample=cfg['samples'][0], flowcell=cfg['flowcells'][0], lane=cfg['lanes'], path=os.curdir)
+BISMARK_TARGETS = expand("{{path}}/{{sample}}/CpG_OB_{{sample}}.merge.deduplicated.txt.gz", sample=cfg['samples'][0], flowcell=cfg['flowcells'][0], punit=cfg['punits'], path=os.curdir)
 
-BISMARK_REPORT_TARGETS = expand("{{path}}/{{sample}}/{{sample}}.merge.deduplicated.bam{{report_label}}.html", sample=cfg['samples'][0], flowcell=cfg['flowcells'][0], lane=cfg['lanes'], path=os.curdir, report_label=report_label())
+BISMARK_REPORT_TARGETS = expand("{{path}}/{{sample}}/{{sample}}.merge.deduplicated.bam{{report_label}}.html", sample=cfg['samples'][0], flowcell=cfg['flowcells'][0], punit=cfg['punits'], path=os.curdir, report_label=report_label())
 
 """
          

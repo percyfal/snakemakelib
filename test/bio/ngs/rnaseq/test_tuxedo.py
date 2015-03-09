@@ -11,8 +11,8 @@ def setUp():
     """Setup test_tuxedo test fixtures"""
     cfg = {
         'bio.ngs.settings' : {
-            'run_id_re' : (("platform-unit", "date", "_", "sample"), "([0-9])_([0-9]+)_([A-Z0-9]+XX)_(P[0-9]+_[0-9]+)"), 
-            'read_group_keys' : ("id", "sample", "library", "description", "platform-unit", "center", "date", "platform"),
+            'run_id_re' : (("punit", "date", "flowcell", "sample"), "([0-9])_([0-9]+)_([A-Z0-9]+XX)_(P[0-9]+_[0-9]+)"), 
+            'read_group_keys' : ("id", "sample", "library", "description", "punit", "center", "date", "platform"),
             'center' : '',
             'platform' : 'Illumina',
         },

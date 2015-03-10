@@ -2,30 +2,17 @@
 # pylint: disable=R0904
 import unittest
 import logging
-from snakemakelib.config import init_sml_config
-from snakemakelib.bio.ngs.rnaseq.tuxedo import opt_read_group
+from snakemakelib.bio.ngs.rnaseq.tuxedo import TuxedoReadGroup
 
 logger = logging.getLogger(__name__)
 
-def setUp():
-    """Setup test_tuxedo test fixtures"""
-    cfg = {
-        'bio.ngs.settings' : {
-            'run_id_re' : (("punit", "date", "flowcell", "sample"), "([0-9])_([0-9]+)_([A-Z0-9]+XX)_(P[0-9]+_[0-9]+)"), 
-            'read_group_keys' : ("id", "sample", "library", "description", "punit", "center", "date", "platform"),
-            'center' : '',
-            'platform' : 'Illumina',
-        },
-    }
-    init_sml_config(cfg)
 
-def tearDown():
-    """Teardown test_tuxedo test fixtures"""
-    init_sml_config({})
+class TestTuxedoReadGroup(unittest.TestCase):
+    """Test TuxedoReadGroup class"""
+    def test_rg_init(self):
+        """Test initializing TuxedoReadGroup"""
+        rg = TuxedoReadGroup("test", ID='test', DT="120924")
+        self.assertEqual(str(rg), '--rg-date 2012-09-24 --rg-id test')
+        rg = TuxedoReadGroup("test", **{'ID':'test', 'DT':"120924"})
+        self.assertEqual(str(rg), '--rg-date 2012-09-24 --rg-id test')
 
-class TestTuxedo(unittest.TestCase):
-    """Test snakemakelib.bio.ngs.tuxedo module"""
-    def test_opt_read_group(self):
-        """Test generating read group"""
-        s = opt_read_group("2_120924_AC003CCCXX_P001_102")
-        self.assertEqual(s, "--rg-date 2012-09-24 --rg-description 2_120924_AC003CCCXX_P001_102 --rg-id 2_120924_AC003CCCXX_P001_102 --rg-platform Illumina --rg-platform-unit 2 --rg-sample P001_102")

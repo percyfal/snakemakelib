@@ -12,18 +12,19 @@ sml_config = get_sml_config()
 #   ID* Read group identifer. Each @RG line must have a unique ID. The
 #   value of ID is used in the RG tags of alignment records. Must be
 #   unique among all read groups in header section. Read group IDs may
-#   be modied when merging SAM les in order to handle collisions.
+#   be modified when merging SAMfiles in order to handle collisions.
 
 # CN Name of sequencing center producing the read.
 # DS Description.
 # DT Date the run was produced (ISO8601 date or date/time).
 
 # FO Flow order. The array of nucleotide bases that correspond to the
-# nucleotides used for each ow of each read. Multi-base ows are
-# encoded in IUPAC format, and non-nucleotide ows by various other
+# nucleotides used for each ow of each read. Multi-base rows are
+# encoded in IUPAC format, and non-nucleotide rows by various other
 # characters. Format: /\*|[ACMGRSVTWYHKDBN]+/
 
-# KS The array of nucleotide bases that correspond to the key sequence of each read.
+# KS The array of nucleotide bases that correspond to the key sequence
+# of each read.
 
 # LB Library.
 
@@ -41,34 +42,81 @@ sml_config = get_sml_config()
 
 # SM Sample. Use pool name where a pool is being sequenced.
 
-_read_group_dict =  {'ID':'identifier', 'CN':'center', 'DS':'description', 'DT':'date', 'FO':'floworder', 'KS':'keysequence', 'LB':'library', 'PG':'program', 'PI':'insertsize', 'PL': }
-def read_group_from_str(s):
-    """Generate read group values from a string.
+class MissingIDException(Exception):
+    """Exception if read group ID is missing"""
 
-    Tries to guess sensible values from string.
+class FormatException(Exception):
+    """Exception for malformatted entry"""
 
-    Args: 
-      s: <string> to be parsed
+class UnimplementedException(Exception):
+    """Exception for unimplemeted method"""
 
-    Returns:
-      d: <dict> of read group key:value mappings
-    """
-    ngs_cfg = get_sml_config('bio.ngs.settings')
-    if not len(ngs_cfg['run_id_re']) == 2:
-        raise IndexError("bio.ngs.settings.run_id_re key must be a tuple of length 2! Either reimplement the read group function or set the platform")
-    m = re.match(ngs_cfg['run_id_re'][1], s)
-    d = {k:"" for k in ngs_cfg['read_group_keys']}
-    d.update({k:v for (k,v) in (zip(ngs_cfg['run_id_re'][0], m.groups())) if k in ngs_cfg['read_group_keys']})
-    d['date'] = isoformat(d['date'])
-    if "center" in list(d):
-        d["center"] = ngs_cfg.get('center', "")
-    if "platform" in list(d):
-        d["platform"] = ngs_cfg.get('platform', "")
-    if "description" in list(d):
-        d["description"] = s
-    if "id" in list(d):
-        d["id"] = s
-    return d
+class DisallowedKeyException(Exception):
+    """Exception for disallowed key"""
+
+class ReadGroup(dict):
+    """Create a read group representation from string"""
+    _read_group_keys = ['ID', 'CN', 'DS', 'DT', 'FO', 'KS', 'LB', 'PG', 'PI', 'PL', 'PU', 'SM']
+    _read_group_dict =  {'ID' : 'identifier', 'CN' : 'center', 'DS' : 'description', 'DT' : 'date', 'FO' : 'floworder', 'KS' : 'keysequence', 'LB' : 'library', 'PG' : 'program', 'PI' : 'insertsize', 'PL': 'platform', 'PU' : 'platform-unit', 'SM' : 'sample'}
+
+    _extra_keys = ['PATH']
+
+    _allowed_keys = _read_group_keys + _extra_keys
+
+    def __init__(self, run_id_re, opt_prefix="--", concat="_", *args, **kwargs):
+        dict.__init__(self)
+        self._run_id_re = run_id_re
+        self._init_regex()
+        self._opt_prefix = opt_prefix
+        self._concat = concat
+        self.update({x:None for x in self._read_group_keys})
+        self.update(*args, **kwargs)
+
+    def _init_regex(self):
+        self._regex = re.compile(self._run_id_re)
+        self._indexkeys = sorted([(re.sub("[0-9]+$", "", k), k) for k in list(self._regex.groupindex.keys()) if re.search("[0-9]+$", k)])
+        # Validate group keys
+        for k in self._regex.groupindex.keys():
+            if not k in self._allowed_keys and not k in [v for (k,v) in self._indexkeys]:
+                raise DisallowedKeyException("key {key} not in allowed key set {allowed}".format(key=k, allowed=self._allowed_keys))
+
+        self._indexdict = {k:[] for (k,v) in self._indexkeys}
+        [self._indexdict[k].append(v) for (k,v) in self._indexkeys]
+
+    def _parse_str(self, s):
+        """Parse string and set read group dict"""
+        regex = re.compile(self._run_id_re)
+        m = regex.match(s)
+        [self.update({k: m.group(k)}) for k in m.groupdict().keys() if k in self._read_group_keys]
+        if self._indexdict:
+            [self.update({k: self._concat.join(m.group(mkey) for mkey in self._indexdict[k])}) for k in self._indexdict.keys()]
+        if not self['ID']:
+            inv_map = {v:k for (k,v) in list(regex.groupindex.items())}
+            self['ID'] = self._concat.join(m.group(i) for i in range(1, regex.groups + 1) if not inv_map[i] in self._extra_keys)
+
+    def parse(self, s):
+        """Parse string and return string representation"""
+        self._parse_str(s)
+        return str(self)
+
+    def _validate_keys(self):
+        # ID required!
+        if self['ID'] is None:
+            raise MissingIDException("Read group ID required")
+        if not self['FO'] is None:
+            if not re.search("\*|[ACMGRSVTWYHKDBN]+", self['FO']):
+                raise FormatException("FO must be of format '\*|[ACMGRSVTWYHKDBN]+'")
+
+    def _fmt(self, k):
+        """Take care of date string"""
+        if k == 'DT':
+            return isoformat(self[k])
+        return self[k]
+
+    def __str__(self):
+        """Return a generic program string"""
+        self._validate_keys()
+        return " ".join(["{dash}{key} {value}".format(dash=self._opt_prefix, key=self._read_group_dict[k], value=self._fmt(k)) for k in sorted(list(self.keys())) if not self[k] is None])
 
 def find_files(path, re_str):
     """Find files in path that comply with a regular expression.

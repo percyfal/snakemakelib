@@ -1,6 +1,6 @@
 # Copyright (C) 2015 by Per Unneberg
 from snakemakelib.config import get_sml_config
-from snakemakelib.bio.ngs.utils import read_group_from_str
+from snakemakelib.bio.ngs.utils import ReadGroup
 
 sml_config = get_sml_config()
 
@@ -13,18 +13,10 @@ sml_config = get_sml_config()
 # --rg-center                    <string>    (sequencing center name)
 # --rg-date                      <string>    (ISO 8601 date of the sequencing run)
 # --rg-platform                  <string>    (Sequencing platform descriptor)
-def opt_read_group(prefix):
-    """Generate read group string for tuxedo alignments.
 
-    Tries to guess sensible values from the file prefix.
+class TuxedoReadGroup(ReadGroup):
+    _read_group_dict =  {'ID' : 'id', 'CN' : 'center', 'DS' : 'description', 'DT' : 'date', 'FO' : 'floworder', 'KS' : 'keysequence', 'LB' : 'library', 'PG' : 'program', 'PI' : 'insertsize', 'PL': 'platform', 'PU' : 'platform-unit', 'SM' : 'sample'}
 
-    Args:
-      prefix: <string> to be parsed
+    def __init__(self, s, opt_prefix="--rg-", *args, **kwargs):
+        ReadGroup.__init__(self, s, opt_prefix, *args, **kwargs)
 
-    Returns:
-      opt: tophat-formatted <string> to be used in options
-    """
-    d = read_group_from_str(prefix)
-    s = " ".join(["--rg-{k} {v}".format(k=k, v=v) for (k,v) in sorted(d.items()) if not v == ""]).replace("punit", "platform-unit")
-    return s
-    

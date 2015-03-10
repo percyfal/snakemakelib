@@ -2,9 +2,10 @@
 # pylint: disable=R0904
 import unittest
 import logging
+from nose.tools import raises
 from snakemakelib.config import init_sml_config
 from snakemakelib.report.utils import Template
-from snakemakelib.bio.ngs.utils import read_group_from_str, find_files
+from snakemakelib.bio.ngs.utils import find_files, ReadGroup, DisallowedKeyException
 from snakemakelib.utils import isoformat
 from snakemake.io import glob_wildcards
 
@@ -60,13 +61,6 @@ class TestBioNgsUtils(unittest.TestCase):
     def tearDown(self):
         init_sml_config({})
 
-    def test_read_group_from_str(self):
-        """Test creating read group information from strings"""
-        d = read_group_from_str("2_120924_AC003CCCXX_P001_102")
-        self.assertEqual(d['date'], "2012-09-24")
-        self.assertEqual(d['punit'], "2")
-        self.assertEqual(d['id'], "2_120924_AC003CCCXX_P001_102")
-
     def test_find_files(self):
         """Test finding files"""
         read1_str = self.cfg['bio.ngs.settings']["run_id_re"][1] + self.cfg['bio.ngs.settings']["read1_label"] + self.cfg['bio.ngs.settings']["fastq_suffix"] + "$"
@@ -95,3 +89,30 @@ class TestUtils(unittest.TestCase):
         """Test isoformatting function"""
         s = "120924"
         self.assertEqual(isoformat(s), "2012-09-24")
+
+class TestReadGroup(unittest.TestCase):
+    """Test ReadGroup class"""
+    def test_rg_init(self):
+        """Test initializing ReadGroup"""
+        rg = ReadGroup("test", ID='test', DT="120924")
+        self.assertEqual(str(rg), '--date 2012-09-24 --identifier test')
+        rg = ReadGroup("test", **{'ID':'test', 'DT':"120924"})
+        self.assertEqual(str(rg), '--date 2012-09-24 --identifier test')
+
+    def test_rg_parse_illumina_like(self):
+        """Test parsing illumina-like-based file names"""
+        rg = ReadGroup("(?P<PATH>.*)(?P<PU1>[0-9])_(?P<DT>[0-9]+)_(?P<PU2>[A-Z0-9]+XX)_(?P<SM>P[0-9]+_[0-9]+)")
+        s = (rg.parse("../data/projects/J.Doe_00_01/P001_101/121015_BB002BBBXX/1_121015_BB002BBBXX_P001_101_1.fastq.gz"))
+        self.assertEqual("--date 2012-10-15 --identifier 1_121015_BB002BBBXX_P001_101 --platform-unit 1_BB002BBBXX --sample P001_101", s)
+
+    def test_rg_fn(self):
+        """Test initializing read group class and setting function"""
+        rg_fn = ReadGroup("(?P<PATH>.*)(?P<PU1>[0-9])_(?P<DT>[0-9]+)_(?P<PU2>[A-Z0-9]+XX)_(?P<SM>P[0-9]+_[0-9]+)").parse
+        s = rg_fn("../data/projects/J.Doe_00_01/P001_101/121015_BB002BBBXX/1_121015_BB002BBBXX_P001_101_1.fastq.gz")
+        self.assertEqual("--date 2012-10-15 --identifier 1_121015_BB002BBBXX_P001_101 --platform-unit 1_BB002BBBXX --sample P001_101", s)
+
+    @raises(DisallowedKeyException)
+    def test_rg_disallowed_key(self):
+        """Test setting a read group object with a key not present in allowed keys"""
+        rg = ReadGroup("(?P<PATH>.*)(?P<PU1>[0-9])_(?P<DATE>[0-9]+)_(?P<PU2>[A-Z0-9]+XX)_(?P<SM>P[0-9]+_[0-9]+)")
+        s = (rg.parse("../data/projects/J.Doe_00_01/P001_101/121015_BB002BBBXX/1_121015_BB002BBBXX_P001_101_1.fastq.gz"))

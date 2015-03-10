@@ -12,27 +12,38 @@ config_default = {
         'cmd' : "samtools",
         'threads' : sml_config['bio.ngs.settings']['threads'],
         'options' : "",
+        'index' : {
+            'options' : '',
+        },
     },
 }
 
 update_sml_config(config_default)
 
-samtools_config = sml_config['bio.ngs.tools.samtools']
+samtools_cfg = sml_config['bio.ngs.tools.samtools']
 
 rule samtools_sam2bam:
     """Convert sam file to bam"""
-    params: cmd = samtools_config['cmd'],
-            options = samtools_config['options']
+    params: cmd = samtools_cfg['cmd'],
+            options = samtools_cfg['options']
     input: "{prefix}.sam"
     output: "{prefix}.bam"
     shell: "{params.cmd} view {params.options} -Sb {input} > {output}"
 
 rule samtools_gene_region_from_bam:
     """Extract gene region from bam file"""
-    params: cmd = samtools_config['cmd'],
-            options = samtools_config['options']
+    params: cmd = samtools_cfg['cmd'],
+            options = samtools_cfg['options']
     input: bam = "{prefix}.bam", bed = "{prefix}.region_{region}{sfx}.bed"
     output: temp("{prefix}.region_{region}{sfx}.bam")
     shell: "{params.cmd} view {params.options} -b -L {input.bed} {input.bam} > {output}"
 
 ruleorder: samtools_gene_region_from_bam > samtools_sam2bam
+
+rule samtools_index:
+    """Run samtools index"""
+    params: cmd = samtools_cfg['cmd'],
+            options = samtools_cfg['index']['options']
+    input: "{prefix}.bam"
+    output: "{prefix}.bai"
+    shell: "{params.cmd} {params.options} index {input}"

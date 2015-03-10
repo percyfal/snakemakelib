@@ -17,6 +17,6 @@ sml_config = get_sml_config()
 class TuxedoReadGroup(ReadGroup):
     _read_group_dict =  {'ID' : 'id', 'CN' : 'center', 'DS' : 'description', 'DT' : 'date', 'FO' : 'floworder', 'KS' : 'keysequence', 'LB' : 'library', 'PG' : 'program', 'PI' : 'insertsize', 'PL': 'platform', 'PU' : 'platform-unit', 'SM' : 'sample'}
 
-    def __init__(self, s, opt_prefix="--rg-", *args, **kwargs):
-        ReadGroup.__init__(self, s, opt_prefix, *args, **kwargs)
+    def __init__(self, run_id_re, opt_prefix="--rg-", *args, **kwargs):
+        ReadGroup.__init__(self, run_id_re, opt_prefix, *args, **kwargs)
 

@@ -47,8 +47,7 @@ class TestBioNgsUtils(unittest.TestCase):
         """Setup test fixtures"""
         self.cfg = {
             'bio.ngs.settings' : {
-                'run_id_re' : (("punit", "date", "_", "sample"), "([0-9])_([0-9]+)_([A-Z0-9]+XX)_(P[0-9]+_[0-9]+)"), 
-                'read_group_keys' : ("id", "sample", "library", "description", "punit", "center", "date", "platform"),
+                'run_id_re' : "(?P<PATH>.*)(?P<PU1>[0-9])_(?P<DT>[0-9]+)_(?P<PU2>[A-Z0-9]+XX)_(?P<SM>P[0-9]+_[0-9]+)",
                 'center' : 'mycenter',
                 'platform' : 'Illumina',
                 'fastq_suffix' : ".fastq.gz",
@@ -63,8 +62,8 @@ class TestBioNgsUtils(unittest.TestCase):
 
     def test_find_files(self):
         """Test finding files"""
-        read1_str = self.cfg['bio.ngs.settings']["run_id_re"][1] + self.cfg['bio.ngs.settings']["read1_label"] + self.cfg['bio.ngs.settings']["fastq_suffix"] + "$"
-        read2_str = self.cfg['bio.ngs.settings']["run_id_re"][1] + self.cfg['bio.ngs.settings']["read2_label"] + self.cfg['bio.ngs.settings']["fastq_suffix"] + "$"
+        read1_str = self.cfg['bio.ngs.settings']["run_id_re"] + self.cfg['bio.ngs.settings']["read1_label"] + self.cfg['bio.ngs.settings']["fastq_suffix"] + "$"
+        read2_str = self.cfg['bio.ngs.settings']["run_id_re"] + self.cfg['bio.ngs.settings']["read2_label"] + self.cfg['bio.ngs.settings']["fastq_suffix"] + "$"
         flist = find_files("../data/projects/J.Doe_00_01", read1_str)
         self.assertEqual(len(flist), 3)
         self.assertEqual(flist[1], '../data/projects/J.Doe_00_01/P001_101/121015_BB002BBBXX/1_121015_BB002BBBXX_P001_101_1.fastq.gz')
@@ -72,17 +71,7 @@ class TestBioNgsUtils(unittest.TestCase):
         self.assertEqual(len(readpairs), 3)
         self.assertEqual(len(readpairs[0]), 2)
         self.assertEqual(readpairs[1][0], '../data/projects/J.Doe_00_01/P001_101/121015_BB002BBBXX/1_121015_BB002BBBXX_P001_101_1.fastq.gz')
-
-    def test_sm_wildcard(self):
-        read1_str = "../data/projects/J.Doe_00_01/P001_101/121015_BB002BBBXX/" + self.cfg['bio.ngs.settings']["run_id_re"][1] + self.cfg['bio.ngs.settings']["read1_label"] + self.cfg['bio.ngs.settings']["fastq_suffix"] + "$"
-        print (read1_str)
-        gw = glob_wildcards(read1_str)
-        print (gw)
-        read2_str = "../data/projects/J.Doe_00_01/P001_101/121015_BB002BBBXX/{platform_unit}_{fc}_{sample}_2.fastq.gz"
-        gw = glob_wildcards(read2_str)
-        print (gw)
         
-
 class TestUtils(unittest.TestCase):
     """Test snakemakelib.utils functions"""
     def test_isoformat(self):
@@ -103,13 +92,13 @@ class TestReadGroup(unittest.TestCase):
         """Test parsing illumina-like-based file names"""
         rg = ReadGroup("(?P<PATH>.*)(?P<PU1>[0-9])_(?P<DT>[0-9]+)_(?P<PU2>[A-Z0-9]+XX)_(?P<SM>P[0-9]+_[0-9]+)")
         s = (rg.parse("../data/projects/J.Doe_00_01/P001_101/121015_BB002BBBXX/1_121015_BB002BBBXX_P001_101_1.fastq.gz"))
-        self.assertEqual("--date 2012-10-15 --identifier 1_121015_BB002BBBXX_P001_101 --platform-unit 1_BB002BBBXX --sample P001_101", s)
+        self.assertEqual("--date 2012-10-15 --identifier 1_121015_BB002BBBXX_P001_101 --platform-unit 1_BB002BBBXX --sample P001_101", str(s))
 
     def test_rg_fn(self):
         """Test initializing read group class and setting function"""
         rg_fn = ReadGroup("(?P<PATH>.*)(?P<PU1>[0-9])_(?P<DT>[0-9]+)_(?P<PU2>[A-Z0-9]+XX)_(?P<SM>P[0-9]+_[0-9]+)").parse
         s = rg_fn("../data/projects/J.Doe_00_01/P001_101/121015_BB002BBBXX/1_121015_BB002BBBXX_P001_101_1.fastq.gz")
-        self.assertEqual("--date 2012-10-15 --identifier 1_121015_BB002BBBXX_P001_101 --platform-unit 1_BB002BBBXX --sample P001_101", s)
+        self.assertEqual("--date 2012-10-15 --identifier 1_121015_BB002BBBXX_P001_101 --platform-unit 1_BB002BBBXX --sample P001_101", str(s))
 
     @raises(DisallowedKeyException)
     def test_rg_disallowed_key(self):

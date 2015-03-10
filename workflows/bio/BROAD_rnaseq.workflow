@@ -29,15 +29,15 @@ tux_cfg = get_sml_config('bio.ngs.rnaseq.tuxedo')
 path = cfg.get('path') if not cfg.get('path') is None else os.curdir
 
 # Targets
-RSEM_TARGETS=expand("{path}/{sample}/{flowcell}/{punit}_{flowcell}_{sample}.rsem", path=path, sample=cfg['samples'], flowcell=cfg['flowcells'], punit=cfg['punits'])
+RSEM_TARGETS=expand("{path}/{sample}/{flowcell}/{lane}_{flowcell}_{sample}.rsem", path=path, sample=cfg['samples'], flowcell=cfg['flowcells'], lane=cfg['lanes'])
 
-TOPHAT2_TARGETS=expand("{path}/{sample}/{flowcell}/{punit}_{flowcell}_{sample}.tophat2", path=path, sample=cfg['samples'], flowcell=cfg['flowcells'], punit=cfg['punits'])
+TOPHAT2_TARGETS=expand("{path}/{sample}/{flowcell}/{lane}_{flowcell}_{sample}.tophat2", path=path, sample=cfg['samples'], flowcell=cfg['flowcells'], lane=cfg['lanes'])
 
-CUFFLINKS_TARGETS = expand("{path}/{sample}/{flowcell}/{punit}_{flowcell}_{sample}.cufflinks", path=path, sample=cfg['samples'], flowcell=cfg['flowcells'], punit=cfg['punits'])
+CUFFLINKS_TARGETS = expand("{path}/{sample}/{flowcell}/{lane}_{flowcell}_{sample}.cufflinks", path=path, sample=cfg['samples'], flowcell=cfg['flowcells'], lane=cfg['lanes'])
 
-CUFFLINKS_QUANT_TARGETS = expand("{path}/{sample}/{flowcell}/{punit}_{flowcell}_{sample}.cufflinks_quant", path=path, sample=cfg['samples'], flowcell=cfg['flowcells'], punit=cfg['punits'])
+CUFFLINKS_QUANT_TARGETS = expand("{path}/{sample}/{flowcell}/{lane}_{flowcell}_{sample}.cufflinks_quant", path=path, sample=cfg['samples'], flowcell=cfg['flowcells'], lane=cfg['lanes'])
 
-RNASEQC_TARGETS = expand("{path}/{sample}/{flowcell}/{punit}_{flowcell}_{sample}.tophat2/accepted_hits.rg.resorted.dup.rnaseqc", path=path, sample=cfg['samples'], flowcell=cfg['flowcells'], punit=cfg['punits'], tophat2dir=os.path.basename(tux_cfg['tophat']['output_dir']))
+RNASEQC_TARGETS = expand("{path}/{sample}/{flowcell}/{lane}_{flowcell}_{sample}.tophat2/accepted_hits.rg.resorted.dup.rnaseqc", path=path, sample=cfg['samples'], flowcell=cfg['flowcells'], lane=cfg['lanes'], tophat2dir=os.path.basename(tux_cfg['tophat']['output_dir']))
 
 rule BROAD_rnaseq_all:
     """Run all the analyses"""

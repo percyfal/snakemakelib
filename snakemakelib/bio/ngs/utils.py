@@ -59,7 +59,7 @@ class ReadGroup(dict):
     _read_group_keys = ['ID', 'CN', 'DS', 'DT', 'FO', 'KS', 'LB', 'PG', 'PI', 'PL', 'PU', 'SM']
     _read_group_dict =  {'ID' : 'identifier', 'CN' : 'center', 'DS' : 'description', 'DT' : 'date', 'FO' : 'floworder', 'KS' : 'keysequence', 'LB' : 'library', 'PG' : 'program', 'PI' : 'insertsize', 'PL': 'platform', 'PU' : 'platform-unit', 'SM' : 'sample'}
 
-    _extra_keys = ['PATH']
+    _extra_keys = ['PATH', 'NA']
 
     _allowed_keys = _read_group_keys + _extra_keys
 
@@ -85,19 +85,22 @@ class ReadGroup(dict):
 
     def _parse_str(self, s):
         """Parse string and set read group dict"""
-        regex = re.compile(self._run_id_re)
-        m = regex.match(s)
-        [self.update({k: m.group(k)}) for k in m.groupdict().keys() if k in self._read_group_keys]
+        m = self._regex.match(s)
+        [self.update({k: m.group(k)}) for k in m.groupdict().keys() if not k in self._extra_keys]
         if self._indexdict:
             [self.update({k: self._concat.join(m.group(mkey) for mkey in self._indexdict[k])}) for k in self._indexdict.keys()]
         if not self['ID']:
-            inv_map = {v:k for (k,v) in list(regex.groupindex.items())}
-            self['ID'] = self._concat.join(m.group(i) for i in range(1, regex.groups + 1) if not inv_map[i] in self._extra_keys)
+            inv_map = {v:k for (k,v) in list(self._regex.groupindex.items())}
+            self['ID'] = self._concat.join(m.group(i) for i in range(1, self._regex.groups + 1) if not inv_map[i] in self._extra_keys)
 
     def parse(self, s):
         """Parse string and return string representation"""
         self._parse_str(s)
-        return str(self)
+        return self
+    
+    @property
+    def pattern(self):
+        return self._regex.pattern
 
     def _validate_keys(self):
         # ID required!
@@ -116,7 +119,7 @@ class ReadGroup(dict):
     def __str__(self):
         """Return a generic program string"""
         self._validate_keys()
-        return " ".join(["{dash}{key} {value}".format(dash=self._opt_prefix, key=self._read_group_dict[k], value=self._fmt(k)) for k in sorted(list(self.keys())) if not self[k] is None])
+        return " ".join(["{dash}{key} {value}".format(dash=self._opt_prefix, key=self._read_group_dict[k], value=self._fmt(k)) for k in sorted(list(self.keys())) if not self[k] is None and k in self._read_group_keys])
 
 def find_files(path, re_str):
     """Find files in path that comply with a regular expression.

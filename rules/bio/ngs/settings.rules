@@ -6,22 +6,18 @@ from snakemakelib.config import update_sml_config, get_sml_config
 # FIXME: move to module?
 platforms = {
     'generic' : {
-        'flowcell_suffix' : "",
         'read_group_keys' : (),
         'run_id_re' : (),
     },
     'Illumina' : {
-        'flowcell_suffix' : "XX",
         'read_group_keys' : ("id", "sample", "library", "description", "platform-unit", "center", "date", "platform"),
         'run_id_re' :  (("punit", "date", "flowcell", "sample"), "([0-9])_([0-9]+)_([A-Z0-9]+XX)_(P[0-9]+_[0-9]+)"),
     },
     'PacBio' : {
-        'flowcell_suffix' : "",
         'read_group_keys' : (),
         'run_id_re' : (),
     },
     'SOLiD' : {
-        'flowcell_suffix' : "",
         'read_group_keys' : (),
         'run_id_re' : (),
     },

@@ -30,7 +30,7 @@ def generic_target_generator(fmt, rg, cfg, path=os.curdir):
         if not len(cfg['samples']) == len(cfg['flowcells'] or len(cfg['samples'] == len(cfg['flowcells']))):
             raise Exception("if samples, flowcells, lanes all provided, must be of equal lengths")
         cfg_list = list(zip(cfg['samples'], cfg['flowcells'], cfg['lanes']))
-        tgts = [fmt.format(SM=s, PATH=path, **cfg['platform_unit_fn']((s,fc,l))) for (s, fc, l) in cfg_list]
+        tgts = [fmt.format(SM=s, PATH=path, **dict(cfg)['platform_unit_fn']((s,fc,l))) for (s, fc, l) in cfg_list]
         return tgts
 
     # 2. Read samplesheet here

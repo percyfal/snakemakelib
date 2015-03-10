@@ -49,7 +49,7 @@ config_default = {
         'read2_suffix' : ".fastq.gz",
         'regions' : [],
         'samples' : [],
-        'sampleinfo' : "", # generic; samplesheet could be Illuminas csv samplesheet; treat elsewhere
+        'sampleinfo' : "", # generic; samplesheet could be Illuminas csv samplesheet; treat elsewhere?
         'threads' : 8,
         'annotation' : {
             'annot_label' : "",

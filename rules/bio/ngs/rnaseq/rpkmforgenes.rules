@@ -22,10 +22,10 @@ rfg_cfg = get_sml_config('bio.ngs.rnaseq.rpkmforgenes')
 # rpkmforgenes.py -readcount -fulltranscript -mRNAnorm -rmnameoverlap -bothendsceil -n 15_115 -i /home/asab/perlmann/nobackup/mapping/star_mm10egfp_T.Perlmann_14_01/15_115/15_115_unique.bam -p 1 -a /proj/b2014109/private/genomes/annotation/refGene_140508_norandom_egfp.txt -u /proj/b2014109/private/genomes/MULTo1.0/mm10_20-255/ -o test_refseq_rpkms.txt    
 rule rnaseq_rpkmforgenes_from_bam:
     """Run rpkmforgenes from bam input"""
-    params: cmd = rfg_cfg['rpkmforgenes']['cmd'],
+    params: cmd = rfg_cfg['cmd'],
             options = " ".join([
-            rfg_cfg['rpkmforgenes']['options'],
-            "-a", rfg_cfg['rpkmforgenes']['annot_gtf'],
+            rfg_cfg['options'],
+            "-a", rfg_cfg['annot_gtf'],
             ])
     input: "{prefix}.bam"
     output: "{prefix}.rpkmforgenes"
@@ -33,11 +33,13 @@ rule rnaseq_rpkmforgenes_from_bam:
 
 rule rnaseq_rpkmforgenes_from_bed:
     """Run rpkmforgenes from bed input"""
-    params: cmd = rfg_cfg['rpkmforgenes']['cmd'],
+    params: cmd = rfg_cfg['cmd'],
             options = " ".join([
-            rfg_cfg['rpkmforgenes']['options'],
-            "-a", rfg_cfg['rpkmforgenes']['annot_gtf'],
+            rfg_cfg['options'],
+            "-a", rfg_cfg['annot_gtf'],
             ])
     input: "{prefix}.bed"
     output: "{prefix}.rpkmforgenes"
     shell: "{params.cmd} {params.options} -i {input} -o {output}"
+
+ruleorder: rnaseq_rpkmforgenes_from_bam > rnaseq_rpkmforgenes_from_bed

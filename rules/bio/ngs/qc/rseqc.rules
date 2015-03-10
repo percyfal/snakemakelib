@@ -70,14 +70,14 @@ rule rseqc_clipping_profile:
 rule rseqc_geneBody_coverage:
     """Run RSeQC geneBody_coverage.py. 
 
-    NB: Requries reference gene model in bed format
+    NB: Requries reference gene model in bed format (-r parameter)
     """
     params: cmd = rsq_cfg['geneBody_coverage']['cmd'],
             options = rsq_cfg['geneBody_coverage']['options'],
             outdir = rsq_cfg['outdir']
-    input: "{prefix}.bam"
+    input: bam = "{prefix}.bam"#, refgene = rsq_cfg['refgene']
     output: "{prefix}_rseqc/geneBody_coverage.geneBodyCoverage.pdf"
-    shell: python2 + " && {params.cmd} {params.options} -i {input} -o $(dirname {output})/geneBody_coverage -r "
+    shell: python2 + " && {params.cmd} {params.options} -i {input.bam} -o $(dirname {output})/geneBody_coverage -r {input.refgene}"
 
 rule rseqc_junction_annotation:
     """Run RSeQC junction_annotation.py
@@ -87,9 +87,9 @@ rule rseqc_junction_annotation:
     params: cmd = rsq_cfg['junction_annotation']['cmd'],
             options = rsq_cfg['junction_annotation']['options'],
             outdir = rsq_cfg['outdir']
-    input: "{prefix}.bam"
+    input: bam = "{prefix}.bam"#, refgene = rsq_cfg['refgene']
     output: "{prefix}_rseqc/junction_annotation_refseq.splice_junction.pdf"
-    shell: python2 + " && {params.cmd} {params.options} -i {input} -o $(dirname {output})/junction_annotation_refseq"
+    shell: python2 + " && {params.cmd} {params.options} -i {input.bam} -o $(dirname {output})/junction_annotation_refseq -r {input.refgene}"
 
 rule rseqc_read_GC:
     """Run RSeQC read_GC.py"""
@@ -134,8 +134,8 @@ rule rseqc_qc_8:
     """Run 8 RSeQC commands on a bam file"""
     input: read_dup = "{prefix}_rseqc/read_dup.DupRate_plot.pdf", 
            clipping_profile = "{prefix}_rseqc/clippingprofile.clipping_profile.pdf",
-           # geneBody_coverage = "{prefix}_rseqc/geneBody_coverage.geneBodyCoverage.pdf",
-           # junction_annotation = "{prefix}_rseqc/junction_annotation_refseq.splice_junction.pdf",
+           #geneBody_coverage = "{prefix}_rseqc/geneBody_coverage.geneBodyCoverage.pdf",
+           #junction_annotation = "{prefix}_rseqc/junction_annotation_refseq.splice_junction.pdf",
            read_GC = "{prefix}_rseqc/read_GC.GC_plot.pdf",
            read_NVC = "{prefix}_rseqc/read_NVC.NVC_plot.pdf",
            read_quality = "{prefix}_rseqc/read_quality.qual.heatmap.pdf",

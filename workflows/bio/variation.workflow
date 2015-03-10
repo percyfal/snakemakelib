@@ -31,6 +31,8 @@ variation_workflow_cfg = get_sml_config()
 
 ruleorder: gatk_print_reads > picard_build_bam_index
 
+ruleorder: picard_build_bam_index > samtools_index
+
 # Target suffices
 TARGET_SUFFIX=".sort.merge.rg.dup.realign.recal.bp_variants.phased.annotated.vcf"
 DUP_METRICS_SUFFIX=".sort.merge.rg.dup.dup_metrics"

@@ -1,21 +1,55 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.config import update_sml_config, sml_rules_path
+from snakemakelib.config import update_sml_config, get_sml_config
+
+# Predefined settings for various platforms
+# Docs needed:
+#   run_id_re: regular expression for how to extract read group information from run id file names
+#   run_id_pfx_fmt: based on the results of run_id_re, make prefix formats as python mini-format strings for run_id
+#   sample_pfx_ftm: ditto for sample
+#
+# FIXME: move to module?
+platforms = {
+    # generic currently almost identical to Illumina
+    'generic' : {
+        'run_id_re' : "(?P<PATH>.*)(?P<NA>[0-9])_(?P<DT>[0-9]+)_(?P<PU>[A-Z0-9]+XX)_(?P<SM>P[0-9]+_[0-9]+)",
+        'run_id_pfx_re' : "(?P<PATH>.*)(?P<NA>[0-9])_(?P<PU>[0-9]+_[A-Z0-9]+XX)_(?P<SM>P[0-9]+_[0-9]+)",
+        'run_id_pfx_fmt' : os.path.join("{PATH}", "{SM}", "{PU}", "{PU}_{SM}"),
+        'sample_pfx_fmt' : os.path.join("{PATH}", "{SM}", "{SM}"),
+        'platform_unit_fn' : lambda x: {'PU':x[1]},
+    },
+    'Illumina' : {
+        'run_id_re' : "(?P<PATH>.*)(?P<PU1>[0-9])_(?P<DT>[0-9]+)_(?P<PU2>[A-Z0-9]+XX)_(?P<SM>P[0-9]+_[0-9]+)",
+        'run_id_pfx_re' : "(?P<PATH>.*)(?P<PU1>[0-9])_(?P<PU2>[0-9]+_[A-Z0-9]+XX)_(?P<SM>P[0-9]+_[0-9]+)",
+        'run_id_pfx_fmt' : os.path.join("{PATH}", "{SM}", "{PU2}", "{PU1}_{PU2}_{SM}"),
+        'sample_pfx_fmt' : os.path.join("{PATH}", "{SM}", "{SM}"),
+        # FIXME: Hack to get PU from values passed to command line
+        'platform_unit_fn' : lambda x: {'PU1':x[2], 'PU2':x[1]},
+    },
+    'PacBio' : {
+        'run_id_re' : "",
+    },
+    'SOLiD' : {
+        'run_id_re' : "",
+    },
+}
 
 config_default = { 
     'bio.ngs.settings' : {
+        'center' : "",
         'fastq_suffix' : ".fastq",
         'flowcells' : [],
         'flowcellruns' : [],
-        'flowcell_suffix' : "XX",
         'inputdir' : ".",
-        'read1_label' : "_R1_001",
-        'read2_label' : "_R2_001",
+        'lanes' : [],
+        'platform' : "generic",
+        'read1_label' : "_1",
+        'read2_label' : "_2",
         'read1_suffix' : ".fastq.gz",
         'read2_suffix' : ".fastq.gz",
         'regions' : [],
         'samples' : [],
-        'sample_prefix' : "P00",
+        'sampleinfo' : "", # generic; samplesheet could be Illuminas csv samplesheet; treat elsewhere
         'threads' : 8,
         'annotation' : {
             'annot_label' : "",
@@ -23,7 +57,9 @@ config_default = {
         },
         'db' : {
             'dbsnp' : "",
-            'ref' : "hg19",
+            'ref' : "",
+            'build' : '',
+            'build_config' : None,
         },
         'java' : {
             'java_mem' : "6g",
@@ -38,9 +74,13 @@ config_default = {
 
 update_sml_config(config_default)
 
+ngs_conf = get_sml_config('bio.ngs.settings')
+
+update_sml_config({'bio.ngs.settings' : platforms[ngs_conf['platform']]})
+
 # Add configuration variable to snakemake global config object
-config['lanes'] = []
-config['samples'] = []
-config['regions'] = []
-config['flowcells'] = []
+config['lanes'] = config.get("lanes", [])
+config['samples'] = config.get("samples", [])
+config['regions'] = config.get("regions", []) 
+config['flowcells'] = config.get("flowcells", [])  
 

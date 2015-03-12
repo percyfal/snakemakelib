@@ -1,13 +1,10 @@
 # -*- snakemake -*-
 # picard old rules predating version ??? (1.1, 1.0) where individual jar files still were used 
 import os
-from snakemakelib.config import update_sml_config, sml_rules_path, get_sml_config, sml_path
+from snakemakelib.config import update_sml_config, get_sml_config, sml_path
 
-# Start by including the general snakefile
-include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
-# Include comp settings to gain access to awk and friends
-include: os.path.join(sml_rules_path(), 'comp', 'settings.rules')
-
+include: '../settings.rules'
+include: '../../../comp/settings.rules'
 
 # Jar program names
 BUILD_BAM_INDEX = "BuildBamIndex.jar"

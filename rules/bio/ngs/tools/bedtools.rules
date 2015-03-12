@@ -1,9 +1,8 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.config import update_sml_config, sml_rules_path, get_sml_config
+from snakemakelib.config import update_sml_config, get_sml_config
 
-# Start by including the general snakefile
-include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
+include: '../settings.rules'
 
 sml_config = get_sml_config()
 
@@ -19,6 +18,10 @@ config_default = {
             'cmd' : 'intersectBed',
             'options' : "",
         },
+        'bamtobed' : {
+            'cmd' : 'bamToBed',
+            'options' : "",
+        },
         'sequence_capture' : {
             'bait_regions' : sml_config['bio.ngs.settings']['sequence_capture']['bait_regions'],
             'target_regions' : sml_config['bio.ngs.settings']['sequence_capture']['target_regions'],
@@ -31,6 +34,14 @@ update_sml_config(config_default)
 sml_cfg = get_sml_config()
 
 bedtools_cfg = get_sml_config('bio.ngs.tools.bedtools')
+
+rule bedtool_bamtobed:
+    """Convert a bam file to bed format"""
+    params: cmd = os.path.join(bedtools_cfg['home'], bedtools_cfg['bamtobed']['cmd']),
+            options = bedtools_cfg['options']
+    input: "{prefix}.bam"
+    output: "{prefix}.bed"
+    shell: "{params.cmd} {params.options} -i {input} > {output}"
 
 rule bedtools_bam2coverage:
     """Calculate coverage for a bam file.

@@ -1,7 +1,7 @@
 # -*- snakemake -*-
 import os
 import glob
-from snakemakelib.config import update_sml_config, sml_rules_path, get_sml_config
+from snakemakelib.config import update_sml_config, get_sml_config
 
 # TODO: move to module file
 def gatk_read_backed_phasing_find_input(wildcards):
@@ -10,10 +10,9 @@ def gatk_read_backed_phasing_find_input(wildcards):
     return ["{prefix}.vcf".format(prefix=wildcards.prefix), bamfiles[0], bamfiles[0].replace(".bam", ".bai")]
 
 
-# Start by including the general snakefile
-include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
+include: '../settings.rules'
 # Include required picard rules
-include: os.path.join(sml_rules_path(), 'bio/ngs/qc', 'picard.rules')
+include: '../qc/picard.rules'
 
 sml_config = get_sml_config()
 
@@ -302,7 +301,7 @@ rule gatk_read_backed_phasing:
     params: cmd = gatk_config['cmd'] + " -T " + gatk_config['read_backed_phasing']['cmd'],
             options = " ".join(["-R", gatk_config['read_backed_phasing']['ref'],
                                 gatk_config['read_backed_phasing']['options']])
-    input: gatk_config['read_backed_phasing']['inputfun']
+    input: dict(gatk_config['read_backed_phasing'])['inputfun']
     output: "{prefix}.phased.vcf"
     shell: "{params.cmd} {params.options} -I {input[1]} -o {output} --variant {input[0]}"
 

@@ -1,9 +1,8 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.config import update_sml_config, sml_rules_path, get_sml_config
+from snakemakelib.config import update_sml_config, get_sml_config
 
-# Start by including the general snakefile
-include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
+include: '../settings.rules'
 
 sml_config = get_sml_config()
 
@@ -13,17 +12,20 @@ config_default = {
         'cmd' : "samtools",
         'threads' : sml_config['bio.ngs.settings']['threads'],
         'options' : "",
+        'index' : {
+            'options' : '',
+        },
     },
 }
 
 update_sml_config(config_default)
 
-samtools_config = sml_config['bio.ngs.tools.samtools']
+samtools_cfg = sml_config['bio.ngs.tools.samtools']
 
 rule samtools_sam2bam:
     """Convert sam file to bam"""
-    params: cmd = samtools_config['cmd'],
-            options = samtools_config['options']
+    params: cmd = samtools_cfg['cmd'],
+            options = samtools_cfg['options']
     input: "{prefix}.sam"
     output: "{prefix}.bam"
     shell: "{params.cmd} view {params.options} -Sb {input} > {output}"
@@ -37,3 +39,11 @@ rule samtools_gene_region_from_bam:
     shell: "{params.cmd} view {params.options} -b -L {input.bed} {input.bam} > {output}"
 
 ruleorder: samtools_gene_region_from_bam > samtools_sam2bam
+
+rule samtools_index:
+    """Run samtools index"""
+    params: cmd = samtools_cfg['cmd'],
+            options = samtools_cfg['index']['options']
+    input: "{prefix}.bam"
+    output: "{prefix}.bai"
+    shell: "{params.cmd} {params.options} index {input}"

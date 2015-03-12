@@ -1,17 +1,17 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.config import update_sml_config, sml_rules_path, get_sml_config
+from snakemakelib.config import update_sml_config, get_sml_config
+from snakemakelib.bio.ngs.db import index
 
-# Start by including the general snakefile
-include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
-include: os.path.join(sml_rules_path(), 'bio/ngs/tools', 'samtools.rules')
+include: '../settings.rules'
+include: '../tools/samtools.rules'
 
 sml_config = get_sml_config()
 
 config_default = { 
     'bio.ngs.align.bwa' : {
         'cmd' : "bwa",
-        'ref' : sml_config['bio.ngs.settings']['db']['ref'],
+        'index' : index,
         'threads' : sml_config['bio.ngs.settings']['threads'],
         'options' : "-M",
         'mem' :{
@@ -38,9 +38,9 @@ rule bwa_mem:
     """Run bwa mem"""
     params: options = bwa_cfg['mem']['options'],
             cmd = bwa_cfg['cmd'],
-            ref = bwa_cfg['ref']
+            index = bwa_cfg['index', 'bwa']
     input: "{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],\
     "{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['fastq_suffix']
     output: "{prefix}.bam"
     threads: bwa_cfg['threads']
-    shell: "{params.cmd} mem -t {threads} {params.options} {params.ref} {input} | " + samtools_cfg['cmd'] + " view -Sb - > {output}"
+    shell: "{params.cmd} mem -t {threads} {params.options} {params.index} {input} | " + samtools_cfg['cmd'] + " view -Sb - > {output}"

@@ -1,6 +1,6 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.config import update_sml_config, sml_rules_path, get_sml_config, init_sml_config
+from snakemakelib.config import update_sml_config, get_sml_config, init_sml_config
 
 def read_backed_phasing_create_input(wildcards):
     bamfile = wildcards.prefix.replace(".bp_variants", ".bam")
@@ -19,31 +19,34 @@ variation_config = {
 
 update_sml_config(variation_config)
 
-include: os.path.join(sml_rules_path(), 'settings.rules')
-include: os.path.join(sml_rules_path(), 'utils.rules')
-include: os.path.join(sml_rules_path(), 'bio/ngs/variation', 'variation.rules')
-include: os.path.join(sml_rules_path(), 'bio/ngs/tools', 'gatk.rules')
-include: os.path.join(sml_rules_path(), 'bio/ngs/qc', 'picard.rules')
-include: os.path.join(sml_rules_path(), 'bio/ngs/align', 'bwa.rules')
+p = os.path.join(os.pardir, os.pardir, 'rules')
+include: os.path.join(p, 'settings.rules')
+include: os.path.join(p, 'utils.rules')
+include: os.path.join(p, 'bio/ngs/variation', 'variation.rules')
+include: os.path.join(p, 'bio/ngs/tools', 'gatk.rules')
+include: os.path.join(p, 'bio/ngs/qc', 'picard.rules')
+include: os.path.join(p, 'bio/ngs/align', 'bwa.rules')
 
-cfg = get_sml_config()
+variation_workflow_cfg = get_sml_config()
 
 ruleorder: gatk_print_reads > picard_build_bam_index
 
+ruleorder: picard_build_bam_index > samtools_index
+
 # Target suffices
 TARGET_SUFFIX=".sort.merge.rg.dup.realign.recal.bp_variants.phased.annotated.vcf"
-DUP_METRICS_SUFFIX=".sort.merge.rg.dup_metrics"
+DUP_METRICS_SUFFIX=".sort.merge.rg.dup.dup_metrics"
 ALIGN_METRICS_SUFFIX=".sort.merge.rg.dup.align_metrics"
 INSERT_METRICS_SUFFIX=".sort.merge.rg.dup.insert_metrics"
 HS_METRICS_SUFFIX=".sort.merge.rg.dup.hs_metrics"
 
 # Default targets: expand samples and flowcells
-VCF_TARGETS = ["{sample}{sep}{sample}{sfx}".format(sep=os.sep, sample=x, sfx=TARGET_SUFFIX) for x in cfg['bio.ngs.settings']['samples']]
-VCF_TXT_TARGETS = ["{sample}{sep}{sample}{sfx}".format(sep=os.sep, sample=x, sfx=TARGET_SUFFIX).replace(".vcf", ".txt") for x in cfg['bio.ngs.settings']['samples']]
-DUP_METRICS_TARGETS = ["{sample}{sep}{sample}{sfx}".format(sep=os.sep, sample=x, sfx=DUP_METRICS_SUFFIX) for x in cfg['bio.ngs.settings']['samples']]
-ALIGN_METRICS_TARGETS = ["{sample}{sep}{sample}{sfx}".format(sep=os.sep, sample=x, sfx=ALIGN_METRICS_SUFFIX) for x in cfg['bio.ngs.settings']['samples']]
-INSERT_METRICS_TARGETS = ["{sample}{sep}{sample}{sfx}".format(sep=os.sep, sample=x, sfx=INSERT_METRICS_SUFFIX) for x in cfg['bio.ngs.settings']['samples']]
-HS_METRICS_TARGETS = ["{sample}{sep}{sample}{sfx}".format(sep=os.sep, sample=x, sfx=HS_METRICS_SUFFIX) for x in cfg['bio.ngs.settings']['samples']] 
+VCF_TARGETS = ["{sample}{sep}{sample}{sfx}".format(sep=os.sep, sample=x, sfx=TARGET_SUFFIX) for x in variation_workflow_cfg['bio.ngs.settings']['samples']]
+VCF_TXT_TARGETS = ["{sample}{sep}{sample}{sfx}".format(sep=os.sep, sample=x, sfx=TARGET_SUFFIX).replace(".vcf", ".txt") for x in variation_workflow_cfg['bio.ngs.settings']['samples']]
+DUP_METRICS_TARGETS = ["{sample}{sep}{sample}{sfx}".format(sep=os.sep, sample=x, sfx=DUP_METRICS_SUFFIX) for x in variation_workflow_cfg['bio.ngs.settings']['samples']]
+ALIGN_METRICS_TARGETS = ["{sample}{sep}{sample}{sfx}".format(sep=os.sep, sample=x, sfx=ALIGN_METRICS_SUFFIX) for x in variation_workflow_cfg['bio.ngs.settings']['samples']]
+INSERT_METRICS_TARGETS = ["{sample}{sep}{sample}{sfx}".format(sep=os.sep, sample=x, sfx=INSERT_METRICS_SUFFIX) for x in variation_workflow_cfg['bio.ngs.settings']['samples']]
+HS_METRICS_TARGETS = ["{sample}{sep}{sample}{sfx}".format(sep=os.sep, sample=x, sfx=HS_METRICS_SUFFIX) for x in variation_workflow_cfg['bio.ngs.settings']['samples']] 
 
 
 rule all:
@@ -76,11 +79,11 @@ rule variation_snp_filtration:
     output: "{prefix}.snp.filtSNP.vcf"
     run:
           def _regional_JEXL_filter():
-              cmd = cfg['bio.ngs.tools.gatk']['cmd'] + " -T VariantFiltration"
+              cmd = variation_workflow_cfg['bio.ngs.tools.gatk']['cmd'] + " -T VariantFiltration"
               options = " ".join([
-                  " ".join(["-R", cfg['bio.ngs.tools.gatk']['variant_snp_JEXL_filtration']['ref']]),
+                  " ".join(["-R", variation_workflow_cfg['bio.ngs.tools.gatk']['variant_snp_JEXL_filtration']['ref']]),
                   " ".join(["--filterName GATKStandard{e} --filterExpression '{exp}'".format(e=exp.split()[0], exp=exp) \
-                            for exp in cfg['bio.ngs.tools.gatk']['variant_snp_JEXL_filtration']['expressions']])
+                            for exp in variation_workflow_cfg['bio.ngs.tools.gatk']['variant_snp_JEXL_filtration']['expressions']])
               ])
               shell("{cmd} {opts} --variant {input} --out {out}".format(cmd=cmd, opts=options, input=input, out=output))
           def _exome_VQSR_filter():
@@ -88,9 +91,9 @@ rule variation_snp_filtration:
           def _standard_VQSR_filter():
               print ("VQSR")
           
-          if cfg['bio.ngs.tools.gatk']['cov_interval'] == "regional":
+          if variation_workflow_cfg['bio.ngs.tools.gatk']['cov_interval'] == "regional":
               _regional_JEXL_filter()
-          elif cfg['bio.ngs.tools.gatk']['cov_interval'] == "exome":
+          elif variation_workflow_cfg['bio.ngs.tools.gatk']['cov_interval'] == "exome":
               try:
                   _exome_VQSR_filter()
               except:
@@ -109,11 +112,11 @@ rule variation_indel_filtration:
     output: "{prefix}.indel.filtINDEL.vcf"
     run:
           def _regional_JEXL_filter():
-              cmd = cfg['bio.ngs.tools.gatk']['cmd'] + " -T VariantFiltration"
+              cmd = variation_workflow_cfg['bio.ngs.tools.gatk']['cmd'] + " -T VariantFiltration"
               options = " ".join([
-                  " ".join(["-R", cfg['bio.ngs.tools.gatk']['variant_indel_JEXL_filtration']['ref']]),
+                  " ".join(["-R", variation_workflow_cfg['bio.ngs.tools.gatk']['variant_indel_JEXL_filtration']['ref']]),
                   " ".join(["--filterName GATKStandard{e} --filterExpression '{exp}'".format(e=exp.split()[0], exp=exp) \
-                            for exp in cfg['bio.ngs.tools.gatk']['variant_indel_JEXL_filtration']['expressions']])
+                            for exp in variation_workflow_cfg['bio.ngs.tools.gatk']['variant_indel_JEXL_filtration']['expressions']])
               ])
               shell("{cmd} {opts} --variant {input} --out {out}".format(cmd=cmd, opts=options, input=input, out=output))
           def _exome_VQSR_filter():
@@ -121,9 +124,9 @@ rule variation_indel_filtration:
           def _standard_VQSR_filter():
               print ("VQSR")
           
-          if cfg['bio.ngs.tools.gatk']['cov_interval'] == "regional":
+          if variation_workflow_cfg['bio.ngs.tools.gatk']['cov_interval'] == "regional":
               _regional_JEXL_filter()
-          elif cfg['bio.ngs.tools.gatk']['cov_interval'] == "exome":
+          elif variation_workflow_cfg['bio.ngs.tools.gatk']['cov_interval'] == "exome":
               try:
                   _exome_VQSR_filter()
               except:
@@ -142,9 +145,9 @@ rule variation_combine_variants:
     filtINDEL.vcf.
 
     """
-    params: cmd = cfg['bio.ngs.tools.gatk']['cmd'] + " -T " + cfg['bio.ngs.tools.gatk']['combine_variants']['cmd'],
-            options = " ".join(["-R", cfg['bio.ngs.tools.gatk']['combine_variants']['ref'],
-                                cfg['bio.ngs.tools.gatk']['combine_variants']['options']])
+    params: cmd = variation_workflow_cfg['bio.ngs.tools.gatk']['cmd'] + " -T " + variation_workflow_cfg['bio.ngs.tools.gatk']['combine_variants']['cmd'],
+            options = " ".join(["-R", variation_workflow_cfg['bio.ngs.tools.gatk']['combine_variants']['ref'],
+                                variation_workflow_cfg['bio.ngs.tools.gatk']['combine_variants']['options']])
 
     input: "{prefix}.snp.filtSNP.vcf", "{prefix}.indel.filtINDEL.vcf"
     output: "{prefix}.bp_variants.vcf"

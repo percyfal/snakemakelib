@@ -2,12 +2,12 @@
 import os
 from mako.template import Template
 from snakemake.utils import report, R
+from snakemakelib.config import update_sml_config, sml_rules_path, get_sml_config
 from snakemakelib.report.gatk import gatk_eval_report_plots_R
 
-# Start by including the general snakefile
-include: os.path.join(sml_rules_path(), 'bio/ngs', 'settings.rules')
-include: os.path.join(sml_rules_path(), 'bio/ngs/reports', 'settings.rules')
-include: os.path.join(sml_rules_path(), 'bio/ngs/tools', 'gatk.rules')
+include: '../settings.rules'
+include: './settings.rules'
+include: '../tools/gatk.rules'
 
 gatk_eval_report = Template(filename=os.path.join(sml_rules_path(), 'bio/ngs/reports', 'gatk_variant_eval.mako'))
 

@@ -86,16 +86,45 @@ class ReadGroup(dict):
     def _parse_str(self, s):
         """Parse string and set read group dict"""
         m = self._regex.match(s)
+        if m is None:
+            return False
         [self.update({k: m.group(k)}) for k in m.groupdict().keys() if not k in self._extra_keys]
         if self._indexdict:
             [self.update({k: self._concat.join(m.group(mkey) for mkey in self._indexdict[k])}) for k in self._indexdict.keys()]
         if not self['ID']:
             inv_map = {v:k for (k,v) in list(self._regex.groupindex.items())}
             self['ID'] = self._concat.join(m.group(i) for i in range(1, self._regex.groups + 1) if not inv_map[i] in self._extra_keys)
+        return True
 
+    def _parse_str_path(self, s):
+        """Parse string and set read group dict
+        
+        PATH could not be separated from sample. Try just parsing
+        os.path.basename
+
+        FIXME: the above behaviour is inconsistent. First and
+        foremost, it enables to contradicting ways of setting the
+        regular expressions; one containing PATH, the other omitting
+        it. The latter case should be default.
+
+        """
+        m = self._regex.match(os.path.basename(s))
+        path = os.path.dirname(s)
+        if m is None:
+            return False
+        [self.update({k: m.group(k)}) for k in m.groupdict().keys() if not k in self._extra_keys]
+        if self._indexdict:
+            [self.update({k: self._concat.join(m.group(mkey) for mkey in self._indexdict[k])}) for k in self._indexdict.keys()]
+        if not self['ID']:
+            inv_map = {v:k for (k,v) in list(self._regex.groupindex.items())}
+            self['ID'] = self._concat.join(m.group(i) for i in range(1, self._regex.groups + 1) if not inv_map[i] in self._extra_keys)
+        self['PATH'] = path
+        return True
+            
     def parse(self, s):
         """Parse string and return string representation"""
-        self._parse_str(s)
+        if not self._parse_str(s):
+            self._parse_str_path(s)
         return self
     
     @property

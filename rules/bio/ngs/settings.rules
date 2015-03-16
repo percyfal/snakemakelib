@@ -9,7 +9,18 @@ from snakemakelib.config import update_sml_config, get_sml_config
 #   sample_pfx_ftm: ditto for sample
 #
 # FIXME: move to module?
+
+# NB: platforms and sample organization are two different topics
+# alltogether ; separate them
 platforms = {
+    # FIXME: better naming; sample_sample refers to PATH/SAMPLE/SAMPLE*fastq(.gz)?
+    'sample_sample' : {
+        'run_id_re' : "(?P<SM>[A-Z0-9]+)",
+        'run_id_pfx_re' : "(?P<SM>[A-Z0-9]+)",
+        'run_id_pfx_fmt' : os.path.join("{PATH}", "{SM}"),
+        'sample_pfx_fmt' : os.path.join("{PATH}", "{SM}"),
+        'platform_unit_fn' : lambda x: {'PU':x[1]},
+    },
     # generic currently almost identical to Illumina
     'generic' : {
         'run_id_re' : "(?P<PATH>.*)(?P<NA>[0-9])_(?P<DT>[0-9]+)_(?P<PU>[A-Z0-9]+XX)_(?P<SM>P[0-9]+_[0-9]+)",

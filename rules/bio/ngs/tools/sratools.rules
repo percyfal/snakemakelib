@@ -80,5 +80,6 @@ rule sratools_fastq_dump_from_sradownload:
     input: "{prefix}.sradownload"
     output: read1 = "{prefix}" + ngs_cfg["read1_label"] + ngs_cfg["fastq_suffix"],
             read2 = "{prefix}" + ngs_cfg["read2_label"] + ngs_cfg["fastq_suffix"]
-    shell: "{params.cmd} {params.options} {wildcards.prefix}"
+    shell: "{params.cmd} {params.options} {wildcards.prefix} && rm -f {input}"
 
+ruleorder: sratools_fastq_dump > sratools_fastq_dump_from_sradownload

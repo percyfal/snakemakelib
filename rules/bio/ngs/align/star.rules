@@ -18,7 +18,7 @@ config_default = {
         'star_index' : {
             'threads' : ngs_conf['threads'],
             'options' : "--genomeSAindexNbases 14",
-            'sjdbGTFfile' : "",
+            'sjdbGTFfile' : ngs_conf['annotation']['transcript_annot_gtf'],
             'sjdbOverhang' : 100,
             'genome' : "Genome",
             'SAname' : "SA",

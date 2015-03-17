@@ -1,6 +1,5 @@
 # -*- snakemake -*-
 import os
-import shutils
 from snakemakelib.config import update_sml_config, get_sml_config
 
 include: '../settings.rules'

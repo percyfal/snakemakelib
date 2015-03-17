@@ -1,5 +1,6 @@
 # -*- snakemake -*-
 import os
+from snakemake.workflow import Workflow
 from snakemake.utils import R
 from snakemakelib.config import update_sml_config, get_sml_config
 
@@ -8,7 +9,8 @@ include: '../settings.rules'
 
 config_default = {
     'bio.ngs.methylseq.rnbeads' : {
-        'analysisdir' : os.curdir,
+        'analysisdir' : Workflow._workdir,
+        'datadir' : Workflow._workdir,
         'reportdirname' : 'reports_details',
         'samplesheet' : 'sample_annotation.csv',
         # Obtained by write(toJSON(rnb.options(), pretty=TRUE, asIs=FALSE))
@@ -24,7 +26,7 @@ config_default = {
             "region.aggregation" : "mean",
             "region.subsegments" : 0,
             "region.subsegments.types" : None,
-            "identifiers.column" : None,
+            "identifiers.column" : "SampleID",
             "points.category" : [16,17,3,15,4,7,8],
             "colors.category" : ["#1B9E77","#D95F02","#7570B3","#E7298A","#66A61E","#E6AB02","#A6761D", "#666666"],
             "colors.gradient" : ["#132B43","#56B1F7"],
@@ -123,7 +125,7 @@ config_default = {
             "logging.exit.on.error" : False,
             "distribution.subsample" : 1000000,
             "disk.dump.big.matrices" : True,
-            "enforce.memory.management" : False,
+            "enforce.memory.management" : True,
             "enforce.destroy.disk.dumps" : False
         },
     },
@@ -150,16 +152,27 @@ rule rnbeads_create_reportdir:
       rnb.initialize.reports(report.dir)
       """)
 
-rule rnbeads_run_analysis:
-    """Rnbeads run analysis
+rule rnbeads_run_analysis_from_bed:
+    """Rnbeads run analysis from bed or bed-like file input
 
     Run command rnb.run.analysis.
+
     """
     input: samplesheet=cfg['samplesheet']
+    threads: ngs_cfg['threads']
     run:
-      reportdir = os.path.join(cfg['analysisdir'], cfg['reportdirname'])
+      analysisdir = cfg['analysisdir']
+      reportdir = os.path.join(analysisdir, cfg['reportdirname'])
       samplesheet = input.samplesheet
+      datadir = cfg['datadir']
+      rnboptions = **(cfg['options'])
+      datatype = 'bs.bed.dir'
       R("""
       library(RnBeads)
-      report.dir <- file.path('{reportdir}')
-      rnb.run.analysis(dir.reports=report.dir, sample.sheet='{samplesheet}', data.dir=
+      parallel.setup({threads})
+      analysis.dir <- '{analysisdir}'
+      report.dir <- '{reportdir}'
+      rnb.options('{rnboptions}')
+      rnb.run.analysis(dir.reports=report.dir, sample.sheet='{samplesheet}', data.dir='{datadir}', data.type='{datatype}')
+      """.format(analysisdir=analysisdir, reportdir=reportdir, samplesheet=samplesheet, datadir=datadir, datatype=datatype, rnboptions=rnboptions, threads=threads))
+

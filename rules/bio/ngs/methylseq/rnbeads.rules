@@ -1,6 +1,5 @@
 # -*- snakemake -*-
 import os
-from snakemake.workflow import Workflow
 from snakemake.utils import R
 from snakemakelib.config import update_sml_config, get_sml_config
 
@@ -9,8 +8,8 @@ include: '../settings.rules'
 
 config_default = {
     'bio.ngs.methylseq.rnbeads' : {
-        'analysisdir' : Workflow._workdir,
-        'datadir' : Workflow._workdir,
+        'analysisdir' : workflow._workdir,
+        'datadir' : workflow._workdir,
         'reportdirname' : 'reports_details',
         'samplesheet' : 'sample_annotation.csv',
         # Obtained by write(toJSON(rnb.options(), pretty=TRUE, asIs=FALSE))
@@ -26,7 +25,7 @@ config_default = {
             "region.aggregation" : "mean",
             "region.subsegments" : 0,
             "region.subsegments.types" : None,
-            "identifiers.column" : "SampleID",
+            "identifiers.column" : "sampleID",
             "points.category" : [16,17,3,15,4,7,8],
             "colors.category" : ["#1B9E77","#D95F02","#7570B3","#E7298A","#66A61E","#E6AB02","#A6761D", "#666666"],
             "colors.gradient" : ["#132B43","#56B1F7"],
@@ -40,12 +39,12 @@ config_default = {
             "import.table.separator" : ",",
             "import.bed.style" : "BisSNP",
             "import.bed.columns" : {
-		"chr" : 1,
-		"start" : 2,
-		"end" : 3,
-		"strand" : 6,
-		"meth" : 4,
-		"coverage" : 5
+	        "chr" : 1,
+	        "start" : 2,
+	        "end" : 3,
+	        "strand" : 6,
+	        "meth" : 4,
+	        "coverage" : 5
             },
             "import.bed.frame.shift" : 1,
             "import.bed.test" : True,
@@ -83,7 +82,7 @@ config_default = {
             "filtering.greedycut.rc.ties" : "row",
             "filtering.deviation.threshold" : 0,
             "inference" : False,
-            "inference.targets.sva" : [],
+            "inference.targets.sva" : "",
             "inference.reference.methylome.column" : None,
             "inference.max.cell.type.markers" : 10000,
             "inference.top.cell.type.markers" : 500,
@@ -126,31 +125,56 @@ config_default = {
             "distribution.subsample" : 1000000,
             "disk.dump.big.matrices" : True,
             "enforce.memory.management" : True,
-            "enforce.destroy.disk.dumps" : False
-        },
+            "enforce.destroy.disk.dumps" : False,
+       },
     },
 }		
 
+def dict_to_R(d):
+    outlist = []
+    for (k,v) in d.items():
+        if isinstance(v, list):
+            if isinstance(v[0], int):
+                outlist.append("{k} = c(".format(k=k) + ",".join("{vv}".format(vv=vv) for vv in v) + ")")
+            else:
+                outlist.append("{k} = c(".format(k=k) + ",".join("'{vv}'".format(vv=vv) for vv in v) + ")")     
+        elif isinstance(v, dict):
+            outlist.append("{k} = c(".format(k=k) + ",".join("{kk}={vv}".format(kk=kk, vv=vv) for (kk,vv) in v.items()) + ")")
+        elif v is True:
+            outlist.append("{k}=TRUE".format(k=k))
+        elif v is False:
+            outlist.append("{k}=FALSE".format(k=k))
+        elif v is None:
+            outlist.append("{k}=NULL".format(k=k))
+        elif isinstance(v, int):
+            outlist.append("{k}={v}".format(k=k, v=v))
+        elif isinstance(v, float):
+            outlist.append("{k}={v}".format(k=k, v=v))
+        else:
+            outlist.append("{k}='{v}'".format(k=k, v=v))
+    return ",".join(outlist)
+
 update_sml_config(config_default)
 
-cfg = get_sml_config('bio.ngs.methylseq.rnbeads')
+rnbeads_cfg = get_sml_config('bio.ngs.methylseq.rnbeads')
 
 rule rnbeads_list_options:
     run:
-      print (cfg)
-      
+      print (rnbeads_cfg)
+
+# NB: is this even needed?      
 rule rnbeads_create_reportdir:
     """Create report directory.
     
     Run rnb.initialize.reports
     """
+    output: reportdir = os.path.join(rnbeads_cfg['analysisdir'], rnbeads_cfg['reportdirname'])
     run:
-      reportdir = os.path.join(cfg['analysisdir'], cfg['reportdirname'])
       R("""
       library(RnBeads)
       report.dir <- file.path('{reportdir}')
       rnb.initialize.reports(report.dir)
-      """)
+      """.format(reportdir=output.reportdir))
 
 rule rnbeads_run_analysis_from_bed:
     """Rnbeads run analysis from bed or bed-like file input
@@ -158,21 +182,26 @@ rule rnbeads_run_analysis_from_bed:
     Run command rnb.run.analysis.
 
     """
-    input: samplesheet=cfg['samplesheet']
+    input: samplesheet = rnbeads_cfg['samplesheet']
+    log: "RnBeads.log"
     threads: ngs_cfg['threads']
     run:
-      analysisdir = cfg['analysisdir']
-      reportdir = os.path.join(analysisdir, cfg['reportdirname'])
+      analysisdir = rnbeads_cfg['analysisdir']
+      reportdir = os.path.join(analysisdir, rnbeads_cfg['reportdirname'])
       samplesheet = input.samplesheet
-      datadir = cfg['datadir']
-      rnboptions = **(cfg['options'])
+      datadir = rnbeads_cfg['datadir']
+      rnboptions = rnbeads_cfg['options']
       datatype = 'bs.bed.dir'
+      if os.path.exists(reportdir):
+          raise Exception("report directory '{reportdir}' already exists; RnBeads requires that this path does not exist prior to analysis".format(reportdir=reportdir))
       R("""
       library(RnBeads)
-      parallel.setup({threads})
-      analysis.dir <- '{analysisdir}'
-      report.dir <- '{reportdir}'
-      rnb.options('{rnboptions}')
-      rnb.run.analysis(dir.reports=report.dir, sample.sheet='{samplesheet}', data.dir='{datadir}', data.type='{datatype}')
-      """.format(analysisdir=analysisdir, reportdir=reportdir, samplesheet=samplesheet, datadir=datadir, datatype=datatype, rnboptions=rnboptions, threads=threads))
+      library(RnBeads.hg19)
+      analysis.dir = '{analysisdir}'
+      report.dir = '{reportdir}'
+      data.source = c('{datadir}', '{samplesheet}')
+      rnb.options({rnboptions})
+      print(rnb.getOption("import.bed.style"))
+      rnb.run.analysis(dir.reports=report.dir, data.type='{datatype}', data.source=data.source)
+      """.format(analysisdir=analysisdir, reportdir=reportdir, samplesheet=samplesheet, datadir=datadir, datatype=datatype, threads=threads, rnboptions=dict_to_R(rnboptions)))
 

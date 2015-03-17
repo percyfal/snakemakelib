@@ -32,8 +32,8 @@ rule samtools_sam2bam:
 
 rule samtools_gene_region_from_bam:
     """Extract gene region from bam file"""
-    params: cmd = samtools_config['cmd'],
-            options = samtools_config['options']
+    params: cmd = samtools_cfg['cmd'],
+            options = samtools_cfg['options']
     input: bam = "{prefix}.bam", bed = "{prefix}.region_{region}.{sfx}.bed"
     output: temp("{prefix}.region_{region}.{sfx}.bam")
     shell: "{params.cmd} view {params.options} -b -L {input.bed} {input.bam} > {output}"

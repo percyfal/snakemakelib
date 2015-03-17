@@ -37,7 +37,7 @@ local_config = {{
         }},
     }},
     'bio.ngs.align.bwa' : {{
-        'ref' : '{bwaref}',
+        'index' : '{bwaref}',
     }},
     'bio.ngs.qc.picard' : {{
         'home' : '{picard}',

@@ -1,5 +1,5 @@
 # Copyright (C) 2014 by Per Unneberg
-# pylint: disable=R0904
+# pylint: disable=R0904, C0301, C0103
 import unittest
 import logging
 from nose.tools import raises
@@ -71,7 +71,7 @@ class TestBioNgsUtils(unittest.TestCase):
         self.assertEqual(len(readpairs), 3)
         self.assertEqual(len(readpairs[0]), 2)
         self.assertEqual(readpairs[1][0], '../data/projects/J.Doe_00_01/P001_101/121015_BB002BBBXX/1_121015_BB002BBBXX_P001_101_1.fastq.gz')
-        
+
 class TestUtils(unittest.TestCase):
     """Test snakemakelib.utils functions"""
     def test_isoformat(self):
@@ -90,18 +90,18 @@ class TestReadGroup(unittest.TestCase):
 
     def test_rg_parse_illumina_like(self):
         """Test parsing illumina-like-based file names"""
-        rg = ReadGroup("(?P<PATH>.*)(?P<PU1>[0-9])_(?P<DT>[0-9]+)_(?P<PU2>[A-Z0-9]+XX)_(?P<SM>P[0-9]+_[0-9]+)")
+        rg = ReadGroup("(?P<PU1>[0-9])_(?P<DT>[0-9]+)_(?P<PU2>[A-Z0-9]+XX)_(?P<SM>P[0-9]+_[0-9]+)")
         s = (rg.parse("../data/projects/J.Doe_00_01/P001_101/121015_BB002BBBXX/1_121015_BB002BBBXX_P001_101_1.fastq.gz"))
         self.assertEqual("--date 2012-10-15 --identifier 1_121015_BB002BBBXX_P001_101 --platform-unit 1_BB002BBBXX --sample P001_101", str(s))
 
     def test_rg_fn(self):
         """Test initializing read group class and setting function"""
-        rg_fn = ReadGroup("(?P<PATH>.*)(?P<PU1>[0-9])_(?P<DT>[0-9]+)_(?P<PU2>[A-Z0-9]+XX)_(?P<SM>P[0-9]+_[0-9]+)").parse
+        rg_fn = ReadGroup("(?P<PU1>[0-9])_(?P<DT>[0-9]+)_(?P<PU2>[A-Z0-9]+XX)_(?P<SM>P[0-9]+_[0-9]+)").parse
         s = rg_fn("../data/projects/J.Doe_00_01/P001_101/121015_BB002BBBXX/1_121015_BB002BBBXX_P001_101_1.fastq.gz")
         self.assertEqual("--date 2012-10-15 --identifier 1_121015_BB002BBBXX_P001_101 --platform-unit 1_BB002BBBXX --sample P001_101", str(s))
 
     @raises(DisallowedKeyException)
     def test_rg_disallowed_key(self):
         """Test setting a read group object with a key not present in allowed keys"""
-        rg = ReadGroup("(?P<PATH>.*)(?P<PU1>[0-9])_(?P<DATE>[0-9]+)_(?P<PU2>[A-Z0-9]+XX)_(?P<SM>P[0-9]+_[0-9]+)")
+        rg = ReadGroup("(?P<PU1>[0-9])_(?P<DATE>[0-9]+)_(?P<PU2>[A-Z0-9]+XX)_(?P<SM>P[0-9]+_[0-9]+)")
         s = (rg.parse("../data/projects/J.Doe_00_01/P001_101/121015_BB002BBBXX/1_121015_BB002BBBXX_P001_101_1.fastq.gz"))

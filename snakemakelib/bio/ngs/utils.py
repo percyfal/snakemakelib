@@ -85,14 +85,16 @@ class ReadGroup(dict):
 
     def _parse_str(self, s):
         """Parse string and set read group dict"""
-        m = self._regex.match(s)
+        m = self._regex.match(os.path.basename(s))
+        path = os.path.dirname(s)
         [self.update({k: m.group(k)}) for k in m.groupdict().keys() if not k in self._extra_keys]
         if self._indexdict:
             [self.update({k: self._concat.join(m.group(mkey) for mkey in self._indexdict[k])}) for k in self._indexdict.keys()]
         if not self['ID']:
             inv_map = {v:k for (k,v) in list(self._regex.groupindex.items())}
             self['ID'] = self._concat.join(m.group(i) for i in range(1, self._regex.groups + 1) if not inv_map[i] in self._extra_keys)
-
+        self['PATH'] = path
+            
     def parse(self, s):
         """Parse string and return string representation"""
         self._parse_str(s)

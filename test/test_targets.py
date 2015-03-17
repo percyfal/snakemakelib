@@ -25,9 +25,9 @@ class TestTargetGenerator(unittest.TestCase):
             return reader
         
         self.basecfg = {
-            'run_id_re' : "(?P<PATH>.*)(?P<PU1>[0-9])_(?P<DT>[0-9]+)_(?P<PU2>[A-Z0-9]+XX)_(?P<SM>P[0-9]+_[0-9]+)",
-            'run_id_pfx_re' : "(?P<PATH>.*)(?P<PU1>[0-9])_(?P<PU2>[0-9]+_[A-Z0-9]+XX)_(?P<SM>P[0-9]+_[0-9]+)",
-            'run_id_pfx_fmt' : os.path.join("{PATH}", "{SM}", "{PU2}", "{PU1}_{PU2}_{SM}"), 'sample_pfx_fmt' : os.path.join("{PATH}", "{SM}", "{SM}"),
+            'run_id_re' : "(?P<PU1>[0-9])_(?P<DT>[0-9]+)_(?P<PU2>[A-Z0-9]+XX)_(?P<SM>P[0-9]+_[0-9]+)",
+            'run_id_pfx_re' : "(?P<PU1>[0-9])_(?P<PU2>[0-9]+_[A-Z0-9]+XX)_(?P<SM>P[0-9]+_[0-9]+)",
+            'run_id_pfx_fmt' : os.path.join("{SM}", "{PU2}", "{PU1}_{PU2}_{SM}"), 'sample_pfx_fmt' : os.path.join("{SM}", "{SM}"),
             'platform_unit_fn' : lambda x: {'PU1':x[2], 'PU2':x[1]},
         }
         self.cfg = {

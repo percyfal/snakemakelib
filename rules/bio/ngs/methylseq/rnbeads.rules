@@ -157,6 +157,7 @@ def dict_to_R(d):
 update_sml_config(config_default)
 
 rnbeads_cfg = get_sml_config('bio.ngs.methylseq.rnbeads')
+ngs_cfg = get_sml_config('bio.ngs.settings')
 
 rule rnbeads_list_options:
     run:
@@ -201,7 +202,6 @@ rule rnbeads_run_analysis_from_bed:
       report.dir = '{reportdir}'
       data.source = c('{datadir}', '{samplesheet}')
       rnb.options({rnboptions})
-      print(rnb.getOption("import.bed.style"))
       rnb.run.analysis(dir.reports=report.dir, data.type='{datatype}', data.source=data.source)
       """.format(analysisdir=analysisdir, reportdir=reportdir, samplesheet=samplesheet, datadir=datadir, datatype=datatype, threads=threads, rnboptions=dict_to_R(rnboptions)))
 

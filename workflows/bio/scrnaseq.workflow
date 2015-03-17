@@ -15,7 +15,12 @@ merge.
     fmt = cfg['run_id_pfx_fmt'] + picard_cfg['merge_sam']['suffix']
     inputs = find_files(path=wildcards.path, re_str=rg.pattern)
     if inputs:
-        sources = [fmt.format(PATH=workflow._workdir, **dict(rg.parse(f))) for f in inputs]
+        # FIXME: Yet another problem caused by readgroup parsing
+        # inconsistency. PATH should always be included in read group
+        # information
+
+        #sources = [fmt.format(PATH=workflow._workdir, **dict(rg.parse(f))) for f in inputs]
+        sources = [fmt.format(**dict(rg.parse(f))) for f in inputs]
     return sources
 
 config_default = {

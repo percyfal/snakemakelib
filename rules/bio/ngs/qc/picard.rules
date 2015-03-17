@@ -212,7 +212,10 @@ rule picard_merge_sam:
             options = " ".join([picard_config['options'],
                                 picard_config['merge_sam']['options']])
     input: dict(picard_config['merge_sam'])['inputfun']
-    output: "{path}" + os.sep + "{prefix}." + picard_config['merge_sam']['label'] + ".bam"
+    output: merge="{path}" + os.sep + "{prefix}." + picard_config['merge_sam']['label'] + ".bam"
     run: 
-      inputstr = " ".join(["INPUT={}".format(x) for x in input])
-      shell("{cmd} {ips} OUTPUT={out} {opt}".format(cmd=params.cmd, ips=inputstr, out=output, opt=params.options))
+      if (len(input) > 1):
+          inputstr = " ".join(["INPUT={}".format(x) for x in input])
+          shell("{cmd} {ips} OUTPUT={out} {opt}".format(cmd=params.cmd, ips=inputstr, out=output.merge, opt=params.options))
+      else:
+          os.symlink(os.path.relpath(input[0], wildcards.path), output.merge)

@@ -1,0 +1,31 @@
+# -*- snakemake -*-
+import os
+from snakemakelib.config import update_sml_config, get_sml_config
+
+include: '../settings.rules'
+
+sml_config = get_sml_config()
+
+config_default = { 
+    'bio.ngs.tools.bamtools' : {
+        'ref' : sml_config['bio.ngs.settings']['db']['ref'],
+        'cmd' : "bamtools",
+        'threads' : sml_config['bio.ngs.settings']['threads'],
+        'options' : "",
+        'filter' : {
+            'options' : '-mapQuality 255',
+        },
+    },
+}
+
+update_sml_config(config_default)
+
+bamtools_cfg = sml_config['bio.ngs.tools.bamtools']
+
+rule bamtools_filter:
+    """Run bamtools filter on a bam file"""
+    params: cmd = bamtools_cfg['cmd'],
+            options = bamtools_cfg['filter']['options']
+    input: "{prefix}.bam"
+    output: "{prefix}_unique.bam"
+    shell: "{params.cmd} filter -in {input} -out {output} {params.options}"

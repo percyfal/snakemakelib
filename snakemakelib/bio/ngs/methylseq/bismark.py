@@ -3,15 +3,6 @@ from snakemakelib.config import get_sml_config
 
 sml_config = get_sml_config()
 
-def ref():
-    """Get the reference sequence.
-
-    TODO: refactor, move to general place as it will be used by more
-    rules.
-
-    """
-    return sml_config['bio.ngs.settings']['db']['ref']
-
 def report_label():
     """Return the report label based on bowtie2 and paired_end flags."""
     cfg = get_sml_config('bio.ngs.methylseq.bismark')

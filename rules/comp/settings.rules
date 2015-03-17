@@ -16,6 +16,17 @@ config_default = {
         'gzip' : "gzip",
         'head' : "head",
         'zcat' : "zcat",
+        'compression' : {
+            're' : "(.gz$|.zip$|.bz2$)",
+            'prog_map' : {
+                '.gz' : "zcat",
+                '.zip' : "unzip -p",
+                '.bz2' : "bzip2 -c",
+            },
+        },
+        'python2' : {
+            'activate_cmd' : "echo \"config['comp.settings']['python2']['activate_cmd']\": Please set python2 activation command to execute rule!",
+        },
     },
 }
 

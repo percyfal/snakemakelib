@@ -1,22 +1,64 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.config import update_sml_config
+from snakemakelib.config import update_sml_config, get_sml_config
+
+# Predefined settings for various platforms
+# Docs needed:
+#   run_id_re: regular expression for how to extract read group information from run id file names
+#   run_id_pfx_fmt: based on the results of run_id_re, make prefix formats as python mini-format strings for run_id
+#   sample_pfx_ftm: ditto for sample
+
+
+# Should all sample organization be relative to workdir?
+sample_organization = {
+    # All data in sample directory
+    'sample' : {
+        'run_id_re' : "(?P<SM>[A-Z0-9]+)",
+        'run_id_pfx_re' : "(?P<SM>[A-Z0-9]+)",
+        'run_id_pfx_fmt' : os.path.join("{SM}"),
+        'sample_pfx_fmt' : os.path.join("{SM}"),
+        'platform_unit_fn' : lambda x: {'PU':x[1]},
+    },
+    # Data in sample directory divided in subdirectory for each run
+    'sample_run' : {
+        'run_id_re' : "(?P<NA>[0-9])_(?P<DT>[0-9]+)_(?P<PU>[A-Z0-9]+XX)_(?P<SM>P[0-9]+_[0-9]+)",
+        'run_id_pfx_re' : "(?P<NA>[0-9])_(?P<PU>[0-9]+_[A-Z0-9]+XX)_(?P<SM>P[0-9]+_[0-9]+)",
+        'run_id_pfx_fmt' : os.path.join("{SM}", "{PU}", "{PU}_{SM}"),
+        'sample_pfx_fmt' : os.path.join("{SM}", "{SM}"),
+        'platform_unit_fn' : lambda x: {'PU':x[1]},
+    },
+    # Illumina sequence data as delivered by SciLife
+    'Illumina@SciLife' : {
+        'run_id_re' : "(?P<PU1>[0-9])_(?P<DT>[0-9]+)_(?P<PU2>[A-Z0-9]+XX)_(?P<SM>P[0-9]+_[0-9]+)",
+        'run_id_pfx_re' : "(?P<PU1>[0-9])_(?P<PU2>[0-9]+_[A-Z0-9]+XX)_(?P<SM>P[0-9]+_[0-9]+)",
+        'run_id_pfx_fmt' : os.path.join("{SM}", "{PU2}", "{PU1}_{PU2}_{SM}"),
+        'sample_pfx_fmt' : os.path.join("{SM}", "{SM}"),
+        'platform_unit_fn' : lambda x: {'PU1':x[2], 'PU2':x[1]},
+    },
+    'PacBio' : {
+        'run_id_re' : "",
+    },
+    'SOLiD' : {
+        'run_id_re' : "",
+    },
+}
 
 config_default = { 
     'bio.ngs.settings' : {
+        'center' : "",
         'fastq_suffix' : ".fastq",
         'flowcells' : [],
         'flowcellruns' : [],
-        'flowcell_suffix' : "XX",
         'inputdir' : ".",
         'lanes' : [],
+        'sample_organization' : "sample",
         'read1_label' : "_1",
         'read2_label' : "_2",
         'read1_suffix' : ".fastq.gz",
         'read2_suffix' : ".fastq.gz",
         'regions' : [],
-        'run_id_re' : "[0-9]_[0-9]+_[A-Z0-9]+XX_P[0-9]+_[0-9]+",
         'samples' : [],
+        'sampleinfo' : "", # generic; samplesheet could be Illuminas csv samplesheet; treat elsewhere?
         'threads' : 8,
         'annotation' : {
             'annot_label' : "",
@@ -25,7 +67,8 @@ config_default = {
         'db' : {
             'dbsnp' : "",
             'ref' : "",
-            'build' : 'hg19',
+            'build' : '',
+            'build_config' : None,
         },
         'java' : {
             'java_mem' : "6g",
@@ -39,6 +82,10 @@ config_default = {
 }
 
 update_sml_config(config_default)
+
+ngs_conf = get_sml_config('bio.ngs.settings')
+
+update_sml_config({'bio.ngs.settings' : sample_organization[ngs_conf['sample_organization']]})
 
 # Add configuration variable to snakemake global config object
 config['lanes'] = config.get("lanes", [])

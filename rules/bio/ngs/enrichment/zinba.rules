@@ -1,0 +1,61 @@
+# -*- snakemake -*-
+#
+# https://code.google.com/p/zinba/
+#
+# Installation in R:
+# system("wget http://zinba.googlecode.com/files/zinba_2.02.03.tar.gz")
+# install.packages(c('multicore','doMC','foreach','quantreg','R.utils')) 
+# install.packages("zinba_2.02.03.tar.gz", repos=NULL)
+#
+# Install problems: wrong formatting. Modify following:
+# warn(errCatch->message->string) to warn("%s", errCatch->message->string); in errCatch.c
+#     write(sd, dyHeader->string, dyHeader->stringSize;
+# to     if (write(sd, dyHeader->string, dyHeader->stringSize) == 1)
+#      {}
+# in hmtlPage.c
+#
+
+import os
+from snakemake.utils import R
+from snakemakelib.config import update_sml_config, get_sml_config
+
+include: "../settings.rules"
+
+ngs_cfg = get_sml_config('bio.ngs.settings')
+
+# Options from https://code.google.com/p/zinba/wiki/UsingZINBA#ZINBA_pipeline_function
+config_default = {
+    'bio.ngs.enrichment.zinba' : {
+        'refinepeaks' : 1, #refine peaks? 1 for yes, 0 for no
+        'seq' : "", #path to mapped experimental reads
+        'input' : "none", #path to mapped input reads if available (default is "none")
+        'filetype' : "bowtie", #either 'bed', 'bowtie', or 'tagAlign'
+        'threshold' : 0.05, #FDR threshold, default is 0.05
+        'align' : "", #path to alignability directory
+        'numProc' : ngs_cfg["threads"], #number of CPUs to use, must be less than max available   (default 1)
+        'twoBit' : "", #path to genome build in .2bit format
+        'outfile' : "", #prefix for outputted files
+        'extension' : "", #average fragment library length (size selected)
+        # optional parameters follow
+        'basecountfile' : "", #path to basecount file if refinepeaks is 1
+        'broad' : False, #broad setting, TRUE or FALSE (default)
+        'printFullOut' : 0, #print original data with enrichment estimates, 1 for yes (more space required), 0 for no (default)
+        'interaction' : True, #whether or not to considering interaction during model selection, TRUE (default) or FALSE
+        'mode' : "peaks", #either "peaks" for peak calling (default) or "CNV" for calling likely amplified CNV regions for reads in "seq" (input reads are best)
+        'FDR' : True, #either TRUE (default) or FALSE. If false, then uses posterior probability to threshold peaks using 1-threshold
+    },
+}
+
+
+update_sml_config(config_default)
+
+zinba_conf = get_sml_config('bio.ngs.settings')
+
+rule zinba_get_mappability_file:
+    """Download mappability file required for analysis.
+
+    See https://code.google.com/p/zinba/wiki/UsingZINBA#2._Mappability_File.
+    """
+    params: urlinput = os.path.join("http://www.bios.unc.edu/~nur2", "map{readlength}_{build}.tgz")
+    output: "{path}/map{readlength}_{build}.tgz"
+    shell: "mkdir -p `dirname {output}` && wget {params.urlinput} -O {output}"

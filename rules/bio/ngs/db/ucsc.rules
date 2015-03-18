@@ -1,0 +1,22 @@
+# -*- snakemake -*-
+#
+import os
+from snakemakelib.config import update_sml_config, get_sml_config
+
+include: "../settings.rules"
+
+config_default = {
+    'bio.ngs.db.ucsc' : { 
+        'urldownload' : 'http://hgdownload.cse.ucsc.edu/goldenPath/',
+    },
+}
+
+update_sml_config(config_default)
+
+ucsc_cfg = get_sml_config('bio.ngs.db.ucsc')
+
+rule ucsc_download_2bit:
+    """Download 2bit file from ucsc"""
+    params: urlinput = os.path.join(ucsc_cfg['urldownload'], "{build}", "bigZips", "{build}.2bit")
+    output: "{path}/{build}/ucsc/{build}.2bit"
+    shell: "mkdir -p `dirname {output}` && wget {params.urlinput} -O {output}"

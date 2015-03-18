@@ -21,3 +21,4 @@ Snakefile
 *.tophat2*
 *.cufflinks*
 *genomes*
+*.bed

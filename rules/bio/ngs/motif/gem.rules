@@ -1,0 +1,55 @@
+# -*- snakemake -*-
+import os
+from snakemakelib.config import update_sml_config, get_sml_config
+
+include: '../settings.rules'
+
+ngs_cfg = get_sml_config('bio.ngs.settings')
+
+GEM_JAR_PROGRAM = "gem.jar"
+
+config_default = {
+    'bio.ngs.motif.gem' : {
+        'home' : os.curdir,
+        'java_mem' : ngs_cfg['java']['java_mem'],
+        'java_tmpdir' : ngs_cfg['java']['java_tmpdir'],
+        'options' : '',
+    },
+}
+
+update_sml_config(config_default)
+
+gem_cfg = get_sml_config('bio.ngs.motif.gem')
+
+config_default['bio.ngs.motif.gem']['read_distribution'] = os.path.join(gem_cfg['home'], 'Read_Distribution_default.txt')
+config_default['bio.ngs.motif.gem']['jar'] = os.path.join(gem_cfg['home'], GEM_JAR_PROGRAM)
+
+update_sml_config(config_default)
+
+gem_cfg = get_sml_config('bio.ngs.motif.gem')
+
+config_default['bio.ngs.motif.gem']['cmd'] = "java -Xmx" + gem_cfg['java_mem'] + " -Djava.io.tmpdir=" + gem_cfg['java_tmpdir'] +  " -jar " + gem_cfg['jar']
+
+update_sml_config(config_default)
+
+gem_cfg = get_sml_config('bio.ngs.motif.gem')
+
+def _gem_read_file_format(f):
+    ext = os.path.splitext(f)[1]
+    if ext == ".bed":
+        return "BED"
+    elif ext == ".sam" or ext == ".bam":
+        return "SAM"
+    else:
+        return "BED"
+
+rule gem_run:
+    """Run gem"""
+    params: cmd = gem_cfg['cmd'],
+            options = " ".join([gem_cfg['options'],
+                                ])
+    input: readfile = "{readfile}.bam", readdist = gem_cfg['read_distribution']
+    output: "{readfile}.gem"
+    run:
+        ftype = _gem_read_file_format(input.readfile)
+        shell("{cmd} --d {readdist} --expt {readfile} {options} --f {ftype}".format(cmd=params.cmd, readdist=input.readdist, readfile=input.readfile, ftype=ftype, options=params.options))

@@ -46,7 +46,7 @@ sample_organization = {
 config_default = { 
     'bio.ngs.settings' : {
         'center' : "",
-        'fastq_suffix' : ".fastq",
+        'fastq_suffix' : ".fastq.gz",
         'flowcells' : [],
         'flowcellruns' : [],
         'inputdir' : ".",

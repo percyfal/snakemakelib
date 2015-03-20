@@ -20,7 +20,6 @@ workdir: '{workdir}'
 
 local_config = {{
     'bio.ngs.settings' : {{
-        'fastq_suffix' : ".fastq.gz",
         'samples' : config.get("samples", ['P001_101', 'P001_102']),
         'flowcells' : config.get("flowcells", ['120924_AC003CCCXX', '121015_BB002BBBXX']),
         'lanes' : [1],

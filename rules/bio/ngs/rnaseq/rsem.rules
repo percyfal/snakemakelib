@@ -33,6 +33,10 @@ rsem_cfg = get_sml_config('bio.ngs.rnaseq.rsem')
 tux_cfg = get_sml_config('bio.ngs.rnaseq.tuxedo')
 ngs_cfg = get_sml_config('bio.ngs.settings')
 
+
+# See https://groups.google.com/forum/#!topic/rna-star/tvajn49WTYk for
+# setting up RSEM with STAR alignments
+
 rule rsem_link_bowtie_index:
     """Hack to link from bowtie reference directory"""
     input: tux_cfg["index", "bowtie"] + "{ext}"

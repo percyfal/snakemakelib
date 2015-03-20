@@ -31,8 +31,9 @@ ngs_cfg = get_sml_config('bio.ngs.settings')
 rule sratools_download_srastudy_metadata:
     """Download srastudy metadata. """
     params: traces = sra_cfg['tracearchive']
-    output: "{prefix}_info.csv"
-    shell: "wget -O {output}  '{params.traces}sra.cgi?save=efetch&db=sra&rettype=runinfo&term=$(basename {wildcards.prefix})'"
+    output: csv = "{prefix}_info.csv"
+    run:
+        shell ("wget -O {output}  '{traces}sra.cgi?save=efetch&db=sra&rettype=runinfo&term={basename}'".format(output=output.csv, traces=params.traces, basename=os.path.basename(wildcards.prefix)))
 
 rule sratools_prefetch:
     """Run sratools prefetch"""

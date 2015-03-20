@@ -45,11 +45,13 @@ tux_cfg = get_sml_config('bio.ngs.rnaseq.tuxedo')
 samtools_cfg = get_sml_config('bio.ngs.tools.samtools')
 comp_cfg = get_sml_config('comp.settings')
 
+bowtie = 'bowtie2' if tux_cfg['version2'] else 'bowtie'
+
 rule tuxedo_bowtie_align:
     """Bowtie paired end alignment"""
-    params: cmd = 'bowtie2' if tux_cfg['version2'] else 'bowtie',
+    params: cmd = bowtie,
             options = tux_cfg['bowtie']['options'],
-            index = ("-x " if tux_cfg['version2'] else "") + tux_cfg['index']
+            index = ("-x " if tux_cfg['version2'] else "") + tux_cfg['index', bowtie]
     input: read1="{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],\
            read2="{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['fastq_suffix']
     output: "{prefix}.bam"
@@ -79,12 +81,12 @@ rule tuxedo_tophat:
     """
     params: cmd = 'tophat2' if tux_cfg['version2'] else 'tophat',
             options = tux_cfg['tophat']['options'],
-            index = tux_cfg['index'],
+            index = tux_cfg['index', bowtie],
             outdir = tux_cfg['tophat']['output_dir'],
             python2 = comp_cfg['python2']['activate_cmd']
     input: read1 = "{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],\
            read2 = "{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['fastq_suffix'],\
-           index = tux_cfg['index'] + ".1.bt2" if tux_cfg['version2'] else tux_cfg['index'] + ".1.ebwt"
+           index = tux_cfg['index', bowtie] + ".1.bt2" if tux_cfg['version2'] else tux_cfg['index', bowtie] + ".1.ebwt"
     output: tophatdir = "{prefix}.tophat2" if tux_cfg['version2'] else "{prefix}.tophat",
             hits = os.path.join("{prefix}.tophat2" if tux_cfg['version2'] else "{prefix}.tophat", "accepted_hits.bam")
     run: 

@@ -54,7 +54,7 @@ rule star_index:
                                 ]),
             genomedir = os.path.dirname(star_cfg['index', 'star'])
     input: ref = star_cfg['ref']
-    output: Genome=os.path.join(os.path.dirname(star_cfg['index', "star"]), "Genome"), SA=os.path.join(os.path.dirname(star_cfg['index', "star"]), "SA")
+    output: Genome = os.path.join(os.path.dirname(star_cfg['index', "star"]), "Genome"), SA=os.path.join(os.path.dirname(star_cfg['index', "star"]), "SA")
     threads: star_cfg['star_index']['threads']
     shell: "{params.cmd} --runThreadN {threads} --runMode genomeGenerate --genomeDir {params.genomedir} --genomeFastaFiles {input.ref} {params.options}"
 

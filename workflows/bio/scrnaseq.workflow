@@ -15,11 +15,6 @@ merge.
     fmt = cfg['run_id_pfx_fmt'] + picard_cfg['merge_sam']['suffix']
     inputs = find_files(path=wildcards.path, re_str=rg.pattern)
     if inputs:
-        # FIXME: Yet another problem caused by readgroup parsing
-        # inconsistency. PATH should always be included in read group
-        # information
-
-        #sources = [fmt.format(PATH=workflow._workdir, **dict(rg.parse(f))) for f in inputs]
         sources = [fmt.format(**dict(rg.parse(f))) for f in inputs]
     return sources
 
@@ -46,6 +41,7 @@ include: os.path.join(p, "bio/ngs/qc", "picard.rules")
 include: os.path.join(p, "bio/ngs/tools", "bamtools.rules")
 include: os.path.join(p, "bio/ngs/tools", "samtools.rules")
 include: os.path.join(p, "bio/ngs/rnaseq", "rpkmforgenes.rules")
+include: os.path.join(p, "bio/ngs/rnaseq", "rsem.rules")
 
 ngs_cfg = get_sml_config('bio.ngs.settings')
 if workflow._workdir is None:
@@ -54,11 +50,11 @@ path = workflow._workdir
 
 STAR_TARGETS = generic_target_generator(fmt=ngs_cfg['run_id_pfx_fmt'] + '.Aligned.out_unique.bam', rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path)
 
-#RSEQC_TARGETS = generic_target_generator(fmt=ngs_cfg['run_id_pfx_fmt'] + '.Aligned.out_unique_rseqc/rseqc_qc_8.txt', rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path)
 RSEQC_TARGETS = generic_target_generator(fmt=ngs_cfg['sample_pfx_fmt'] + '.merge.sort_rseqc/rseqc_qc_8.txt', rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path)
 
-#RPKMFORGENES_TARGETS = generic_target_generator(fmt=ngs_cfg['run_id_pfx_fmt'] + '.Aligned.out_unique.rpkmforgenes', rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path)
 RPKMFORGENES_TARGETS = generic_target_generator(fmt=ngs_cfg['sample_pfx_fmt'] + '.merge.sort.rpkmforgenes', rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path)
+
+RSEM_TARGETS = generic_target_generator(fmt=ngs_cfg['sample_pfx_fmt'] + '.merge.sort.rsem', rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path)
 
 # All rules
 rule scrnaseq_all:

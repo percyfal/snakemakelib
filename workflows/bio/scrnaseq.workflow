@@ -19,6 +19,9 @@ merge.
     return sources
 
 config_default = {
+    'bio.ngs.settings' : {
+        'aligner' : 'star',
+    },
     'bio.ngs.qc.picard' : {
         'merge_sam' : {
             'suffix' : ".Aligned.out_unique.bam",
@@ -29,13 +32,15 @@ config_default = {
     },
 }
 
-update_sml_config(config_default)    
+update_sml_config(config_default)
+ngs_cfg = get_sml_config('bio.ngs.settings')
 
 # Include necessary snakemakelib rules
 p = os.path.join(os.pardir, os.pardir, 'rules')
+align_include = os.path.join(p, "bio/ngs/align", ngs_cfg['aligner'] + ".rules")
 include: os.path.join(p, 'settings.rules')
 include: os.path.join(p, 'utils.rules')
-include: os.path.join(p, "bio/ngs/align", "star.rules")
+include: align_include
 include: os.path.join(p, "bio/ngs/qc", "rseqc.rules")
 include: os.path.join(p, "bio/ngs/qc", "picard.rules")
 include: os.path.join(p, "bio/ngs/tools", "bamtools.rules")
@@ -43,12 +48,11 @@ include: os.path.join(p, "bio/ngs/tools", "samtools.rules")
 include: os.path.join(p, "bio/ngs/rnaseq", "rpkmforgenes.rules")
 include: os.path.join(p, "bio/ngs/rnaseq", "rsem.rules")
 
-ngs_cfg = get_sml_config('bio.ngs.settings')
 if workflow._workdir is None:
     raise Exception("no workdir set, or set after include of 'scrnaseq.workflow'; set workdir before include statement!")
 path = workflow._workdir
 
-STAR_TARGETS = generic_target_generator(fmt=ngs_cfg['run_id_pfx_fmt'] + '.Aligned.out_unique.bam', rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path)
+ALIGN_TARGETS = generic_target_generator(fmt=ngs_cfg['run_id_pfx_fmt'] + '.Aligned.out_unique.bam', rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path)
 
 RSEQC_TARGETS = generic_target_generator(fmt=ngs_cfg['sample_pfx_fmt'] + '.merge.sort_rseqc/rseqc_qc_8.txt', rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path)
 
@@ -59,11 +63,11 @@ RSEM_TARGETS = generic_target_generator(fmt=ngs_cfg['sample_pfx_fmt'] + '.merge.
 # All rules
 rule scrnaseq_all:
     """Run scRNAseq pipeline"""
-    input: STAR_TARGETS + RSEQC_TARGETS + RPKMFORGENES_TARGETS
+    input: ALIGN_TARGETS + RSEQC_TARGETS + RPKMFORGENES_TARGETS
 
-rule scrnaseq_star:
-    """Run STAR alignments"""
-    input: STAR_TARGETS
+rule scrnaseq_align:
+    """Run alignments"""
+    input: ALIGN_TARGETS
 
 rule scrnaseq_rseqc:
     """Run RSeQC"""
@@ -76,7 +80,7 @@ rule scrnaseq_rpkmforgenes:
 rule scrnaseq_targets:
     """Print targets """
     run:
-        print (STAR_TARGETS)
+        print (ALIGN_TARGETS)
         print (RSEQC_TARGETS)
         print (RPKMFORGENES_TARGETS)
 

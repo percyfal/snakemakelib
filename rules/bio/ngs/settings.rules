@@ -2,6 +2,12 @@
 import os
 from snakemakelib.config import update_sml_config, get_sml_config
 
+# Add configuration variable to snakemake global config object
+config['lanes'] = config.get("lanes", [])
+config['samples'] = config.get("samples", [])
+config['regions'] = config.get("regions", []) 
+config['flowcells'] = config.get("flowcells", [])  
+
 # Predefined settings for various platforms
 # Docs needed:
 #   run_id_re: regular expression for how to extract read group information from run id file names
@@ -15,8 +21,8 @@ sample_organization = {
     'sample' : {
         'run_id_re' : "(?P<SM>[A-Z0-9]+)",
         'run_id_pfx_re' : "(?P<SM>[A-Z0-9]+)",
-        'run_id_pfx_fmt' : os.path.join("{SM}"),
-        'sample_pfx_fmt' : os.path.join("{SM}"),
+        'run_id_pfx_fmt' : os.path.join("{SM}", "{SM}"),
+        'sample_pfx_fmt' : os.path.join("{SM}", "{SM}"),
         'platform_unit_fn' : lambda x: {'PU':x[1]},
     },
     # Data in sample directory divided in subdirectory for each run
@@ -45,19 +51,20 @@ sample_organization = {
 
 config_default = { 
     'bio.ngs.settings' : {
+        'aligner' : "bwa",
         'center' : "",
         'fastq_suffix' : ".fastq.gz",
-        'flowcells' : [],
+        'flowcells' : config["flowcells"],
         'flowcellruns' : [],
         'inputdir' : ".",
-        'lanes' : [],
+        'lanes' : config["lanes"],
         'sample_organization' : "sample",
         'read1_label' : "_1",
         'read2_label' : "_2",
         'read1_suffix' : ".fastq.gz",
         'read2_suffix' : ".fastq.gz",
-        'regions' : [],
-        'samples' : [],
+        'regions' : config["regions"],
+        'samples' : config["samples"],
         'sampleinfo' : "", # generic; samplesheet could be Illuminas csv samplesheet; treat elsewhere?
         'threads' : 8,
         'annotation' : {
@@ -86,10 +93,4 @@ update_sml_config(config_default)
 ngs_conf = get_sml_config('bio.ngs.settings')
 
 update_sml_config({'bio.ngs.settings' : sample_organization[ngs_conf['sample_organization']]})
-
-# Add configuration variable to snakemake global config object
-config['lanes'] = config.get("lanes", [])
-config['samples'] = config.get("samples", [])
-config['regions'] = config.get("regions", []) 
-config['flowcells'] = config.get("flowcells", [])  
 

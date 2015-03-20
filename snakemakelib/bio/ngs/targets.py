@@ -30,9 +30,9 @@ def generic_target_generator(fmt, rg, cfg, path=os.curdir, prepend_path=True):
 
     """
     if prepend_path:
-        ppath = path
+        ppath = path if path != os.curdir else ""
     else:
-        ppath = os.curdir
+        ppath = ""
     # 1. from command line options
     if cfg['samples'] and cfg['flowcells'] and cfg['lanes']:
         if not len(cfg['samples']) == len(cfg['flowcells'] or len(cfg['samples'] == len(cfg['flowcells']))):
@@ -56,7 +56,10 @@ def generic_target_generator(fmt, rg, cfg, path=os.curdir, prepend_path=True):
         return [os.path.join(ppath, t) for t in tgts]
 
     # 3. generate from input files
-    inputs = find_files(path=path, re_str=rg.pattern)
+    limit = {}
+    if cfg['samples']:
+        limit['SM'] = cfg['samples']
+    inputs = find_files(path=path, re_str=rg.pattern, limit=limit)
     if inputs:
         rgfmt = [dict(rg.parse(f)) for f in inputs]
         tgts = [fmt.format(**f) for f in rgfmt]

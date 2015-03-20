@@ -123,12 +123,13 @@ class ReadGroup(dict):
         self._validate_keys()
         return " ".join(["{dash}{key} {value}".format(dash=self._opt_prefix, key=self._read_group_dict[k], value=self._fmt(k)) for k in sorted(list(self.keys())) if not self[k] is None and k in self._read_group_keys])
 
-def find_files(path, re_str):
+def find_files(path, re_str, limit={}):
     """Find files in path that comply with a regular expression.
 
     Args:
       path:   path to search
       re_str: regular expression string
+      limit: dictionary where keys correspond to regular expression grouping labels and values are lists that limit the returned pattern
 
     Returns:
       flist: list of file names
@@ -136,5 +137,13 @@ def find_files(path, re_str):
     r = re.compile(re_str)
     flist = []
     for root, dirs, files in os.walk(path):
-        flist += [os.path.join(root, x) for x in files if r.match(x)]
+        for x in files:
+            m = r.match(x)
+            if m is None:
+                continue
+            if limit:
+                if any([m.group(k) in limit[k] for k in limit.keys()]):
+                    flist += [os.path.join(root, x)]
+            else:
+                flist += [os.path.join(root, x)]
     return sorted(flist)

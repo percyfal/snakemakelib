@@ -10,7 +10,7 @@ config_default = {
     "bio.ngs.tools.sratools" : {
         "srastudy" : "",
         "tracearchive" : "http://trace.ncbi.nlm.nih.gov/Traces/sra/",
-        "workspacelocation" : os.path.join(os.getenv("HOME"), "ncbi/public"),
+        "workspacelocation" : os.getenv("NCBI_HOME", os.path.join(os.getenv("HOME"), "ncbi/public")),
         "fastq-dump" : {
             'cmd' : "fastq-dump",
             "options" : "--split-3 -F",
@@ -28,37 +28,19 @@ update_sml_config(config_default)
 sra_cfg = get_sml_config('bio.ngs.tools.sratools')
 ngs_cfg = get_sml_config('bio.ngs.settings')
 
-rule sratools_prepare_download:
-    """Auxiliary rule to prepare download targets. 
-
-
-    """
-    input: metadata = "{prefix}_info.csv"
-    output: log = "{prefix}_info.log"
-    run:
-      with open (input.metadata) as fh:
-          reader = csv.DictReader(fh.readlines())
-      with open (output.log, "w") as log:
-          for l in reader:
-              log.write("{time}: creating download target {sra}".format(time=utc_time(), sra=l))
-              with open (l['Run'] + '.sradownload' , 'w') as fh:
-                  fh.write("")
-
 rule sratools_download_srastudy_metadata:
     """Download srastudy metadata. """
     params: traces = sra_cfg['tracearchive']
-    input: "{prefix}_download_srastudy.touch"
     output: "{prefix}_info.csv"
-    shell: "wget -O {output}  '{params.traces}sra.cgi?save=efetch&db=sra&rettype=runinfo&term= {wildcards.prefix}'"
+    shell: "wget -O {output}  '{params.traces}sra.cgi?save=efetch&db=sra&rettype=runinfo&term=$(basename {wildcards.prefix})'"
 
 rule sratools_prefetch:
     """Run sratools prefetch"""
     params: cmd = sra_cfg['prefetch']['cmd'],
             options = sra_cfg['prefetch']['options']
-    input: "{prefix}.sradownload"
     output: os.path.join(sra_cfg['workspacelocation'], "sra", "{prefix}.sra")
     log: "{prefix}.log"
-    shell: "{params.cmd} {params.options} {wildcards.prefix} && rm -f {input}" 
+    shell: "{params.cmd} {params.options} {wildcards.prefix}"
 
 rule sratools_fastq_dump:
     """Run sratools fastq-dump"""
@@ -66,20 +48,7 @@ rule sratools_fastq_dump:
             options = " ".join([sra_cfg['fastq-dump']['options'],
                                 '--gzip' if ngs_cfg["fastq_suffix"].endswith(".gz") else '',
                                 '--bzip2' if ngs_cfg["fastq_suffix"].endswith(".bzip2") else ''])
-    input: os.path.join(sra_cfg['workspacelocation'], "{prefix}.sra")
+    input: os.path.join(sra_cfg['workspacelocation'], "sra", "{prefix}.sra")
     output: read1 = "{prefix}" + ngs_cfg["read1_label"] + ngs_cfg["fastq_suffix"],
             read2 = "{prefix}" + ngs_cfg["read2_label"] + ngs_cfg["fastq_suffix"]
     shell: "{params.cmd} {params.options} {wildcards.prefix}"
-
-rule sratools_fastq_dump_from_sradownload:
-    """Run sratools fastq-dump"""
-    params: cmd = sra_cfg['fastq-dump']['cmd'],
-            options = " ".join([sra_cfg['fastq-dump']['options'],
-                                '--gzip' if ngs_cfg["fastq_suffix"].endswith(".gz") else '',
-                                '--bzip2' if ngs_cfg["fastq_suffix"].endswith(".bzip2") else ''])
-    input: "{prefix}.sradownload"
-    output: read1 = "{prefix}" + ngs_cfg["read1_label"] + ngs_cfg["fastq_suffix"],
-            read2 = "{prefix}" + ngs_cfg["read2_label"] + ngs_cfg["fastq_suffix"]
-    shell: "{params.cmd} {params.options} {wildcards.prefix} && rm -f {input}"
-
-ruleorder: sratools_fastq_dump > sratools_fastq_dump_from_sradownload

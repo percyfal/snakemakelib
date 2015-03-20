@@ -42,7 +42,7 @@ config_default = {
         'bait_regions' : ngs_cfg['sequence_capture']['bait_regions'],
         'common_options' : "VALIDATION_STRINGENCY=SILENT",
         'dupmetrics_targets' : [],
-        'home' : ".",
+        'home' : os.getenv("PICARD_HOME", os.curdir),
         'hsmetrics_targets' : [],
         'insertmetrics_targets' : [],
         'java_mem' : ngs_cfg['java']['java_mem'],

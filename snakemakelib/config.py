@@ -3,6 +3,7 @@
 Configuration module
 """
 import os
+import yaml
 from snakemakelib.log import get_logger
 
 logger = get_logger()
@@ -100,19 +101,7 @@ def get_sml_config(section=None):
 def update_sml_config(config_default):
     """Update sml configuration object.
 
-    Loops through items in default configuration and updates the cfg
-    configuration. There are two cases:
-
-    1. If the key/value pair is not present in custom_cfg the value in
-       default is used to set the coresponding value in custom_cfg
-    2. Else, use the set value in custom_cfg.
-
-    This procedure ensures that if a section is undefined in
-    custom_cfg, a defualt value will always be present.
-
     Args:
-        custom_cfg: A configuration object with custom settings of
-                    type <BaseConfig>
         config_default: default configuration object of type <dict> or <BaseConfig>
     """    
     global __sml_config__
@@ -124,8 +113,8 @@ def update_sml_config(config_default):
 
 def _update_sml_config(sml_config, config_default):
     """Update snakemakelib configuration object. The default object is
-defined in the preamble of rules files and contains sensitive default
-settings.
+    defined in the preamble of rules files and contains sensitive
+    default settings.
 
     While traversing the config dictionary, make sure that the
     configuration settings correspond to those in the default
@@ -133,9 +122,21 @@ settings.
     BaseConfig object, then the config object should also point to a
     BaseConfig object.
 
+    Loops through items in config_default and updates the sml_config
+    configuration. There are two cases:
+
+    1. If the key/value pair is not present in sml_config the value in
+       config_default is used to set the coresponding value in
+       sml_config
+
+    2. Else, use the set value in sml_config.
+
+    This procedure ensures that if a section is undefined in
+    sml_config, a default value will always be present.
+
     Args:
       sml_config: sml configuration to update
-      default: config with default values
+      config_default: config with default values
 
     Returns:
       updated configuration object
@@ -160,12 +161,33 @@ settings.
                 sml_config[section] = dict(config_default)[section]
         else:
             sml_config[section] = _update_sml_config(sml_config[section], dict(config_default)[section])
-    # if not set(list(config)).issuperset(set(list(default))):
-    #     print(list(config))
-    #     print(list(default))
-    #     # TODO: make this a warning
-    #     logger.info("Sections {} not defined in default rules configuration; this setting will not affect rules behaviour".format(list(set(list(config)).difference(set(list(default))))))
     return sml_config
+
+def load_sml_config(cfg_file=None):
+    """Load sml configuration file.
+
+    Will search for configuration files in following order:
+    
+    1. ~/.smlconf.yaml - a personal site-wide configuration file
+    2. ./smlconf.yaml - a standard configuration file residing in the
+        same directory as the Snakefile
+    3. cfg_file, if provided
+
+    Args:
+      cfg_file: custom configuration file to load
+
+    """
+    for fn in [os.path.join(os.getenv("HOME"), ".smlconf.yaml"),
+               os.path.join(os.curdir, "smlconf.yaml"),
+               cfg_file]:
+        if (fn is None):
+            continue
+        if not os.path.exists(fn):
+            continue
+        logger.info("Loading configuration from {}".format(fn))
+        with open(fn, "r") as fh:
+            cfg = yaml.load(fh)
+        update_sml_config(cfg)
 
 def sml_path():
     return os.path.dirname(__file__)

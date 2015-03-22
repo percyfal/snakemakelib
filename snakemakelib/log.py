@@ -19,8 +19,14 @@ class LoggerManager(object):
 
     _loggers = {}
     _fmt = "%(asctime)s (%(levelname)s) %(name)s :  %(message)s"
+    _has_loaded_config = False
 
     def __init__(self, *args, **kwargs):
+        if not LoggerManager._has_loaded_config:
+            self._load_config()
+            LoggerManager._has_loaded_config = True
+
+    def _load_config(self):
         if os.path.exists("logconf.yaml"):
             with open ("logconf.yaml", "r") as fh:
                 conf = yaml.load(fh)

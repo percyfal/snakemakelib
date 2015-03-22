@@ -94,6 +94,9 @@ config_default = {
             'bait_regions' : "",
             'target_regions' : "",
         },
+        'rnaseq' : {
+            'quantification' : ['rsem'],
+        },
     },
 }
 

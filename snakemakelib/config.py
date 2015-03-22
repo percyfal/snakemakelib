@@ -6,7 +6,7 @@ import os
 import yaml
 from snakemakelib.log import LoggerManager
 
-logger = LoggerManager.getLogger(__name__)
+smllogger = LoggerManager.getLogger(__name__)
 
 class BaseConfig(dict):
     def _inspect_sections(self):
@@ -14,7 +14,7 @@ class BaseConfig(dict):
         for k,v in self.items():
             if isinstance(v, dict):
                 if not isinstance(v, BaseConfig):
-                    logger.debug("Updating key {k} to <BaseConfig> class".format(k=k))
+                    smllogger.debug("Updating key {k} to <BaseConfig> class".format(k=k))
                     self[k] = BaseConfig(v)
                 self[k]._inspect_sections()
 
@@ -55,7 +55,7 @@ class BaseConfig(dict):
         if not (isinstance(section, str)):
             raise TypeError("argument 'section' must be of type <str>")
         if section in self._sections:
-            logger.error("Section {section} already present in configuration ".format(section=section))
+            smllogger.error("Section {section} already present in configuration ".format(section=section))
             return
         self._sections.append(section)
         self[section] = None
@@ -71,7 +71,7 @@ class BaseConfig(dict):
         try:
             return self[section]
         except KeyError:
-            logger.error("Error: no such section {} in config; returning entire config".format(section))
+            smllogger.error("Error: no such section {} in config; returning entire config".format(section))
             return self
 
     @property
@@ -184,9 +184,10 @@ def load_sml_config(cfg_file=None):
             continue
         if not os.path.exists(fn):
             continue
-        logger.info("Loading configuration from {}".format(fn))
+        smllogger.info("Loading configuration from {}".format(fn))
         with open(fn, "r") as fh:
             cfg = yaml.load(fh)
+        smllogger.info("Read configuration from {}".format(fn))
         update_sml_config(cfg)
 
 def sml_path():

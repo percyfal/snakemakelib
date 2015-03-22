@@ -2,9 +2,6 @@
 
 import os
 import csv
-from snakemakelib.log import LoggerManager
-
-logger = LoggerManager().getLogger(__name__)
 
 def get_metadata_list(metadata_file):
     """

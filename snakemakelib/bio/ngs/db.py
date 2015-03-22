@@ -3,7 +3,7 @@ import os
 from snakemakelib.config import get_sml_config
 from snakemakelib.log import LoggerManager
 
-logger = LoggerManager().getLogger(__name__)
+smllogger = LoggerManager().getLogger(__name__)
 
 sml_config = get_sml_config()
 
@@ -39,7 +39,7 @@ def index(application):
     ngs_cfg = sml_cfg["bio.ngs.settings"]
 
     if not ngs_cfg['db']['build_config']:
-        logger.debug("No build_config present: assuming index locations are organized according to cloudbiolinux conventions")
+        smllogger.debug("No build_config present: assuming index locations are organized according to cloudbiolinux conventions")
         if application in ["bwa", "rsem", "bowtie"]:
             prefix, _ = os.path.splitext(ngs_cfg['db']['ref'])
         else:

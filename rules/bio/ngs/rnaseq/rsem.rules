@@ -87,6 +87,6 @@ rule rsem_calculate_expression:
             index = rsem_cfg['index', 'rsem']
     input: index = rsem_cfg['index', 'rsem'] + rsem_cfg['ref_sfx'],
            bam = "{prefix}.bam"
-    output: rsem = "{prefix}.sort.transcript.bam"
+    output: rsem = "{prefix}.transcript.bam"
     threads: ngs_cfg["threads"]
     shell: "{params.cmd} {params.options} -p {threads} {input.bam} {params.index} {wildcards.prefix}"

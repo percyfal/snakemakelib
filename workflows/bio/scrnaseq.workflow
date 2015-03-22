@@ -68,7 +68,7 @@ RSEQC_TARGETS = generic_target_generator(fmt=ngs_cfg['sample_pfx_fmt'] + '.merge
 
 RPKMFORGENES_TARGETS = generic_target_generator(fmt=ngs_cfg['sample_pfx_fmt'] + '.merge.rpkmforgenes', rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path) if 'rpkmforgenes' in ngs_cfg['rnaseq']['quantification']  else []
 
-RSEM_TARGETS = generic_target_generator(fmt=ngs_cfg['sample_pfx_fmt'] + '.merge.sort.transcript.bam', rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path) if 'rsem' in ngs_cfg['rnaseq']['quantification']  else []
+RSEM_TARGETS = generic_target_generator(fmt=ngs_cfg['sample_pfx_fmt'] + '.merge.transcript.bam', rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path) if 'rsem' in ngs_cfg['rnaseq']['quantification']  else []
 
 # All rules
 rule scrnaseq_all:

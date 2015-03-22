@@ -2,9 +2,9 @@
 
 import os
 import csv
-from snakemakelib.log import get_logger
+from snakemakelib.log import LoggerManager
 
-logger = get_logger()
+logger = LoggerManager().getLogger(__name__)
 
 def get_metadata_list(metadata_file):
     """
@@ -25,6 +25,6 @@ def get_metadata_list(metadata_file):
         metadata_list = [row for row in reader]
     else:
         import time
-        logger.warn ("no metadata file '{metadata}' found;\n\nplease initiate analysis by running 'snakemake {metadata}'".format(metadata=metadata_file))
+        logger.warn ("\n\nno metadata file '{metadata}' found;\n\nplease initiate analysis by running 'snakemake {metadata}'\n\n".format(metadata=metadata_file))
         time.sleep(3)
     return metadata_list

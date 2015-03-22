@@ -1,9 +1,9 @@
 # Copyright (C) 2015 by Per Unneberg
 import os
 from snakemakelib.config import get_sml_config
-from snakemakelib.log import get_logger
+from snakemakelib.log import LoggerManager
 
-logger = get_logger()
+logger = LoggerManager().getLogger(__name__)
 
 sml_config = get_sml_config()
 

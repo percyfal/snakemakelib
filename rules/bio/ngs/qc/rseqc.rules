@@ -2,6 +2,9 @@
 import os
 from snakemakelib.config import update_sml_config, get_sml_config
 
+include: '../settings.rules'
+include: '../../../comp/settings.rules'
+
 ngs_cfg = get_sml_config('bio.ngs.settings')
 
 config_default = {

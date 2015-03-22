@@ -47,7 +47,7 @@ def generic_target_generator(fmt, rg, cfg, path=os.curdir, prepend_path=True):
     # 2. Read samplesheet here
     if cfg['sampleinfo'] != "":
         if not os.path.exists(cfg['sampleinfo']):
-            logger.warn("no such sample information file '{sampleinfo}'; trying to deduct targets from existing files".format(sampleinfo=cfg['sampleinfo']))
+            logger.info("no such sample information file '{sampleinfo}'; trying to deduct targets from existing files".format(sampleinfo=cfg['sampleinfo']))
         else:
             if isinstance(cfg['sampleinfo'], str):
                 with open(cfg['sampleinfo'], 'r') as fh:
@@ -55,7 +55,7 @@ def generic_target_generator(fmt, rg, cfg, path=os.curdir, prepend_path=True):
             else:
                 reader = cfg['sampleinfo']
                 assert type(reader) is csv.DictReader, "cfg['sampleinfo'] is not a 'csv.DictReader'"
-            reader.fieldnames = [fn if fn != cfg['samplecolumnname'] else 'SM' for fn in reader.fieldnames ]
+            reader.fieldnames = [fn if fn != cfg['sample_column_name'] else 'SM' for fn in reader.fieldnames ]
             if cfg['samples']:
                 tgts = [fmt.format(**row) for row in reader]
             else:

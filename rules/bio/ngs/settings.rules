@@ -25,7 +25,15 @@ sample_organization = {
         'sample_pfx_fmt' : os.path.join("{SM}", "{SM}"),
         'platform_unit_fn' : lambda x: {'PU':x[1]},
     },
-    # Data in sample directory divided in subdirectory for each run
+    # Data in sample directory divided in subdirectory for each run, SRA-like
+    'sample_run_sra' : {
+        'run_id_re' : "(?P<SM>[A-Z0-9]+?P<PU>[A-Z0-9]+)",
+        'run_id_pfx_re' : "(?P<SM>[A]?P<PU>[A-Z0-9]+)",
+        'run_id_pfx_fmt' : os.path.join("{SM}", "{PU}", "{SM}_{PU}"),
+        'sample_pfx_fmt' : os.path.join("{SM}", "{SM}"),
+        'platform_unit_fn' : lambda x: {'PU':x[1]},
+    },
+    # Data in sample directory divided in subdirectory for each run, more elaborate naming
     'sample_run' : {
         'run_id_re' : "(?P<NA>[0-9])_(?P<DT>[0-9]+)_(?P<PU>[A-Z0-9]+XX)_(?P<SM>P[0-9]+_[0-9]+)",
         'run_id_pfx_re' : "(?P<NA>[0-9])_(?P<PU>[0-9]+_[A-Z0-9]+XX)_(?P<SM>P[0-9]+_[0-9]+)",
@@ -66,6 +74,7 @@ config_default = {
         'regions' : config["regions"],
         'samples' : config["samples"],
         'sampleinfo' : "", # generic; samplesheet could be Illuminas csv samplesheet; treat elsewhere?
+        'sample_column_name' : "SM",
         'threads' : 8,
         'annotation' : {
             'annot_label' : "",

@@ -19,7 +19,7 @@ config_default = {
             'threads' : ngs_conf['threads'],
             'options' : "--genomeSAindexNbases 14",
             'sjdbGTFfile' : ngs_conf['annotation']['transcript_annot_gtf'],
-            'sjdbOverhang' : 100,
+            'sjdbOverhang' : 99,
             'genome' : "Genome",
             'SAname' : "SA",
         },
@@ -30,6 +30,18 @@ config_default = {
         },
     },
 }
+
+update_sml_config(config_default)
+
+star_cfg = get_sml_config('bio.ngs.align.star')
+
+def _star_suffix():
+    if star_cfg['align']['outSAMtype'].find("Unsorted") > -1:
+        return ".Aligned.out.bam"
+    elif star_cfg['align']['outSAMtype'].find("SortedByCoordinate") > -1:
+        return ".Aligned.sortedByCoord.out.bam"
+
+config_default['bio.ngs.align.star']['align']['suffix'] = _star_suffix()
 
 update_sml_config(config_default)
 
@@ -62,14 +74,13 @@ rule star_align:
     """Run STAR alignment"""
     params: cmd = star_cfg['cmd'],
             genomedir = os.path.dirname(star_cfg['index', 'star']),
-            options = " ".join([\
-            star_cfg['align']['options'],\
+            options = " ".join([star_cfg['align']['options'],
                                 "--readFilesCommand {cmd}".format(cmd=comp_cfg['compression']['prog_map'][os.path.splitext(ngs_cfg['fastq_suffix'])[1]]) if is_compressed(ngs_cfg['fastq_suffix']) else "",
                                 "--outSAMtype BAM {}".format(star_cfg['align']['outSAMtype']),
-                            ])
-    input: read1="{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],\ 
-           read2="{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['fastq_suffix'],\
+                                ])
+    input: read1="{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],
+           read2="{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['fastq_suffix'],
            index=star_cfg['index', 'star']
-    output: (["{prefix}.Aligned.out.bam"] if star_cfg['align']['outSAMtype'].find("Unsorted") > -1 else []) + (["{prefix}.Aligned.sortedByCoord.out.bam"] if star_cfg['align']['outSAMtype'].find("SortedByCoordinate") > -1 else [])
+    output: (["{prefix}" + star_cfg['align']['suffix']])
     threads: star_cfg['align']['threads']
     shell: "{params.cmd} --runThreadN {threads} --genomeDir {params.genomedir} --readFilesIn {input.read1} {input.read2} {params.options} --outFileNamePrefix {wildcards.prefix}."

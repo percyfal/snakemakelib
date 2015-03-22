@@ -24,7 +24,16 @@ def get_metadata_list(metadata_file):
             reader = csv.DictReader(fh.readlines())
         metadata_list = [row for row in reader]
     else:
+        import sys
+        if metadata_file in sys.argv:
+            return metadata_list
         import time
-        logger.warn ("\n\nno metadata file '{metadata}' found;\n\nplease initiate analysis by running 'snakemake {metadata}'\n\n".format(metadata=metadata_file))
+        logger.warn("""
+
+        no metadata file '{metadata}' found
+
+        please initiate analysis by running 'snakemake {metadata}'
+
+        """.format(metadata=metadata_file))
         time.sleep(3)
     return metadata_list

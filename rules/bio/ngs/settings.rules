@@ -3,10 +3,9 @@ import os
 from snakemakelib.config import update_sml_config, get_sml_config
 
 # Add configuration variable to snakemake global config object
-config['lanes'] = config.get("lanes", [])
 config['samples'] = config.get("samples", [])
 config['regions'] = config.get("regions", []) 
-config['flowcells'] = config.get("flowcells", [])  
+config['runs'] = config.get("runs", [])
 
 # Predefined settings for various platforms
 # Docs needed:
@@ -62,16 +61,14 @@ config_default = {
         'aligner' : "bwa",
         'center' : "",
         'fastq_suffix' : ".fastq.gz",
-        'flowcells' : config["flowcells"],
-        'flowcellruns' : [],
         'inputdir' : ".",
-        'lanes' : config["lanes"],
         'sample_organization' : "sample",
         'read1_label' : "_1",
         'read2_label' : "_2",
         'read1_suffix' : ".fastq.gz",
         'read2_suffix' : ".fastq.gz",
         'regions' : config["regions"],
+        'runs' : config["runs"],
         'samples' : config["samples"],
         'sampleinfo' : "", # generic; samplesheet could be Illuminas csv samplesheet; treat elsewhere?
         'sample_column_name' : "SM",

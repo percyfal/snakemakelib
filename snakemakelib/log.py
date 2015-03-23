@@ -41,20 +41,12 @@ class LoggerManager(object):
             with open ("logconf.yaml", "r") as fh:
                 conf = yaml.load(fh)
         else:
-            try:
-                import snakemakelib.config
-                snakemakelib.config.load_sml_config()
-                conf = snakemakelib.config.get_sml_config().get("logging", {})
-            except:
-                try:
-                    _logger.debug("Couldn't import config module; trying smlconf")
-                    conf = self._load_sml_config()
-                except:
-                    raise
+            conf = self._load_sml_config()
         if conf:
             logging.config.dictConfig(conf)
      
     def _load_sml_config(self):
+        cfg = {}
         for fn in [os.path.join(os.getenv("HOME"), ".smlconf.yaml"),
                    os.path.join(os.curdir, "smlconf.yaml")]:
             if (fn is None):

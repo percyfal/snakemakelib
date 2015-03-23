@@ -20,3 +20,8 @@ def is_compressed(f):
     """Ascertain whether a file is compressed or not"""
     cfg = get_sml_config('comp.settings')
     return not re.search(cfg['compression']['re'], f) is None
+
+# http://stackoverflow.com/questions/2556108/how-to-replace-the-last-occurence-of-an-expression-in-a-string
+def rreplace(s, old, new, occurrence):
+    li = s.rsplit(old, occurrence)
+    return new.join(li)

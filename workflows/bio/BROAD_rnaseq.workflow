@@ -1,6 +1,8 @@
 # -*- snakemake -*-
 import os
 from snakemakelib.config import update_sml_config, get_sml_config
+from snakemakelib.bio.ngs.targets import generic_target_generator
+from snakemakelib.bio.ngs.utils import ReadGroup
 
 # Default configuration settings
 rnaseq_config = {
@@ -29,15 +31,15 @@ tux_cfg = get_sml_config('bio.ngs.rnaseq.tuxedo')
 path = cfg.get('path') if not cfg.get('path') is None else os.curdir
 
 # Targets
-RSEM_TARGETS=expand("{path}/{sample}/{flowcell}/{lane}_{flowcell}_{sample}.rsem", path=path, sample=cfg['samples'], flowcell=cfg['flowcells'], lane=cfg['lanes'])
+RSEM_TARGETS = generic_target_generator(fmt=ngs_cfg['sample_pfx_fmt'] + '.merge.isoforms.results', rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path)
 
-TOPHAT2_TARGETS=expand("{path}/{sample}/{flowcell}/{lane}_{flowcell}_{sample}.tophat2", path=path, sample=cfg['samples'], flowcell=cfg['flowcells'], lane=cfg['lanes'])
+TOPHAT2_TARGETS = generic_target_generator(fmt=ngs_cfg['run_id_pfx_fmt'] + '.tophat2', rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path)
 
-CUFFLINKS_TARGETS = expand("{path}/{sample}/{flowcell}/{lane}_{flowcell}_{sample}.cufflinks", path=path, sample=cfg['samples'], flowcell=cfg['flowcells'], lane=cfg['lanes'])
+CUFFLINKS_TARGETS = generic_target_generator(fmt=ngs_cfg['run_id_pfx_fmt'] + '.cufflinks', rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path)
 
-CUFFLINKS_QUANT_TARGETS = expand("{path}/{sample}/{flowcell}/{lane}_{flowcell}_{sample}.cufflinks_quant", path=path, sample=cfg['samples'], flowcell=cfg['flowcells'], lane=cfg['lanes'])
+CUFFLINKS_TARGETS = generic_target_generator(fmt=ngs_cfg['run_id_pfx_fmt'] + '.cufflinks_quant', rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path)
 
-RNASEQC_TARGETS = expand("{path}/{sample}/{flowcell}/{lane}_{flowcell}_{sample}.tophat2/accepted_hits.rg.resorted.dup.rnaseqc", path=path, sample=cfg['samples'], flowcell=cfg['flowcells'], lane=cfg['lanes'], tophat2dir=os.path.basename(tux_cfg['tophat']['output_dir']))
+RNASEQC_TARGETS = generic_target_generator(fmt=ngs_cfg['run_id_pfx_fmt'] + '.tophat2/accepted_hits.rg.resorted.dup.rnaseqc', rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path)
 
 rule BROAD_rnaseq_all:
     """Run all the analyses"""

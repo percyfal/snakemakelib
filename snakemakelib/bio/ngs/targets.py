@@ -37,16 +37,22 @@ def generic_target_generator(fmt, rg, cfg, path=os.curdir, prepend_path=True):
     else:
         ppath = ""
     # 1. from command line options
-    if cfg['samples'] and cfg['flowcells'] and cfg['lanes']:
-        if not len(cfg['samples']) == len(cfg['flowcells'] or len(cfg['samples'] == len(cfg['flowcells']))):
-            raise Exception("if samples, flowcells, lanes all provided, must be of equal lengths")
-        cfg_list = list(zip(cfg['samples'], cfg['flowcells'], cfg['lanes']))
-        tgts = [fmt.format(SM=s, **dict(cfg)['platform_unit_fn']((s,fc,l))) for (s, fc, l) in cfg_list]
+    if cfg['samples'] and cfg['runs']:
+        if not len(cfg['samples']) == len(cfg['runs']):
+            raise Exception("if samples and runs are provided, they must be of equal lengths")
+        cfg_list = list(zip(cfg['samples'], cfg['runs']))
+        mlist = []
+        for (s, r) in cfg_list:
+            m = re.match(rg.pattern, r).groupdict() if not re.match(rg.pattern, r) is None else {}
+            if m:
+                m.update({'SM':s})
+                mlist.append(m)
+        tgts = [fmt.format(**m) for m in mlist]
         return [os.path.join(ppath, t) for t in tgts]
 
     # 2. Read samplesheet here
     if cfg['sampleinfo'] != "":
-        if not os.path.exists(cfg['sampleinfo']):
+        if isinstance(cfg['sampleinfo'], str) and not os.path.exists(cfg['sampleinfo']):
             smllogger.info("no such sample information file '{sampleinfo}'; trying to deduct targets from existing files".format(sampleinfo=cfg['sampleinfo']))
         else:
             smllogger.info("Reading sample information from '{sampleinfo}'".format(sampleinfo=cfg['sampleinfo']))

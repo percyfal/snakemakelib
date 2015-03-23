@@ -3,7 +3,7 @@ import os
 from snakemake.workflow import workflow
 from snakemakelib.config import update_sml_config, get_sml_config
 from snakemakelib.bio.ngs.targets import generic_target_generator
-from snakemakelib.bio.ngs.utils import ReadGroup, find_files
+from snakemakelib.bio.ngs.utils import ReadGroup
 
 def _merge_suffix(aligner, quantification=[]):
     align_cfg = get_sml_config('bio.ngs.align.' + aligner)

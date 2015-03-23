@@ -1,6 +1,8 @@
 # -*- snakemake -*-
 import os
 from snakemakelib.config import update_sml_config, get_sml_config, init_sml_config
+from snakemakelib.bio.ngs.targets import generic_target_generator
+from snakemakelib.bio.ngs.utils import ReadGroup
 
 def read_backed_phasing_create_input(wildcards):
     bamfile = wildcards.prefix.replace(".bp_variants", ".bam")
@@ -33,6 +35,9 @@ ruleorder: gatk_print_reads > picard_build_bam_index
 
 ruleorder: picard_build_bam_index > samtools_index
 
+cfg = get_sml_config('bio.ngs.settings')
+path = cfg.get('path') if not cfg.get('path') is None else os.curdir
+
 # Target suffices
 TARGET_SUFFIX=".sort.merge.rg.dup.realign.recal.bp_variants.phased.annotated.vcf"
 DUP_METRICS_SUFFIX=".sort.merge.rg.dup.dup_metrics"
@@ -40,20 +45,26 @@ ALIGN_METRICS_SUFFIX=".sort.merge.rg.dup.align_metrics"
 INSERT_METRICS_SUFFIX=".sort.merge.rg.dup.insert_metrics"
 HS_METRICS_SUFFIX=".sort.merge.rg.dup.hs_metrics"
 
-# Default targets: expand samples and flowcells
-VCF_TARGETS = ["{sample}{sep}{sample}{sfx}".format(sep=os.sep, sample=x, sfx=TARGET_SUFFIX) for x in variation_workflow_cfg['bio.ngs.settings']['samples']]
-VCF_TXT_TARGETS = ["{sample}{sep}{sample}{sfx}".format(sep=os.sep, sample=x, sfx=TARGET_SUFFIX).replace(".vcf", ".txt") for x in variation_workflow_cfg['bio.ngs.settings']['samples']]
-DUP_METRICS_TARGETS = ["{sample}{sep}{sample}{sfx}".format(sep=os.sep, sample=x, sfx=DUP_METRICS_SUFFIX) for x in variation_workflow_cfg['bio.ngs.settings']['samples']]
-ALIGN_METRICS_TARGETS = ["{sample}{sep}{sample}{sfx}".format(sep=os.sep, sample=x, sfx=ALIGN_METRICS_SUFFIX) for x in variation_workflow_cfg['bio.ngs.settings']['samples']]
-INSERT_METRICS_TARGETS = ["{sample}{sep}{sample}{sfx}".format(sep=os.sep, sample=x, sfx=INSERT_METRICS_SUFFIX) for x in variation_workflow_cfg['bio.ngs.settings']['samples']]
-HS_METRICS_TARGETS = ["{sample}{sep}{sample}{sfx}".format(sep=os.sep, sample=x, sfx=HS_METRICS_SUFFIX) for x in variation_workflow_cfg['bio.ngs.settings']['samples']] 
+# Default targets
+VCF_TARGETS = generic_target_generator(fmt=ngs_cfg['sample_pfx_fmt'] + TARGET_SUFFIX, rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path)
 
+VCF_TXT_TARGETS = generic_target_generator(fmt=ngs_cfg['sample_pfx_fmt'] + TARGET_SUFFIX.replace(".vcf", ".txt"), rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path)
 
-rule all:
+VCF_TARGETS = generic_target_generator(fmt=ngs_cfg['sample_pfx_fmt'] + TARGET_SUFFIX, rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path)
+
+DUP_METRICS_TARGETS = generic_target_generator(fmt=ngs_cfg['sample_pfx_fmt'] + DUP_METRICS_SUFFIX, rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path)
+
+ALIGN_METRICS_TARGETS = generic_target_generator(fmt=ngs_cfg['sample_pfx_fmt'] + ALIGN_METRICS_SUFFIX, rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path)
+
+INSERT_METRICS_TARGETS = generic_target_generator(fmt=ngs_cfg['sample_pfx_fmt'] + INSERT_METRICS_SUFFIX, rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path)
+
+HS_METRICS_TARGETS = generic_target_generator(fmt=ngs_cfg['sample_pfx_fmt'] + HS_METRICS_SUFFIX, rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path)
+
+rule variation_all:
     input: VCF_TARGETS + VCF_TXT_TARGETS + DUP_METRICS_TARGETS + ALIGN_METRICS_TARGETS + INSERT_METRICS_TARGETS + HS_METRICS_TARGETS
 
 # Run metrics only
-rule metrics:
+rule variation_metrics:
     input: DUP_METRICS_TARGETS + ALIGN_METRICS_TARGETS + INSERT_METRICS_TARGETS + HS_METRICS_TARGETS
 
 rule variation_snp_filtration:

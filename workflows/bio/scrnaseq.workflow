@@ -22,7 +22,8 @@ merge.
     picard_cfg = get_sml_config('bio.ngs.qc.picard')
     rg = ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], cfg=ngs_cfg, path=wildcards.path)
     fmt = ngs_cfg['run_id_pfx_fmt'] + _merge_suffix(ngs_cfg['aligner'], ngs_cfg['rnaseq']['quantification'])
-    sources = generic_target_generator(fmt=os.path.basename(fmt), rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=wildcards.path)
+    # Here, we use the full name of fmt, and don't prepend path. This is a mess.
+    sources = generic_target_generator(fmt=fmt, rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=wildcards.path, prepend_path=False)
     sources = [src for src in sources if os.path.basename(src).startswith(wildcards.prefix)]
     return sources
 
@@ -37,7 +38,6 @@ config_default = {
         },
     },
 }
-
 
 update_sml_config(config_default)
 ngs_cfg = get_sml_config('bio.ngs.settings')

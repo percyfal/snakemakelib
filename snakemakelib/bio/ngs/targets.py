@@ -49,13 +49,15 @@ def generic_target_generator(fmt, rg, cfg, path=os.curdir, prepend_path=True):
         if not os.path.exists(cfg['sampleinfo']):
             smllogger.info("no such sample information file '{sampleinfo}'; trying to deduct targets from existing files".format(sampleinfo=cfg['sampleinfo']))
         else:
+            smllogger.info("Reading sample information from '{sampleinfo}'".format(sampleinfo=cfg['sampleinfo']))
             if isinstance(cfg['sampleinfo'], str):
                 with open(cfg['sampleinfo'], 'r') as fh:
                     reader = csv.DictReader(fh.readlines())
             else:
                 reader = cfg['sampleinfo']
                 assert type(reader) is csv.DictReader, "cfg['sampleinfo'] is not a 'csv.DictReader'"
-            reader.fieldnames = [fn if fn != cfg['sample_column_name'] else 'SM' for fn in reader.fieldnames ]
+            reader.fieldnames = [fn if fn != cfg['sample_column_name'] else 'SM' for fn in reader.fieldnames]
+            reader.fieldnames = [fn if fn != cfg['run_column_name'] else 'PU' for fn in reader.fieldnames]
             if cfg['samples']:
                 tgts = [fmt.format(**row) for row in reader if row['SM'] in cfg['samples']]
             else:

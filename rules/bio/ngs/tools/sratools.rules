@@ -11,6 +11,9 @@ config_default = {
         "srastudy" : "",
         "tracearchive" : "http://trace.ncbi.nlm.nih.gov/Traces/sra/",
         "workspacelocation" : os.getenv("NCBI_HOME", os.path.join(os.getenv("HOME"), "ncbi/public")),
+        "_datadir" : os.curdir,
+        "_run2sample" : {},
+        "_metadata" : [],
         "fastq-dump" : {
             'cmd' : "fastq-dump",
             "options" : "--split-3 -F",
@@ -53,3 +56,15 @@ rule sratools_fastq_dump:
     output: read1 = "{prefix}" + ngs_cfg["read1_label"] + ngs_cfg["fastq_suffix"],
             read2 = "{prefix}" + ngs_cfg["read2_label"] + ngs_cfg["fastq_suffix"]
     shell: "{params.cmd} {params.options} {wildcards.prefix}"
+
+def _get_run(wildcards):
+    (sample, run) = wildcards.prefix.split("_")
+    return os.path.join(sra_cfg['_datadir'], "{run}_{read}".format(run=run, read=wildcards.read) + ngs_cfg["fastq_suffix"])
+
+rule sratools_link_sra_fastq:
+    """Link sra run fastq file from download directory to output path"""
+    input: fastq = _get_run
+    output: fastq = os.path.join("{path}", "{prefix}_{read}" + ngs_cfg["fastq_suffix"])
+    shell: "ln -s {input.fastq} {output.fastq}"
+
+ruleorder: sratools_link_sra_fastq > sratools_fastq_dump

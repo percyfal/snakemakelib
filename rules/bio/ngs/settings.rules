@@ -10,11 +10,11 @@ config['flowcells'] = config.get("flowcells", [])
 
 # Predefined settings for various platforms
 # Docs needed:
-#   run_id_re: regular expression for how to extract read group information from run id file names
+#   run_id_re: regular expression for how to extract read group information from run id file names - this represents the raw prefix as delivered by some applications, e.g. Illumina
+#   run_id_pfx_re: after alignment sometimes the run_id_pfx is modified, take into accont here
 #   run_id_pfx_fmt: based on the results of run_id_re, make prefix formats as python mini-format strings for run_id
 #   sample_pfx_ftm: ditto for sample
-
-
+#   platform_unit_fn: ???
 # Should all sample organization be relative to workdir?
 sample_organization = {
     # All data in sample directory
@@ -27,8 +27,8 @@ sample_organization = {
     },
     # Data in sample directory divided in subdirectory for each run, SRA-like
     'sample_run_sra' : {
-        'run_id_re' : "(?P<SM>[A-Z0-9]+?P<PU>[A-Z0-9]+)",
-        'run_id_pfx_re' : "(?P<SM>[A]?P<PU>[A-Z0-9]+)",
+        'run_id_re' : "(?P<SM>[A-Z0-9]+)_(?P<PU>[A-Z0-9]+)",
+        'run_id_pfx_re' : "(?P<SM>[A-Z0-9]+)_(?P<PU>[A-Z0-9]+)",
         'run_id_pfx_fmt' : os.path.join("{SM}", "{PU}", "{SM}_{PU}"),
         'sample_pfx_fmt' : os.path.join("{SM}", "{SM}"),
         'platform_unit_fn' : lambda x: {'PU':x[1]},
@@ -75,6 +75,7 @@ config_default = {
         'samples' : config["samples"],
         'sampleinfo' : "", # generic; samplesheet could be Illuminas csv samplesheet; treat elsewhere?
         'sample_column_name' : "SM",
+        'run_column_name' : "",
         'threads' : 8,
         'annotation' : {
             'annot_label' : "",

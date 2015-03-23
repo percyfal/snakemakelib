@@ -6,7 +6,7 @@ import os
 import yaml
 from snakemakelib.log import LoggerManager
 
-smllogger = LoggerManager.getLogger(__name__)
+smllogger = LoggerManager().getLogger(__name__)
 
 class BaseConfig(dict):
     def _inspect_sections(self):
@@ -156,9 +156,15 @@ def _update_sml_config(sml_config, config_default):
         if not sml_config.has_section(section):
             sml_config.add_section(section)
         if (not isinstance(dict(config_default)[section], BaseConfig)):
+            smllogger.debug("Key is not type BaseConfig: got type '{type}'".format(type = type(dict(config_default)[section])))
             # if config has no value set to default
             if sml_config.get(section) is None:
                 sml_config[section] = dict(config_default)[section]
+            # else make sure variable is expanded
+            else:
+                if isinstance(dict(sml_config)[section], str):
+                    smllogger.debug("expanding variables in config string, if present")
+                    sml_config[section] = os.path.expandvars(sml_config[section])
         else:
             sml_config[section] = _update_sml_config(sml_config[section], dict(config_default)[section])
     return sml_config

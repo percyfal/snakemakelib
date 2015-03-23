@@ -3,7 +3,9 @@ import logging
 import logging.config
 import yaml
 import os
-import snakemakelib.config
+
+_logger = logging.getLogger(__name__)
+_logger.setLevel(logging.DEBUG)
 
 # See http://stackoverflow.com/questions/15727420/using-python-logging-in-multiple-modules
 class Singleton(type):
@@ -39,11 +41,30 @@ class LoggerManager(object):
             with open ("logconf.yaml", "r") as fh:
                 conf = yaml.load(fh)
         else:
-            snakemakelib.config.load_sml_config()
-            conf = snakemakelib.config.get_sml_config().get("logging", {})
+            try:
+                import snakemakelib.config
+                snakemakelib.config.load_sml_config()
+                conf = snakemakelib.config.get_sml_config().get("logging", {})
+            except:
+                try:
+                    _logger.debug("Couldn't import config module; trying smlconf")
+                    conf = self._load_sml_config()
+                except:
+                    raise
         if conf:
             logging.config.dictConfig(conf)
      
+    def _load_sml_config(self):
+        for fn in [os.path.join(os.getenv("HOME"), ".smlconf.yaml"),
+                   os.path.join(os.curdir, "smlconf.yaml")]:
+            if (fn is None):
+                continue
+            if not os.path.exists(fn):
+                continue
+            with open(fn, "r") as fh:
+                cfg = yaml.load(fh)
+        return cfg.get("logging", {})
+
     @staticmethod
     def getLogger(name=None):
         if not name:

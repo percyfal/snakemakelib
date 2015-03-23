@@ -24,20 +24,14 @@ def find_report_inputs(wildcards):
 def find_meth_merge_inputs(wildcards):
 
     """Find bismark aligned bam files as input to picard merge.
-
-    Assumes folder structure:
-
-    {path}/{flowcell}/{prefix}.bam
-
-    to be merged into {path}, which often represents sample.
     """
-    subdirs = [d for d in os.listdir(wildcards.path) if os.path.isdir(os.path.join(wildcards.path, d))]
-    sources = []
-    for d in subdirs:
-        fqsrc = sorted(glob.glob("{path}{sep}*{suffix}".format(path=os.path.join(wildcards.path, d), sep=os.sep, suffix=sml_config['bio.ngs.settings']['fastq_suffix'])))
-        sfx = sml_config['bio.ngs.settings']['read1_label'] + sml_config['bio.ngs.settings']['fastq_suffix']
-        bismarkbam = [x.replace(sfx, "") + align_suffix() for x in fqsrc if x.endswith(sfx)]
-        sources += bismarkbam
+    ngs_cfg = get_sml_config('bio.ngs.settings')
+    picard_cfg = get_sml_config('bio.ngs.qc.picard')
+    rg = ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], cfg=ngs_cfg, path=wildcards.path)
+
+    fmt = ngs_cfg['run_id_pfx_fmt'] + align_suffix()
+    # Here, we use the full name of fmt, and don't prepend path. This is a mess.
+    sources = generic_target_generator(fmt=fmt, rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=wildcards.path, prepend_path=False)
     return sources
 
 methylation_config = {
@@ -76,7 +70,8 @@ qc_cfg = get_sml_config('bio.ngs.qc.sequenceprocessing')
 cfg = get_sml_config('bio.ngs.settings')
 path = cfg.get('path') if not cfg.get('path') is None else os.curdir
 
-FASTQC_TARGETS = generic_target_generator(fmt=ngs_cfg['run_id_pfx_fmt'] + "_1_fastqc.html", rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path)
+FASTQC_TARGETS = [generic_target_generator(fmt=ngs_cfg['run_id_pfx_fmt'] + "_1_fastqc/fastqc_report.html", rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path)] +\
+                 [generic_target_generator(fmt=ngs_cfg['run_id_pfx_fmt'] + "_2_fastqc/fastqc_report.html", rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path)] 
 
 BISMARK_TARGETS = generic_target_generator(fmt=rreplace(ngs_cfg['sample_pfx_fmt'], "{SM}", "CpG_OB_{SM}", 1) + ".merge.deduplicated.txt.gz", rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path)
 
@@ -87,11 +82,11 @@ rule bismark_all:
     """Run all the analyses"""
     input: FASTQC_TARGETS + BISMARK_TARGETS + BISMARK_REPORT_TARGETS
 
-rule run_fastqc:
+rule run_bismark_fastqc:
     """Fastqc target rule. Run fastqc on files defined in FASTQC_TARGETS"""
     input: FASTQC_TARGETS
 
-rule run_bismark:
+rule run_bismark_run:
     """bismark target rule. Run bismark on files defined in BISMARK_TARGETS"""
     input: BISMARK_TARGETS
 
@@ -99,7 +94,7 @@ rule run_bismark_report:
     """bismark report target rule. Run bismark on files defined in BISMARK_TARGETS"""
     input: BISMARK_REPORT_TARGETS
 
-rule list_targets:
+rule bismark_targets:
     """List currently defined targets"""
     run:
       print ("Fastqc targets: ", FASTQC_TARGETS)

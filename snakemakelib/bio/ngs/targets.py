@@ -37,12 +37,14 @@ def generic_target_generator(fmt, rg, cfg, path=os.curdir, prepend_path=True):
     else:
         ppath = ""
     # 1. from command line options
+    # FIXME: currently will not work for but the simples run names
     if cfg['samples'] and cfg['runs']:
         if not len(cfg['samples']) == len(cfg['runs']):
             raise Exception("if samples and runs are provided, they must be of equal lengths")
         cfg_list = list(zip(cfg['samples'], cfg['runs']))
         mlist = []
         for (s, r) in cfg_list:
+
             m = re.match(rg.pattern, r).groupdict() if not re.match(rg.pattern, r) is None else {}
             if m:
                 m.update({'SM':s})

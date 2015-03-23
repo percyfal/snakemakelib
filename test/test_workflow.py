@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 snakefile = """# -*- snakemake -*-
 import os
+import sys
 from snakemakelib.config import init_sml_config, get_sml_config
 from snakemakelib.utils import rreplace
 from snakemakelib.bio.ngs.targets import generic_target_generator
@@ -25,7 +26,7 @@ local_config = {{
     'bio.ngs.settings' : {{
         'sample_organization' : 'Illumina@SciLife',
         'samples' : config.get("samples", ['P001_101', 'P001_102']),
-        'runs' : config.get("runs", ['120924_AC003CCCXX', '121015_BB002BBBXX']),
+        'runs' : config.get("runs", []),
         'db' : {{
             'ref' : '{ref}',
             'dbsnp' : '{dbsnp}',
@@ -60,18 +61,13 @@ local_config = {{
 
 init_sml_config(local_config)
 
-include: '{methylseq}'
-include: '{variation}'
+if 'run_bismark_run' in sys.argv:
+    include: '{methylseq}'
+else:
+    include: '{variation}'
 
 cfg = get_sml_config('bio.ngs.settings')
 path = cfg.get('path') if not cfg.get('path') is None else os.curdir
-
-# Update FASTQC_TARGETS
-FASTQC_TARGETS = generic_target_generator(fmt=ngs_cfg['run_id_pfx_fmt'] + "_1_fastqc.html", rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path)
-
-BISMARK_TARGETS = generic_target_generator(fmt=rreplace(ngs_cfg['run_id_pfx_fmt'], "{{SM}}", "CpG_OB_{{SM}}", 1) + ".merge.deduplicated.txt.gz", rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path)
-
-BISMARK_REPORT_TARGETS = generic_target_generator(fmt=ngs_cfg['sample_pfx_fmt'] + ".merge.deduplicated.bam{{report_label}}.html".format(report_label=report_label()), rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path)
 
 """
          
@@ -119,8 +115,8 @@ class TestVariationWorkflow(unittest.TestCase):
         """
         outputs = ['P001_101/P001_101.sort.merge.rg.dup.realign.recal.bp_variants.phased.vcf',
                    'P001_102/P001_102.sort.merge.rg.dup.realign.recal.bp_variants.phased.vcf']
-        subprocess.check_call(['snakemake'] + outputs)
-        subprocess.check_call(['snakemake', 'metrics'])
+        subprocess.check_call(['snakemake', '-F'] + outputs)
+        subprocess.check_call(['snakemake', '-F', 'variation_metrics'])
 
 class TestBwaAlign(unittest.TestCase):
     def test_bwa_align(self):
@@ -141,5 +137,5 @@ class TestMethylSeq(unittest.TestCase):
 
     def test_bismark(self):
         """Test bismark"""
-        subprocess.check_call(['snakemake', '-F', 'run_bismark'])
+        subprocess.check_call(['snakemake', '-F', 'run_bismark_run'])
 

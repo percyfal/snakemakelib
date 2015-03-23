@@ -27,7 +27,7 @@ config_default = {
         'bam_list' : "",
         'cov_interval' : "regional",
         'dbsnp' : sml_config['bio.ngs.settings']['db']['dbsnp'],
-        'home' : ".",
+        'home' : os.getenv("GATK_HOME", os.curdir),
         'java_mem' : sml_config['bio.ngs.settings']['java']['java_mem'],
         'java_tmpdir' : sml_config['bio.ngs.settings']['java']['java_tmpdir'],
         'ref' : sml_config['bio.ngs.settings']['db']['ref'],

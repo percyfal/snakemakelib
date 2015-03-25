@@ -5,14 +5,28 @@ from snakemakelib.config import update_sml_config, get_sml_config
 from snakemakelib.bio.ngs.targets import generic_target_generator
 from snakemakelib.bio.ngs.utils import ReadGroup
 
+
 def _merge_suffix(aligner, quantification=[]):
     align_cfg = get_sml_config('bio.ngs.align.' + aligner)
     if aligner == "star":
-        if "rsem" in quantification:
-            return ".Aligned.toTranscriptome.out_unique.bam"
         return align_cfg['align']['suffix'].replace('.bam', '_unique.bam')
     elif aligner in ["bowtie", "bowtie2"]:
         return '_unique.bam'
+
+def _merge_tx_suffix(aligner, quantification=[]):
+    align_cfg = get_sml_config('bio.ngs.align.' + aligner)
+    if aligner == "star":
+        return ".Aligned.toTranscriptome.out_unique.bam"
+
+def _find_transcript_bam(wildcards):
+    ngs_cfg = get_sml_config('bio.ngs.settings')
+    picard_cfg = get_sml_config('bio.ngs.qc.picard')
+    rg = ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], cfg=ngs_cfg, path=wildcards.path)
+    fmt = ngs_cfg['run_id_pfx_fmt'] + _merge_tx_suffix(ngs_cfg['aligner'], ngs_cfg['rnaseq']['quantification'])
+    # Here, we use the full name of fmt, and don't prepend path. This is a mess.
+    sources = generic_target_generator(fmt=fmt, rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=wildcards.path, prepend_path=False)
+    sources = [src for src in sources if os.path.basename(src).startswith(wildcards.prefix)]
+    return sources
 
 def find_scrnaseq_merge_inputs(wildcards):
     """Find platform unit specific aligned bam files as input to picard
@@ -62,13 +76,34 @@ if workflow._workdir is None:
     raise Exception("no workdir set, or set after include of 'scrnaseq.workflow'; set workdir before include statement!")
 path = workflow._workdir
 
+picard_config = get_sml_config("bio.ngs.qc.picard")
+
+# Additional merge rule for transcript alignment files
+rule scrnaseq_picard_merge_sam_transcript:
+    """scrnaseq picard: merge sam files from transcript alignments.
+
+    NB: always outputs bam files!
+    """
+    params: cmd = picard_config['cmd'] + "MergeSamFiles",
+            options = " ".join([picard_config['options'],
+                                picard_config['merge_sam']['options']])
+    input: _find_transcript_bam
+    output: merge="{path}" + os.sep + "{prefix}." + "merge.tx.bam"
+    run: 
+      if (len(input) > 1):
+          inputstr = " ".join(["INPUT={}".format(x) for x in input])
+          shell("{cmd} {ips} OUTPUT={out} {opt}".format(cmd=params.cmd, ips=inputstr, out=output.merge, opt=params.options))
+      else:
+          os.symlink(os.path.relpath(input[0], wildcards.path), output.merge)
+
+
 ALIGN_TARGETS = generic_target_generator(fmt=ngs_cfg['run_id_pfx_fmt'] + _merge_suffix(aligner), rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path)
 
 RSEQC_TARGETS = generic_target_generator(fmt=ngs_cfg['sample_pfx_fmt'] + '.merge_rseqc/rseqc_qc_8.txt', rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path)
 
 RPKMFORGENES_TARGETS = generic_target_generator(fmt=ngs_cfg['sample_pfx_fmt'] + '.merge.rpkmforgenes', rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path) if 'rpkmforgenes' in ngs_cfg['rnaseq']['quantification']  else []
 
-RSEM_TARGETS = generic_target_generator(fmt=ngs_cfg['sample_pfx_fmt'] + '.merge.isoforms.results', rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path) if 'rsem' in ngs_cfg['rnaseq']['quantification']  else []
+RSEM_TARGETS = generic_target_generator(fmt=ngs_cfg['sample_pfx_fmt'] + '.merge.tx.isoforms.results', rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path) if 'rsem' in ngs_cfg['rnaseq']['quantification']  else []
 
 # All rules
 rule scrnaseq_all:
@@ -99,7 +134,7 @@ rule scrnaseq_targets:
         print (RPKMFORGENES_TARGETS)
         print (RSEM_TARGETS)
 
-rule clean:
+rule scrnaseq_clean:
     """Clean working directory. WARNING: will remove all files except
     (.fastq|.fastq.gz) and csv files
     """

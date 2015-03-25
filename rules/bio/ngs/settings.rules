@@ -9,7 +9,7 @@ config['runs'] = config.get("runs", [])
 
 # Predefined settings for various platforms
 # Docs needed:
-#   run_id_re: regular expression for how to extract read group information from run id file names - this represents the raw prefix as delivered by some applications, e.g. Illumina
+#   run_id_re: regular expression for how to extract read group information from run id file names - this represents the *raw* prefix as delivered by some applications, e.g. Illumina
 #   run_id_pfx_re: after alignment sometimes the run_id_pfx is modified, take into accont here
 #   run_id_pfx_fmt: based on the results of run_id_re, make prefix formats as python mini-format strings for run_id
 #   sample_pfx_ftm: ditto for sample

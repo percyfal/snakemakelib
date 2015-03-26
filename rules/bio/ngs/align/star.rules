@@ -1,8 +1,10 @@
 # -*- snakemake -*-
 import os
+from snakemake.utils import R
 from snakemakelib.config import update_sml_config, get_sml_config
 from snakemakelib.utils import is_compressed
 from snakemakelib.bio.ngs.db import index
+from snakemakelib.bio.ngs.targets import generic_target_generator
 
 include: '../../../comp/settings.rules'
 include: '../settings.rules'
@@ -85,3 +87,52 @@ rule star_align:
     output: (["{prefix}" + star_cfg['align']['suffix']] + ["{prefix}" + ".Aligned.toTranscriptome.out.bam"] if 'rsem' in ngs_cfg['rnaseq']['quantification'] else [])
     threads: star_cfg['align']['threads']
     shell: "{params.cmd} --runThreadN {threads} --genomeDir {params.genomedir} --readFilesIn {input.read1} {input.read2} {params.options} --outFileNamePrefix {wildcards.prefix}."
+
+def star_find_result_files_fn(wildcards):
+    ngs_cfg = get_sml_config('bio.ngs.settings')
+    fmt = ngs_cfg['sample_pfx_fmt'] + "." + wildcards.label + 'final.out'
+    sources = generic_target_generator(fmt=fmt, rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=wildcards.path, prepend_path=False)
+    return sources
+
+# QC summaries
+# This is the information in summary_starlog.txt
+rule star_summarize_alignment_runs:
+    """Summarize alignment data for alignment(s) based on runs.
+
+    NB: currently based on sample, but should be run-based as
+    alignments most often done on run data, after which merging is
+    done.
+
+    Important: in order to catch {label}, as a minimum, this needs to
+    be set to 'Log.'; the minimum target is therefore star.Log.RData
+
+    """
+    input: star_find_result_files_fn
+    output: RData = os.path.join("{path}", "star.{label}RData"),
+            uniquely_mapped = os.path.join("{path}", "star.{label}uniquely_mapped.png"),
+            uniquely_mapped_vs_ = os.path.join("{path}", "star.{label}uniquely_mapped.png"),
+    run:
+        ngs_cfg = get_sml_config('bio.ngs.settings')
+        try:
+            sm = re.match("(?P<SM>\([^\(]*SM[^\)]*\))", ngs_cfg["run_id_pfx_re"]).groups(1)[0]
+            pat = ngs_cfg['sample_pfx_fmt'].format(SM=sm)
+            # Make SM unique
+            # FIXME: make proper function
+            pat = pat.split("SM")[0] + "".join(["SM{}{}".format(i, t) for (i,t) in list(zip(range(pat.count("SM")), pat.split("SM")[1:]))])
+        except:
+            raise
+        inputfiles = ",".join(input)
+        samples = ",".join([re.search(pat, f).group(1) for f in input])
+        R("""
+        f <- '{inputfiles}'
+        s <- '{samples}'
+        infiles <- strsplit(f, ",")[[1]]
+        samples <- strsplit(s, ",")[[1]]
+        df = do.call("rbind", lapply(infiles, function(x) {{y=read.delim(x, sep="|", header=FALSE, strip.white=TRUE); y$V2 = gsub("%", "", gsub("\t", "", y$V2)); z=t(y$V2); colnames(z)=do.call("c", lapply(y$V1, function(x) {{gsub("[:,]", "", gsub("%", "PCT", gsub("[ -]", "_", x)))}})); as.data.frame(z, stringsAsFactors=FALSE)}}))
+        df[,4:30] = sapply(df[,4:30], as.numeric)
+        rownames(df) <- samples
+        df = cbind(samples, df)
+        library(lattice)
+        
+        save.image(file='{output}')
+        """)

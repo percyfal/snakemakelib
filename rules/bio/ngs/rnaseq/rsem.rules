@@ -2,6 +2,7 @@
 import os
 from snakemakelib.config import update_sml_config, get_sml_config
 from snakemakelib.bio.ngs.db import index
+from snakemakelib.bio.ngs.targets import generic_target_generator
 
 include: '../settings.rules'
 
@@ -90,3 +91,20 @@ rule rsem_calculate_expression:
     output: isoforms = "{prefix}.isoforms.results", genes = "{prefix}.genes.results"
     threads: ngs_cfg["threads"]
     shell: "{params.cmd} {params.options} -p {threads} {input.bam} {params.index} {wildcards.prefix}"
+
+
+def rsem_find_result_files_fn(wildcards):
+    ngs_cfg = get_sml_config('bio.ngs.settings')
+    fmt = ngs_cfg['sample_pfx_fmt'] + ".".join(["", wildcards.label,  wildcards.type]) + '.results'
+    sources = generic_target_generator(fmt=fmt, rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=wildcards.path, prepend_path=False)
+    return sources
+
+rule rsem_summarize_expression_data:
+    """Summarize expression results"""
+    input: rsem_find_result_files_fn
+    output: os.path.join("{path}", "rsem.{label}.{type}.results")
+    run:
+        print ("rsem_summarize_expression_data")
+        #print (len(input))
+
+    

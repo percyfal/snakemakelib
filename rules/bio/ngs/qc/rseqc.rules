@@ -95,8 +95,9 @@ rule rseqc_junction_annotation:
     input: bam = "{prefix}.bam", refgene = rsq_cfg['refgene']
     output: junction = "{prefix}_rseqc/junction_annotation_refseq.splice_junction.pdf",
             events = "{prefix}_rseqc/junction_annotation_refseq.splice_events.pdf",
-            xls = "{prefix}_rseqc/junction_annotation_refseq.junction.xls"
-    shell: python2 + " && {params.cmd} {params.options} -i {input.bam} -o $(dirname {output.junction})/junction_annotation_refseq -r {input.refgene}"
+            xls = "{prefix}_rseqc/junction_annotation_refseq.junction.xls",
+            txt = "{prefix}_rseqc/junction_annotation_refseq.txt",
+    shell: python2 + " && {params.cmd} {params.options} -i {input.bam} -o $(dirname {output.junction})/junction_annotation_refseq -r {input.refgene} 2> {output.txt}"
 
 rule rseqc_read_GC:
     """Run RSeQC read_GC.py"""
@@ -145,10 +146,28 @@ rule rseqc_qc_8:
     input: read_dup = "{prefix}_rseqc/read_dup.DupRate_plot.pdf", 
            clipping_profile = "{prefix}_rseqc/clippingprofile.clipping_profile.pdf",
            geneBody_coverage = "{prefix}_rseqc/geneBody_coverage.geneBodyCoverage.txt",
-           junction_annotation = "{prefix}_rseqc/junction_annotation_refseq.splice_junction.pdf",
+           junction_annotation = "{prefix}_rseqc/junction_annotation_refseq.txt",
            read_GC = "{prefix}_rseqc/read_GC.GC_plot.pdf",
            read_NVC = "{prefix}_rseqc/read_NVC.NVC_plot.pdf",
            read_quality = "{prefix}_rseqc/read_quality.qual.heatmap.pdf",
            read_distribution = "{prefix}_rseqc/read_distribution.txt"
     output: "{prefix}_rseqc/rseqc_qc_8.txt"
     shell: "echo `date` > {output}"
+
+def _rseqc_find_rseqc_qc_8_result_files_fn():
+    ngs_cfg = get_sml_config('bio.ngs.settings')
+    fmt = ngs_cfg['sample_pfx_fmt'] + "." + wildcards.label + 'final.out'
+    sources = generic_target_generator(fmt=fmt, rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=wildcards.path, prepend_path=False)
+    return sources
+
+
+rule rseqc_qc_8_summary:
+    """Summarize results from rseqc_qc_8 rule.
+
+    """
+    input: _rseqc_find_rseqc_qc_8_result_files_fn
+    output: junction = os.path.join("{path}", "summary_junction_annotation.{label}txt")
+    run:
+        R("""
+
+        """)

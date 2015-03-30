@@ -8,9 +8,9 @@ from snakemakelib.utils import isoformat
 # smllogger = LoggerManager().getLogger(__name__)
 
 # Match beginning of path if it starts with dot or slash(?)
-REGEXP_DOT_MATCH = "(?:[\\.\\w\\/]+)?\/"
+REGEXP_DOT_MATCH = r"(?:[\.\w\/]+)?\/"
 # Match generic spacer sequence of >=0 characters
-REGEXP_SPACER_MATCH = "(?:.*)"
+REGEXP_SPACER_MATCH = r"(?:.*)"
 
 class MissingRequiredKeyException(Exception):
     """Exception if required key is missing"""
@@ -94,7 +94,7 @@ class RegexpDict(dict):
         # Regular keys
         self.update({k:v for (k,v) in m.groupdict().items() if k not in self._extra_keys})
         self._process_indexed_keys(m)
-        self._post_process_keys(s)
+        self._post_process_keys(m)
 
     def _process_indexed_keys(self, m):
         """Process indexed keys to unindexed version, e.g. collect PU1, PU2 to PU."""
@@ -104,7 +104,7 @@ class RegexpDict(dict):
                 continue
             self.update({key: self._concat.join(m.group(mkey) for mkey in group)})
 
-    def _post_process_keys(self, s):
+    def _post_process_keys(self, m):
         pass
             
     def parse(self, s, suffix=""):
@@ -128,8 +128,8 @@ class SampleRegexp(RegexpDict):
     def __init__(self, *args, **kwargs):
         RegexpDict.__init__(self, *args, **kwargs)
 
-    def _post_process_keys(self, s):
-        self['PATH'] = os.path.dirname(s)
+    def _post_process_keys(self, m):
+        self['PATH'] = os.path.dirname(m.string)
 
 class RunRegexp(RegexpDict):
     _group_keys = ['SM', 'PU', 'DT']
@@ -138,8 +138,8 @@ class RunRegexp(RegexpDict):
     def __init__(self, *args, **kwargs):
         RegexpDict.__init__(self, *args, **kwargs)
 
-    def _post_process_keys(self, s):
-        self['PATH'] = os.path.dirname(s)
+    def _post_process_keys(self, m):
+        self['PATH'] = os.path.dirname(m.string)
 
 # SAM format specification
 # @RG Read group. Unordered multiple @RG lines are allowed.
@@ -187,12 +187,11 @@ class ReadGroup(RunRegexp):
         RegexpDict.__init__(self, *args, **kwargs)
         self._opt_prefix = opt_prefix
 
-    def _post_process_keys(self, s):
-        self['PATH'] = os.path.dirname(s)
+    def _post_process_keys(self, m):
+        self['PATH'] = os.path.dirname(m.string)
         if not 'ID' in self.keys() or not self.get('ID', ""):
             inv_map = {v:k for (k,v) in list(self.re.groupindex.items())}
-            print (self.re.groupindex)
-            self['ID'] = self._concat.join(m.group(i) for i in range(1, self.re.groups + 1) if not inv_map[i] in self._extra_keys)
+            self['ID'] = os.path.basename(self.fmt.format(**self))
 
     def _fmt_string(self, k):
         """Take care of date string"""

@@ -1,10 +1,9 @@
 # Copyright (C) 2015 by Per Unneberg
 # pylint: disable=R0904, C0301, C0103
 import unittest
-import logging
 import re
 import os
-import mock
+from unittest.mock import patch
 from itertools import groupby
 from nose.tools import raises
 from snakemakelib.bio.ngs.regexp import RegexpDict, SampleRegexp, ReadGroup, DisallowedKeyException, MissingRequiredKeyException
@@ -68,10 +67,21 @@ class TestReadGroup(unittest.TestCase):
         
     def test_rg_parse_illumina_like(self):
         """Test parsing illumina-like-based file names"""
-        rg = ReadGroup(regexp="(?:[\.\w\/]+)?(?P<SM>[a-zA-Z0-9]+)/(?P<PU>[A-Za-z0-9]+)/(?P<PU1>[0-9])_(?P<DT>[0-9]+)_(?P<PU2>[A-Z0-9]+XX)_(?P=SM)")
+        rg = ReadGroup(regexp="(?P<SM>[a-zA-Z0-9_]+)/(?P<DT>[0-9]+)_(?P<PU2>[A-Z0-9]+XX)/(?P<PU1>[0-9])_(?P=DT)_(?P=PU2)_(?P=SM)")
         rg.parse("../data/projects/J.Doe_00_01/P001_101/121015_BB002BBBXX/1_121015_BB002BBBXX_P001_101_1.fastq.gz")
-        print (rg)
-        #self.assertEqual("--date 2012-10-15 --identifier 1_121015_BB002BBBXX_P001_101 --platform-unit 1_BB002BBBXX --sample P001_101", rg)
+        self.assertEqual("--date 2012-10-15 --identifier 1_121015_BB002BBBXX_P001_101 --platform-unit 1_BB002BBBXX --sample P001_101", str(rg))
+
+    def test_rg_fn(self):
+        """Test initializing read group class and setting function"""
+        rg_fn = ReadGroup(regexp="(?P<PU1>[0-9])_(?P<DT>[0-9]+)_(?P<PU2>[A-Z0-9]+XX)_(?P<SM>P[0-9]+_[0-9]+)").parse
+        s = rg_fn("../data/projects/J.Doe_00_01/P001_101/121015_BB002BBBXX/1_121015_BB002BBBXX_P001_101_1.fastq.gz")
+        self.assertEqual("--date 2012-10-15 --identifier 1_121015_BB002BBBXX_P001_101 --platform-unit 1_BB002BBBXX --sample P001_101", str(s))
+
+    @raises(DisallowedKeyException)
+    def test_rg_disallowed_key(self):
+        """Test setting a read group object with a key not present in allowed keys"""
+        rg = ReadGroup(regexp="(?P<PU1>[0-9])_(?P<DATE>[0-9]+)_(?P<PU2>[A-Z0-9]+XX)_(?P<SM>P[0-9]+_[0-9]+)")
+        s = (rg.parse("../data/projects/J.Doe_00_01/P001_101/121015_BB002BBBXX/1_121015_BB002BBBXX_P001_101_1.fastq.gz"))
 
 # NB: all regexp names must be relative, and complete, to the working
 # directory. IOW, the target generator must return paths of this
@@ -79,8 +89,8 @@ class TestReadGroup(unittest.TestCase):
 # anomalous cases.
 class TestParseFunctionality(unittest.TestCase):
     def setUp(self):
-        self.re = "(?P<SM>\w+)/(?P<PU>[A-Za-z0-9_]+)/(?P<PU1>[0-9])_(?P<DT>[0-9]+)_(?P<PU2>[A-Z0-9]+XX)_(?P=SM)"
-        self.full_re = "(?:[\.\w\/]+)?\/(?P<SM>\w+)/(?P<PU>[A-Za-z0-9_]+)/(?P<PU1>[0-9])_(?P<DT>[0-9]+)_(?P<PU2>[A-Z0-9]+XX)_(?P=SM)"
+        self.re = r"(?P<SM>\w+)/(?P<PU>[A-Za-z0-9_]+)/(?P<PU1>[0-9])_(?P<DT>[0-9]+)_(?P<PU2>[A-Z0-9]+XX)_(?P=SM)"
+        self.full_re = r"(?:[\.\w\/]+)?\/(?P<SM>\w+)/(?P<PU>[A-Za-z0-9_]+)/(?P<PU1>[0-9])_(?P<DT>[0-9]+)_(?P<PU2>[A-Z0-9]+XX)_(?P=SM)"
         self.fn = "P001_101/121015_BB002BBBXX/1_121015_BB002BBBXX_P001_101_1.fastq.gz"
         self.full_fn = "../data/projects/J.Doe_00_01/P001_101/121015_BB002BBBXX/1_121015_BB002BBBXX_P001_101_1.fastq.gz"
     def tearDown(self):
@@ -102,9 +112,7 @@ class TestParseFunctionality(unittest.TestCase):
         m = re.search(self.full_re, os.path.abspath(self.full_fn))
         self.assertDictEqual(m.groupdict(), {'SM': 'P001_101', 'DT': '121015', 'PU1': '1', 'PU2': 'BB002BBBXX', 'PU': '121015_BB002BBBXX'})
 
-    # Method: mock out the re.match to actually get the pattern that
-    #was used in the call!
-    @mock.patch('snakemakelib.bio.ngs.regexp.re.match')
+    @patch('snakemakelib.bio.ngs.regexp.re.match')
     def test_pardir(self, mock_re):
         mock_re.return_value = None
         rg = ReadGroup(regexp="(?P<SM>[a-zA-Z0-9]+)/(?P<PU>[A-Za-z0-9]+)/(?P<PU1>[0-9])_(?P<DT>[0-9]+)_(?P<PU2>[A-Z0-9]+XX)_(?P=SM)")
@@ -112,15 +120,15 @@ class TestParseFunctionality(unittest.TestCase):
         (args, kw) = mock_re.call_args
         self.assertTrue(args[0].startswith('(?:[\\.\\w\\/]+)?\\/'))
 
-    @mock.patch('snakemakelib.bio.ngs.regexp.re.match')
+    @patch('snakemakelib.bio.ngs.regexp.re.match')
     def test_curdir(self, mock_re):
         mock_re.return_value = None
-        rg = ReadGroup(regexp="(?P<SM>[a-zA-Z0-9]+)/(?P<PU>[A-Za-z0-9]+)/(?P<PU1>[0-9])_(?P<DT>[0-9]+)_(?P<PU2>[A-Z0-9]+XX)_(?P=SM)")
+        rg = ReadGroup(regexp=r"(?P<SM>[a-zA-Z0-9]+)/(?P<PU>[A-Za-z0-9]+)/(?P<PU1>[0-9])_(?P<DT>[0-9]+)_(?P<PU2>[A-Z0-9]+XX)_(?P=SM)")
         rg.parse("./data/projects/J.Doe_00_01/P001_101/121015_BB002BBBXX/1_121015_BB002BBBXX_P001_101_1.fastq.gz", "")
         (args, kw) = mock_re.call_args
         self.assertTrue(args[0].startswith('(?:[\\.\\w\\/]+)?\\/'))
-        
-    @mock.patch('snakemakelib.bio.ngs.regexp.re.match')
+
+    @patch('snakemakelib.bio.ngs.regexp.re.match')
     def test_os_sep(self, mock_re):
         mock_re.return_value = None
         rg = ReadGroup(regexp="(?P<SM>[a-zA-Z0-9]+)/(?P<PU>[A-Za-z0-9]+)/(?P<PU1>[0-9])_(?P<DT>[0-9]+)_(?P<PU2>[A-Z0-9]+XX)_(?P=SM)")

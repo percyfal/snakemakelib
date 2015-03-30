@@ -17,15 +17,13 @@ sample_organization = {
         'run_id_pfx_re' : "(?P<SM>[A-Z0-9]+)",
         'run_id_pfx_fmt' : os.path.join("{SM}"),
         'sample_pfx_fmt' : os.path.join("{SM}"),
-        'platform_unit_fn' : lambda x: {'PU':x[1]},
     },
     # Data in sample directory divided in subdirectory for each run
     'sample_run' : {
-        'run_id_re' : "(?P<NA>[0-9])_(?P<DT>[0-9]+)_(?P<PU>[A-Z0-9]+XX)_(?P<SM>P[0-9]+_[0-9]+)",
-        'run_id_pfx_re' : "(?P<NA>[0-9])_(?P<PU>[0-9]+_[A-Z0-9]+XX)_(?P<SM>P[0-9]+_[0-9]+)",
+        'run_id_re' : "(?:[0-9])_(?P<DT>[0-9]+)_(?P<PU>[A-Z0-9]+XX)_(?P<SM>P[0-9]+_[0-9]+)",
+        'run_id_pfx_re' : "(?:[0-9])_(?P<PU>[0-9]+_[A-Z0-9]+XX)_(?P<SM>P[0-9]+_[0-9]+)",
         'run_id_pfx_fmt' : os.path.join("{SM}", "{PU}", "{PU}_{SM}"),
         'sample_pfx_fmt' : os.path.join("{SM}", "{SM}"),
-        'platform_unit_fn' : lambda x: {'PU':x[1]},
     },
     # Illumina sequence data as delivered by SciLife
     'Illumina@SciLife' : {
@@ -33,7 +31,6 @@ sample_organization = {
         'run_id_pfx_re' : "(?P<PU1>[0-9])_(?P<PU2>[0-9]+_[A-Z0-9]+XX)_(?P<SM>P[0-9]+_[0-9]+)",
         'run_id_pfx_fmt' : os.path.join("{SM}", "{PU2}", "{PU1}_{PU2}_{SM}"),
         'sample_pfx_fmt' : os.path.join("{SM}", "{SM}"),
-        'platform_unit_fn' : lambda x: {'PU1':x[2], 'PU2':x[1]},
     },
     'PacBio' : {
         'run_id_re' : "",
@@ -46,7 +43,7 @@ sample_organization = {
 config_default = { 
     'bio.ngs.settings' : {
         'center' : "",
-        'fastq_suffix' : ".fastq",
+        'fastq_suffix' : ".fastq.gz",
         'flowcells' : [],
         'flowcellruns' : [],
         'inputdir' : ".",

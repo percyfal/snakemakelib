@@ -56,7 +56,7 @@ def generic_target_generator(fmt, rg, cfg, path=os.curdir, prepend_path=True):
         return [os.path.join(ppath, t) for t in tgts]
 
     # 3. generate from input files
-    inputs = find_files(path=path, re_str=rg.pattern)
+    inputs = find_files(regexp = rg, path=path)
     if inputs:
         rgfmt = [dict(rg.parse(f)) for f in inputs]
         tgts = [fmt.format(**f) for f in rgfmt]

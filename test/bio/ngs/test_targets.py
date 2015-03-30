@@ -1,16 +1,12 @@
 # Copyright (C) 2014 by Per Unneberg
 # pylint: disable=R0904
 import os
-import re
 import unittest
 import logging
 import csv
-import texttable as tt
-from collections import OrderedDict, Counter
 from nose.tools import raises
-from snakemakelib.config import init_sml_config
 from snakemakelib.bio.ngs.targets import generic_target_generator
-from snakemakelib.bio.ngs.utils import ReadGroup
+from snakemakelib.bio.ngs.regexp import ReadGroup
 
 logger = logging.getLogger(__name__)
 
@@ -74,29 +70,29 @@ class TestTargetGenerator(unittest.TestCase):
     # 4. possibly search for SampleSheet.csv, parse and generate names
     def test_from_inputs(self):
         """Test generating targets from input files"""
-        l = generic_target_generator(fmt=self.cfg['run_id_pfx_fmt'] + ".bam", rg=ReadGroup(self.cfg["run_id_pfx_re"]), cfg=self.cfg, path=self.path)
+        l = generic_target_generator(fmt=self.cfg['run_id_pfx_fmt'] + ".bam", rg=ReadGroup(regexp=self.cfg["run_id_pfx_re"]), cfg=self.cfg, path=self.path)
         self.assertEqual(l[0], '../data/projects/J.Doe_00_01/S1/FC1/1_FC1_S1.bam')
 
     @raises(Exception)
     def test_sample_only(self):
         """Test generating targets from sample only"""
-        l = generic_target_generator(fmt=self.cfg['run_id_pfx_fmt'] + ".bam", rg=ReadGroup(self.cfg["run_id_pfx_re"]), cfg=self.cfg2, path=self.path)
+        l = generic_target_generator(fmt=self.cfg['run_id_pfx_fmt'] + ".bam", rg=ReadGroup(regexp=self.cfg["run_id_pfx_re"]), cfg=self.cfg2, path=self.path)
 
 
     def test_sample_w_sampleinfo(self):
         """Test generating targets from sample only, with sampleinfo present.
         """
-        l = generic_target_generator(fmt=self.cfg['run_id_pfx_fmt'] + ".bam", rg=ReadGroup(self.cfg["run_id_pfx_re"]), cfg=self.cfg3, path=self.path)
+        l = generic_target_generator(fmt=self.cfg['run_id_pfx_fmt'] + ".bam", rg=ReadGroup(regexp=self.cfg["run_id_pfx_re"]), cfg=self.cfg3, path=self.path)
         self.assertEqual(len(l), 1)
         self.assertEqual(l[0], '../data/projects/J.Doe_00_01/S2/FC2/2_FC2_S2.bam')
 
     def test_sampleinfo(self):
         """Test generating targets from sampleinfo.
         """
-        l = generic_target_generator(fmt=self.cfg['run_id_pfx_fmt'] + ".bam", rg=ReadGroup(self.cfg["run_id_pfx_re"]), cfg=self.cfg4, path=self.path)
+        l = generic_target_generator(fmt=self.cfg['run_id_pfx_fmt'] + ".bam", rg=ReadGroup(regexp=self.cfg["run_id_pfx_re"]), cfg=self.cfg4, path=self.path)
         self.assertEqual(l[1], '../data/projects/J.Doe_00_01/S2/FC2/2_FC2_S2.bam')
         
     def test_from_input(self):
         """Test generating targets from input file names"""
-        l = generic_target_generator(fmt=self.cfg['run_id_pfx_fmt'] + ".bam", rg=ReadGroup(self.cfg["run_id_pfx_re"] + "_1.fastq.gz$"), cfg=self.cfg5, path=self.path)
+        l = generic_target_generator(fmt=self.cfg['run_id_pfx_fmt'] + ".bam", rg=ReadGroup(regexp=self.cfg["run_id_pfx_re"] + "_1.fastq.gz$"), cfg=self.cfg5, path=self.path)
         self.assertEqual(l[1], '../data/projects/J.Doe_00_01/P001_101/121015_BB002BBBXX/1_121015_BB002BBBXX_P001_101.bam')

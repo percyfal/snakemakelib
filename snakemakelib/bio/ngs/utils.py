@@ -15,7 +15,7 @@ def find_files(regexp, path = os.curdir, search=False):
       flist: list of file names, prepended with root path
     """
     if isinstance(regexp, RegexpDict):
-        r = regexp.regexp
+        r = regexp.re
     else:
         r = re.compile(regexp)
     re_fn = r.search if search else r.match

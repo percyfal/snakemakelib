@@ -2,12 +2,8 @@
 # pylint: disable=R0904, C0301, C0103
 import unittest
 import logging
-from nose.tools import raises
-from snakemakelib.config import init_sml_config
 from snakemakelib.report.utils import Template
-from snakemakelib.bio.ngs.utils import find_files, ReadGroup, DisallowedKeyException
 from snakemakelib.utils import isoformat
-from snakemake.io import glob_wildcards
 
 logger = logging.getLogger(__name__)
 

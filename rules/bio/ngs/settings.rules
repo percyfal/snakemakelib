@@ -69,8 +69,7 @@ config_default = {
         'runs' : config["runs"],
         'samples' : config["samples"],
         'sampleinfo' : "", # generic; samplesheet could be Illuminas csv samplesheet; treat elsewhere?
-        'sample_column_name' : "SM",
-        'run_column_name' : "",
+        'sample_column_map' : {}, # map regexp group names to column names in sampleinfo
         'threads' : 8,
         'annotation' : {
             'annot_label' : "",

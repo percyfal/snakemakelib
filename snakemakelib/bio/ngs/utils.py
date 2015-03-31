@@ -18,6 +18,8 @@ def find_files(regexp, path = os.curdir, search=False, limit={}):
     if isinstance(regexp, RegexpDict):
         r = regexp.re
     else:
+        if not regexp:
+            return []
         r = re.compile(regexp)
     re_fn = r.search if search else r.match
     flist = []

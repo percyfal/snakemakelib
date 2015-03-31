@@ -8,6 +8,11 @@ from snakemakelib.log import get_logger
 logger = get_logger()
 
 class BaseConfig(dict):
+    def __init__(self, *args, **kwargs):
+        dict.__init__(self)
+        self._sections = []
+        self.update(*args, **kwargs)
+
     def _inspect_sections(self):
         """Walk through configuration object to make sure subsections are BaseConfig classes, not dictionaries"""
         for k,v in self.items():
@@ -16,11 +21,6 @@ class BaseConfig(dict):
                     logger.debug("Updating key {k} to <BaseConfig> class".format(k=k))
                     self[k] = BaseConfig(v)
                 self[k]._inspect_sections()
-
-    def __init__(self, *args, **kwargs):
-        dict.__init__(self)
-        self._sections = []
-        self.update(*args, **kwargs)
 
     def __setitem__(self, key, val):
         if not key in self._sections:

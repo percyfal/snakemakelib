@@ -76,7 +76,10 @@ def generic_target_generator(fmt, rg, cfg, path=os.curdir, prepend_path=True):
     limit = {}
     if cfg['samples']:
         limit['SM'] = cfg['samples']
-    inputs = find_files(path=path, re_str=rg.pattern, limit=limit)
+    inputs = find_files(regexp = rg, path=path, limit=limit)
+=======
+    inputs = find_files(regexp = rg, path=path)
+>>>>>>> develop
     if inputs:
         rgfmt = [dict(rg.parse(f)) for f in inputs]
         tgts = [fmt.format(**f) for f in rgfmt]

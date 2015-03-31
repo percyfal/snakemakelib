@@ -18,7 +18,6 @@ import sys
 from snakemakelib.config import init_sml_config, get_sml_config
 from snakemakelib.utils import rreplace
 from snakemakelib.bio.ngs.targets import generic_target_generator
-from snakemakelib.bio.ngs.utils import ReadGroup
 
 workdir: '{workdir}'
 

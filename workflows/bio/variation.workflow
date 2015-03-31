@@ -2,7 +2,7 @@
 import os
 from snakemakelib.config import update_sml_config, get_sml_config, init_sml_config
 from snakemakelib.bio.ngs.targets import generic_target_generator
-from snakemakelib.bio.ngs.utils import ReadGroup
+from snakemakelib.bio.ngs.regexp import ReadGroup
 
 def read_backed_phasing_create_input(wildcards):
     bamfile = wildcards.prefix.replace(".bp_variants", ".bam")

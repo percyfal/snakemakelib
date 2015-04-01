@@ -107,21 +107,16 @@ rule star_summarize_alignment_runs:
 
     """
     input: star_find_result_files_fn
-    output: RData = os.path.join("{path}", "star.{label}RData"),
-            uniquely_mapped = os.path.join("{path}", "star.{label}uniquely_mapped.png"),
-            uniquely_mapped_vs_ = os.path.join("{path}", "star.{label}uniquely_mapped.png"),
+    output: RData = os.path.join("{path}", "star.{label}RData")
+    #uniquely_mapped = os.path.join("{path}", "star.{label}uniquely_mapped.png"),
+    #        uniquely_mapped_vs_ = os.path.join("{path}", "star.{label}uniquely_mapped.png"),
     run:
         ngs_cfg = get_sml_config('bio.ngs.settings')
-        try:
-            sm = re.match("(?P<SM>\([^\(]*SM[^\)]*\))", ngs_cfg["run_id_pfx_re"]).groups(1)[0]
-            pat = ngs_cfg['sample_pfx_fmt'].format(SM=sm)
-            # Make SM unique
-            # FIXME: make proper function
-            pat = pat.split("SM")[0] + "".join(["SM{}{}".format(i, t) for (i,t) in list(zip(range(pat.count("SM")), pat.split("SM")[1:]))])
-        except:
-            raise
         inputfiles = ",".join(input)
-        samples = ",".join([re.search(pat, f).group(1) for f in input])
+        try:
+            samples = ",".join([ngs_cfg['sampleorg'].sample_re.parse(f)['SM'] for f in input])
+        except KeyError:
+            raise Exception("failed to parse sample name 'SM' from input list")
         R("""
         f <- '{inputfiles}'
         s <- '{samples}'
@@ -133,5 +128,5 @@ rule star_summarize_alignment_runs:
         df = cbind(samples, df)
         library(lattice)
         
-        save.image(file='{output}')
+        save.image(file='{output.RData}')
         """)

@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 snakefile = """# -*- snakemake -*-
 import os
 import sys
+import re
 from snakemakelib.config import init_sml_config, get_sml_config
 from snakemakelib.utils import rreplace
 from snakemakelib.bio.ngs.targets import generic_target_generator
@@ -60,7 +61,7 @@ local_config = {{
 
 init_sml_config(local_config)
 
-if 'run_bismark_run' in sys.argv:
+if any([re.search('bismark', arg) for arg in sys.argv]):
     include: '{methylseq}'
 else:
     include: '{variation}'

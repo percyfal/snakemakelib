@@ -2,7 +2,6 @@
 import os
 from snakemakelib.config import update_sml_config, get_sml_config, init_sml_config
 from snakemakelib.bio.ngs.targets import generic_target_generator
-from snakemakelib.bio.ngs.regexp import ReadGroup
 
 def read_backed_phasing_create_input(wildcards):
     bamfile = wildcards.prefix.replace(".bp_variants", ".bam")
@@ -46,19 +45,17 @@ INSERT_METRICS_SUFFIX=".sort.merge.rg.dup.insert_metrics"
 HS_METRICS_SUFFIX=".sort.merge.rg.dup.hs_metrics"
 
 # Default targets
-VCF_TARGETS = generic_target_generator(fmt=ngs_cfg['sample_pfx_fmt'] + TARGET_SUFFIX, rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path)
+VCF_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, target_suffix=TARGET_SUFFIX, src_re=ngs_cfg['sampleorg'].raw_run_re,  filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg)
 
-VCF_TXT_TARGETS = generic_target_generator(fmt=ngs_cfg['sample_pfx_fmt'] + TARGET_SUFFIX.replace(".vcf", ".txt"), rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path)
+VCF_TXT_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, target_suffix=TARGET_SUFFIX.replace(".vcf", ".txt"), src_re=ngs_cfg['sampleorg'].raw_run_re,  filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg)
 
-VCF_TARGETS = generic_target_generator(fmt=ngs_cfg['sample_pfx_fmt'] + TARGET_SUFFIX, rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path)
+DUP_METRICS_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, target_suffix =  DUP_METRICS_SUFFIX, src_re = ngs_cfg['sampleorg'].raw_run_re, filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg)
 
-DUP_METRICS_TARGETS = generic_target_generator(fmt=ngs_cfg['sample_pfx_fmt'] + DUP_METRICS_SUFFIX, rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path)
+ALIGN_METRICS_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, target_suffix =  ALIGN_METRICS_SUFFIX, src_re = ngs_cfg['sampleorg'].raw_run_re, filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg)
 
-ALIGN_METRICS_TARGETS = generic_target_generator(fmt=ngs_cfg['sample_pfx_fmt'] + ALIGN_METRICS_SUFFIX, rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path)
+INSERT_METRICS_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, target_suffix =  INSERT_METRICS_SUFFIX, src_re = ngs_cfg['sampleorg'].raw_run_re, filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg)
 
-INSERT_METRICS_TARGETS = generic_target_generator(fmt=ngs_cfg['sample_pfx_fmt'] + INSERT_METRICS_SUFFIX, rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path)
-
-HS_METRICS_TARGETS = generic_target_generator(fmt=ngs_cfg['sample_pfx_fmt'] + HS_METRICS_SUFFIX, rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path)
+HS_METRICS_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, target_suffix =  HS_METRICS_SUFFIX, src_re = ngs_cfg['sampleorg'].raw_run_re, filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg)
 
 rule variation_all:
     input: VCF_TARGETS + VCF_TXT_TARGETS + DUP_METRICS_TARGETS + ALIGN_METRICS_TARGETS + INSERT_METRICS_TARGETS + HS_METRICS_TARGETS

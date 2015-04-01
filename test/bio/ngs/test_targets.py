@@ -8,7 +8,7 @@ import io
 from unittest.mock import patch
 from nose.tools import raises
 import snakemakelib.bio.ngs.targets
-from snakemakelib.bio.ngs.targets import generic_target_generator, generic_target_generator2
+from snakemakelib.bio.ngs.targets import generic_target_generator
 from snakemakelib.bio.ngs.regexp import ReadGroup
 
 logger = logging.getLogger(__name__)

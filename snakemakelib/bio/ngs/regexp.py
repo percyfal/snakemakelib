@@ -118,7 +118,7 @@ class RegexpDict(dict):
 
     def _post_process_keys(self, m):
         pass
-            
+
     def parse(self, s, suffix=""):
         """Parse string and return string representation.
 
@@ -129,6 +129,7 @@ class RegexpDict(dict):
         Returns:
           Regexp object
         """
+        self.clear()
         self._parse_str(s, suffix)
         return self
 

@@ -217,4 +217,6 @@ rule picard_merge_sam:
           inputstr = " ".join(["INPUT={}".format(x) for x in input])
           shell("{cmd} {ips} OUTPUT={out} {opt}".format(cmd=params.cmd, ips=inputstr, out=output.merge, opt=params.options))
       else:
+          if os.path.exists(output.merge):
+              os.unlink(output.merge)
           os.symlink(os.path.relpath(input[0], wildcards.path), output.merge)

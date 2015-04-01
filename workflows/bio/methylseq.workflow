@@ -4,7 +4,7 @@ from snakemakelib.config import update_sml_config, get_sml_config
 from snakemakelib.utils import rreplace
 from snakemakelib.bio.ngs.methylseq.bismark import report_label, align_suffix
 from snakemakelib.bio.ngs.targets import generic_target_generator
-from snakemakelib.bio.ngs.utils import ReadGroup
+from snakemakelib.bio.ngs.regexp import SampleRegexp
 
 def find_report_inputs(wildcards):
     """Find bismark align report files to use as input to
@@ -27,11 +27,7 @@ def find_meth_merge_inputs(wildcards):
     """
     ngs_cfg = get_sml_config('bio.ngs.settings')
     picard_cfg = get_sml_config('bio.ngs.qc.picard')
-    rg = ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], cfg=ngs_cfg, path=wildcards.path)
-
-    fmt = ngs_cfg['run_id_pfx_fmt'] + align_suffix()
-    # Here, we use the full name of fmt, and don't prepend path. This is a mess.
-    sources = generic_target_generator(fmt=fmt, rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=wildcards.path, prepend_path=False)
+    sources = generic_target_generator(tgt_re=ngs_cfg['sampleorg'].run_id_re, target_suffix = align_suffix(), src_re = ngs_cfg['sampleorg'].raw_run_re, filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'] + "$", **ngs_cfg)
     return sources
 
 methylation_config = {
@@ -70,12 +66,13 @@ qc_cfg = get_sml_config('bio.ngs.qc.sequenceprocessing')
 cfg = get_sml_config('bio.ngs.settings')
 path = cfg.get('path') if not cfg.get('path') is None else os.curdir
 
-FASTQC_TARGETS = [generic_target_generator(fmt=ngs_cfg['run_id_pfx_fmt'] + "_1_fastqc/fastqc_report.html", rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path)] +\
-                 [generic_target_generator(fmt=ngs_cfg['run_id_pfx_fmt'] + "_2_fastqc/fastqc_report.html", rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path)] 
+FASTQC_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].raw_run_re, target_suffix = "_1_fastqc/fastqc_report.html", src_re = ngs_cfg['sampleorg'].raw_run_re, filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'] + "$", **ngs_cfg) + \
+    generic_target_generator(tgt_re = ngs_cfg['sampleorg'].raw_run_re, target_suffix = "_2_fastqc/fastqc_report.html", src_re = ngs_cfg['sampleorg'].raw_run_re, filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'] + "$", **ngs_cfg)
 
-BISMARK_TARGETS = generic_target_generator(fmt=rreplace(ngs_cfg['sample_pfx_fmt'], "{SM}", "CpG_OB_{SM}", 1) + ".merge.deduplicated.txt.gz", rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path)
+sr = SampleRegexp (os.path.join(os.path.dirname(ngs_cfg['sampleorg'].sample_re.pattern), "CpG_OB_" + os.path.basename(ngs_cfg['sampleorg'].sample_re.pattern)))
+BISMARK_TARGETS = generic_target_generator(tgt_re = sr, target_suffix = ".merge.deduplicated.txt.gz", src_re = ngs_cfg['sampleorg'].raw_run_re, filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg)
 
-BISMARK_REPORT_TARGETS = generic_target_generator(fmt=ngs_cfg['sample_pfx_fmt'] + ".merge.deduplicated.bam{report_label}.html".format(report_label=report_label()), rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path)
+BISMARK_REPORT_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, target_suffix = ".merge.deduplicated.bam{report_label}.html".format(report_label=report_label()), src_re = ngs_cfg['sampleorg'].raw_run_re, filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg)
 
 # All rules
 rule bismark_all:

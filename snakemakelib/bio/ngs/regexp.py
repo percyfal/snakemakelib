@@ -74,9 +74,20 @@ class RegexpDict(dict):
         return list(set(self._required_keys + self._group_keys + self._extra_keys))
     
     def _init_format(self):
-        """Initialize formatting string. Find groups defined by (?P<GROUP>) and concatenate """
-        m = re.findall("(\(\?P[<=](\w+)>?|({sep}))".format(sep=os.sep), self.pattern)
-        self._fmt = re.sub("{cct}{sep}{cct}".format(sep=os.sep, cct=self._concat), os.sep, (self._concat.join("{" + x[1] + "}"  if x[1] else x[2] for x in m)))
+        """Initialize formatting string. Find groups defined by (?P<GROUP>) as
+        well as constant expressions and concatenate"""
+        m = re.findall("(\(\?P[<=](\w+)>?|({sep})|(?:[\[\]A-Za-z0-9\-\+\_]+\))|([A-Za-z0-9]+))".format(sep=os.sep), self.pattern)
+        fmtlist = []
+        for x in m:
+            if x[1]:
+                fmtlist.append("{" + x[1] + "}")
+            elif x[2]:
+                fmtlist.append(x[2])
+            elif x[3]:
+                fmtlist.append(x[3])
+        self._fmt = re.sub("_{sep}_".format(sep=os.sep), os.sep, ("_".join(fmtlist)))
+
+
 
     def _validate_keys(self):
         """Validate keys. Importantly, make sure keys with indices, i.e. keys

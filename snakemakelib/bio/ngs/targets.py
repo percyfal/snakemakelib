@@ -66,6 +66,7 @@ def generic_target_generator(tgt_re, src_re=None, samples=[], runs=[], sample_co
             return sorted(tgts)
 
     # 3. Generate targets from input files
+    smllogger.debug("Getting sample information from input files")
     inputs = find_files(regexp=src_re.basename_pattern + filter_suffix, limit={'SM':samples} if samples else {})
     if inputs:
         tgts = [tgt_re.fmt.format(**src_re.parse(f)) + target_suffix for f in inputs]

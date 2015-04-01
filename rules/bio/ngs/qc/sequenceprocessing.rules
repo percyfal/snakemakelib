@@ -129,10 +129,8 @@ rule trim_galore_main:
     """Sequenceprocessing: run trim_galore on a fastq file"""
     params: cmd = sp_cfg['trim_galore']['cmd'],
             options = " ".join([sp_cfg['trim_galore']['options'],"--gzip"])
-    input: "{path}" + os.sep + "{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],\
-    "{path}" + os.sep + "{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['fastq_suffix']
-    output: "{path}" + os.sep + "{prefix}" + ngs_cfg['read1_label'] + sp_cfg['trim_galore']['read1_suffix'],\
-            "{path}" + os.sep + "{prefix}" + ngs_cfg['read2_label'] + sp_cfg['trim_galore']['read2_suffix']
-    shell: "{params.cmd} {params.options} {input} -o {wildcards.path}"
- 
-
+    input: "{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],\
+           "{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['fastq_suffix']
+    output: "{prefix}" + ngs_cfg['read1_label'] + sp_cfg['trim_galore']['read1_suffix'],\
+            "{prefix}" + ngs_cfg['read2_label'] + sp_cfg['trim_galore']['read2_suffix']
+    shell: "{params.cmd} {params.options} {input} -o $(dirname {wildcards.prefix})"

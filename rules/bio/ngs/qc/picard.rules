@@ -202,7 +202,6 @@ rule picard_add_or_replace_read_groups:
 
 ruleorder: picard_add_or_replace_read_groups > picard_build_bam_index
 
-
 rule picard_merge_sam:
     """Picard: merge sam files.
 

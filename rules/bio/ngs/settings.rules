@@ -42,7 +42,7 @@ sample_organization = {
     # Illumina sequence data as delivered by SciLife
     'Illumina@SciLife' : {
         'sampleorg' : sample_org(RunRegexp(os.path.join("(?P<SM>P[0-9]+_[0-9]+)", "(?P<DT>[0-9]+)_(?P<PU1>[A-Z0-9]+XX)", "(?P<PU2>[0-9])_(?P=DT)_(?P=PU1)_(?P=SM)")),
-                                 RunRegexp(os.path.join("(?P<SM>P[0-9]+_[0-9]+)", "(?P<DT>[0-9]+)_(?P<PU1>[A-Z0-9]+XX)", "(?P<PU2>[0-9])_(?P=PU1)_(?P=SM)")),
+                                 RunRegexp(os.path.join("(?P<SM>P[0-9]+_[0-9]+)", "(?P<DT>[0-9]+)_(?P<PU1>[A-Z0-9]+XX)", "(?P<PU2>[0-9])_(?P=DT)_(?P=PU1)_(?P=SM)")),
                                  SampleRegexp(os.path.join("(?P<SM>P[0-9]+_[0-9]+)", "(?P=SM)"))),
         },
     'PacBio' : {

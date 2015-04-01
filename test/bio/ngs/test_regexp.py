@@ -59,13 +59,47 @@ class TestGroupBy(unittest.TestCase):
         self.assertDictEqual(_keymap, {'ID': ['ID1', 'ID2'], 'SM': ['SM']})
 
     def test_make_format(self):
-        """Covert named group to format tags.
+        """Convert named group to format tags.
 
         From (?P<SM>[A-Z0-9]+)/(?P=SM)_(?P<ID2>[0-9]+)_(?P<ID1>[0-9]+) generate {SM}/{SM}_{ID2}_{ID1}"""
         r = re.compile(os.path.join("(?P<SM>[A-Z0-9]+)", "(?P=SM)_(?P<ID2>[0-9]+)_(?P<ID1>[0-9]+)"))
         m = re.findall("(\(\?P[<=](\w+)>?|({sep}))".format(sep=os.sep), r.pattern)
         fmt = re.sub("_{sep}_".format(sep=os.sep), os.sep, ("_".join("{" + x[1] + "}"  if x[1] else x[2] for x in m)))
         self.assertEqual(fmt, "{SM}/{SM}_{ID2}_{ID1}")
+
+    def test_make_format_with_string(self):
+        """Convert named group to format tags, including constant patterns.
+
+        From (?P<SM>P[0-9]+_[0-9]+)/Prefix_(?P=SM)_(?P<ID2>[0-9]+)_(?P<ID1>[0-9]+) generate {SM}/Prefix_{SM}_{ID2}_{ID1}"""
+        r = re.compile(os.path.join("(?P<SM>P[0-9]+_[0-9]+)", "Prefix_(?P=SM)_(?P<ID2>[0-9]+)_(?P<ID1>[0-9]+)"))
+        m = re.findall("(\(\?P[<=](\w+)>?\w*\)?|({sep})|(?:\[[A-Za-z0-9\-]+\])|([A-Za-z0-9]+))".format(sep=os.sep), r.pattern)
+        fmtlist = []
+        for x in m:
+            if x[1]:
+                fmtlist.append("{" + x[1] + "}")
+            elif x[2]:
+                fmtlist.append(x[2])
+            elif x[3]:
+                fmtlist.append(x[3])
+        fmt = re.sub("_{sep}_".format(sep=os.sep), os.sep, ("_".join(fmtlist)))
+        self.assertEqual(fmt, "{SM}/Prefix_{SM}_{ID2}_{ID1}")
+        
+    def test_make_format_run_id(self):
+        """Convert named group to format tags, including constant patterns. Emulate raw_run_re.
+
+        From (?P<SM>P[0-9]+_[0-9]+)/(?P<DT>[0-9]+)_(?P<PU1>[A-Z0-9+]XX)/Prefix_(?P<PU2>[0-9])_(?P=DT)_(?P=PU1)_(?P=SM) generate {SM}/{DT}_{PU1}/Prefix_{PU2}_{DT}_{PU1}_{SM}"""
+        r = re.compile("(?P<SM>P[0-9]+_[0-9]+)/(?P<DT>[0-9]+)_(?P<PU1>[A-Z0-9+]XX)/Prefix_(?P<PU2>[0-9])_(?P=DT)_(?P=PU1)_(?P=SM)")
+        m = re.findall("(\(\?P[<=](\w+)>?|({sep})|(?:[\[\]A-Za-z0-9\-\+\_]+\))|([A-Za-z0-9]+))".format(sep=os.sep), r.pattern)
+        fmtlist = []
+        for x in m:
+            if x[1]:
+                fmtlist.append("{" + x[1] + "}")
+            elif x[2]:
+                fmtlist.append(x[2])
+            elif x[3]:
+                fmtlist.append(x[3])
+        fmt = re.sub("_{sep}_".format(sep=os.sep), os.sep, ("_".join(fmtlist)))
+        self.assertEqual(fmt, "{SM}/{DT}_{PU1}/Prefix_{PU2}_{DT}_{PU1}_{SM}")
 
 class TestReadGroup(unittest.TestCase):
     """Test ReadGroup class"""

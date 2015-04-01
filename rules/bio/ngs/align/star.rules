@@ -2,7 +2,7 @@
 import os
 from snakemake.utils import R
 from snakemakelib.config import update_sml_config, get_sml_config
-from snakemakelib.utils import is_compressed
+from snakemakelib.stat import is_compressed
 from snakemakelib.bio.ngs.db import index
 from snakemakelib.bio.ngs.targets import generic_target_generator
 
@@ -90,8 +90,7 @@ rule star_align:
 
 def star_find_result_files_fn(wildcards):
     ngs_cfg = get_sml_config('bio.ngs.settings')
-    fmt = ngs_cfg['sample_pfx_fmt'] + "." + wildcards.label + 'final.out'
-    sources = generic_target_generator(fmt=fmt, rg=ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=wildcards.path, prepend_path=False)
+    sources = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, src_re=ngs_cfg['sampleorg'].run_id_re, target_suffix = "." + wildcards.label + 'final.out', filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg)
     return sources
 
 # QC summaries

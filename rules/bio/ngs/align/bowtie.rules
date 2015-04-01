@@ -13,7 +13,7 @@ config_default = {
     'bio.ngs.align.bowtie' : {
         'index' : index,
         'ref' : ngs_cfg['db']['ref'],
-        'rg_fn' : TuxedoReadGroup(ngs_cfg['run_id_re']).parse,
+        'rg_fn' : TuxedoReadGroup(ngs_cfg['sampleorg'].run_id_re.re.pattern).parse,
         'version2' : True,
         'bowtie' : {
             'threads' : ngs_cfg['threads'],

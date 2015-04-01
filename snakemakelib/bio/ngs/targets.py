@@ -30,7 +30,7 @@ def generic_target_generator(tgt_re, src_re=None, samples=[], runs=[], sample_co
     assert isinstance(src_re, RegexpDict), "src_re argument must be of type {}".format(RegexpDict)
     # 1. Generate targets from command line options
     if samples and runs:
-        smllogger.info("trying to gather target information based on configuration keys 'samples' and 'runs'")
+        smllogger.debug("trying to gather target information based on configuration keys 'samples' and 'runs'")
         if len(samples) == len(runs):
             cfg_list = list(zip(samples, runs))
             mlist = []
@@ -47,11 +47,11 @@ def generic_target_generator(tgt_re, src_re=None, samples=[], runs=[], sample_co
 
     # 2. Generate targets from information in samplesheet
     if sampleinfo != "":
-        smllogger.info("trying to gather target information from configuration key 'sampleinfo'")
+        smllogger.debug("trying to gather target information from configuration key 'sampleinfo'")
         if isinstance(sampleinfo, str) and not os.path.exists(sampleinfo):
-            smllogger.info("no such sample information file '{sampleinfo}'; trying to deduct targets from existing files".format(sampleinfo=sampleinfo))
+            smllogger.debug("no such sample information file '{sampleinfo}'; trying to deduct targets from existing files".format(sampleinfo=sampleinfo))
         else:
-            smllogger.info("Reading sample information from '{sampleinfo}'".format(sampleinfo=sampleinfo))
+            smllogger.debug("Reading sample information from '{sampleinfo}'".format(sampleinfo=sampleinfo))
             if isinstance(sampleinfo, str):
                 with open(sampleinfo, 'r') as fh:
                     reader = csv.DictReader(fh.readlines())

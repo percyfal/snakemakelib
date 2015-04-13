@@ -1,0 +1,11 @@
+/* -*- mode: css -*- */
+/* Copyright (C) 2015 by Per Unneberg */
+/* Styling */
+
+body {
+    font-family: 'Lucida Grande', 'Lucida Sans Unicode', 'Geneva',
+                 'Verdana', sans-serif;
+
+    margin: 0px 280px 0px 280px;
+    min-width: 740px;
+}

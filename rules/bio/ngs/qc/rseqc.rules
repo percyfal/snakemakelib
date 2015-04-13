@@ -1,5 +1,6 @@
 # -*- snakemake -*-
 import os
+import pandas as pd
 from snakemakelib.config import update_sml_config, get_sml_config
 
 include: '../settings.rules'

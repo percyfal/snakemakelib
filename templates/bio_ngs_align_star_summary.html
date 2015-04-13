@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+
+<meta charset="utf-8">
+<title>{{ title if title else "STAR alignment summary" }}</title>
+{{ plot_resources|indent(8) }}
+<style>
+{{ css|indent(8) }}
+</style>
+{{ uniquely_mapped['script']|indent(8) }}
+
+</head>
+<body>
+
+<h1>Uniquely mapping reads</h1>
+
+{{ uniquely_mapped['div']|indent(8) }}
+
+
+</body>
+</html>

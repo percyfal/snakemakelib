@@ -155,7 +155,7 @@ rule rseqc_qc_8:
     output: "{prefix}_rseqc/rseqc_qc_8.txt"
     shell: "echo `date` > {output}"
 
-def _rseqc_find_rseqc_qc_8_result_files_fn():
+def _rseqc_find_rseqc_qc_8_result_files_fn(wildcards):
     ngs_cfg = get_sml_config('bio.ngs.settings')
     sources = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, src_re=ngs_cfg['sampleorg'].run_id_re, target_suffix = "." + wildcards.label + 'final.out', filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg)
     return sources
@@ -168,6 +168,6 @@ rule rseqc_qc_8_summary:
     input: _rseqc_find_rseqc_qc_8_result_files_fn
     output: junction = os.path.join("{path}", "summary_junction_annotation.{label}txt")
     run:
-        R("""
+        print (input)
+        # Types:
 
-        """)

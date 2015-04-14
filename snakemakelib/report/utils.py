@@ -37,7 +37,7 @@ def recast(x, strpfmt="%b %d %H:%M:%S"):
 
 # Replace whitespace with underscore, convert percent characters to PCT
 def trim_header(x, underscore=False, percent=False):
-    return x.lstrip().rstrip().replace(" ", "_" if underscore else " ").replace("%", "PCT" if percent else "%")
+    return x.lstrip().rstrip().replace(" ", "_" if underscore else " ").replace("%", "PCT" if percent else "%").replace(",", "_" if underscore else " ")
 
 
 def group_samples(samples, grouping="sample"):

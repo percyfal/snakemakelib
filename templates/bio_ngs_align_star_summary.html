@@ -8,15 +8,23 @@
 <style>
 {{ css|indent(8) }}
 </style>
-{{ uniquely_mapped['script']|indent(8) }}
-
+{{ star_plots['script']|indent(8) }}
+{{ table['script']|indent(8) }}
 </head>
 <body>
+<h3>STAR alignment summary</h3>
 
-<h1>Uniquely mapping reads</h1>
+<figure>
+{{ star_plots['div']|indent(8) }}
+<figcaption>Scatter plots of STAR summary statistics. </figcaption>
+</figure>
 
-{{ uniquely_mapped['div']|indent(8) }}
+<figure>
+{{ table['div']|indent(8) }}
+<figcaption>Table of all STAR alignment statistics. </figcaption>
+</figure>
 
-
+<h3>Attachments</h3>
+<a href="{{ uri['uri'] }}" download="{{ uri['file'] }}" draggable="true">{{ uri['file'] }}</a>
 </body>
 </html>

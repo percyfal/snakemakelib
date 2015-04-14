@@ -1,10 +1,15 @@
 # -*- snakemake -*-
 import os
-from snakemake.utils import R
-from snakemakelib.config import update_sml_config, get_sml_config
+import jinja2
+import pandas as pd
+from bokeh.plotting import gridplot
+from snakemake.report import data_uri
+from snakemakelib.config import update_sml_config, get_sml_config, sml_templates_path
 from snakemakelib.stat import is_compressed
+from snakemakelib.bokeh.publish import static_html
 from snakemakelib.bio.ngs.db import index
 from snakemakelib.bio.ngs.targets import generic_target_generator
+from snakemakelib.bio.ngs.align.star import collect_star_alignment_results, make_star_alignment_plots
 
 include: '../../../comp/settings.rules'
 include: '../settings.rules'
@@ -107,26 +112,27 @@ rule star_summarize_alignment_runs:
 
     """
     input: star_find_result_files_fn
-    output: RData = os.path.join("{path}", "star.{label}RData")
-    #uniquely_mapped = os.path.join("{path}", "star.{label}uniquely_mapped.png"),
-    #        uniquely_mapped_vs_ = os.path.join("{path}", "star.{label}uniquely_mapped.png"),
+    output: csv = os.path.join("{path}", "star.{label}csv")
     run:
         ngs_cfg = get_sml_config('bio.ngs.settings')
         inputfiles = ",".join(input)
         try:
-            samples = ",".join([ngs_cfg['sampleorg'].sample_re.parse(f)['SM'] for f in input])
+            samples = [ngs_cfg['sampleorg'].sample_re.parse(f)['SM'] for f in input]
         except KeyError:
             raise Exception("failed to parse sample name 'SM' from input list")
-        R("""
-        f <- '{inputfiles}'
-        s <- '{samples}'
-        infiles <- strsplit(f, ",")[[1]]
-        samples <- strsplit(s, ",")[[1]]
-        df = do.call("rbind", lapply(infiles, function(x) {{y=read.delim(x, sep="|", header=FALSE, strip.white=TRUE); y$V2 = gsub("%", "", gsub("\t", "", y$V2)); z=t(y$V2); colnames(z)=do.call("c", lapply(y$V1, function(x) {{gsub("[:,]", "", gsub("%", "PCT", gsub("[ -]", "_", x)))}})); as.data.frame(z, stringsAsFactors=FALSE)}}))
-        df[,4:30] = sapply(df[,4:30], as.numeric)
-        rownames(df) <- samples
-        df = cbind(samples, df)
-        library(lattice)
+        df = collect_star_alignment_results(input, samples)
+        df.to_csv(output.csv)
+
+rule star_plot_aligmnent_summary:
+    """Plot alignment data summary"""
+    input: csv = os.path.join("{path}", "star.{label}csv")
+    output: star_summary = os.path.join("{path}", "star.{label}mapping_summary.html")
+    run:
+        df = pd.read_csv(input.csv, index_col=0)
+        uri = {'uri':data_uri(input.csv), 'file':input.csv}
+        samples = list(df.index)
+        d = make_star_alignment_plots(df, samples)
+        tp = jinja2.Template(open(os.path.join(sml_templates_path(), 'bio_ngs_align_star_summary.html')).read())
+        with open(output.star_summary, "w") as fh:
+            fh.write(static_html(tp, **{'star_plots' : d['plots'], 'table' : d['table'], 'uri' : uri}))
         
-        save.image(file='{output.RData}')
-        """)

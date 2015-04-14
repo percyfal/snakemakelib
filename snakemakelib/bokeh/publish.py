@@ -4,6 +4,7 @@ from snakemakelib.config import sml_base_path
 from bokeh.resources import CDN
 from bokeh.templates import RESOURCES
 from bokeh.embed import components
+from bokeh.models.widget import Widget
 from bokeh.util.string import encode_utf8
 
 def static_html(template, resources=CDN, as_utf8=True, **kw):
@@ -27,7 +28,12 @@ def static_html(template, resources=CDN, as_utf8=True, **kw):
     with open (os.path.join(sml_base_path(), 'static/basic.css')) as fh:
         css = "".join(fh.readlines())
     # Hack to get on-the-fly double mapping. Can this be rewritten with e.g. map?
-    tmp = {k : [{'script' : s, 'div' : d } for s,d in [components(v, resources)]][0] for (k,v) in kw.items()}
+    tmp = {}
+    for k,v in kw.items():
+        if (isinstance(v, Widget)):
+            tmp.update({k : [{'script' : s, 'div' : d } for s,d in [components(v, resources)]][0]})
+        else:
+            tmp.update({k:v})
     if as_utf8:
         return encode_utf8(template.render(plot_resources=plot_resources, css=css, **tmp))
     else:

@@ -20,7 +20,7 @@ def _find_transcript_bam(wildcards):
     ngs_cfg = get_sml_config('bio.ngs.settings')
     picard_cfg = get_sml_config('bio.ngs.qc.picard')
     sources = generic_target_generator(tgt_re=ngs_cfg['sampleorg'].run_id_re, target_suffix = _merge_tx_suffix(ngs_cfg['aligner'], ngs_cfg['rnaseq']['quantification']), filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg)
-    sources = [src for src in sources if os.path.basename(src).startswith(wildcards.prefix)]
+    sources = [src for src in sources if os.path.dirname(src).startswith(wildcards.prefix)]
     return sources
 
 def find_scrnaseq_merge_inputs(wildcards):

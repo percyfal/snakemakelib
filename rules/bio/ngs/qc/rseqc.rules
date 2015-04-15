@@ -4,6 +4,7 @@ import pandas as pd
 from snakemakelib.config import update_sml_config, get_sml_config
 
 include: '../settings.rules'
+include: '../tools/conversion.rules'
 include: '../../../comp/settings.rules'
 
 ngs_cfg = get_sml_config('bio.ngs.settings')
@@ -12,6 +13,7 @@ config_default = {
     'bio.ngs.qc.rseqc' : {
         'outdir' : os.curdir,
         'refgene' : ngs_cfg["annotation"]["transcript_annot_gtf"].replace(".gtf", ".bed12"),
+        'home' : "",
         'read_duplication' : {
             'cmd' : 'read_duplication.py',
             'options' : '',
@@ -55,74 +57,67 @@ python2 = get_sml_config('comp.settings')['python2']['activate_cmd']
 
 rule rseqc_read_duplication:
     """Run RSeQC read_duplication.py"""
-    params: cmd = rsq_cfg['read_duplication']['cmd'],
+    params: cmd = os.path.join(rsq_cfg['home'], rsq_cfg['read_duplication']['cmd']),
             options = rsq_cfg['read_duplication']['options'],
             outdir = rsq_cfg['outdir']
     input: "{prefix}.bam"
-    output: plot = "{prefix}_rseqc/read_dup.DupRate_plot.pdf",
-            pos = "{prefix}_rseqc/read_dup.pos.DupRate.xls",
-            seq = "{prefix}_rseqc/read_dup.seq.DupRate.xls"
+    output: pos = "{prefix}_rseqc/read_dup.pos.DupRate.xls",
+            seq = "{prefix}_rseqc/read_dup.seq.DupRate.xls",
     shell: python2 + " && {params.cmd} {params.options} -i {input} -o $(dirname {output.seq})/read_dup"
 
 rule rseqc_clipping_profile:
     """Run RSeQC clipping_profile.py"""
-    params: cmd = rsq_cfg['clipping_profile']['cmd'],
+    params: cmd = os.path.join(rsq_cfg['home'], rsq_cfg['clipping_profile']['cmd']),
             options = rsq_cfg['clipping_profile']['options'],
             outdir = rsq_cfg['outdir']
     input: "{prefix}.bam"
-    output: pdf = "{prefix}_rseqc/clippingprofile.clipping_profile.pdf",
-            xls = "{prefix}_rseqc/clippingprofile.clipping_profile.xls"
+    output: xls = "{prefix}_rseqc/clippingprofile.clipping_profile.xls",
     shell: python2 + " && {params.cmd} {params.options} -i {input} -o $(dirname {output.xls})/clippingprofile"
 
 rule rseqc_geneBody_coverage:
     """Run RSeQC geneBody_coverage.py. 
     NB: Requries reference gene model in bed format (-r parameter)
     """
-    params: cmd = rsq_cfg['geneBody_coverage']['cmd'],
+    params: cmd = os.path.join(rsq_cfg['home'], rsq_cfg['geneBody_coverage']['cmd']),
             options = rsq_cfg['geneBody_coverage']['options'],
             outdir = rsq_cfg['outdir']
     input: bam = "{prefix}.bam", refgene = rsq_cfg['refgene']
-    output: curves = "{prefix}_rseqc/geneBody_coverage.geneBodyCoverage.curves.pdf",
-            txt = "{prefix}_rseqc/geneBody_coverage.geneBodyCoverage.txt"
+    output: txt = "{prefix}_rseqc/geneBody_coverage.geneBodyCoverage.txt"
     shell: python2 + " && {params.cmd} {params.options} -i {input.bam} -o $(dirname {output.txt})/geneBody_coverage -r {input.refgene}"
 
 rule rseqc_junction_annotation:
     """Run RSeQC junction_annotation.py
     NB: Requries reference gene model in bed format
     """
-    params: cmd = rsq_cfg['junction_annotation']['cmd'],
+    params: cmd = os.path.join(rsq_cfg['home'], rsq_cfg['junction_annotation']['cmd']),
             options = rsq_cfg['junction_annotation']['options'],
             outdir = rsq_cfg['outdir']
     input: bam = "{prefix}.bam", refgene = rsq_cfg['refgene']
-    output: junction = "{prefix}_rseqc/junction_annotation_refseq.splice_junction.pdf",
-            events = "{prefix}_rseqc/junction_annotation_refseq.splice_events.pdf",
-            xls = "{prefix}_rseqc/junction_annotation_refseq.junction.xls",
-            txt = "{prefix}_rseqc/junction_annotation_refseq.txt",
-    shell: python2 + " && {params.cmd} {params.options} -i {input.bam} -o $(dirname {output.junction})/junction_annotation_refseq -r {input.refgene} 2> {output.txt}"
+    output: xls = "{prefix}_rseqc/junction_annotation_refseq.junction.xls",
+            txt = "{prefix}_rseqc/junction_annotation_refseq.txt"
+    shell: python2 + " && {params.cmd} {params.options} -i {input.bam} -o $(dirname {output.txt})/junction_annotation_refseq -r {input.refgene} 2> {output.txt}"
 
 rule rseqc_read_GC:
     """Run RSeQC read_GC.py"""
-    params: cmd = rsq_cfg['read_GC']['cmd'],
+    params: cmd = os.path.join(rsq_cfg['home'], rsq_cfg['read_GC']['cmd']),
             options = rsq_cfg['read_GC']['options'],
             outdir = rsq_cfg['outdir']
     input: "{prefix}.bam"
-    output: plot = "{prefix}_rseqc/read_GC.GC_plot.pdf",
-            xls = "{prefix}_rseqc/read_GC.GC.xls"
-    shell: python2 + " && {params.cmd} {params.options} -i {input} -o $(dirname {output.plot})/read_GC"
+    output: xls = "{prefix}_rseqc/read_GC.GC.xls"
+    shell: python2 + " && {params.cmd} {params.options} -i {input} -o $(dirname {output.xls})/read_GC"
 
 rule rseqc_read_NVC:
     """Run RSeQC read_NVC.py"""
-    params: cmd = rsq_cfg['read_NVC']['cmd'],
+    params: cmd = os.path.join(rsq_cfg['home'], rsq_cfg['read_NVC']['cmd']),
             options = rsq_cfg['read_NVC']['options'],
             outdir = rsq_cfg['outdir']
     input: "{prefix}.bam"
-    output: plot = "{prefix}_rseqc/read_NVC.NVC_plot.pdf",
-            xls = "{prefix}_rseqc/read_NVC.NVC.xls"
-    shell: python2 + " && {params.cmd} {params.options} -i {input} -o $(dirname {output.plot})/read_NVC"
+    output: xls = "{prefix}_rseqc/read_NVC.NVC.xls"
+    shell: python2 + " && {params.cmd} {params.options} -i {input} -o $(dirname {output.xls})/read_NVC"
 
 rule rseqc_read_quality:
     """Run RSeQC read_quality.py"""
-    params: cmd = rsq_cfg['read_quality']['cmd'],
+    params: cmd = os.path.join(rsq_cfg['home'], rsq_cfg['read_quality']['cmd']),
             options = rsq_cfg['read_quality']['options'],
             outdir = rsq_cfg['outdir']
     input: "{prefix}.bam"
@@ -135,7 +130,7 @@ rule rseqc_read_distribution:
     
     NB: (Probably) Requries reference gene model in bed format
     """
-    params: cmd = rsq_cfg['read_distribution']['cmd'],
+    params: cmd = os.path.join(rsq_cfg['home'], rsq_cfg['read_distribution']['cmd']),
             options = rsq_cfg['read_distribution']['options'],
             outdir = rsq_cfg['outdir']
     input: bam = "{prefix}.bam", refgene = rsq_cfg['refgene']
@@ -144,12 +139,12 @@ rule rseqc_read_distribution:
 
 rule rseqc_qc_8:
     """Run 8 RSeQC commands on a bam file"""
-    input: read_dup = "{prefix}_rseqc/read_dup.DupRate_plot.pdf", 
-           clipping_profile = "{prefix}_rseqc/clippingprofile.clipping_profile.pdf",
+    input: read_dup = "{prefix}_rseqc/read_dup.pos.DupRate.xls", 
+           clipping_profile = "{prefix}_rseqc/clippingprofile.clipping_profile.xls",
            geneBody_coverage = "{prefix}_rseqc/geneBody_coverage.geneBodyCoverage.txt",
            junction_annotation = "{prefix}_rseqc/junction_annotation_refseq.txt",
-           read_GC = "{prefix}_rseqc/read_GC.GC_plot.pdf",
-           read_NVC = "{prefix}_rseqc/read_NVC.NVC_plot.pdf",
+           read_GC = "{prefix}_rseqc/read_GC.GC.xls",
+           read_NVC = "{prefix}_rseqc/read_NVC.NVC.xls",
            read_quality = "{prefix}_rseqc/read_quality.qual.heatmap.pdf",
            read_distribution = "{prefix}_rseqc/read_distribution.txt"
     output: "{prefix}_rseqc/rseqc_qc_8.txt"

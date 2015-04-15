@@ -12,7 +12,6 @@ config_default = {
         "tracearchive" : "http://trace.ncbi.nlm.nih.gov/Traces/sra/",
         "workspacelocation" : os.getenv("NCBI_HOME", os.path.join(os.getenv("HOME"), "ncbi/public")),
         "_datadir" : os.curdir,
-        "_run2sample" : {},
         "_metadata" : [],
         "fastq-dump" : {
             'cmd' : "fastq-dump",
@@ -42,9 +41,12 @@ rule sratools_prefetch:
     """Run sratools prefetch"""
     params: cmd = sra_cfg['prefetch']['cmd'],
             options = sra_cfg['prefetch']['options']
-    output: os.path.join(sra_cfg['workspacelocation'], "sra", "{prefix}.sra")
+    output: temp(os.path.join(sra_cfg['workspacelocation'], "sra", os.path.basename("{prefix}") + ".sra"))
     log: "{prefix}.log"
-    shell: "{params.cmd} {params.options} {wildcards.prefix}"
+    shell: "{params.cmd} {params.options} $(basename {wildcards.prefix})"
+
+def _sra_file(wildcards):
+    return os.path.join(sra_cfg['workspacelocation'], "sra", os.path.basename(wildcards.prefix) + ".sra")
 
 rule sratools_fastq_dump:
     """Run sratools fastq-dump"""
@@ -52,10 +54,10 @@ rule sratools_fastq_dump:
             options = " ".join([sra_cfg['fastq-dump']['options'],
                                 '--gzip' if ngs_cfg["fastq_suffix"].endswith(".gz") else '',
                                 '--bzip2' if ngs_cfg["fastq_suffix"].endswith(".bzip2") else ''])
-    input: os.path.join(sra_cfg['workspacelocation'], "sra", "{prefix}.sra")
+    input: _sra_file
     output: read1 = "{prefix}" + ngs_cfg["read1_label"] + ngs_cfg["fastq_suffix"],
             read2 = "{prefix}" + ngs_cfg["read2_label"] + ngs_cfg["fastq_suffix"]
-    shell: "{params.cmd} {params.options} {wildcards.prefix}"
+    shell: "{params.cmd} {params.options} -O $(dirname {wildcards.prefix}) $(basename {wildcards.prefix})"
 
 def _get_run(wildcards):
     (sample, run) = wildcards.prefix.split("_")

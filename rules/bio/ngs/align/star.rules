@@ -5,7 +5,7 @@ import pandas as pd
 from bokeh.plotting import gridplot
 from snakemake.report import data_uri
 from snakemakelib.config import update_sml_config, get_sml_config, sml_templates_path
-from snakemakelib.stat import is_compressed
+from snakemakelib.stat import is_compressed, is_installed
 from snakemakelib.bokeh.publish import static_html
 from snakemakelib.bio.ngs.db import index
 from snakemakelib.bio.ngs.targets import generic_target_generator
@@ -41,6 +41,9 @@ config_default = {
 update_sml_config(config_default)
 
 star_cfg = get_sml_config('bio.ngs.align.star')
+
+if not is_installed(star_cfg['cmd']):
+    raise Exception("{prog} not installed or not in PATH; either add the path to $PATH or set the full executable path in configuration section bio.ngs.align.star.cmd".format(star_cfg['cmd']))
 
 def _star_suffix():
     if star_cfg['align']['outSAMtype'].find("Unsorted") > -1:
@@ -93,9 +96,9 @@ rule star_align:
     threads: star_cfg['align']['threads']
     shell: "{params.cmd} --runThreadN {threads} --genomeDir {params.genomedir} --readFilesIn {input.read1} {input.read2} {params.options} --outFileNamePrefix {wildcards.prefix}."
 
-def star_find_result_files_fn(wildcards):
+def _star_find_result_files_fn(wildcards):
     ngs_cfg = get_sml_config('bio.ngs.settings')
-    sources = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, src_re=ngs_cfg['sampleorg'].run_id_re, target_suffix = "." + wildcards.label + 'final.out', filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg)
+    sources = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].run_id_re, src_re=ngs_cfg['sampleorg'].run_id_re, target_suffix = "." + wildcards.label + 'bam', filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg)
     return sources
 
 # QC summaries
@@ -103,24 +106,24 @@ def star_find_result_files_fn(wildcards):
 rule star_summarize_alignment_runs:
     """Summarize alignment data for alignment(s) based on runs.
 
-    NB: currently based on sample, but should be run-based as
-    alignments most often done on run data, after which merging is
-    done.
+    FIXME: The indexing should be done by run; currently results are
+    indexed by sample, which is ok as long as there is only one run
+    per sample.
 
     Important: in order to catch {label}, as a minimum, this needs to
-    be set to 'Log.'; the minimum target is therefore star.Log.RData
+    be set to 'Aligned.out.'; the minimum target is therefore star.Aligned.out.csv
 
     """
-    input: star_find_result_files_fn
+    input: _star_find_result_files_fn
     output: csv = os.path.join("{path}", "star.{label}csv")
     run:
         ngs_cfg = get_sml_config('bio.ngs.settings')
-        inputfiles = ",".join(input)
+        inputfiles = [x.replace(wildcards.label, "Log.final.out.").replace(".bam", "") for x in input]
         try:
-            samples = [ngs_cfg['sampleorg'].sample_re.parse(f)['SM'] for f in input]
+            samples = [ngs_cfg['sampleorg'].run_id_re.parse(f)['SM'] for f in inputfiles]
         except KeyError:
             raise Exception("failed to parse sample name 'SM' from input list")
-        df = collect_star_alignment_results(input, samples)
+        df = collect_star_alignment_results(inputfiles, samples)
         df.to_csv(output.csv)
 
 rule star_plot_aligmnent_summary:

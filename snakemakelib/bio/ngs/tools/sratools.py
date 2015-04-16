@@ -21,9 +21,11 @@ def register_metadata(metadata_file):
         with open(metadata_file, "r") as fh:
             reader = csv.DictReader(fh.readlines())
         metadata_list = [row for row in reader]
+        run2sample = {row["Run"]:row["SampleName"] for row in metadata_list}
         update_sml_config({
             'bio.ngs.settings' : {'sampleinfo' : metadata_file},
             'bio.ngs.tools.sratools': {'_datadir': os.path.dirname(metadata_file),
+                                       '_run2sample' : run2sample,
                                        '_metadata' : metadata_list}})
     except IOError:
         print ("""

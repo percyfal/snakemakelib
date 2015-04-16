@@ -96,10 +96,12 @@ RPKMFORGENES_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sa
 
 RSEM_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, target_suffix = '.merge.tx.isoforms.results', src_re = ngs_cfg['sampleorg'].raw_run_re, filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg) if 'rsem' in ngs_cfg['rnaseq']['quantification']  else []
 
+REPORT_TARGETS = ['report/star.Aligned.out.csv', 'report/star.Aligned.out.mapping_summary.html']
+
 # All rules
 rule scrnaseq_all:
     """Run scRNAseq pipeline"""
-    input: ALIGN_TARGETS + RSEQC_TARGETS + RPKMFORGENES_TARGETS + RSEM_TARGETS
+    input: ALIGN_TARGETS + RSEQC_TARGETS + RPKMFORGENES_TARGETS + RSEM_TARGETS + REPORT_TARGETS
 
 rule scrnaseq_align:
     """Run alignments"""

@@ -1,6 +1,7 @@
 # -*- snakemake -*-
 import os
 import pandas as pd
+from snakemakelib.stat import is_installed
 from snakemakelib.config import update_sml_config, get_sml_config
 
 include: '../settings.rules'
@@ -13,7 +14,7 @@ config_default = {
     'bio.ngs.qc.rseqc' : {
         'outdir' : os.curdir,
         'refgene' : ngs_cfg["annotation"]["transcript_annot_gtf"].replace(".gtf", ".bed12"),
-        'home' : "",
+        'home' : os.getenv("RSEQC_HOME", ""),
         'read_duplication' : {
             'cmd' : 'read_duplication.py',
             'options' : '',
@@ -121,9 +122,8 @@ rule rseqc_read_quality:
             options = rsq_cfg['read_quality']['options'],
             outdir = rsq_cfg['outdir']
     input: "{prefix}.bam"
-    output: heatmap = "{prefix}_rseqc/read_quality.qual.heatmap.pdf",
-            boxplot = "{prefix}_rseqc/read_quality.qual.boxplot.pdf"
-    shell: python2 + " && {params.cmd} {params.options} -i {input} -o $(dirname {output.heatmap})/read_quality"
+    output: r = "{prefix}_rseqc/read_quality.qual.heatmap.pdf"
+    shell: python2 + " && {params.cmd} {params.options} -i {input} -o $(dirname {output.r})/read_quality"
 
 rule rseqc_read_distribution:
     """Run RSeQC read_distribution.py
@@ -145,7 +145,7 @@ rule rseqc_qc_8:
            junction_annotation = "{prefix}_rseqc/junction_annotation_refseq.txt",
            read_GC = "{prefix}_rseqc/read_GC.GC.xls",
            read_NVC = "{prefix}_rseqc/read_NVC.NVC.xls",
-           read_quality = "{prefix}_rseqc/read_quality.qual.heatmap.pdf",
+           read_quality = "{prefix}_rseqc/read_quality.qual.r",
            read_distribution = "{prefix}_rseqc/read_distribution.txt"
     output: "{prefix}_rseqc/rseqc_qc_8.txt"
     shell: "echo `date` > {output}"

@@ -8,7 +8,7 @@ settings for comp rules.
 """
 # Check for snakemakelib-specific python2 environment variables;
 # setting any of VENV_PYTHON_2 will by default use virtualenv
-python2="echo \"config['comp.settings']['python2']['activate_cmd']\": Please set python2 activation command to execute rule!"
+python2="echo \"config['comp.settings']['python2']['activate_cmd']\": command requires python2! Please set python2 activation command to execute rule!"
 # VENV_PYTHON_2 should point to the activate script of the virtualenv
 if os.getenv("VENV_PYTHON_2"):
     python2="source {venv}".format(venv=os.getenv("VENV_PYTHON_2"))

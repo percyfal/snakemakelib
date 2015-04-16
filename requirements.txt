@@ -6,3 +6,4 @@ sphinx
 nose
 pandas
 jinja2
+mock

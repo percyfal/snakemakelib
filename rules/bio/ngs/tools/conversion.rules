@@ -1,7 +1,6 @@
 # -*- snakemake -*-
 # Miscallaneous tools for conversion between file formats
 import os
-from snakemake.utils import R
 from snakemakelib.config import update_sml_config, get_sml_config
 
 include: '../settings.rules'
@@ -28,8 +27,3 @@ rule gtf_to_bed12:
         write.table(tx.df, file="{output.bed12}", quote=FALSE, row.names=FALSE, col.names=FALSE)
         """)
 
-rule R_hello:
-    run:
-        R("""
-        cat ("hello world")
-        """)

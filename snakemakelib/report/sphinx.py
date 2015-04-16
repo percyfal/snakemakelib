@@ -5,8 +5,10 @@ import glob
 import texttable as tt
 from collections import namedtuple
 from mako.template import Template
-from snakemakelib.log import get_logger
 from snakemakelib.report.picard import PicardMetricsCollection
+from snakemakelib.log import LoggerManager
+
+smllogger = LoggerManager().getLogger(__name__)
 
 TEMPLATEPATH = os.path.join(os.path.dirname(__file__), os.pardir, "data", "templates", "doc")
 
@@ -21,15 +23,13 @@ templates = {
 docdirs = ["build", "source", os.path.join("source", "_static"), os.path.join("source", "_templates"),
            os.path.join("source", "samples")]
 
-logger = get_logger()
-
 def _setup_directories(root):
     """create directory structure"""
     if not os.path.exists(root):
-        logger.info("Making documentation output directory '{}'".format(root))
+        smllogger.info("Making documentation output directory '{}'".format(root))
         for d in docdirs:
             if not os.path.exists(os.path.join(root, d)):
-                logger.info("Making directory " + str(os.path.join(root, d)))
+                smllogger.info("Making directory " + str(os.path.join(root, d)))
                 os.makedirs(os.path.join(root, d))
 
 def make_rst_table(data):

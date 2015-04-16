@@ -17,7 +17,7 @@ config_default = {
             'options' : "",
         },
         'trimmomatic' : {
-            'home' : ".",
+            'home' : os.getenv("TRIMMOMATIC_HOME", os.curdir),
             'options' : "-phred33",
             'java_mem' : sml_config['bio.ngs.settings']['java']['java_mem'],
             'java_tmpdir' : sml_config['bio.ngs.settings']['java']['java_tmpdir'],
@@ -119,7 +119,7 @@ rule fastqc_main:
     params: cmd = sp_cfg['fastqc']['cmd'],
             options = sp_cfg['fastqc']['options'],
     input: "{prefix}" + ngs_cfg['fastq_suffix']
-    output: "{prefix}_fastqc.html"
+    output: "{prefix}_fastqc/fastqc_report.html"
     shell: "{params.cmd} {params.options} {input}"
 
 ##################################################
@@ -129,10 +129,8 @@ rule trim_galore_main:
     """Sequenceprocessing: run trim_galore on a fastq file"""
     params: cmd = sp_cfg['trim_galore']['cmd'],
             options = " ".join([sp_cfg['trim_galore']['options'],"--gzip"])
-    input: "{path}" + os.sep + "{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],\
-    "{path}" + os.sep + "{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['fastq_suffix']
-    output: "{path}" + os.sep + "{prefix}" + ngs_cfg['read1_label'] + sp_cfg['trim_galore']['read1_suffix'],\
-            "{path}" + os.sep + "{prefix}" + ngs_cfg['read2_label'] + sp_cfg['trim_galore']['read2_suffix']
-    shell: "{params.cmd} {params.options} {input} -o {wildcards.path}"
- 
-
+    input: "{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],\
+           "{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['fastq_suffix']
+    output: "{prefix}" + ngs_cfg['read1_label'] + sp_cfg['trim_galore']['read1_suffix'],\
+            "{prefix}" + ngs_cfg['read2_label'] + sp_cfg['trim_galore']['read2_suffix']
+    shell: "{params.cmd} {params.options} {input} -o $(dirname {wildcards.prefix})"

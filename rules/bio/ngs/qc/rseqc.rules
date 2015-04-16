@@ -1,13 +1,21 @@
 # -*- snakemake -*-
 import os
+import pandas as pd
+from snakemake.report import data_uri
+from snakemakelib.stat import is_installed
 from snakemakelib.config import update_sml_config, get_sml_config
+from snakemakelib.bio.ngs.qc.rseqc import collect_rseqc_results, make_rseqc_summary_plots
+
+include: '../settings.rules'
+include: '../tools/conversion.rules'
+include: '../../../comp/settings.rules'
 
 ngs_cfg = get_sml_config('bio.ngs.settings')
 
 config_default = {
     'bio.ngs.qc.rseqc' : {
-        'outdir' : os.curdir,
-        'refgene' : "", # Make a function of build?
+        'refgene' : ngs_cfg["annotation"]["transcript_annot_gtf"].replace(".gtf", ".bed12"),
+        'home' : os.getenv("RSEQC_HOME", ""),
         'read_duplication' : {
             'cmd' : 'read_duplication.py',
             'options' : '',
@@ -51,94 +59,139 @@ python2 = get_sml_config('comp.settings')['python2']['activate_cmd']
 
 rule rseqc_read_duplication:
     """Run RSeQC read_duplication.py"""
-    params: cmd = rsq_cfg['read_duplication']['cmd'],
+    params: cmd = os.path.join(rsq_cfg['home'], rsq_cfg['read_duplication']['cmd']),
             options = rsq_cfg['read_duplication']['options'],
-            outdir = rsq_cfg['outdir']
     input: "{prefix}.bam"
-    output: "{prefix}_rseqc/read_dup.DupRate_plot.pdf"
-    shell: python2 + " && {params.cmd} {params.options} -i {input} -o $(dirname {output})/read_dup"
+    output: pos = "{prefix}_rseqc/read_dup.pos.DupRate.xls",
+            seq = "{prefix}_rseqc/read_dup.seq.DupRate.xls",
+    shell: python2 + " && {params.cmd} {params.options} -i {input} -o $(dirname {output.seq})/read_dup"
 
 rule rseqc_clipping_profile:
     """Run RSeQC clipping_profile.py"""
-    params: cmd = rsq_cfg['clipping_profile']['cmd'],
+    params: cmd = os.path.join(rsq_cfg['home'], rsq_cfg['clipping_profile']['cmd']),
             options = rsq_cfg['clipping_profile']['options'],
-            outdir = rsq_cfg['outdir']
     input: "{prefix}.bam"
-    output: "{prefix}_rseqc/clippingprofile.clipping_profile.pdf"
-    shell: python2 + " && {params.cmd} {params.options} -i {input} -o $(dirname {output})/clippingprofile"
+    output: xls = "{prefix}_rseqc/clippingprofile.clipping_profile.xls",
+    shell: python2 + " && {params.cmd} {params.options} -i {input} -o $(dirname {output.xls})/clippingprofile"
 
 rule rseqc_geneBody_coverage:
     """Run RSeQC geneBody_coverage.py. 
 
-    NB: Requries reference gene model in bed format (-r parameter)
+    NB: Requries reference gene model in bed format (-r parameter).
+    Moreover, requires indexed bam, which in turn requires sorted bam
+    file. Currently it is not possible to check whether input file is
+    sorted; consequently we explicitly request sorted input which then
+    is removed once the command has finished. The dependent rule
+    should have temporary output, or the RNA-seq alignment should be
+    sorted.
+
+    Memory intensive; needs more resources.
     """
-    params: cmd = rsq_cfg['geneBody_coverage']['cmd'],
+    params: cmd = os.path.join(rsq_cfg['home'], rsq_cfg['geneBody_coverage']['cmd']),
             options = rsq_cfg['geneBody_coverage']['options'],
-            outdir = rsq_cfg['outdir']
-    input: bam = "{prefix}.bam"#, refgene = rsq_cfg['refgene']
-    output: "{prefix}_rseqc/geneBody_coverage.geneBodyCoverage.pdf"
-    shell: python2 + " && {params.cmd} {params.options} -i {input.bam} -o $(dirname {output})/geneBody_coverage -r {input.refgene}"
+    input: bam = "{prefix}.sort.bam", bai = "{prefix}.sort.bam.bai", refgene = rsq_cfg['refgene']
+    output: txt = "{prefix}_rseqc/geneBody_coverage.geneBodyCoverage.txt"
+    shell: python2 + " && {params.cmd} {params.options} -i {input.bam} -o $(dirname {output.txt})/geneBody_coverage -r {input.refgene} && rm -f {input.bam} {input.bai}"
 
 rule rseqc_junction_annotation:
     """Run RSeQC junction_annotation.py
-
     NB: Requries reference gene model in bed format
     """
-    params: cmd = rsq_cfg['junction_annotation']['cmd'],
+    params: cmd = os.path.join(rsq_cfg['home'], rsq_cfg['junction_annotation']['cmd']),
             options = rsq_cfg['junction_annotation']['options'],
-            outdir = rsq_cfg['outdir']
-    input: bam = "{prefix}.bam"#, refgene = rsq_cfg['refgene']
-    output: "{prefix}_rseqc/junction_annotation_refseq.splice_junction.pdf"
-    shell: python2 + " && {params.cmd} {params.options} -i {input.bam} -o $(dirname {output})/junction_annotation_refseq -r {input.refgene}"
+    input: bam = "{prefix}.bam", refgene = rsq_cfg['refgene']
+    output: xls = "{prefix}_rseqc/junction_annotation_refseq.junction.xls",
+            txt = "{prefix}_rseqc/junction_annotation_refseq.txt"
+    shell: python2 + " && {params.cmd} {params.options} -i {input.bam} -o $(dirname {output.txt})/junction_annotation_refseq -r {input.refgene} 2> {output.txt}"
 
 rule rseqc_read_GC:
     """Run RSeQC read_GC.py"""
-    params: cmd = rsq_cfg['read_GC']['cmd'],
+    params: cmd = os.path.join(rsq_cfg['home'], rsq_cfg['read_GC']['cmd']),
             options = rsq_cfg['read_GC']['options'],
-            outdir = rsq_cfg['outdir']
     input: "{prefix}.bam"
-    output: "{prefix}_rseqc/read_GC.GC_plot.pdf"
-    shell: python2 + " && {params.cmd} {params.options} -i {input} -o $(dirname {output})/read_GC"
+    output: xls = "{prefix}_rseqc/read_GC.GC.xls"
+    shell: python2 + " && {params.cmd} {params.options} -i {input} -o $(dirname {output.xls})/read_GC"
 
 rule rseqc_read_NVC:
     """Run RSeQC read_NVC.py"""
-    params: cmd = rsq_cfg['read_NVC']['cmd'],
+    params: cmd = os.path.join(rsq_cfg['home'], rsq_cfg['read_NVC']['cmd']),
             options = rsq_cfg['read_NVC']['options'],
-            outdir = rsq_cfg['outdir']
     input: "{prefix}.bam"
-    output: "{prefix}_rseqc/read_NVC.NVC_plot.pdf"
-    shell: python2 + " && {params.cmd} {params.options} -i {input} -o $(dirname {output})/read_NVC"
+    output: xls = "{prefix}_rseqc/read_NVC.NVC.xls"
+    shell: python2 + " && {params.cmd} {params.options} -i {input} -o $(dirname {output.xls})/read_NVC"
 
 rule rseqc_read_quality:
     """Run RSeQC read_quality.py"""
-    params: cmd = rsq_cfg['read_quality']['cmd'],
+    params: cmd = os.path.join(rsq_cfg['home'], rsq_cfg['read_quality']['cmd']),
             options = rsq_cfg['read_quality']['options'],
-            outdir = rsq_cfg['outdir']
     input: "{prefix}.bam"
-    output: "{prefix}_rseqc/read_quality.qual.heatmap.pdf"
-    shell: python2 + " && {params.cmd} {params.options} -i {input} -o $(dirname {output})/read_quality"
+    output: r = "{prefix}_rseqc/read_quality.qual.r"
+    shell: python2 + " && {params.cmd} {params.options} -i {input} -o $(dirname {output.r})/read_quality"
 
 rule rseqc_read_distribution:
     """Run RSeQC read_distribution.py
     
-    NB: (Probably) Requries reference gene model in bed format
+    NB: Requries reference gene model in bed format. Also memory
+    intensive; needs more resources (approx 17GB).
     """
-    params: cmd = rsq_cfg['read_distribution']['cmd'],
+    params: cmd = os.path.join(rsq_cfg['home'], rsq_cfg['read_distribution']['cmd']),
             options = rsq_cfg['read_distribution']['options'],
-            outdir = rsq_cfg['outdir']
-    input: "{prefix}.bam"
+    input: bam = "{prefix}.bam", refgene = rsq_cfg['refgene']
     output: "{prefix}_rseqc/read_distribution.txt"
-    shell: python2 + " && {params.cmd} {params.options} -i {input} &> {output}"
+    shell: python2 + " && {params.cmd} {params.options} -i {input.bam} -r {input.refgene} &> {output}"
 
 rule rseqc_qc_8:
     """Run 8 RSeQC commands on a bam file"""
-    input: read_dup = "{prefix}_rseqc/read_dup.DupRate_plot.pdf", 
-           clipping_profile = "{prefix}_rseqc/clippingprofile.clipping_profile.pdf",
-           #geneBody_coverage = "{prefix}_rseqc/geneBody_coverage.geneBodyCoverage.pdf",
-           #junction_annotation = "{prefix}_rseqc/junction_annotation_refseq.splice_junction.pdf",
-           read_GC = "{prefix}_rseqc/read_GC.GC_plot.pdf",
-           read_NVC = "{prefix}_rseqc/read_NVC.NVC_plot.pdf",
-           read_quality = "{prefix}_rseqc/read_quality.qual.heatmap.pdf",
+    input: read_dup = "{prefix}_rseqc/read_dup.pos.DupRate.xls", 
+           clipping_profile = "{prefix}_rseqc/clippingprofile.clipping_profile.xls",
+           geneBody_coverage = "{prefix}_rseqc/geneBody_coverage.geneBodyCoverage.txt",
+           junction_annotation = "{prefix}_rseqc/junction_annotation_refseq.txt",
+           read_GC = "{prefix}_rseqc/read_GC.GC.xls",
+           read_NVC = "{prefix}_rseqc/read_NVC.NVC.xls",
+           read_quality = "{prefix}_rseqc/read_quality.qual.r",
            read_distribution = "{prefix}_rseqc/read_distribution.txt"
     output: "{prefix}_rseqc/rseqc_qc_8.txt"
     shell: "echo `date` > {output}"
+
+def _rseqc_find_rseqc_qc_8_result_files_fn(wildcards):
+    ngs_cfg = get_sml_config('bio.ngs.settings')
+    sources = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, src_re=ngs_cfg['sampleorg'].run_id_re, target_suffix = os.path.join("." + wildcards.label, "rseqc_qc_8.txt"), filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg)
+    return sources
+
+
+rule rseqc_qc_8_summary:
+    """Summarize results from rseqc_qc_8 rule.
+    Important: in order to catch {label} a label must be set on the
+    rseqc output directory. Typically, this is something like
+    "_rseqc".
+    """
+    input: _rseqc_find_rseqc_qc_8_result_files_fn
+    output: read_distribution = os.path.join("{path}", "read_distribution_summary_{label}.csv"),
+            gene_coverage = os.path.join("{path}", "gene_coverage_summary_{label}.csv")
+    run:
+        ngs_cfg = get_sml_config('bio.ngs.settings')
+        try:
+            samples = [ngs_cfg['sampleorg'].sample_re.parse(f)['SM'] for f in input]
+        except KeyError:
+            raise Exception("failed to parse sample name 'SM' from input list")
+        d = collect_rseqc_results(input, samples)
+        if not d['rd'] is None:
+            d['rd'].to_csv(output.read_distribution)
+        if not d['gc'] is None:
+            d['gc'].to_csv(output.gene_coverage)
+
+
+rule rseqc_plot_qc_8_summary:
+    """Plot rseqc_qc_8 summary data"""
+    input: read_distribution = os.path.join("{path}", "read_distribution_summary_{label}.csv"),
+           gene_coverage = os.path.join("{path}", "gene_coverage_summary_{label}.csv")
+    output: rseqc_summary = os.path.join("{path}", "rseqc_qc_8_summary_{label}.html")
+    run:
+        df_rd = pd.read_csv(input.read_distribution, index_col=0)
+        df_gc = pd.read_csv(input.gene_coverage, index_col=0)
+        uri = {'rd_uri':data_uri(input.read_distribution), 'rd_file':input.read_distribution,
+               'gc_uri':data_uri(input.gene_coverage), 'gc_file':input.gene_coverage}
+        d = make_rseqc_summary_plots(df_rd, df_gc)
+        tp = jinja2.Template(open(os.path.join(sml_templates_path(), 'bio_ngs_qc_rseqc_summary.html')).read())
+        with open(output.rseqc_summary, "w") as fh:
+            fh.write(static_html(tp, **{'rseqc_plots' : d['plots'], 'uri' : uri}))

@@ -42,7 +42,7 @@ config_default = {
         'bait_regions' : ngs_cfg['sequence_capture']['bait_regions'],
         'common_options' : "VALIDATION_STRINGENCY=SILENT",
         'dupmetrics_targets' : [],
-        'home' : ".",
+        'home' : os.getenv("PICARD_HOME", os.curdir),
         'hsmetrics_targets' : [],
         'insertmetrics_targets' : [],
         'java_mem' : ngs_cfg['java']['java_mem'],
@@ -201,7 +201,6 @@ rule picard_add_or_replace_read_groups:
     shell: "{params.cmd} INPUT={input} OUTPUT={output[0]} {params.custom_options} RGID={params.rgid} RGLB={params.lib} RGSM={params.rgsm} RGPL={params.rgpl} RGPU={params.rgpu}"
 
 ruleorder: picard_add_or_replace_read_groups > picard_build_bam_index
-
 
 rule picard_merge_sam:
     """Picard: merge sam files.

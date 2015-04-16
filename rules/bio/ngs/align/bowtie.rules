@@ -23,7 +23,7 @@ config_default = {
             'ext_v1' : [".1.ebwt", ".2.ebwt", ".3.ebwt", ".4.ebwt", ".rev.1.ebwt", ".rev.2.ebwt"],
             'ext_v2' : [".1.bt2", ".2.bt2", ".3.bt2", ".4.bt2", ".rev.1.bt2", ".rev.2.bt2"],
         },
-    },   
+    },
 }
 
 update_sml_config(config_default)
@@ -57,4 +57,3 @@ rule bowtie_build2:
     input: "{prefix}" + ".fa"
     output: expand("{{prefix}}{ext}", ext=bwt_cfg['build']['ext_v2'])
     shell: "{params.cmd} {input} {wildcards.prefix}"
-

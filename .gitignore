@@ -22,3 +22,4 @@ Snakefile
 *.cufflinks*
 *genomes*
 *.bed
+.noseids

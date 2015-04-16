@@ -8,7 +8,7 @@ sml_config = get_sml_config()
 
 config_default = { 
     'bio.ngs.tools.bedtools' : {
-        'home' : ".",
+        'home' : os.getenv("BEDTOOLS_HOME", os.curdir),
         'bfile' : "",
         'options' : "",
         'coveragebed' : {

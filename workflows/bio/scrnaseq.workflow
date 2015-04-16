@@ -25,11 +25,13 @@ def _find_transcript_bam(wildcards):
 
 def find_scrnaseq_merge_inputs(wildcards):
     """Find platform unit specific aligned bam files as input to picard
-merge.
+    merge. 
+
+    NB: these are *not* the transcript-specific alignment files.
     """
     ngs_cfg = get_sml_config('bio.ngs.settings')
     picard_cfg = get_sml_config('bio.ngs.qc.picard')
-    sources = generic_target_generator(tgt_re=ngs_cfg['sampleorg'].run_id_re, target_suffix = _merge_tx_suffix(ngs_cfg['aligner'], ngs_cfg['rnaseq']['quantification']), filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg)
+    sources = generic_target_generator(tgt_re=ngs_cfg['sampleorg'].run_id_re, target_suffix = _merge_suffix(ngs_cfg['aligner'], ngs_cfg['rnaseq']['quantification']), filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg)
     sources = [src for src in sources if os.path.dirname(src).startswith(wildcards.prefix)]
     return sources
 
@@ -61,8 +63,11 @@ include: os.path.join(p, "bio/ngs/qc", "picard.rules")
 include: os.path.join(p, "bio/ngs/tools", "samtools.rules")
 include: os.path.join(p, "bio/ngs/rnaseq", "rpkmforgenes.rules")
 include: os.path.join(p, "bio/ngs/rnaseq", "rsem.rules")
+
 if aligner in ["bowtie", "bowtie2"]:
     ruleorder: bamtools_filter > picard_merge_sam > picard_sort_bam > bowtie_align
+
+ruleorder: samtools_bam_bai_index > picard_build_bam_bai_index
 
 if workflow._workdir is None:
     raise Exception("no workdir set, or set after include of 'scrnaseq.workflow'; set workdir before include statement!")

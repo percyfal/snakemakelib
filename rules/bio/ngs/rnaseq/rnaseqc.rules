@@ -1,0 +1,50 @@
+# -*- snakemake -*-
+import os
+from snakemakelib.config import update_sml_config, get_sml_config
+
+include: '../settings.rules'
+
+bio_cfg = get_sml_config('bio.ngs.settings')
+
+RNASEQC_JAR_PROGRAM = "RNA-SeQC.jar"
+
+config_default = { 
+    'bio.ngs.rnaseq.rnaseqc' : {
+        'java_mem' : bio_cfg['java']['java_mem'],
+        'java_tmpdir' : bio_cfg['java']['java_tmpdir'],
+        'BWArRNA' : "",
+        'run_bwarrna' : False,
+        'home' : os.curdir,
+        'options' : '-n 1000',
+        'transcript_annot_gtf' : bio_cfg['annotation']['transcript_annot_gtf'],
+        'ref' : bio_cfg['db']['ref'],
+    },
+}
+
+update_sml_config(config_default)
+
+rnaseqc_conf = get_sml_config('bio.ngs.rnaseq.rnaseqc')
+
+config_default['bio.ngs.rnaseq.rnaseqc']['jar'] = os.path.join(rnaseqc_conf['home'], RNASEQC_JAR_PROGRAM)
+
+update_sml_config(config_default)
+
+rnaseqc_conf = get_sml_config('bio.ngs.rnaseq.rnaseqc')
+
+config_default['bio.ngs.rnaseq.rnaseqc']['cmd'] = "java -Xmx" + rnaseqc_conf['java_mem'] + " -Djava.io.tmpdir=" + rnaseqc_conf['java_tmpdir'] +  " -jar " + rnaseqc_conf['jar']
+
+update_sml_config(config_default)
+
+rnaseqc_conf = get_sml_config('bio.ngs.rnaseq.rnaseqc')
+
+# RNASEQC uses tophat alignments as input!
+rule rnaseqc_main:
+    """Run RNA-SeQC on sample"""
+    params: cmd = rnaseqc_conf['cmd'],
+            options = " ".join([rnaseqc_conf['options'], 
+                      "-r", rnaseqc_conf['ref'], 
+                      "-t", rnaseqc_conf['transcript_annot_gtf'],
+                      " ".join(" -BWArRNA", rnaseqc_conf['BWArRNA']) if rnaseqc_conf['run_bwarrna'] else ""])
+    input: bam="{prefix}.bam", bai="{prefix}.bai"
+    output: "{prefix}.rnaseqc"
+    shell: "{params.cmd} {params.options} -o {output}.tmp -s \"sample|{input.bam}|rnaseqc\" && mv {output}.tmp {output}"

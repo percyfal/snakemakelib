@@ -27,7 +27,7 @@ config_default = {
         'bam_list' : "",
         'cov_interval' : "regional",
         'dbsnp' : sml_config['bio.ngs.settings']['db']['dbsnp'],
-        'home' : ".",
+        'home' : os.getenv("GATK_HOME", os.curdir),
         'java_mem' : sml_config['bio.ngs.settings']['java']['java_mem'],
         'java_tmpdir' : sml_config['bio.ngs.settings']['java']['java_tmpdir'],
         'ref' : sml_config['bio.ngs.settings']['db']['ref'],
@@ -301,7 +301,7 @@ rule gatk_read_backed_phasing:
     params: cmd = gatk_config['cmd'] + " -T " + gatk_config['read_backed_phasing']['cmd'],
             options = " ".join(["-R", gatk_config['read_backed_phasing']['ref'],
                                 gatk_config['read_backed_phasing']['options']])
-    input: gatk_config['read_backed_phasing']['inputfun']
+    input: dict(gatk_config['read_backed_phasing'])['inputfun']
     output: "{prefix}.phased.vcf"
     shell: "{params.cmd} {params.options} -I {input[1]} -o {output} --variant {input[0]}"
 

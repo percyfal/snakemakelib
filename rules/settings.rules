@@ -1,10 +1,7 @@
 # -*- snakemake -*- 
-from snakemakelib.config import update_sml_config
-
 """
 Main settings for snakemakelib. Defines top-level configuration
 settings for all rules. 
 """
-
 # Add configuration variable to snakemake global config object
 config['section'] = config.get("section", "")

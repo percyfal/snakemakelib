@@ -1,26 +1,73 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.utils import update_sml_config
+import csv
+from snakemakelib.config import update_sml_config, get_sml_config
+from snakemakelib.utils import utc_time
 
 include: '../settings.rules'
 
 config_default = { 
-	"sratools" : {
-		"SRATOOLS_HOME" : ".",
-		"SRATOOLS_FASTQDUMP" : "$(SRATOOLS_HOME)/fastq-dump",
-		"SRATOOLS_FASTQDUMP_OPTIONS" : "--split-3 -F -O $(dir $<)",
-		"SRATOOLS_OPTIONS" : "",
-		},
-	},
+    "bio.ngs.tools.sratools" : {
+        "srastudy" : "",
+        "tracearchive" : "http://trace.ncbi.nlm.nih.gov/Traces/sra/",
+        "workspacelocation" : os.getenv("NCBI_HOME", os.path.join(os.getenv("HOME"), "ncbi/public")),
+        "_datadir" : os.curdir,
+        "_run2sample" : {},
+        "_metadata" : [],
+        "fastq-dump" : {
+            'cmd' : "fastq-dump",
+            "options" : "--split-3 -F",
+        },
+        "prefetch" : {
+            'cmd' : "prefetch",
+            "options" : "",
+        },
+        'options' : "",
+    },
 }
 
-config = update_sml_config(config_default)
+update_sml_config(config_default)
 
-rule rule_1:
-	input: " {prefix}.sra"
-	output: "{prefix}_1.fq"
-	shell: "$(SRATOOLS_FASTQDUMP) $(SRATOOLS_FASTQDUMP_OPTIONS) $< && mv ${*}_1.fastq $@ && if [ -e ${*}_2.fastq ]; then mv ${*}_2.fastq ${*}_2.fq; fi"
-rule rule_2:
-	input: " {prefix}.sra"
-	output: "{prefix}_1.fq.gz"
-	shell: "$(SRATOOLS_FASTQDUMP) $(SRATOOLS_FASTQDUMP_OPTIONS) $< && mv ${*}_1.fastq.gz $@ && if [ -e ${*}_2.fastq.gz ]; then mv ${*}_2.fastq.gz ${*}_2.fq.gz; fi"
+sra_cfg = get_sml_config('bio.ngs.tools.sratools')
+ngs_cfg = get_sml_config('bio.ngs.settings')
+
+rule sratools_download_srastudy_metadata:
+    """Download srastudy metadata. """
+    params: traces = sra_cfg['tracearchive']
+    output: csv = "{prefix}_info.csv"
+    run:
+        shell ("wget -O {output}  '{traces}sra.cgi?save=efetch&db=sra&rettype=runinfo&term={basename}'".format(output=output.csv, traces=params.traces, basename=os.path.basename(wildcards.prefix)))
+
+rule sratools_prefetch:
+    """Run sratools prefetch"""
+    params: cmd = sra_cfg['prefetch']['cmd'],
+            options = sra_cfg['prefetch']['options']
+    output: temp(os.path.join(sra_cfg['workspacelocation'], "sra", os.path.basename("{prefix}") + ".sra"))
+    log: "{prefix}.log"
+    shell: "{params.cmd} {params.options} $(basename {wildcards.prefix})"
+
+def _sra_file(wildcards):
+    return os.path.join(sra_cfg['workspacelocation'], "sra", os.path.basename(wildcards.prefix) + ".sra")
+
+rule sratools_fastq_dump:
+    """Run sratools fastq-dump"""
+    params: cmd = sra_cfg['fastq-dump']['cmd'],
+            options = " ".join([sra_cfg['fastq-dump']['options'],
+                                '--gzip' if ngs_cfg["fastq_suffix"].endswith(".gz") else '',
+                                '--bzip2' if ngs_cfg["fastq_suffix"].endswith(".bzip2") else ''])
+    input: _sra_file
+    output: read1 = "{prefix}" + ngs_cfg["read1_label"] + ngs_cfg["fastq_suffix"],
+            read2 = "{prefix}" + ngs_cfg["read2_label"] + ngs_cfg["fastq_suffix"]
+    shell: "{params.cmd} {params.options} -O $(dirname {wildcards.prefix}) $(basename {wildcards.prefix})"
+
+def _get_run(wildcards):
+    (sample, run) = wildcards.prefix.split("_")
+    return os.path.join(sra_cfg['_datadir'], "{run}_{read}".format(run=run, read=wildcards.read) + ngs_cfg["fastq_suffix"])
+
+rule sratools_link_sra_fastq:
+    """Link sra run fastq file from download directory to output path"""
+    input: fastq = _get_run
+    output: fastq = os.path.join("{path}", "{prefix}_{read}" + ngs_cfg["fastq_suffix"])
+    shell: "ln -s {input.fastq} {output.fastq}"
+
+ruleorder: sratools_link_sra_fastq > sratools_fastq_dump

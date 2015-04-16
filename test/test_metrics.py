@@ -22,10 +22,10 @@ def setUp():
     for root, dirs, files in os.walk(metricsroot):
         metricsfiles += [os.path.join(root, x) for x in files if x.endswith('metrics')]
 
-    align_metrics = [x for x in metricsfiles if x.endswith('align_metrics')]
-    hs_metrics = [x for x in metricsfiles if x.endswith('hs_metrics')]
-    insert_metrics = [x for x in metricsfiles if x.endswith('insert_metrics')]
-    dup_metrics = [x for x in metricsfiles if x.endswith('dup_metrics')]
+    align_metrics = sorted([x for x in metricsfiles if x.endswith('align_metrics')])
+    hs_metrics = sorted([x for x in metricsfiles if x.endswith('hs_metrics')])
+    insert_metrics = sorted([x for x in metricsfiles if x.endswith('insert_metrics')])
+    dup_metrics = sorted([x for x in metricsfiles if x.endswith('dup_metrics')])
 
     (alnmet, _) = _read_picard_metrics(align_metrics[0])
     (insmet, inshist) = _read_picard_metrics(insert_metrics[0])

@@ -8,7 +8,7 @@ sml_config = get_sml_config()
 
 config_default = { 
     'bio.ngs.tools.bedtools' : {
-        'home' : ".",
+        'home' : os.getenv("BEDTOOLS_HOME", os.curdir),
         'bfile' : "",
         'options' : "",
         'coveragebed' : {
@@ -16,6 +16,10 @@ config_default = {
         },
         'intersectbed' : {
             'cmd' : 'intersectBed',
+            'options' : "",
+        },
+        'bamtobed' : {
+            'cmd' : 'bamToBed',
             'options' : "",
         },
         'sequence_capture' : {
@@ -30,6 +34,14 @@ update_sml_config(config_default)
 sml_cfg = get_sml_config()
 
 bedtools_cfg = get_sml_config('bio.ngs.tools.bedtools')
+
+rule bedtool_bamtobed:
+    """Convert a bam file to bed format"""
+    params: cmd = os.path.join(bedtools_cfg['home'], bedtools_cfg['bamtobed']['cmd']),
+            options = bedtools_cfg['options']
+    input: "{prefix}.bam"
+    output: "{prefix}.bed"
+    shell: "{params.cmd} {params.options} -i {input} > {output}"
 
 rule bedtools_bam2coverage:
     """Calculate coverage for a bam file.

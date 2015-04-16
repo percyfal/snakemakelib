@@ -1,22 +1,72 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.config import update_sml_config
+from collections import namedtuple
+from snakemakelib.config import update_sml_config, get_sml_config
+from snakemakelib.bio.ngs.regexp import RunRegexp, SampleRegexp
+
+# Add configuration variable to snakemake global config object
+config['samples'] = config.get("samples", [])
+config['regions'] = config.get("regions", []) 
+config['runs'] = config.get("runs", [])
+
+# Predefined sample organization configurations
+#
+# The dictionaries below give examples of some commonly used sample
+# configurations. A specific sample organization is activated by
+# setting the 'sample_organization' key below. Configurations must
+# include:
+#
+# raw_run_re: RunRegexp for raw data, as delivered from sequencing facility or the like
+# run_id_re: RunRegexp for run naming, which may or may not be different from 'raw_run_re'
+# sample_ru: SampleRegexp for sample naming
+#
+sample_org = namedtuple('sample_organization', 'raw_run_re run_id_re sample_re')
+sample_organization = {
+    # All data in sample directory
+    'sample' : { 'sampleorg' : sample_org(RunRegexp(os.path.join("(?P<SM>[a-zA-Z0-9]+)", "(?P=SM)")),
+                                          RunRegexp(os.path.join("(?P<SM>[a-zA-Z0-9]+)", "(?P=SM)")),
+                                          SampleRegexp(os.path.join("(?P<SM>[a-zA-Z0-9]+)", "(?P=SM)"))),
+                },
+    # Data in sample directory divided in subdirectory for each run, SRA-like
+    'sample_run_sra' : {
+        'sampleorg' : sample_org(RunRegexp(os.path.join("(?P<SM>[a-zA-Z0-9]+)", "(?P<PU>[a-zA-Z0-9]+)", "(?P=PU)")),
+                                 RunRegexp(os.path.join("(?P<SM>[a-zA-Z0-9]+)", "(?P<PU>[a-zA-Z0-9]+)", "(?P=PU)")),
+                                 SampleRegexp(os.path.join("(?P<SM>[a-zA-Z0-9]+)", "(?P=SM)"))),
+        },
+    # Data in sample directory divided in subdirectory for each run, illumina-like
+    'sample_run_illumina' : {
+        'sampleorg' : sample_org(RunRegexp(os.path.join("(?P<SM>P[0-9]+_[0-9]+)", "(?P<DT>[0-9]+)_(?P<PU>[A-Z0-9]+XX)", "(?:[0-9])_(?P=DT)_(?P=PU)_(?P=SM)")),
+                                 RunRegexp(os.path.join("(?P<SM>P[0-9]+_[0-9]+)", "(?P<DT>[0-9]+)_(?P<PU>[A-Z0-9]+XX)", "(?:[0-9])_(?P=DT)_(?P=PU)_(?P=SM)")),
+                                 SampleRegexp(os.path.join("(?P<SM>P[0-9]+_[0-9]+)", "(?P=SM)"))),
+        },
+    # Illumina sequence data as delivered by SciLife
+    'Illumina@SciLife' : {
+        'sampleorg' : sample_org(RunRegexp(os.path.join("(?P<SM>P[0-9]+_[0-9]+)", "(?P<DT>[0-9]+)_(?P<PU1>[A-Z0-9]+XX)", "(?P<PU2>[0-9])_(?P=DT)_(?P=PU1)_(?P=SM)")),
+                                 RunRegexp(os.path.join("(?P<SM>P[0-9]+_[0-9]+)", "(?P<DT>[0-9]+)_(?P<PU1>[A-Z0-9]+XX)", "(?P<PU2>[0-9])_(?P=DT)_(?P=PU1)_(?P=SM)")),
+                                 SampleRegexp(os.path.join("(?P<SM>P[0-9]+_[0-9]+)", "(?P=SM)"))),
+        },
+    'PacBio' : {
+    },
+    'SOLiD' : {
+    },
+}
 
 config_default = { 
     'bio.ngs.settings' : {
-        'fastq_suffix' : ".fastq",
-        'flowcells' : [],
-        'flowcellruns' : [],
-        'flowcell_suffix' : "XX",
+        'aligner' : "bwa",
+        'center' : "",
+        'fastq_suffix' : ".fastq.gz",
         'inputdir' : ".",
-        'lanes' : [],
+        'sample_organization' : "sample",
         'read1_label' : "_1",
         'read2_label' : "_2",
         'read1_suffix' : ".fastq.gz",
         'read2_suffix' : ".fastq.gz",
-        'regions' : [],
-        'run_id_re' : "[0-9]_[0-9]+_[A-Z0-9]+XX_P[0-9]+_[0-9]+",
-        'samples' : [],
+        'regions' : config["regions"],
+        'runs' : config["runs"],
+        'samples' : config["samples"],
+        'sampleinfo' : "", # generic; samplesheet could be Illuminas csv samplesheet; treat elsewhere?
+        'sample_column_map' : {}, # map regexp group names to column names in sampleinfo
         'threads' : 8,
         'annotation' : {
             'annot_label' : "",
@@ -25,7 +75,8 @@ config_default = {
         'db' : {
             'dbsnp' : "",
             'ref' : "",
-            'build' : 'hg19',
+            'build' : '',
+            'build_config' : None,
         },
         'java' : {
             'java_mem' : "6g",
@@ -35,14 +86,15 @@ config_default = {
             'bait_regions' : "",
             'target_regions' : "",
         },
+        'rnaseq' : {
+            'quantification' : ['rsem'],
+        },
     },
 }
 
 update_sml_config(config_default)
 
-# Add configuration variable to snakemake global config object
-config['lanes'] = config.get("lanes", [])
-config['samples'] = config.get("samples", [])
-config['regions'] = config.get("regions", []) 
-config['flowcells'] = config.get("flowcells", [])  
+ngs_conf = get_sml_config('bio.ngs.settings')
+
+update_sml_config({'bio.ngs.settings' : sample_organization[ngs_conf['sample_organization']]})
 

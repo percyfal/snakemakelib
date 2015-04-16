@@ -2,7 +2,7 @@
 import os
 import re
 from snakemakelib.config import update_sml_config, get_sml_config
-from snakemakelib.bio.ngs.methylseq.bismark import ref, report_label, align_suffix
+from snakemakelib.bio.ngs.methylseq.bismark import report_label, align_suffix
 
 include: '../settings.rules'
 include: '../qc/sequenceprocessing.rules'
@@ -12,8 +12,8 @@ ngs_cfg = get_sml_config('bio.ngs.settings')
 
 config_default = {
     'bio.ngs.methylseq.bismark' : {
-        'ref' : ref(),
         'bowtie2' : True,
+        'ref' : "",
         'trim_galore' : True,
         'paired_end' : True,
         'align' : {
@@ -70,17 +70,17 @@ rule bismark_PE_align:
             ref = os.path.dirname(cfg['ref']),
             sfx = align_suffix()
     threads: cfg['align']['threads']
-    input: read1="{path}" + os.sep + "{prefix}" + ngs_cfg['read1_label'] + qc_cfg['trim_galore']['read1_suffix'] if cfg['trim_galore'] else ngs_cfg['read1_suffix'],\
-           read2="{path}" + os.sep + "{prefix}" + ngs_cfg['read2_label'] + qc_cfg['trim_galore']['read2_suffix'] if cfg['trim_galore'] else ngs_cfg['read2_suffix']
-    output: alignout="{path}" + os.sep + "{prefix}" + align_suffix(), report="{path}" + os.sep + "{prefix}" + report_label() + ".txt"
-    shell: "{params.cmd} {params.options} {params.ref} -1 {input.read1} -2 {input.read2} -o {wildcards.path} -B {wildcards.prefix}" + align_suffix(basename=True)
+    input: read1="{prefix}" + ngs_cfg['read1_label'] + qc_cfg['trim_galore']['read1_suffix'] if cfg['trim_galore'] else ngs_cfg['read1_suffix'],\
+           read2="{prefix}" + ngs_cfg['read2_label'] + qc_cfg['trim_galore']['read2_suffix'] if cfg['trim_galore'] else ngs_cfg['read2_suffix']
+    output: alignout="{prefix}" + align_suffix(), report="{prefix}" + report_label() + ".txt"
+    shell: "{params.cmd} {params.options} {params.ref} -1 {input.read1} -2 {input.read2} -o $(dirname {wildcards.prefix}) -B $(basename {wildcards.prefix})" + align_suffix(basename=True)
 
 rule bismark_deduplicate:
     """bismark: Run bismark deduplication."""
     params: options = cfg['deduplicate']['options'],
             cmd = cfg['deduplicate']['cmd'],
-    input: "{path}" + os.sep + "{prefix}" + ".bam"
-    output: "{path}" + os.sep + "{prefix}.deduplicated.bam", "{path}" + os.sep + "{prefix}.deduplication_report.txt"
+    input: "{prefix}" + ".bam"
+    output: "{prefix}.deduplicated.bam", "{prefix}.deduplication_report.txt"
     shell: "{params.cmd} {params.options} {input}"
     
 
@@ -118,7 +118,7 @@ rule bismark_merge_alignment_reports:
     """bismark: Merge alignment reports from separate runs for a sample.
 
     """
-    input: cfg['report']['inputfun']
+    input: dict(cfg['report'])['inputfun']
     output: report="{path}" + os.sep + "{prefix}" + picard_config['merge_sam']['label'] + "{suffix}" + ".bam" + report_label() + ".txt"
     run:
         order = []

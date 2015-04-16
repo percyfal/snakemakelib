@@ -2,14 +2,10 @@
 import os
 from snakemakelib.config import update_sml_config, get_sml_config
 from snakemakelib.bio.ngs.targets import generic_target_generator
-from snakemakelib.bio.ngs.utils import ReadGroup
 
 atac_config = {
     'workflows.bio.atac_seq' : {
         'aligner' : 'bowtie',
-    },
-    'bio.ngs.settings' : {
-        'sample_organization' : 'Illumina@SciLife',
     },
 }
 aligner_config = {
@@ -33,20 +29,21 @@ include: os.path.join(p, "bio/ngs", "settings.rules")
 include: os.path.join(p, "bio/ngs/align", aligner + ".rules")
 include: os.path.join(p, "bio/ngs/qc", "picard.rules")
 
+ruleorder: picard_add_or_replace_read_groups > bowtie_align > samtools_index > picard_build_bam_index
 
-ruleorder: picard_add_or_replace_read_groups > samtools_index
+ruleorder: picard_mark_duplicates > bowtie_align
 
 ngs_cfg = get_sml_config('bio.ngs.settings')
+
 if workflow._workdir is None:
     raise Exception("no workdir set, or set after include of 'ATAC-seq.workflow'; set workdir before include statement!")
-path = workflow._workdir
 
 # Target suffixes
-BAM_TARGET_SUFFIX = ".sort.merge.rg.dup.bam"
-
-BAM_TARGETS = generic_target_generator(fmt=ngs_cfg['sample_pfx_fmt'] + BAM_TARGET_SUFFIX, rg = ReadGroup(ngs_cfg['run_id_pfx_re'] + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']), cfg=ngs_cfg, path=path)
+ALIGN_TARGET_SUFFIX = ".sort.merge.rg.dup.bam"
+ALIGN_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].run_id_re, src_re = ngs_cfg['sampleorg'].raw_run_re, target_suffix = ALIGN_TARGET_SUFFIX, filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],  **ngs_cfg)
 
 # Rules
 rule atacseq_finaldup:
     """Run ATAC-seq alignment, merge and duplication removal"""
-    input: BAM_TARGETS
+    input: ALIGN_TARGETS
+

@@ -101,19 +101,21 @@ def _rsem_find_result_files_fn(wildcards):
 rule rsem_summarize_expression_data:
     """Summarize expression results"""
     input: _rsem_find_result_files_fn
-    output: os.path.join("{path}", "rsem.{label}.{type}.csv")
+    output: csv = os.path.join("{path}", "rsem.{label}.{type}.csv")
     run:
-        df = None
+        first = True
         for f in input:
             try:
                 sample = ngs_cfg['sampleorg'].sample_re.parse(f)['SM']
             except KeyError:
                 raise Exception("failed to parse sample name 'SM' from input file name")
-            df_tmp = pd.read_table(f)
-            df_tmp["sample"] = sample
-            if df is None:
+            tmp = pd.read_table(f)
+            df_tmp = pd.DataFrame({k:tmp[k] for k in ["expected_count", "TPM", "FPKM"]})
+            df_tmp.index = tmp["gene_id"]
+            if first:
                 df = df_tmp
+                first = False
             else:
-                df = df.append(df_tmp)
-        print(df.shape)
+                df = pd.concat([df, df_tmp])
+        df.to_csv(output.csv)
     

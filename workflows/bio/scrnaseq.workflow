@@ -35,7 +35,14 @@ def find_scrnaseq_merge_inputs(wildcards):
     sources = [src for src in sources if os.path.dirname(src).startswith(wildcards.prefix)]
     return sources
 
+
+# Configuration
 config_default = {
+    'workflows.bio.scrnaseq' : {
+        'qc' : {
+            
+        },
+    },
     'bio.ngs.settings' : {
         'aligner' : 'bowtie',
     },
@@ -69,7 +76,19 @@ if aligner in ["bowtie", "bowtie2"]:
 
 if workflow._workdir is None:
     raise Exception("no workdir set, or set after include of 'scrnaseq.workflow'; set workdir before include statement!")
-path = workflow._workdir
+
+##################################################
+# Target definitions
+##################################################
+ALIGN_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].run_id_re, src_re = ngs_cfg['sampleorg'].raw_run_re, target_suffix = _merge_suffix(aligner), filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],  **ngs_cfg)
+
+RSEQC_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, target_suffix = '.merge_rseqc/rseqc_qc_8.txt', src_re = ngs_cfg['sampleorg'].raw_run_re, filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg)
+
+RPKMFORGENES_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, target_suffix = '.merge.rpkmforgenes', src_re = ngs_cfg['sampleorg'].raw_run_re, filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg) if 'rpkmforgenes' in ngs_cfg['rnaseq']['quantification']  else []
+
+RSEM_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, target_suffix = '.merge.tx.isoforms.results', src_re = ngs_cfg['sampleorg'].raw_run_re, filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg) + ['report/rsem.merge.tx.genes.csv', 'report/rsem.merge.tx.isoforms.csv'] if 'rsem' in ngs_cfg['rnaseq']['quantification']  else []
+
+REPORT_TARGETS = ['report/star.Aligned.out.csv', 'report/star.Aligned.out.mapping_summary.html']
 
 picard_config = get_sml_config("bio.ngs.qc.picard")
 
@@ -91,15 +110,12 @@ rule scrnaseq_picard_merge_sam_transcript:
       else:
           os.symlink(os.path.relpath(input[0], wildcards.path), output.merge)
 
-ALIGN_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].run_id_re, src_re = ngs_cfg['sampleorg'].raw_run_re, target_suffix = _merge_suffix(aligner), filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],  **ngs_cfg)
+# QC rules
+QC_INPUT = []
+# rule scrnaseq_qc:
+#     """Perform basic qc on samples"""
+#     input: star
 
-RSEQC_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, target_suffix = '.merge_rseqc/rseqc_qc_8.txt', src_re = ngs_cfg['sampleorg'].raw_run_re, filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg)
-
-RPKMFORGENES_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, target_suffix = '.merge.rpkmforgenes', src_re = ngs_cfg['sampleorg'].raw_run_re, filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg) if 'rpkmforgenes' in ngs_cfg['rnaseq']['quantification']  else []
-
-RSEM_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, target_suffix = '.merge.tx.isoforms.results', src_re = ngs_cfg['sampleorg'].raw_run_re, filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg) if 'rsem' in ngs_cfg['rnaseq']['quantification']  else []
-
-REPORT_TARGETS = ['report/star.Aligned.out.csv', 'report/star.Aligned.out.mapping_summary.html']
 
 # All rules
 rule scrnaseq_all:

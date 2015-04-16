@@ -6,6 +6,7 @@ import numpy as np
 from bokeh.models import HoverTool, ColumnDataSource, BoxSelectTool
 from bokeh.models.widgets import VBox, HBox, TableColumn, DataTable
 from bokeh.plotting import figure, output_file, show, gridplot
+from bokeh.palettes import brewer
 from snakemakelib.report.utils import recast, trim_header
 
 def collect_star_alignment_results(input, samples):
@@ -30,7 +31,9 @@ def make_star_alignment_plots(df, samples, do_qc=False, min_reads=200000, min_ma
     df['i'] = list(range(0, len(df.index)))
     df['samples'] = samples
     df['mismatch_sum'] = df['Mismatch_rate_per_base__PCT'] + df['Deletion_rate_per_base'] + df['Insertion_rate_per_base']
-    colormap = {'False':'blue', 'True':'red'}
+
+    colors = brewer["PiYG"][3]
+    colormap = {'False' : colors[0], 'True' : colors[1]}
     
     columns = [
         TableColumn(field="samples", title="Sample"),

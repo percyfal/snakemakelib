@@ -67,8 +67,6 @@ include: os.path.join(p, "bio/ngs/rnaseq", "rsem.rules")
 if aligner in ["bowtie", "bowtie2"]:
     ruleorder: bamtools_filter > picard_merge_sam > picard_sort_bam > bowtie_align
 
-ruleorder: samtools_bam_bai_index > picard_build_bam_bai_index
-
 if workflow._workdir is None:
     raise Exception("no workdir set, or set after include of 'scrnaseq.workflow'; set workdir before include statement!")
 path = workflow._workdir

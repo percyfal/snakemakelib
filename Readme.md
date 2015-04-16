@@ -1,11 +1,6 @@
 ## snakemakelib ##
 
-<table>
-<tr>
-  <td>Release</td>
-  <td><img src="https://travis-ci.org/percyfal/snakemakelib.svg" alt="master" /></td>
-</tr>
-</table>
+<img src="https://travis-ci.org/percyfal/snakemakelib.svg" alt="master" />
 
 ## About ##
 

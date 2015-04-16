@@ -1,8 +1,15 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.config import update_sml_config, get_sml_config
-from snakemakelib.utils import is_compressed
+import jinja2
+import pandas as pd
+from bokeh.plotting import gridplot
+from snakemake.report import data_uri
+from snakemakelib.config import update_sml_config, get_sml_config, sml_templates_path
+from snakemakelib.stat import is_compressed, is_installed
+from snakemakelib.bokeh.publish import static_html
 from snakemakelib.bio.ngs.db import index
+from snakemakelib.bio.ngs.targets import generic_target_generator
+from snakemakelib.bio.ngs.align.star import collect_star_alignment_results, make_star_alignment_plots
 
 include: '../../../comp/settings.rules'
 include: '../settings.rules'
@@ -19,7 +26,7 @@ config_default = {
             'threads' : ngs_conf['threads'],
             'options' : "--genomeSAindexNbases 14",
             'sjdbGTFfile' : ngs_conf['annotation']['transcript_annot_gtf'],
-            'sjdbOverhang' : 100,
+            'sjdbOverhang' : 99,
             'genome' : "Genome",
             'SAname' : "SA",
         },
@@ -30,6 +37,21 @@ config_default = {
         },
     },
 }
+
+update_sml_config(config_default)
+
+star_cfg = get_sml_config('bio.ngs.align.star')
+
+if not is_installed(star_cfg['cmd']):
+    raise Exception("{prog} not installed or not in PATH; either add the path to $PATH or set the full executable path in configuration section bio.ngs.align.star.cmd".format(star_cfg['cmd']))
+
+def _star_suffix():
+    if star_cfg['align']['outSAMtype'].find("Unsorted") > -1:
+        return ".Aligned.out.bam"
+    elif star_cfg['align']['outSAMtype'].find("SortedByCoordinate") > -1:
+        return ".Aligned.sortedByCoord.out.bam"
+
+config_default['bio.ngs.align.star']['align']['suffix'] = _star_suffix()
 
 update_sml_config(config_default)
 
@@ -54,7 +76,7 @@ rule star_index:
                                 ]),
             genomedir = os.path.dirname(star_cfg['index', 'star'])
     input: ref = star_cfg['ref']
-    output: Genome=os.path.join(os.path.dirname(star_cfg['index', "star"]), "Genome"), SA=os.path.join(os.path.dirname(star_cfg['index', "star"]), "SA")
+    output: Genome = os.path.join(os.path.dirname(star_cfg['index', "star"]), "Genome"), SA=os.path.join(os.path.dirname(star_cfg['index', "star"]), "SA")
     threads: star_cfg['star_index']['threads']
     shell: "{params.cmd} --runThreadN {threads} --runMode genomeGenerate --genomeDir {params.genomedir} --genomeFastaFiles {input.ref} {params.options}"
 
@@ -62,14 +84,58 @@ rule star_align:
     """Run STAR alignment"""
     params: cmd = star_cfg['cmd'],
             genomedir = os.path.dirname(star_cfg['index', 'star']),
-            options = " ".join([\
-            star_cfg['align']['options'],\
+            options = " ".join([star_cfg['align']['options'],
                                 "--readFilesCommand {cmd}".format(cmd=comp_cfg['compression']['prog_map'][os.path.splitext(ngs_cfg['fastq_suffix'])[1]]) if is_compressed(ngs_cfg['fastq_suffix']) else "",
                                 "--outSAMtype BAM {}".format(star_cfg['align']['outSAMtype']),
-                            ])
-    input: read1="{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],\ 
-           read2="{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['fastq_suffix'],\
+                                "--quantMode TranscriptomeSAM" if 'rsem' in ngs_cfg['rnaseq']['quantification'] else "",
+                                ])
+    input: read1="{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],
+           read2="{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['fastq_suffix'],
            index=star_cfg['index', 'star']
-    output: (["{prefix}.Aligned.out.bam"] if star_cfg['align']['outSAMtype'].find("Unsorted") > -1 else []) + (["{prefix}.Aligned.sortedByCoord.out.bam"] if star_cfg['align']['outSAMtype'].find("SortedByCoordinate") > -1 else [])
+    output: (["{prefix}" + star_cfg['align']['suffix']] + ["{prefix}" + ".Aligned.toTranscriptome.out.bam"] if 'rsem' in ngs_cfg['rnaseq']['quantification'] else [])
     threads: star_cfg['align']['threads']
     shell: "{params.cmd} --runThreadN {threads} --genomeDir {params.genomedir} --readFilesIn {input.read1} {input.read2} {params.options} --outFileNamePrefix {wildcards.prefix}."
+
+def _star_find_result_files_fn(wildcards):
+    ngs_cfg = get_sml_config('bio.ngs.settings')
+    sources = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].run_id_re, src_re=ngs_cfg['sampleorg'].run_id_re, target_suffix = "." + wildcards.label + 'bam', filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg)
+    return sources
+
+# QC summaries
+# This is the information in summary_starlog.txt
+rule star_summarize_alignment_runs:
+    """Summarize alignment data for alignment(s) based on runs.
+
+    FIXME: The indexing should be done by run; currently results are
+    indexed by sample, which is ok as long as there is only one run
+    per sample.
+
+    Important: in order to catch {label}, as a minimum, this needs to
+    be set to 'Aligned.out.'; the minimum target is therefore star.Aligned.out.csv
+
+    """
+    input: _star_find_result_files_fn
+    output: csv = os.path.join("{path}", "star.{label}csv")
+    run:
+        ngs_cfg = get_sml_config('bio.ngs.settings')
+        inputfiles = [x.replace(wildcards.label, "Log.final.out.").replace(".bam", "") for x in input]
+        try:
+            samples = [ngs_cfg['sampleorg'].run_id_re.parse(f)['SM'] for f in inputfiles]
+        except KeyError:
+            raise Exception("failed to parse sample name 'SM' from input list")
+        df = collect_star_alignment_results(inputfiles, samples)
+        df.to_csv(output.csv)
+
+rule star_plot_aligmnent_summary:
+    """Plot alignment data summary"""
+    input: csv = os.path.join("{path}", "star.{label}csv")
+    output: star_summary = os.path.join("{path}", "star.{label}mapping_summary.html")
+    run:
+        df = pd.read_csv(input.csv, index_col=0)
+        uri = {'uri':data_uri(input.csv), 'file':input.csv}
+        samples = list(df.index)
+        d = make_star_alignment_plots(df, samples)
+        tp = jinja2.Template(open(os.path.join(sml_templates_path(), 'bio_ngs_align_star_summary.html')).read())
+        with open(output.star_summary, "w") as fh:
+            fh.write(static_html(tp, **{'star_plots' : d['plots'], 'table' : d['table'], 'uri' : uri}))
+        

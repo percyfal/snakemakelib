@@ -1,9 +1,9 @@
 # Copyright (c) 2014 Per Unneberg
-import os
+import re
 import string
-import glob
 import math
 import itertools
+from datetime import datetime
 from collections import OrderedDict
 
 class Template(string.Formatter):
@@ -19,6 +19,26 @@ class Template(string.Formatter):
             else:
                 spec = 'd'
         return super(Template, self).format_field(value, spec) + sfx
+
+def recast(x, strpfmt="%b %d %H:%M:%S"):
+    x = x.rstrip().lstrip()
+    if re.match('^[0-9]+$', x):
+        return int(x)
+    elif re.match('^[0-9]+[,\.][0-9]+$', x):
+        return float(x.replace(",", "."))
+    elif re.search("%", x):
+        return float(x.replace(",", ".").replace("%", ""))
+    else:
+        try:
+            dateobj = datetime.strptime(x, strpfmt)
+            return dateobj
+        except:
+            return x
+
+# Replace whitespace with underscore, convert percent characters to PCT
+def trim_header(x, underscore=False, percent=False):
+    return x.lstrip().rstrip().replace(" ", "_" if underscore else " ").replace("%", "PCT" if percent else "%").replace(",", "_" if underscore else " ")
+
 
 def group_samples(samples, grouping="sample"):
     """Group samples by sample or sample run.

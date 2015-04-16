@@ -14,16 +14,19 @@ logger = logging.getLogger(__name__)
 
 snakefile = """# -*- snakemake -*-
 import os
+import sys
+import re
 from snakemakelib.config import init_sml_config, get_sml_config
+from snakemakelib.utils import rreplace
+from snakemakelib.bio.ngs.targets import generic_target_generator
 
 workdir: '{workdir}'
 
 local_config = {{
     'bio.ngs.settings' : {{
-        'fastq_suffix' : ".fastq.gz",
+        'sample_organization' : 'Illumina@SciLife',
         'samples' : config.get("samples", ['P001_101', 'P001_102']),
-        'flowcells' : config.get("flowcells", ['120924_AC003CCCXX', '121015_BB002BBBXX']),
-        'lanes' : [1],
+        'runs' : config.get("runs", []),
         'db' : {{
             'ref' : '{ref}',
             'dbsnp' : '{dbsnp}',
@@ -58,17 +61,13 @@ local_config = {{
 
 init_sml_config(local_config)
 
-include: '{methylseq}'
-include: '{variation}'
+if any([re.search('bismark', arg) for arg in sys.argv]):
+    include: '{methylseq}'
+else:
+    include: '{variation}'
 
 cfg = get_sml_config('bio.ngs.settings')
-
-# Update FASTQC_TARGETS
-FASTQC_TARGETS = expand("{{path}}/{{sample}}/{{flowcell}}/{{lane}}_{{flowcell}}_{{sample}}_1_fastqc.html {{path}}/{{sample}}/{{flowcell}}/{{lane}}_{{flowcell}}_{{sample}}_2_fastqc.html".split(), sample=cfg['samples'][0], flowcell=cfg['flowcells'][0], lane=cfg['lanes'], path=os.curdir)
-
-BISMARK_TARGETS = expand("{{path}}/{{sample}}/CpG_OB_{{sample}}.merge.deduplicated.txt.gz", sample=cfg['samples'][0], flowcell=cfg['flowcells'][0], lane=cfg['lanes'], path=os.curdir)
-
-BISMARK_REPORT_TARGETS = expand("{{path}}/{{sample}}/{{sample}}.merge.deduplicated.bam{{report_label}}.html", sample=cfg['samples'][0], flowcell=cfg['flowcells'][0], lane=cfg['lanes'], path=os.curdir, report_label=report_label())
+path = cfg.get('path') if not cfg.get('path') is None else os.curdir
 
 """
          
@@ -116,8 +115,8 @@ class TestVariationWorkflow(unittest.TestCase):
         """
         outputs = ['P001_101/P001_101.sort.merge.rg.dup.realign.recal.bp_variants.phased.vcf',
                    'P001_102/P001_102.sort.merge.rg.dup.realign.recal.bp_variants.phased.vcf']
-        subprocess.check_call(['snakemake'] + outputs)
-        subprocess.check_call(['snakemake', 'metrics'])
+        subprocess.check_call(['snakemake', '-F'] + outputs)
+        subprocess.check_call(['snakemake', '-F', 'variation_metrics'])
 
 class TestBwaAlign(unittest.TestCase):
     def test_bwa_align(self):
@@ -138,5 +137,5 @@ class TestMethylSeq(unittest.TestCase):
 
     def test_bismark(self):
         """Test bismark"""
-        subprocess.check_call(['snakemake', '-F', 'run_bismark'])
+        subprocess.check_call(['snakemake', '-F', 'run_bismark_run'])
 

@@ -3,9 +3,10 @@
 Configuration module
 """
 import os
-from snakemakelib.log import get_logger
+import yaml
+from snakemakelib.log import LoggerManager
 
-logger = get_logger()
+smllogger = LoggerManager().getLogger(__name__)
 
 class BaseConfig(dict):
     def __init__(self, *args, **kwargs):
@@ -18,7 +19,7 @@ class BaseConfig(dict):
         for k,v in self.items():
             if isinstance(v, dict):
                 if not isinstance(v, BaseConfig):
-                    logger.debug("Updating key {k} to <BaseConfig> class".format(k=k))
+                    smllogger.debug("Updating key {k} to <BaseConfig> class".format(k=k))
                     self[k] = BaseConfig(v)
                 self[k]._inspect_sections()
 
@@ -54,7 +55,7 @@ class BaseConfig(dict):
         if not (isinstance(section, str)):
             raise TypeError("argument 'section' must be of type <str>")
         if section in self._sections:
-            logger.error("Section {section} already present in configuration ".format(section=section))
+            smllogger.error("Section {section} already present in configuration ".format(section=section))
             return
         self._sections.append(section)
         self[section] = None
@@ -70,7 +71,7 @@ class BaseConfig(dict):
         try:
             return self[section]
         except KeyError:
-            logger.error("Error: no such section {} in config; returning entire config".format(section))
+            smllogger.error("Error: no such section {} in config; returning entire config".format(section))
             return self
 
     @property
@@ -100,19 +101,7 @@ def get_sml_config(section=None):
 def update_sml_config(config_default):
     """Update sml configuration object.
 
-    Loops through items in default configuration and updates the cfg
-    configuration. There are two cases:
-
-    1. If the key/value pair is not present in custom_cfg the value in
-       default is used to set the coresponding value in custom_cfg
-    2. Else, use the set value in custom_cfg.
-
-    This procedure ensures that if a section is undefined in
-    custom_cfg, a defualt value will always be present.
-
     Args:
-        custom_cfg: A configuration object with custom settings of
-                    type <BaseConfig>
         config_default: default configuration object of type <dict> or <BaseConfig>
     """    
     global __sml_config__
@@ -124,8 +113,8 @@ def update_sml_config(config_default):
 
 def _update_sml_config(sml_config, config_default):
     """Update snakemakelib configuration object. The default object is
-defined in the preamble of rules files and contains sensitive default
-settings.
+    defined in the preamble of rules files and contains sensitive
+    default settings.
 
     While traversing the config dictionary, make sure that the
     configuration settings correspond to those in the default
@@ -133,9 +122,21 @@ settings.
     BaseConfig object, then the config object should also point to a
     BaseConfig object.
 
+    Loops through items in config_default and updates the sml_config
+    configuration. There are two cases:
+
+    1. If the key/value pair is not present in sml_config the value in
+       config_default is used to set the coresponding value in
+       sml_config
+
+    2. Else, use the set value in sml_config.
+
+    This procedure ensures that if a section is undefined in
+    sml_config, a default value will always be present.
+
     Args:
       sml_config: sml configuration to update
-      default: config with default values
+      config_default: config with default values
 
     Returns:
       updated configuration object
@@ -155,17 +156,45 @@ settings.
         if not sml_config.has_section(section):
             sml_config.add_section(section)
         if (not isinstance(dict(config_default)[section], BaseConfig)):
+            smllogger.debug("Key is not type BaseConfig: got type '{type}'".format(type = type(dict(config_default)[section])))
             # if config has no value set to default
             if sml_config.get(section) is None:
                 sml_config[section] = dict(config_default)[section]
+            # else make sure variable is expanded
+            else:
+                if isinstance(dict(sml_config)[section], str):
+                    smllogger.debug("expanding variables in config string, if present")
+                    sml_config[section] = os.path.expandvars(sml_config[section])
         else:
             sml_config[section] = _update_sml_config(sml_config[section], dict(config_default)[section])
-    # if not set(list(config)).issuperset(set(list(default))):
-    #     print(list(config))
-    #     print(list(default))
-    #     # TODO: make this a warning
-    #     logger.info("Sections {} not defined in default rules configuration; this setting will not affect rules behaviour".format(list(set(list(config)).difference(set(list(default))))))
     return sml_config
+
+def load_sml_config(cfg_file=None):
+    """Load sml configuration file.
+
+    Will search for configuration files in following order:
+    
+    1. ~/.smlconf.yaml - a personal site-wide configuration file
+    2. ./smlconf.yaml - a standard configuration file residing in the
+        same directory as the Snakefile
+    3. cfg_file, if provided
+
+    Args:
+      cfg_file: custom configuration file to load
+
+    """
+    for fn in [os.path.join(os.getenv("HOME"), ".smlconf.yaml"),
+               os.path.join(os.curdir, "smlconf.yaml"),
+               cfg_file]:
+        if (fn is None):
+            continue
+        if not os.path.exists(fn):
+            continue
+        smllogger.info("Loading configuration from {}".format(fn))
+        with open(fn, "r") as fh:
+            cfg = yaml.load(fh)
+        smllogger.info("Read configuration from {}".format(fn))
+        update_sml_config(cfg)
 
 def sml_path():
     return os.path.dirname(__file__)
@@ -175,3 +204,6 @@ def sml_base_path():
 
 def sml_rules_path():
     return os.path.join(os.path.dirname(os.path.dirname(__file__)), "rules")
+
+def sml_templates_path():
+    return os.path.join(os.path.dirname(os.path.dirname(__file__)), "templates")

@@ -3,9 +3,9 @@ import re
 import os
 from itertools import groupby
 from snakemakelib.utils import isoformat
-# from snakemakelib.log import LoggerManager
+from snakemakelib.log import LoggerManager
 
-# smllogger = LoggerManager().getLogger(__name__)
+smllogger = LoggerManager().getLogger(__name__)
 
 # Match beginning of path if it starts with dot or slash(?)
 REGEXP_DOT_MATCH = r"(?:[\.\w\/]+)?\/"
@@ -29,10 +29,10 @@ class RegexpDict(dict):
     _group_keys = []
     _extra_keys = []
 
-    def __init__(self, regexp, concat="_", *args, **kwargs):
+    def __init__(self, regexp=None, concat="_", *args, **kwargs):
+        super(RegexpDict, self).__init__()
         # Set key values if in kwargs
         self.update({k:v  for k,v in kwargs.items() if k in self._group_keys})
-        dict.__init__(self)
         self._concat = concat
         self._init_regexp(regexp)
         self._init_format()
@@ -54,6 +54,18 @@ class RegexpDict(dict):
         return self.re.pattern
 
     @property
+    def basename_pattern(self):
+        """Return the basename pattern, replacing ?P= expressions with the corresponding group expression"""
+        invmap = {v:k for k,v in self.re.groupindex.items()}
+        remap = {k:"" for k,v in self.re.groupindex.items()}
+        i = 1
+        for m in re.finditer(r"\(?P<[A-Za-z0-9]+>([^\)]+)\)", self.pattern):
+            remap[invmap[i]] = m.group(1)
+            i += 1
+        fmt = re.sub(r"\(?P=([A-Za-z0-9]+)\)", "P<\\1>{\\1})", self.pattern)
+        return os.path.basename(fmt.format(**remap))
+
+    @property
     def fmt(self):
         return self._fmt
 
@@ -62,9 +74,20 @@ class RegexpDict(dict):
         return list(set(self._required_keys + self._group_keys + self._extra_keys))
     
     def _init_format(self):
-        """Initialize formatting string. Find groups defined by (?P<GROUP>) and concatenate """
-        m = re.findall("(\(\?P[<=](\w+)>?|({sep}))".format(sep=os.sep), self.pattern)
-        self._fmt = re.sub("{cct}{sep}{cct}".format(sep=os.sep, cct=self._concat), os.sep, (self._concat.join("{" + x[1] + "}"  if x[1] else x[2] for x in m)))
+        """Initialize formatting string. Find groups defined by (?P<GROUP>) as
+        well as constant expressions and concatenate"""
+        m = re.findall("(\(\?P[<=](\w+)>?|({sep})|(?:[\[\]A-Za-z0-9\-\+\_]+\))|([A-Za-z0-9]+))".format(sep=os.sep), self.pattern)
+        fmtlist = []
+        for x in m:
+            if x[1]:
+                fmtlist.append("{" + x[1] + "}")
+            elif x[2]:
+                fmtlist.append(x[2])
+            elif x[3]:
+                fmtlist.append(x[3])
+        self._fmt = re.sub("_{sep}_".format(sep=os.sep), os.sep, ("_".join(fmtlist)))
+
+
 
     def _validate_keys(self):
         """Validate keys. Importantly, make sure keys with indices, i.e. keys
@@ -89,7 +112,7 @@ class RegexpDict(dict):
             pattern = pattern + REGEXP_SPACER_MATCH + suffix
         m = re.match(pattern, s)
         if m is None:
-            #smllogger.debug("Unable to parse string {s} with regexp {re}".format(s=os.path.basename(s), re=self.re.pattern))
+            smllogger.debug("Unable to parse string {s} with regexp {re}".format(s=os.path.basename(s), re=self.re.pattern))
             return
         # Regular keys
         self.update({k:v for (k,v) in m.groupdict().items() if k not in self._extra_keys})
@@ -106,7 +129,7 @@ class RegexpDict(dict):
 
     def _post_process_keys(self, m):
         pass
-            
+
     def parse(self, s, suffix=""):
         """Parse string and return string representation.
 
@@ -117,6 +140,7 @@ class RegexpDict(dict):
         Returns:
           Regexp object
         """
+        self.clear()
         self._parse_str(s, suffix)
         return self
 
@@ -125,8 +149,8 @@ class SampleRegexp(RegexpDict):
     _group_keys = ['PU']
     _extra_keys = ['PATH']
 
-    def __init__(self, *args, **kwargs):
-        RegexpDict.__init__(self, *args, **kwargs)
+    def __init__(self, regexp=None, *args, **kwargs):
+        super(SampleRegexp, self).__init__(regexp, *args, **kwargs)
 
     def _post_process_keys(self, m):
         self['PATH'] = os.path.dirname(m.string)
@@ -135,8 +159,8 @@ class RunRegexp(RegexpDict):
     _group_keys = ['SM', 'PU', 'DT']
     _extra_keys = ['PATH']
 
-    def __init__(self, *args, **kwargs):
-        RegexpDict.__init__(self, *args, **kwargs)
+    def __init__(self, regexp=None, *args, **kwargs):
+        super(RunRegexp, self).__init__(regexp, *args, **kwargs)
 
     def _post_process_keys(self, m):
         self['PATH'] = os.path.dirname(m.string)
@@ -183,8 +207,8 @@ class ReadGroup(RunRegexp):
     _extra_keys = ['PATH']
     _group_dict =  {'ID' : 'identifier', 'CN' : 'center', 'DS' : 'description', 'DT' : 'date', 'FO' : 'floworder', 'KS' : 'keysequence', 'LB' : 'library', 'PG' : 'program', 'PI' : 'insertsize', 'PL': 'platform', 'PU' : 'platform-unit', 'SM' : 'sample'}
 
-    def __init__(self, opt_prefix="--", *args, **kwargs):
-        RegexpDict.__init__(self, *args, **kwargs)
+    def __init__(self, regexp=None, opt_prefix="--", *args, **kwargs):
+        super(ReadGroup, self).__init__(regexp, *args, **kwargs)
         self._opt_prefix = opt_prefix
 
     def _post_process_keys(self, m):

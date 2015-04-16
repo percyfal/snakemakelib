@@ -42,7 +42,7 @@ config_default = {
         'bait_regions' : ngs_cfg['sequence_capture']['bait_regions'],
         'common_options' : "VALIDATION_STRINGENCY=SILENT",
         'dupmetrics_targets' : [],
-        'home' : ".",
+        'home' : os.getenv("PICARD_HOME", os.curdir),
         'hsmetrics_targets' : [],
         'insertmetrics_targets' : [],
         'java_mem' : ngs_cfg['java']['java_mem'],
@@ -202,7 +202,6 @@ rule picard_add_or_replace_read_groups:
 
 ruleorder: picard_add_or_replace_read_groups > picard_build_bam_index
 
-
 rule picard_merge_sam:
     """Picard: merge sam files.
 
@@ -218,4 +217,6 @@ rule picard_merge_sam:
           inputstr = " ".join(["INPUT={}".format(x) for x in input])
           shell("{cmd} {ips} OUTPUT={out} {opt}".format(cmd=params.cmd, ips=inputstr, out=output.merge, opt=params.options))
       else:
+          if os.path.exists(output.merge):
+              os.unlink(output.merge)
           os.symlink(os.path.relpath(input[0], wildcards.path), output.merge)

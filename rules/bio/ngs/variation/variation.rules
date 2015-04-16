@@ -14,29 +14,29 @@ config_default = {
             'convert_vcf_format' : "vcf4",
             'dblist' : ["dgv", "genomicSuperDups", "gwascatalog", "tfbs", "wgEncodeRegTfbsClustered", "wgEncodeRegDnaseClustered", "phastConsElements46way"],
             'dblist_webfrom_annovar' : ["1000g2012apr", "cosmic64", "esp6500si_all", "esp6500si_ea", "ljb_all", "snp137", "refGene", "avsift"],
-            'path' : os.curdir,
+            'path' : os.getenv("ANNOVAR_HOME", os.curdir),
             'options' : "",
             'table_options' : "--otherinfo",
         },
         'snpeff' : {
-            'path' : os.curdir,
+            'path' : os.getenv("SNPEFF_HOME", os.curdir),
             'java_mem' : bio_cfg['java']['java_mem'],
             'java_tmpdir' : bio_cfg['java']['java_tmpdir'],
             'dblist' : "hg19",
             'genome_version' : bio_cfg['db']['build'],
         },
         'vcftools' : {
-            'path' : os.curdir,
+            'path' : os.getenv("VCFTOOLS_HOME", os.curdir),
             'options' : {
                 'main' : "",
                 'stats' : "",
             },
         },
         'htslib' : {
-            'path' : os.curdir,
+            'path' : os.getenv("HTSLIB_HOME", os.curdir),
         },
         'vcf' : {
-            'path' : os.curdir,
+            'path' : os.getenv("VCF_HOME", os.curdir),
         },
     },
 }

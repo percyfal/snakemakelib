@@ -1,4 +1,4 @@
-# Copyright (C) 2014 by Per Unneberg
+# Copyright (C) 2015 by Per Unneberg
 # pylint: disable=R0904
 import unittest
 import logging

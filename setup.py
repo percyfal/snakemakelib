@@ -3,6 +3,12 @@ from setuptools import setup, find_packages
 import os
 import glob
 
+try:
+    with open("requirements.txt", "r") as fh:
+        install_requires = [x.strip() for x in fh.readlines()]
+except IOError:
+    install_requires = []
+    
 setup(name = "snakemakelib",
       version = "0.1.0",
       author = "Per Unneberg",
@@ -10,15 +16,7 @@ setup(name = "snakemakelib",
       description = "Snakemake rule library with additional utilities",
       license = "MIT",
       scripts = glob.glob('scripts/*.py'),
-      install_requires = [
-          "pyyaml",
-          "matplotlib>=1.3.1",
-          "snakemake>=3.1",
-          "texttable",
-          "sphinx",
-          ## Required for testing
-          "nose",
-      ],
+      install_requires = install_requires,
       test_suite = 'nose.collector',
       packages=find_packages(exclude=['ez_setup', 'test*']),
       namespace_packages = [

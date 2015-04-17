@@ -1,9 +1,13 @@
 # -*- snakemake -*-
 import os
+from snakemakelib.io import set_temp_output
 from snakemakelib.config import update_sml_config, get_sml_config
 from snakemakelib.bio.ngs.targets import generic_target_generator
 
 atac_config = {
+    'settings' : {
+        'temp_rules' : ['sratools_prefetch', 'sratools_fastq_dump']
+    },
     'workflows.bio.atac_seq' : {
         'aligner' : 'bowtie',
     },
@@ -34,6 +38,10 @@ ruleorder: picard_add_or_replace_read_groups > bowtie_align > samtools_index > p
 ruleorder: picard_mark_duplicates > bowtie_align
 
 ngs_cfg = get_sml_config('bio.ngs.settings')
+main_cfg = get_sml_config('settings')
+
+# Set temporary outputs
+set_temp_output(workflow, main_cfg['temp_rules'])
 
 if workflow._workdir is None:
     raise Exception("no workdir set, or set after include of 'ATAC-seq.workflow'; set workdir before include statement!")
@@ -47,3 +55,11 @@ rule atacseq_finaldup:
     """Run ATAC-seq alignment, merge and duplication removal"""
     input: ALIGN_TARGETS
 
+rule atacseq_all:
+    """Run ATAC-seq pipeline"""
+    input: ALIGN_TARGETS
+
+rule atacseq_rules:
+    run:
+        print (workflow._rules['sratools_fastq_dump'].temp_output)
+        print (workflow._rules['sratools_prefetch'].temp_output)

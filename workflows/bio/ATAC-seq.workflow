@@ -59,7 +59,3 @@ rule atacseq_all:
     """Run ATAC-seq pipeline"""
     input: ALIGN_TARGETS
 
-rule atacseq_rules:
-    run:
-        print (workflow._rules['sratools_fastq_dump'].temp_output)
-        print (workflow._rules['sratools_prefetch'].temp_output)

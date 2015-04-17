@@ -54,7 +54,9 @@ class LoggerManager(object):
             if not os.path.exists(fn):
                 continue
             with open(fn, "r") as fh:
-                cfg = yaml.load(fh)
+                cfg_tmp = yaml.load(fh)
+            if cfg_tmp:
+                cfg.update(cfg_tmp)
         return cfg.get("logging", {})
 
     @staticmethod

@@ -144,6 +144,9 @@ class RegexpDict(dict):
         self._parse_str(s, suffix)
         return self
 
+    def __repr__(self):
+        return str(type(self))
+
 class SampleRegexp(RegexpDict):
     _required_keys = ['SM']
     _group_keys = ['PU']

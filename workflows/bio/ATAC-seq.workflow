@@ -11,6 +11,11 @@ atac_config = {
     'workflows.bio.atac_seq' : {
         'aligner' : 'bowtie',
     },
+    'bio.ngs.qc.picard' : {
+        'merge_sam' : {
+            'suffix' : '.sort.dup.bam',
+        },
+    },
 }
 aligner_config = {
     'bio.ngs.align.bowtie' : {
@@ -32,10 +37,9 @@ include: os.path.join(p, 'settings.rules')
 include: os.path.join(p, "bio/ngs", "settings.rules")
 include: os.path.join(p, "bio/ngs/align", aligner + ".rules")
 include: os.path.join(p, "bio/ngs/qc", "picard.rules")
+include: os.path.join(p, "bio/ngs/enrichment", "zinba.rules")
 
-ruleorder: picard_add_or_replace_read_groups > bowtie_align > samtools_index > picard_build_bam_index
-
-ruleorder: picard_mark_duplicates > bowtie_align
+ruleorder: picard_merge_sam > picard_sort_bam > picard_add_or_replace_read_groups > picard_mark_duplicates > bowtie_align
 
 ngs_cfg = get_sml_config('bio.ngs.settings')
 main_cfg = get_sml_config('settings')
@@ -46,16 +50,15 @@ set_temp_output(workflow, main_cfg['temp_rules'])
 if workflow._workdir is None:
     raise Exception("no workdir set, or set after include of 'ATAC-seq.workflow'; set workdir before include statement!")
 
-# Target suffixes
-ALIGN_TARGET_SUFFIX = ".sort.merge.rg.dup.bam"
-ALIGN_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].run_id_re, src_re = ngs_cfg['sampleorg'].raw_run_re, target_suffix = ALIGN_TARGET_SUFFIX, filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],  **ngs_cfg)
+MERGE_TARGET_SUFFIX = ".sort.merge.bam"
+MERGE_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, src_re = ngs_cfg['sampleorg'].raw_run_re, target_suffix = MERGE_TARGET_SUFFIX, filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],  **ngs_cfg)
 
 # Rules
 rule atacseq_finaldup:
     """Run ATAC-seq alignment, merge and duplication removal"""
-    input: ALIGN_TARGETS
+    input: MERGE_TARGETS
 
 rule atacseq_all:
     """Run ATAC-seq pipeline"""
-    input: ALIGN_TARGETS
+    input: MERGE_TARGETS
 

@@ -21,6 +21,7 @@ from snakemakelib.config import update_sml_config, get_sml_config
 from snakemakelib.bio.ngs.utils import dict_to_R
 
 include: "../settings.rules"
+include: "peakseq.rules"
 
 ngs_cfg = get_sml_config('bio.ngs.settings')
 
@@ -54,19 +55,10 @@ update_sml_config(config_default)
 
 zinba_conf = get_sml_config('bio.ngs.settings')
 
-rule zinba_get_mappability_file:
-    """Download mappability file required for analysis.
-
-    See https://code.google.com/p/zinba/wiki/UsingZINBA#2._Mappability_File.
-    """
-    params: urlinput = os.path.join("http://www.bios.unc.edu/~nur2", "map{readlength}_{build}.tgz")
-    output: "{path}/map{readlength}_{build}.tgz"
-    shell: "mkdir -p `dirname {output}` && wget {params.urlinput} -O {output}"
-
-rule zinba_run_sinba:
+rule zinba_run_zinba:
     """Run main zinba pipeline"""
-    input: "{prefix}.bwt"
-    output: "{prefix}.bwt.zinba"
+    input: "{prefix}"
+    output: "{prefix}.zinba"
     run:
         R("""
 

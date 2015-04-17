@@ -2,19 +2,13 @@
 import os
 import glob
 from snakemakelib.config import update_sml_config, get_sml_config, sml_path
+from snakemakelib.bio.ngs.targets import generic_target_generator
 
-# FIXME: this is hacky at the moment but is a proof of principle
-def find_merge_inputs(wildcards):
-    """Find the input files for picard_merge_sam"""
-    subdirs = [d for d in os.listdir(wildcards.path) if os.path.isdir(os.path.join(wildcards.path, d))]
-    sources = []
-    for d in subdirs:
-        # Assume we start from fastq sources; could be more than one barcode, more than one lane
-        fqsrc = sorted(glob.glob("{path}{sep}*{prefix}*{suffix}".format(path=os.path.join(wildcards.path, d), sep=os.sep, prefix=wildcards.prefix, suffix=sml_config['bio.ngs.settings']['fastq_suffix'])))
-        if (fqsrc):
-            pfx = fqsrc[0].replace(sml_config['bio.ngs.settings']['read1_label'] + sml_config['bio.ngs.settings']['fastq_suffix'], "")
-            src = "{prefix}{suffix}".format(prefix=pfx, suffix=picard_config['merge_sam']['suffix'])
-            sources.append(src)
+def _find_merge_inputs(wildcards):
+    ngs_cfg = get_sml_config('bio.ngs.settings')
+    picard_cfg = get_sml_config('bio.ngs.qc.picard')
+    sources = generic_target_generator(tgt_re=ngs_cfg['sampleorg'].run_id_re, target_suffix = picard_cfg['merge_sam']['suffix'], filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg)
+    sources = [src for src in sources if os.path.dirname(src).startswith(wildcards.prefix)]
     return sources
 
 include: '../settings.rules'
@@ -56,7 +50,7 @@ config_default = {
             'label' : "sort.merge", # target label
             'options' : "CREATE_INDEX=true",
             'output' : [],
-            'inputfun' : find_merge_inputs,
+            'inputfun' : _find_merge_inputs,
         },
     },
 }

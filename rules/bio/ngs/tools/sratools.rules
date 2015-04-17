@@ -43,7 +43,7 @@ rule sratools_prefetch:
     params: cmd = sra_cfg['prefetch']['cmd'],
             options = sra_cfg['prefetch']['options']
     output: temp(os.path.join(sra_cfg['workspacelocation'], "sra", os.path.basename("{prefix}") + ".sra"))
-    log: "{prefix}.log"
+    log: os.path.join(sra_cfg['workspacelocation'], "sra", "{prefix}.log")
     shell: "{params.cmd} {params.options} $(basename {wildcards.prefix})"
 
 def _sra_file(wildcards):

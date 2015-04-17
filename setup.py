@@ -21,12 +21,10 @@ setup(name = "snakemakelib",
       packages=find_packages(exclude=['ez_setup', 'test*']),
       namespace_packages = [
           'snakemakelib',
-          'snakemakelib.ext',
       ],
       package_data = {
           'snakemakelib':[
               'rules/*',
+              'examples/*',
           ]},
   )
-
-os.system("git rev-parse --short --verify HEAD > ~/.snakemakelib_version")

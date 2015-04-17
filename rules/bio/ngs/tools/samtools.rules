@@ -45,13 +45,6 @@ rule samtools_index:
     params: cmd = samtools_cfg['cmd'],
             options = samtools_cfg['index']['options']
     input: "{prefix}.bam"
-    output: "{prefix}.bai"
-    shell: "{params.cmd} {params.options} index {input}"
-
-rule samtools_bam_bai_index:
-    """Run samtools index, appending bai to bam"""
-    params: cmd = samtools_cfg['cmd'],
-            options = samtools_cfg['index']['options']
-    input: "{prefix}.bam"
     output: "{prefix}.bam.bai"
     shell: "{params.cmd} {params.options} index {input}"
+

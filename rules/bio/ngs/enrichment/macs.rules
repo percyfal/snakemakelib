@@ -1,0 +1,52 @@
+# -*- snakemake -*-
+#
+from snakemakelib.config import update_sml_config, get_sml_config
+from snakemakelib.stat import is_installed
+
+include: "../settings.rules"
+
+ngs_cfg = get_sml_config('bio.ngs.settings')
+
+config_default = {
+    'bio.ngs.enrichment.macs' : {
+        'version2' : True,
+        'callpeak' : {
+            'options' : "",
+        },
+        'diffpeak' : {
+            'options' : "",
+        },
+        'bdgpeakcall' : {
+            'options' : "",
+        },
+        'bdgbroadcall' : {
+            'options' : "",
+        },
+        'bdgcmp' : {
+            'options' : "",
+        },
+        'bdgdiff' : {
+            'options' : "",
+        },
+        'filterdup' : {
+            'options' : "",
+        }
+        'predictd' : {
+            'options' : "",
+        },
+        'pileup' : {
+            'options' : "",
+        },
+        'randsample' : {
+            'options' : "",
+        },
+        'refinepeak' : {
+            'options' : "",
+        },
+    },
+}
+update_sml_config(config_default)
+
+macs_cfg = get_sml_config('bio.ngs.enrichment.macs')
+
+macs = 'macs2' if macs_cfg['version2'] else 'macs'

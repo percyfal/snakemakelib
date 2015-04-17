@@ -63,16 +63,6 @@ def _group_rules_by_snakefile(rules):
         d[k] = sorted(d[k], key=lambda x: x.name)
     return d
 
-rule rule_t:
-    """Print rules sorted by rule file, including input/output information"""
-    run:
-      rules = workflow.rules
-      d = _group_rules_by_snakefile(rules)
-      if not config.get("section") is None:
-          d = {config.get("section") : d[config.get("section")]} if config.get("section") in d.keys() else d
-      print (d.keys())
-
-
 rule rule_ll:
     """Print rules sorted by rule file, including input/output information"""
     run:

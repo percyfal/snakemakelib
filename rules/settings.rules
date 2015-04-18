@@ -12,6 +12,7 @@ config['section'] = config.get("section", "")
 config_default = {
     'settings' : {
         'temp_rules' : [],
+        'temp_files' : [],
     },
 }
 

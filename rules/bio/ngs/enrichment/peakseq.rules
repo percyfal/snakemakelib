@@ -96,4 +96,7 @@ rule peakseq_mappability_merge:
         shell("cd {path} && {cmd} {inputfiles} > {bout}".format(path=path, bout=os.path.basename(output.bout), cmd=params.cmd, inputfiles=inputfiles))
 
 rule peakseq_mappability:
+    """Pseudo-rule: generate all mappability files by invoking the rules
+    above
+    """
     input: [os.path.join(mapdir, "{chr}b.out".format(chr=x)) for x in chromosomes(ps_cfg['ref'])]

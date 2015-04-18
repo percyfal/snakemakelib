@@ -1,5 +1,6 @@
 # -*- snakemake -*-
 import os
+import shutil
 import glob
 from snakemakelib.config import update_sml_config, get_sml_config, sml_path
 from snakemakelib.bio.ngs.targets import generic_target_generator
@@ -213,4 +214,4 @@ rule picard_merge_sam:
       else:
           if os.path.exists(output.merge):
               os.unlink(output.merge)
-          os.symlink(os.path.relpath(input[0], wildcards.path), output.merge)
+          shutil.copy(input[0], output.merge)

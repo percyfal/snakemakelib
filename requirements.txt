@@ -8,5 +8,6 @@ nose
 pandas
 jinja2
 mock
+pysam
 # scikit-learn
 # statsmodels

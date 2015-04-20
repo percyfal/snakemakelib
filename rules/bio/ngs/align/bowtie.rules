@@ -33,17 +33,20 @@ bwt_cfg = get_sml_config('bio.ngs.align.bowtie')
 samtools_cfg = get_sml_config('bio.ngs.tools.samtools')
 
 bowtie = 'bowtie2' if bwt_cfg['version2'] else 'bowtie'
+ext = bwt_cfg['build']['ext_v2'] if bwt_cfg['version2'] else bwt_cfg['build']['ext_v2']
 
 if not is_installed(bowtie):
-    raise Exception("{prog} not installed or not in PATH".format(bwt_cfg['cmd']))
+    raise Exception("\n{prog} not installed or not in PATH\n".format(prog=bowtie))
 
 rule bowtie_align:
     """Bowtie paired end alignment"""
     params: cmd = bowtie,
             options = bwt_cfg['bowtie']['options'],
-            index = ("-x " if bwt_cfg['version2'] else "") + bwt_cfg['index', 'bowtie']
+            indexopt = ("-x" if bwt_cfg['version2'] else ""),
+            index = bwt_cfg['index', 'bowtie']
     input: read1 = "{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],\
-           read2 = "{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['fastq_suffix']
+           read2 = "{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['fastq_suffix'],
+           index = expand("{index}{ext}", index=bwt_cfg['index', 'bowtie'], ext=bwt_cfg['build']['ext_v2'] if bwt_cfg['version2'] else bwt_cfg['build']['ext_v1'])
     output: bam = "{prefix}.bam"
     threads: bwt_cfg['bowtie']['threads']
     run:
@@ -51,15 +54,16 @@ rule bowtie_align:
         # alternative; process substitution. See
         # http://arstechnica.com/civis/viewtopic.php?f=16&t=1180805.
         if is_compressed(input.read1):
-            shell("{cmd} -S -p {threads} {options} {index} -1 <(gunzip -c {read1}) -2 <(gunzip -c {read2}) | {samtools} view -bS - > {bam}".format(cmd=params.cmd, threads=threads, options=params.options, index=params.index, read1=input.read1, read2=input.read2, bam=output.bam, samtools=samtools_cfg['cmd']))
+            shell("{cmd} -S -p {threads} {options} {indexopt} {index} -1 <(gunzip -c {read1}) -2 <(gunzip -c {read2}) | {samtools} view -bS - > {bam}".format(cmd=params.cmd, threads=threads, options=params.options, indexopt=params.indexopt, index=params.index, read1=input.read1, read2=input.read2, bam=output.bam, samtools=samtools_cfg['cmd']))
         else:
-            shell("{cmd} -S -p {threads} {options} {index} -1 {read1} -2 {read2} | {samtools} view -bS - > {bam}".format(cmd=params.cmd, threads=threads, options=params.options, index=params.index, read1=input.read1, read2=input.read2, bam=output.bam, samtools=samtools_cfg['cmd']))
+            shell("{cmd} -S -p {threads} {options} {indexopt} {index} -1 {read1} -2 {read2} | {samtools} view -bS - > {bam}".format(cmd=params.cmd, threads=threads, options=params.options, indexopt=params.indexopt, index=params.index, read1=input.read1, read2=input.read2, bam=output.bam, samtools=samtools_cfg['cmd']))
 
 rule bowtie_build:
     """Bowtie build index"""
     params: ref = bwt_cfg['ref'],
             cmd = 'bowtie-build'
-    input: "{prefix}" + ".fa"
+    #input: "{prefix}" + ".fa"
+    input: bwt_cfg['ref']
     output: expand("{{prefix}}{ext}", ext=bwt_cfg['build']['ext_v1'])
     shell: "{params.cmd} {input} {wildcards.prefix}"
 

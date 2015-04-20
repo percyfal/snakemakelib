@@ -107,6 +107,14 @@ rule picard_mark_duplicates:
 
 ruleorder: picard_mark_duplicates > picard_build_bam_index
 
+rule picard_create_dict:
+    """Picard: create interval list dict using awk"""
+    params: cmd = picard_config['cmd'] + CREATE_SEQUENCE_DICTIONARY,
+            options = picard_config['options']
+    input: fa="{prefix}.fa"
+    output: dict="{prefix}.dict"
+    shell: "{params.cmd} {params.options} R={input.fa} O={output.dict}"
+
 rule picard_create_dict_awk:
     """Picard: create interval list dict using awk"""
     params: cmd = picard_config['cmd'] + CREATE_SEQUENCE_DICTIONARY,

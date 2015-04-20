@@ -5,6 +5,10 @@
 # Installation in R:
 # system("wget http://zinba.googlecode.com/files/zinba_2.02.03.tar.gz")
 # install.packages(c('multicore','doMC','foreach','quantreg','R.utils')) 
+#
+# NB: multicore has been retired, need to download from archive and
+# install manually
+#
 # install.packages("zinba_2.02.03.tar.gz", repos=NULL)
 #
 # Install problems: wrong formatting. Modify following:
@@ -17,50 +21,142 @@
 
 import os
 from snakemake.utils import R
+from snakemakelib.bio.ngs.db import chromosomes, index
 from snakemakelib.config import update_sml_config, get_sml_config
 from snakemakelib.bio.ngs.utils import dict_to_R
 
 include: "../settings.rules"
 include: "peakseq.rules"
+include: "../db/ucsc.rules"
+include: "../tools/bedtools.rules"
 
 ngs_cfg = get_sml_config('bio.ngs.settings')
 
 # Options from https://code.google.com/p/zinba/wiki/UsingZINBA#ZINBA_pipeline_function
 config_default = {
     'bio.ngs.enrichment.zinba' : {
-        'options' : {
-            'refinepeaks' : 1, #refine peaks? 1 for yes, 0 for no
-            'seq' : None, #path to mapped experimental reads
-            'input' : "none", #path to mapped input reads if available (default is "none")
-            'filetype' : "bowtie", #either 'bed', 'bowtie', or 'tagAlign'
-            'threshold' : 0.05, #FDR threshold, default is 0.05
-            'align' : None, #path to alignability directory
-            'numProc' : ngs_cfg["threads"], #number of CPUs to use, must be less than max available   (default 1)
-            'twoBit' : None, #path to genome build in .2bit format
-            'outfile' : None, #prefix for outputted files
-            'extension' : None, #average fragment library length (size selected)
-            # optional parameters follow
-            'basecountfile' : None, #path to basecount file if refinepeaks is 1
-            'broad' : False, #broad setting, TRUE or FALSE (default)
-            'printFullOut' : 0, #print original data with enrichment estimates, 1 for yes (more space required), 0 for no (default)
-            'interaction' : True, #whether or not to considering interaction during model selection, TRUE (default) or FALSE
-            'mode' : "peaks", #either "peaks" for peak calling (default) or "CNV" for calling likely amplified CNV regions for reads in "seq" (input reads are best)
-            'FDR' : True, #either TRUE (default) or FALSE. If false, then uses posterior probability to threshold peaks using 1-threshold
-        },
+        'outdir' : 'zinba_alignability/', # zinba alignability directory; note that the trailing slash *must* be present...
+        'binary' : 0,
+        'refinepeaks' : 1, #refine peaks? 1 for yes, 0 for no
+        'seq' : None, #path to mapped experimental reads
+        'input' : "none", #path to mapped input reads if available (default is "none")
+        'filetype' : "bed", #either 'bed', 'bowtie', or 'tagAlign'
+        'threshold' : 0.05, #FDR threshold, default is 0.05
+        'align' : None, #path to alignability directory
+        'numProc' : ngs_cfg["threads"], #number of CPUs to use, must be less than max available   (default 1)
+        'twoBit' : index, #path to genome build in .2bit format
+        'outfile' : None, #prefix for outputted files
+        'extension' : 200, #average fragment library length (size selected)
+        # optional parameters follow
+        'basecountfile' : None, #path to basecount file if refinepeaks is 1
+        'broad' : True, #broad setting, TRUE or FALSE (default)
+        'printFullOut' : 0, #print original data with enrichment estimates, 1 for yes (more space required), 0 for no (default)
+        'interaction' : True, #whether or not to considering interaction during model selection, TRUE (default) or FALSE
+        'mode' : "peaks", #either "peaks" for peak calling (default) or "CNV" for calling likely amplified CNV regions for reads in "seq" (input reads are best)
+        'FDR' : True, #either TRUE (default) or FALSE. If false, then uses posterior probability to threshold peaks using 1-threshold
+        'athresh' : 1, #number of hits per read allowed during mapping process; not documented
     },
 }
 
-
 update_sml_config(config_default)
 
-zinba_conf = get_sml_config('bio.ngs.settings')
+zinba_cfg = get_sml_config('bio.ngs.enrichment.zinba')
+ps_cfg = get_sml_config('bio.ngs.enrichment.peakseq')
+mapdir = os.path.join(os.path.dirname(ps_cfg['index', 'mappability']), ps_cfg['mappability']['merlen'])
+
+rule zinba_generate_alignability:
+    """Generate alignability. Depends on mappability files from peakseq.
+
+    NB: crucially important is to add os.sep to the directory names,
+    otherwise this step segfaults...
+
+    """
+    input: mappability = [os.path.join(mapdir, "{chr}b.out".format(chr=x)) for x in chromosomes(ps_cfg['ref'])],
+           twobit = os.path.splitext(zinba_cfg['twoBit', 'ucsc'])[0] + ".2bit"
+    output: out = "zinba_alignability"
+    threads: zinba_cfg['numProc']
+    run:
+        d = zinba_cfg
+        d.update({'mapdir' : os.path.dirname(input.mappability[0]) + os.sep,
+                  'outpdir' : output.out + os.sep,
+                  'twobit' : input.twobit})
+        R("""
+        library(zinba)
+        generateAlignability(
+        mapdir='{mapdir}', #mappability directory from unpacked mappability files
+        outdir='{outdir}', #directory for processed files, used later in analysis
+        athresh={athresh}, #number of hits per read allowed during mapping process
+        extension={extension}, #average fragment library length
+        twoBitFile='{twobit}', #path to downloaded genome build file in .2bit format
+        numProc={numProc},
+        binary={binary},
+        )
+        """.format(**d))
+
+rule zinba_basealigncount:
+    """Generate basecount file to obtain exact peak boundaries. Does *not*
+    accept bam input. bed seems to be the most reasonable compromise.
+    """
+    input: bed = "{prefix}.bed",
+           twobit = os.path.splitext(zinba_cfg['twoBit', 'ucsc'])[0] + ".2bit"
+    output: out = "{prefix}.wig"
+    run:
+        d = zinba_cfg
+        d.update({'twobit' : input.twobit,
+                  'inputfile' : input.bed,
+                  'outputfile' : output.out})
+        R("""
+        library(zinba)
+        basealigncount(
+        inputfile='{inputfile}', #mapped sample reads
+        outputfile='{outputfile}', # output path
+        extension={extension}, #average fragment library length
+        filetype='bed', #either "bed", "bowtie", or "tagAlign"
+        twoBitFile='{twobit}', #path to downloaded genome build file in .2bit format
+        )
+        """.format(**d))
 
 rule zinba_run_zinba:
-    """Run main zinba pipeline"""
-    input: "{prefix}"
-    output: "{prefix}.zinba"
+    """Run main zinba pipeline. Does *not* accept bam input. bed seems to
+    be the most reasonable compromise."""
+    input: bed = "{prefix}.bed",
+           wig = "{prefix}.wig",
+           alignability = zinba_cfg['outdir'],
+           twobit = os.path.splitext(zinba_cfg['twoBit', 'ucsc'])[0] + ".2bit"
+    output: zinba = "{prefix}.zinba"
     run:
+        d = zinba_cfg
+        d.update({
+            'inputfile' : input.bed,
+            'basecountfile' : input.wig,
+            'broad' : str(d['broad']).upper(),
+            'interaction' : str(d['interaction']).upper(),
+            'alignability' : input.alignability,
+            'twobit' : input.twobit,
+            'outfileprefix' : os.path.basename(output.zinba),
+            'FDR' : str(d['FDR']).upper(),
+            'inputreads' : 'none',
+        })
         R("""
+        library(zinba)
+        zinba(
+        align='{alignability}', #path to alignability directory
+        numProc={numProc}, #number of CPUs to use, must be less than max available   (default 1)
+        seq='{inputfile}', #path to mapped experimental reads
+        basecountfile='{basecountfile}', #path to basecount file if refinepeaks is 1
+        filetype='bed', #either 'bed', 'bowtie', or 'tagAlign'
+        outfile='{outfileprefix}', #prefix for outputted files
+        twoBit='{twobit}', #path to genome build in .2bit format
+        extension={extension}, #average fragment library length (size selected)
+        printFullOut={printFullOut}, #print original data with enrichment estimates, 1 for yes (more space required), 0 for no (default)
+        refinepeaks={refinepeaks}, #refine peaks? 1 for yes, 0 for no
+        broad={broad}, #broad setting, TRUE or FALSE (default)
+        input='{inputreads}', #path to mapped input reads if available (default is "none")
+        )""".format(**d))
 
-
-        """)
+        # threshold={threshold}, #FDR threshold, default is 0.05
+        # interaction={interaction}, #whether or not to considering interaction during model selection, TRUE (default) or FALSE
+        # mode='{mode}', #either "peaks" for peak calling (default) or "CNV" for calling likely amplified CNV regions for reads in "seq" (input reads are best)
+        # FDR={FDR}, #either TRUE (default) or FALSE. If false, then uses posterior probability to threshold peaks using 1-threshold
+        # )
+        # """.format(**d))

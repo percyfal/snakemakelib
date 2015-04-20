@@ -6,7 +6,7 @@ from snakemakelib.log import LoggerManager
 
 smllogger = LoggerManager().getLogger(__name__)
 
-DEFAULT_TEMP_FILES = ['.bam', '.gz', '.zip', '.bigWig']
+DEFAULT_TEMP_FILES = ['.bam', '.gz', '.zip', '.bigWig', '.wig', '.bed']
 
 def set_temp_output(workflow, rules=[], temp_files=[]):
     """Given list of rules, set their corresponding outputs to temporary outputs.

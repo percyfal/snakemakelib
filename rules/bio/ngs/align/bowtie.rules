@@ -36,7 +36,7 @@ bowtie = 'bowtie2' if bwt_cfg['version2'] else 'bowtie'
 ext = bwt_cfg['build']['ext_v2'] if bwt_cfg['version2'] else bwt_cfg['build']['ext_v2']
 
 if not is_installed(bowtie):
-    raise Exception("\n{prog} not installed or not in PATH\n".format(prog=bowtie))
+    raise Exception("\nbio.ngs.align.bowtie: {prog} not installed or not in PATH\n".format(prog=bowtie))
 
 rule bowtie_align:
     """Bowtie paired end alignment"""

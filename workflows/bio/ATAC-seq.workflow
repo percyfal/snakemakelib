@@ -68,7 +68,7 @@ rule atacseq_merge:
 
 rule atacseq_all:
     """Run ATAC-seq pipeline"""
-    input: ZINBA_TARGETS + ['zinba_alignability']
+    input: ZINBA_TARGETS + ['zinba_alignability/']
 
 rule atacseq_correct_coordinates_for_zinba:
     """From Buenrostro paper: 

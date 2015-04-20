@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+
+<meta charset="utf-8">
+<title>{{ title if title else "RSeQC summary" }}</title>
+{{ plot_resources|indent(8) }}
+<style>
+{{ css|indent(8) }}
+</style>
+{{ rseqc_plots['script']|indent(8) }}
+{{ star_plots['script']|indent(8) }}
+{{ star_table['script']|indent(8) }}
+</head>
+<body>
+	<h3>Star alignment summary</h3>
+
+<figure>
+{{ star_plots['div']|indent(8) }}
+<figcaption>STAR summary plots. </figcaption>
+</figure>
+<figure>
+{{ star_table['div']|indent(8) }}
+<figcaption>Table of all STAR alignment statistics. </figcaption>
+</figure>
+	
+	<h3>RSeQC summary</h3>
+
+<figure>
+{{ rseqc_plots['div']|indent(8) }}
+<figcaption>RSeQC summary plots. </figcaption>
+</figure>
+
+
+<h3>Attachments</h3>
+<table>
+	<tr>
+		<td><a href="{{ uri['rd_uri'] }}" download="{{ uri['rd_file'] }}" draggable="true">{{ uri['rd_file'] }}</a></td>
+	</tr>
+	<tr>
+		<td><a href="{{ uri['gc_uri'] }}" download="{{ uri['gc_file'] }}" draggable="true">{{ uri['gc_file'] }}</a></td>
+	</tr>
+	<tr>
+		<td><a href="{{ uri['star_uri'] }}" download="{{ uri['star_file'] }}" draggable="true">{{ uri['star_file'] }}</a></td>
+	</tr>
+	<tr>
+		<td>{{ uri['rsem_genes_file'] }} (too large for attachment)</td>
+	</tr>
+	<tr>
+		<td>{{ uri['rsem_isoforms_file'] }} (too large for attachment)</td>
+	</tr>
+</table>
+</body>
+</html>

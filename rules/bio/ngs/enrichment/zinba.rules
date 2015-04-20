@@ -43,7 +43,7 @@ config_default = {
         'filetype' : "bed", #either 'bed', 'bowtie', or 'tagAlign'
         'threshold' : 0.05, #FDR threshold, default is 0.05
         'align' : None, #path to alignability directory
-        'numProc' : ngs_cfg["threads"], #number of CPUs to use, must be less than max available   (default 1)
+        'threads' : ngs_cfg["threads"], #number of CPUs to use, must be less than max available   (default 1)
         'twoBit' : index, #path to genome build in .2bit format
         'outfile' : None, #prefix for outputted files
         'extension' : 200, #average fragment library length (size selected)
@@ -73,8 +73,8 @@ rule zinba_generate_alignability:
     """
     input: mappability = [os.path.join(mapdir, "{chr}b.out".format(chr=x)) for x in chromosomes(ps_cfg['ref'])],
            twobit = os.path.splitext(zinba_cfg['twoBit', 'ucsc'])[0] + ".2bit"
-    output: out = "zinba_alignability"
-    threads: zinba_cfg['numProc']
+    output: out = "zinba_alignability/"
+    threads: zinba_cfg['threads']
     run:
         d = zinba_cfg
         d.update({'mapdir' : os.path.dirname(input.mappability[0]) + os.sep,
@@ -88,7 +88,7 @@ rule zinba_generate_alignability:
         athresh={athresh}, #number of hits per read allowed during mapping process
         extension={extension}, #average fragment library length
         twoBitFile='{twobit}', #path to downloaded genome build file in .2bit format
-        numProc={numProc},
+        numProc={threads},
         binary={binary},
         )
         """.format(**d))
@@ -141,7 +141,7 @@ rule zinba_run_zinba:
         library(zinba)
         zinba(
         align='{alignability}', #path to alignability directory
-        numProc={numProc}, #number of CPUs to use, must be less than max available   (default 1)
+        numProc={threads}, #number of CPUs to use, must be less than max available   (default 1)
         seq='{inputfile}', #path to mapped experimental reads
         basecountfile='{basecountfile}', #path to basecount file if refinepeaks is 1
         filetype='bed', #either 'bed', 'bowtie', or 'tagAlign'

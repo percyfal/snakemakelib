@@ -3,6 +3,7 @@ import os
 import pandas as pd
 from snakemakelib.config import update_sml_config, get_sml_config
 from snakemakelib.bio.ngs.db import index
+from snakemakelib.stat import is_installed
 from snakemakelib.bio.ngs.targets import generic_target_generator
 
 include: '../settings.rules'
@@ -33,6 +34,11 @@ update_sml_config(config_default)
 
 aligner = get_sml_config('bio.ngs.settings')['aligner']
 rsem_cfg = get_sml_config('bio.ngs.rnaseq.rsem')
+
+for (section, cfg) in rsem_cfg.items():
+    if isinstance(cfg, dict):
+        if cfg.get('cmd', "") and not is_installed(cfg.get('cmd', "")):
+            raise Exception("\nbio.ngs.rnaseq.rsem: {prog} not installed or not in PATH\n".format(prog=cfg.get('cmd')))
 
 # Take into account different aligners
 align_section = 'bio.ngs.align.' + aligner

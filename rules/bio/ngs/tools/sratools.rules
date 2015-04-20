@@ -3,6 +3,9 @@ import os
 import csv
 from snakemakelib.config import update_sml_config, get_sml_config
 from snakemakelib.utils import utc_time
+from snakemakelib.log import LoggerManager
+
+smllogger = LoggerManager().getLogger(__name__)
 
 include: '../settings.rules'
 
@@ -58,12 +61,15 @@ rule sratools_download_srastudy_biosample:
                 from Bio import Entrez
                 import xml.etree.ElementTree as ET
                 Entrez.email = sra_cfg['email']
+                smllogger.info("Connecting to Entrez; querying for bioproject {bioprj}".format(bioprj=bioproject[0]))
                 handle = Entrez.esearch(db="sra", term=bioproject[0], retmax=sra_cfg['retmax'])
                 record = Entrez.read(handle)
                 handle.close()
+                smllogger.info("Retrieved biosample id list for bioproject {bioprj}; fetching biosamples".format(bioprj=bioproject[0]))
                 handle = Entrez.efetch(db="sra", id=record['IdList'])
                 record = handle.read()
                 handle.close()
+                smllogger.info("Retrieved biosample info; parsing xml")
                 tree = ET.fromstring(record)
                 record_list = []
                 fieldnames = []

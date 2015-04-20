@@ -112,10 +112,42 @@ rule scrnaseq_picard_merge_sam_transcript:
 
 # QC rules
 QC_INPUT = []
-# rule scrnaseq_qc:
-#     """Perform basic qc on samples"""
-#     input: star
+rule scrnaseq_qc:
+    """Perform basic qc on samples"""
+    input: starcsv = os.path.join("{path}", "star.Aligned.out.csv"),
+           rseqc_read_distribution = os.path.join("{path}", "read_distribution_summary_merge_rseqc.csv"),
+           rseqc_gene_coverage = os.path.join("{path}", "gene_coverage_summary_merge_rseqc.csv"),
+           rsemgenes = os.path.join("{path}", "rsem.merge.tx.genes.csv"),
+           rsemisoforms = os.path.join("{path}", "rsem.merge.tx.isoforms.csv")
+    output: html = os.path.join("{path}", "scrnaseq_summary.html")
+    run:
+        df_star = pd.read_csv(input.starcsv, index_col=0)
+        df_rd = pd.read_csv(input.rseqc_read_distribution, index_col=0)
+        df_gc = pd.read_csv(input.rseqc_gene_coverage, index_col=0)
+        uri = {'rd_uri':data_uri(input.rseqc_read_distribution), 'rd_file':input.rseqc_read_distribution,
+               'gc_uri':data_uri(input.rseqc_gene_coverage), 'gc_file':input.rseqc_gene_coverage,
+               'star_uri':data_uri(input.starcsv), 'star_file' : input.starcsv,
+               'rsem_genes_file' : input.rsemgenes, 'rsem_isoforms_file' : input.rsemisoforms}
+        rseqc_d = make_rseqc_summary_plots(df_rd, df_gc)
+        samples = list(df_star.index)
+        star_d = make_star_alignment_plots(df_star, samples)
+        tp = jinja2.Template(open(os.path.join(sml_templates_path(), 'workflow_scrnaseq_qc.html')).read())
+        with open(output.html, "w") as fh:
+            fh.write(static_html(tp, **{'rseqc_plots' : rseqc_d['plots'], 
+                                        'star_plots' : star_d['plots'], 
+                                        'star_table' : star_d['table'], 
+                                        'uri' : uri}))
 
+rule scrnaseq_pca:
+    input: csv = os.path.join("{path}", "rsem.merge.tx.{type}.csv")
+    output: tmp = os.path.join("{path}", "rsem.merge.tx.{type}.pca")
+    run:
+        import pandas as pd
+        from sklearn.decomposition import PCA
+        #df = pd.read_csv(input.csv, index_col=0)
+        #pca = PCA(n_components='mle')
+        #pca.fit(df.head())
+        #print (df.head())
 
 # All rules
 rule scrnaseq_all:

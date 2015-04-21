@@ -6,21 +6,18 @@ from snakemakelib.log import LoggerManager
 
 smllogger = LoggerManager().getLogger(__name__)
 
-DEFAULT_TEMP_FILES = ['.bam', '.gz', '.zip', '.bigWig', '.wig', '.bed']
-
-def set_temp_output(workflow, rules=[], temp_files=[]):
+def set_temp_output(workflow, rules=[], temp_filetypes=[]):
     """Given list of rules, set their corresponding outputs to temporary outputs.
 
     Args:
       workflow: snakemake workflow
       rules: list of rules
-      temp_files: file extensions 
+      temp_filetypes: file extensions to set to temporary output
 
     Returns:
       None
     """
-    sfx = DEFAULT_TEMP_FILES + temp_files
-    r = re.compile("|".join("{}$".format(x) for x in sfx))
+    r = re.compile("|".join("{}$".format(x) for x in list(set(temp_filetypes))))
     for rule in rules:
         smllogger.info("setting output in rule {rule} to temporary".format(rule=rule))
         try:

@@ -1,15 +1,23 @@
 # -*- snakemake -*- 
 import os
-from snakemakelib.config import get_sml_config, sml_rules_path
+import yaml
+import sys
+import io
+from snakemakelib.config import get_sml_config, sml_rules_path, BaseConfig
 from snakemake.io import Wildcards, Namedlist
 
 include: './settings.rules'
 
-"""
-utils.rules
+rule conf_yaml:
+    """Print global configuration to yaml output file"""
+    output: yaml = os.path.join("{path}", "smlconf_global.yaml")
+    run:
+        from yaml.representer import Representer
+        yaml.add_representer(BaseConfig, Representer.represent_dict)
+        d = get_sml_config()
+        with open (output.yaml,"w") as fh:
+            fh.write(yaml.dump(d, default_flow_style=False))
 
-Utility rules for use with snakemakelib.
-"""
 rule conf:
     """Print global configuration settings for loaded rules"""
     run:
@@ -98,3 +106,24 @@ rule rule_l:
           logger.info("=" * len(snakefile))
           for rule in rl:
               logger.rule_info(name=rule.name, docstring=rule.docstring.split("\n")[0] if isinstance(rule.docstring, str) else None)
+
+rule rulegraph:
+    """Print rulegraph"""
+    output: rulegraph = "{prefix}.dot"
+    run:
+        # see http://stackoverflow.com/questions/5136611/capture-stdout-from-a-script-in-python
+        backup = sys.stdout
+        sys.stdout = io.StringIO()
+        workflow.execute(targets=[os.path.basename(wildcards.prefix)], dryrun=True, printrulegraph=True, updated_files=[])
+        out = sys.stdout.getvalue()
+        sys.stdout.close()
+        sys.stdout = backup
+        with open (output.rulegraph, "w") as fh:
+            fh.write(out)
+
+rule rulegraph_png:
+    """Convert rulegraph to png"""
+    input: rulegraph = "{prefix}.dot"
+    output: png = "{prefix}.png"
+    shell: "dot -T png {input.rulegraph} -o {output.png}"
+

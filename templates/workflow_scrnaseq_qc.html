@@ -3,7 +3,7 @@
 <head>
 
 <meta charset="utf-8">
-<title>{{ title if title else "RSeQC summary" }}</title>
+<title>{{ title if title else "Single-cell RNA-Seq summary report" }}</title>
 {{ plot_resources|indent(8) }}
 <style>
 {{ css|indent(8) }}
@@ -13,7 +13,9 @@
 {{ star_table['script']|indent(8) }}
 </head>
 <body>
-	<h3>Star alignment summary</h3>
+<h1>{{ title if title else "Single-cell RNA-Seq summary report" }}</h1>
+
+<h3>Star alignment summary</h3>
 
 <figure>
 {{ star_plots['div']|indent(8) }}
@@ -29,6 +31,13 @@
 <figure>
 {{ rseqc_plots['div']|indent(8) }}
 <figcaption>RSeQC summary plots. </figcaption>
+</figure>
+
+<h3>Workflow configuration</h3>
+
+<figure>
+	<img src="{{ rulegraph | indent(8) }}" alt="{{ workflow_target | indent(8) }}" width="600"/>
+	<figcaption> Rulegraph representation of workflow; target {{ workflow_target | indent(8) }} </figcaption>
 </figure>
 
 

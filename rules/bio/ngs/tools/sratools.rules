@@ -3,9 +3,11 @@ import os
 import csv
 from snakemakelib.config import update_sml_config, get_sml_config
 from snakemakelib.utils import utc_time
-from snakemakelib.log import LoggerManager
+#from snakemakelib.log import LoggerManager
+import logging
 
-smllogger = LoggerManager().getLogger(__name__)
+#smllogger = LoggerManager().getLogger(__name__)
+smlloger = logging.getLogger(__name__)
 
 include: '../settings.rules'
 
@@ -75,6 +77,8 @@ rule sratools_download_srastudy_biosample:
                 fieldnames = []
                 for sample in tree.findall('.//SAMPLE'):
                     d = sample.attrib
+                    title = sample.findall(".//TITLE")
+                    d.update({'title':title[0].text})
                     d.update({k.text:v.text for (k,v) in zip(sample.findall(".//TAG"), sample.findall(".//VALUE"))})
                     fieldnames = list(set(fieldnames + list(d.keys())))
                     record_list.append(d)

@@ -6,9 +6,10 @@ from snakemakelib.config import update_sml_config, get_sml_config
 from snakemakelib.bio.ngs.targets import generic_target_generator
 
 atac_config = {
-    # 'settings' : {
-    #     'temp_rules' : ['sratools_prefetch', 'sratools_fastq_dump']
-    # },
+    'settings' : {
+        'temp_rules' : [],
+        'temp_rules_default' : ['sratools_prefetch'],
+    },
     'workflows.bio.atac_seq' : {
         'aligner' : 'bowtie',
     },
@@ -36,21 +37,29 @@ update_sml_config({key : aligner_config[key]})
 
 p = os.path.join(os.pardir, os.pardir, 'rules')
 include: os.path.join(p, 'settings.rules')
+include: os.path.join(p, 'utils.rules')
 include: os.path.join(p, "bio/ngs", "settings.rules")
 include: os.path.join(p, "bio/ngs/align", aligner + ".rules")
 include: os.path.join(p, "bio/ngs/align", "blat.rules")
 include: os.path.join(p, "bio/ngs/qc", "picard.rules")
 include: os.path.join(p, "bio/ngs/enrichment", "zinba.rules")
+include: os.path.join(p, "bio/ngs/enrichment", "dfilter.rules")
 
-ruleorder: picard_merge_sam > picard_sort_bam > picard_add_or_replace_read_groups > picard_mark_duplicates > atacseq_correct_coordinates_for_zinba > bowtie_align
-
-#ruleorder: ucsc_autosome_reference > peakseq_mappability_write_chromosome
+ruleorder: picard_merge_sam > picard_sort_bam 
+ruleorder: picard_sort_bam > picard_add_or_replace_read_groups
+ruleorder: picard_add_or_replace_read_groups > picard_mark_duplicates
+ruleorder: picard_mark_duplicates > atacseq_correct_coordinates_for_zinba
+ruleorder: atacseq_correct_coordinates_for_zinba > bowtie_align
+ruleorder: picard_sort_bam > bowtie_align
+ruleorder: picard_merge_sam > bowtie_align
+ruleorder: picard_mark_duplicates > bowtie_align
+ruleorder: dfilter_run_dfilter_bam > bedtool_bamtobed
 
 ngs_cfg = get_sml_config('bio.ngs.settings')
 main_cfg = get_sml_config('settings')
 
 # Set temporary outputs
-set_temp_output(workflow, main_cfg['temp_rules'])
+set_temp_output(workflow, main_cfg['temp_rules'] + main_cfg['temp_rules_default'])
 
 if workflow._workdir is None:
     raise Exception("no workdir set, or set after include of 'ATAC-seq.workflow'; set workdir before include statement!")
@@ -58,7 +67,7 @@ if workflow._workdir is None:
 MERGE_TARGET_SUFFIX = ".sort.merge.bam"
 MERGE_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, src_re = ngs_cfg['sampleorg'].raw_run_re, target_suffix = MERGE_TARGET_SUFFIX, filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],  **ngs_cfg)
 
-ZINBA_TARGET_SUFFIX = ".sort.merge.offset.zinba"
+ZINBA_TARGET_SUFFIX = ".sort.merge.offset.zinba.peaks"
 ZINBA_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, src_re = ngs_cfg['sampleorg'].raw_run_re, target_suffix = ZINBA_TARGET_SUFFIX, filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],  **ngs_cfg)
 
 # Rules
@@ -96,5 +105,3 @@ rule atacseq_correct_coordinates_for_zinba:
                     s.pos -= 5
                     s.pnext += 4
             outfile.write(s)
-
-

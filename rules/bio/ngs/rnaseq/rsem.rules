@@ -24,7 +24,7 @@ config_default = {
         },
         'calculate-expression' : {
             'cmd' : 'rsem-calculate-expression',
-            'options' : '',
+            'options' : '--no-bam-output',
             'bowtie-options' : "--no-bam-output --bowtie-chunkmbs 512",
         },
     },

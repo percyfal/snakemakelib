@@ -123,7 +123,8 @@ rule zinba_run_zinba:
            wig = "{prefix}.wig",
            alignability = zinba_cfg['outdir'],
            twobit = os.path.splitext(zinba_cfg['twoBit', 'ucsc'])[0] + ".2bit"
-    output: zinba = "{prefix}.zinba"
+    output: zinba_peaks = "{prefix}.zinba.peaks", zinba_peaks_bed = "{prefix}.zinba.peaks.bed",
+            zinba_files = temp("{prefix}.zinba_files")
     run:
         d = zinba_cfg
         d.update({
@@ -133,7 +134,7 @@ rule zinba_run_zinba:
             'interaction' : str(d['interaction']).upper(),
             'alignability' : input.alignability,
             'twobit' : input.twobit,
-            'outfileprefix' : os.path.basename(output.zinba),
+            'outfileprefix' : os.path.splitext(output.zinba_peaks)[0],
             'FDR' : str(d['FDR']).upper(),
             'inputreads' : 'none',
         })

@@ -116,7 +116,7 @@ rule zinba_basealigncount:
         )
         """.format(**d))
 
-rule zinba_run_zinba:
+rule zinba_main_wrapper:
     """Run main zinba pipeline. Does *not* accept bam input. bed seems to
     be the most reasonable compromise."""
     input: bed = "{prefix}.bed",
@@ -161,3 +161,69 @@ rule zinba_run_zinba:
         # FDR={FDR}, #either TRUE (default) or FALSE. If false, then uses posterior probability to threshold peaks using 1-threshold
         # )
         # """.format(**d))
+
+rule zinba_run_zinba:
+    """Rule to run run.zinba for custom-tailored analysis"""
+    input: bed = "{prefix}.bed",
+           wig = "{prefix}.wig",
+           alignability = zinba_cfg['outdir'],
+           twobit = os.path.splitext(zinba_cfg['twoBit', 'ucsc'])[0] + ".2bit"
+    output: zinba_peaks = "{prefix}.run_zinba.peaks", zinba_peaks_bed = "{prefix}.run_zinba.peaks.bed",
+            zinba_files = temp("{prefix}.run_zinba_files")
+    run:
+        d = zinba_cfg
+        d.update({
+            'inputfile' : input.bed,
+            'basecountfile' : input.wig,
+            'broad' : str(d['broad']).upper(),
+            'interaction' : str(d['interaction']).upper(),
+            'alignability' : input.alignability,
+            'twobit' : input.twobit,
+            'outfileprefix' : os.path.splitext(output.zinba_peaks)[0],
+            'FDR' : str(d['FDR']).upper(),
+            'inputreads' : 'none',
+        })
+        # If model selection is false
+        # formula= # background formula         
+        # formulaE= # enrichment formula         
+        # formulaZ= # zero-inflation formula   
+
+        #If Model selection is TRUE  
+        # selectchr= # one chromosome name to use for model selection, default "chr22"
+        # selecttype= # either the abridged version "dirty" (default) or complete version "complete"     ,
+        # selectcovs= # vector of covariate names (characters) to consider in model selection       t
+        # interaction= # consider two or three-way covariate interactions?  Default TRUE, otherwise FALSE.  
+
+
+        R("""
+        library(zinba)
+        run.zinba(
+            seq='{inputfile}',
+            input='none',
+            filetype='bed',
+            align='{alignability}',
+            twoBit='{twobit}',
+            winSize={winSize},
+            offset={offset},
+            extension='{extension}',
+            basecountfile='{basecountfile}',
+            selectmodel={selectmodel},
+            threshold={threshold},
+            FDR='{FDR}',
+            numProc={threads},
+            winGap={winGap},
+            outfile='{outfileprefix}',
+            buildwin='{buildwin}',
+            filelist='{filelist}',
+            cnvWinSize={cnvWinSize},
+            cnvOffset={cnvOffset},
+            #peak refinement  
+            refinepeaks={refinepeaks},
+            pWinSize={pWinSize},
+            pquant={pquant},
+            printFullOut={printFullOut},
+            cleanup={cleanup},
+            tol={tol},
+            initmethod='{initmethod}',
+            diff={diff},
+        )""".format(**d))

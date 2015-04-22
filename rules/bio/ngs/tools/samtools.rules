@@ -23,7 +23,7 @@ update_sml_config(config_default)
 samtools_cfg = sml_config['bio.ngs.tools.samtools']
 
 rule samtools_sam2bam:
-    """Convert sam file to bam"""
+    """Convert sam file to bam."""
     params: cmd = samtools_cfg['cmd'],
             options = samtools_cfg['options']
     input: "{prefix}.sam"

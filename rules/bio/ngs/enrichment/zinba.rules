@@ -1,0 +1,258 @@
+# -*- snakemake -*-
+#
+# https://code.google.com/p/zinba/
+#
+# Installation in R:
+# system("wget http://zinba.googlecode.com/files/zinba_2.02.03.tar.gz")
+# install.packages(c('multicore','doMC','foreach','quantreg','R.utils')) 
+#
+# NB: multicore has been retired, need to download from archive and
+# install manually
+#
+# install.packages("zinba_2.02.03.tar.gz", repos=NULL)
+#
+
+import os
+from snakemake.utils import R
+from snakemakelib.bio.ngs.db import chromosomes, index
+from snakemakelib.config import update_sml_config, get_sml_config
+from snakemakelib.bio.ngs.utils import dict_to_Rdict
+
+include: "../settings.rules"
+include: "peakseq.rules"
+include: "../db/ucsc.rules"
+include: "../tools/bedtools.rules"
+
+ngs_cfg = get_sml_config('bio.ngs.settings')
+
+# Options have been compiled by looking at functions zinba (zinba.R),
+# run.zinba (run_zinba.R) and generateAlignability (generateAlignability.R)
+config_default = {
+    'bio.ngs.enrichment.zinba' : {
+        'generateAlignability' : {
+            'mapdir' : None,
+            'outdir' : "", # zinba alignability directory; note that a trailing path separator *must* be present...
+            'athresh' : 1, #number of hits per read allowed during mapping process; not documented            
+            'binary' : 0,
+            'savespace' : True,
+        },
+        # # Common
+        'zinba_common' : {
+            'outfile' : None, # path prefix for outputted files      
+            'seq' : None, # path to mapped experimental reads
+            'align' : None, # path to alignability directory      
+            'input' : "none", # path to mapped input reads if available (default is "none")
+            'twoBit' : index, # path to genome build in .2bit format
+            'basecountfile' : None, # path to basecount file if refinepeaks is 1
+            'threshold': 0.05, # FDR threshhold, default is 0.05
+            'numProc' : ngs_cfg['threads'], # number of CPUs to use, must be less than max available (default 1)
+            'refinepeaks' : 1, # 1 for refinement (default), 0 otherwise
+            'printFullOut' : 1, # 1 for printing full form of intermediate output, 0 otherwise
+            'filetype' : 'bed', # either 'bed', 'bowtie', or 'tagAlign'
+            'extension' : 200, # average fragment library length (size selected)
+            'FDR' : True, #either TRUE (default) or FALSE.
+            'interaction' : True, # consider two or three-way covariate interactions?  Default TRUE, otherwise FALSE.
+        },
+        # parameters for zinba function
+        'zinba' : {
+            'broad' : True, #broad setting, TRUE or FALSE (default)
+            'mode' : "peaks", #either "peaks" for peak calling (default) or "CNV" for calling likely amplified CNV regions for reads in "seq" (input reads are best)
+            'genome': 'hg',
+        },
+        'run.zinba' : {
+            'filelist' : None, # if buildwin=0, path to .list file for existing set of built windows (usuall in same folder)
+            'formula' : None, # background formula
+            'formulaE' : None, # enrichment formula         
+            'formulaZ' : None, # zero-inflation formula   
+            'winSize' : 250, # window size, default 500 bp       
+            'offset' : 0,  # offset distance, default 0 bp     
+            'cnvWinSize' : 100000, # CNV window size, default 100000 bp.
+            'cnvOffset' : 2500,  # CNV window offset distance, default 2500 bp
+            'tol' : 10**-5, # mixture regression EM algorithm convergence threshold, default 10^-5
+            'buildwin' : 1, # 1 to build windows (default), 0 to skip
+            'winGap' : 0, # distance threshold for significant window merging (detault 0bp),
+            'pWinSize' : 200, # sliding window size for local maximum detection (default 200 bp)         
+            'pquant' : 1.0, # read overlap quantile threshold for local maximum selection (0.0-1.0 (default)     
+            'method' : "mixture",
+            'initmethod' : "count", # initialization method, default is "count", otherwise "quantile" or "pscl"
+            'diff' : 0, # experimental, 1 for two-sample comparison where input = path to second sample, othewise 0 (default)
+            'cleanup' : True, # TRUE to delete all intermediate files, FALSE otherwise
+            'selectmodel' : True, # Either TRUE for model selection of FALSE (default, need to specify formulas)
+            'selectchr' : "chr22", # one chromosome name to use for model selection, default "chr22"
+            'selecttype' : "dirty", # either the abridged version "dirty" (default) or complete version "complete"     ,
+            'selectcovs' : None, # vector of covariate names (characters) to consider in model selection       
+        },
+    },
+}
+
+update_sml_config(config_default)
+
+zinba_cfg = get_sml_config('bio.ngs.enrichment.zinba')
+ps_cfg = get_sml_config('bio.ngs.enrichment.peakseq')
+mapdir = os.path.join(os.path.dirname(ps_cfg['index', 'mappability']), ps_cfg['mappability']['merlen'])
+
+rule zinba_generate_alignability:
+    """Generate alignability. Depends on mappability files from peakseq.
+
+    NB: crucially important is to add os.sep to the directory names,
+    otherwise this step segfaults...
+
+    """
+    input: mappability = [os.path.join(mapdir, "{chr}b.out".format(chr=x)) for x in chromosomes(ps_cfg['ref'])],
+           twobit = os.path.splitext(zinba_cfg['zinba_common']['twoBit', 'ucsc'])[0] + ".2bit"
+    output: out = "align_athresh" + str(zinba_cfg['generateAlignability']['athresh']) + "_extension" + str(zinba_cfg['zinba_common']['extension'])
+    threads: zinba_cfg['zinba_common']['numProc']
+    run:
+        d = zinba_cfg['generateAlignability']
+        d.update(zinba_cfg['zinba_common'])
+        d.update({'mapdir' : os.path.dirname(input.mappability[0]) + os.sep,
+                  'outdir' : output.out + os.sep,
+                  'twobit' : input.twobit})
+        R("""
+        library(zinba)
+        generateAlignability(
+        mapdir='{mapdir}', #mappability directory from unpacked mappability files
+        outdir='{outdir}', #directory for processed files, used later in analysis
+        athresh={athresh}, #number of hits per read allowed during mapping process
+        extension={extension}, #average fragment library length
+        twoBitFile='{twobit}', #path to downloaded genome build file in .2bit format
+        numProc={numProc},
+        binary={binary},
+        )
+        """.format(**d))
+
+rule zinba_basealigncount:
+    """Generate basecount file to obtain exact peak boundaries. Does *not*
+    accept bam input. bed seems to be the most reasonable compromise.
+    """
+    input: bed = "{prefix}.bed",
+           twobit = os.path.splitext(zinba_cfg['zinba_common']['twoBit', 'ucsc'])[0] + ".2bit"
+    output: out = "{prefix}." + str(zinba_cfg['zinba_common']['extension']) + ".basecount"
+    run:
+        d = zinba_cfg['zinba_common']
+        d.update({'twobit' : input.twobit,
+                  'inputfile' : input.bed,
+                  'outputfile' : output.out})
+        R("""
+        library(zinba)
+        basealigncount(
+        inputfile='{inputfile}', #mapped sample reads
+        outputfile='{outputfile}', # output path
+        extension={extension}, #average fragment library length
+        filetype='bed', #either "bed", "bowtie", or "tagAlign"
+        twoBitFile='{twobit}', #path to downloaded genome build file in .2bit format
+        )
+        """.format(**d))
+
+rule zinba_main_wrapper:
+    """Run main zinba pipeline. Does *not* accept bam input. bed seems to
+    be the most reasonable compromise."""
+    input: bed = "{prefix}.bed",
+           basealigncount = rules.zinba_basealigncount.output.out,
+           alignability = rules.zinba_generate_alignability.output.out,
+           twobit = os.path.splitext(zinba_cfg['zinba_common']['twoBit', 'ucsc'])[0] + ".2bit"
+    output: zinba_peaks = "{prefix}.zinba.peaks", zinba_peaks_bed = "{prefix}.zinba.peaks.bed",
+            zinba_files = temp("{prefix}.zinba_files")
+    threads: zinba_cfg['zinba_common']['numProc']
+    run:
+        d = zinba_cfg['zinba_common']
+        d.update(zinba_cfg['zinba'])
+        d.update({
+            'seq' : input.bed,
+            'basecountfile' : input.basealigncount,
+            'broad' : str(d['broad']).upper(),
+            'interaction' : str(d['interaction']).upper(),
+            'alignability' : input.alignability + os.sep,
+            'twobit' : input.twobit,
+            'outfileprefix' : os.path.splitext(output.zinba_peaks)[0],
+            'FDR' : str(d['FDR']).upper(),
+        })
+        R("""
+        library(zinba)
+        zinba(
+        align='{alignability}', #path to alignability directory
+        numProc={numProc}, #number of CPUs to use, must be less than max available   (default 1)
+        seq='{seq}', #path to mapped experimental reads
+        basecountfile='{basecountfile}', #path to basecount file if refinepeaks is 1
+        filetype='bed', #either 'bed', 'bowtie', or 'tagAlign'
+        outfile='{outfileprefix}', #prefix for outputted files
+        twoBit='{twobit}', #path to genome build in .2bit format
+        extension={extension}, #average fragment library length (size selected)
+        printFullOut={printFullOut}, #print original data with enrichment estimates, 1 for yes (more space required), 0 for no (default)
+        refinepeaks={refinepeaks}, #refine peaks? 1 for yes, 0 for no
+        broad={broad}, #broad setting, TRUE or FALSE (default)
+        input='{input}', #path to mapped input reads if available (default is "none")
+        )""".format(**d))
+
+rule zinba_run_zinba:
+    """Rule to run run.zinba for custom-tailored analysis.
+
+    See https://code.google.com/p/zinba/wiki/UsingZINBA, section
+    Custom Analysis.
+    """
+    input: bed = "{prefix}.bed",
+           basealigncount = rules.zinba_basealigncount.output.out,
+           alignability = rules.zinba_generate_alignability.output.out,
+           twobit = os.path.splitext(zinba_cfg['zinba_common']['twoBit', 'ucsc'])[0] + ".2bit"
+    output: zinba_peaks = "{prefix}.run_zinba.peaks", zinba_peaks_bed = "{prefix}.run_zinba.peaks.bed",
+            zinba_files = temp("{prefix}.run_zinba_files")
+    threads: zinba_cfg['zinba_common']['numProc']
+    run:
+        d = zinba_cfg['zinba_common']
+        d.update(zinba_cfg['run.zinba'])
+        d.update({
+            'seq' : input.bed,
+            'basecountfile' : input.basealigncount,
+            'interaction' : str(d['interaction']).upper(),
+            'alignability' : input.alignability + os.sep,
+            'twoBit' : input.twobit,
+            'outfileprefix' : os.path.splitext(output.zinba_peaks)[0],
+        })
+        # Update covariates according to zinba.R
+        if not d['selectcovs']:
+            if d['input'] == "none":
+                d['selectcovs'] = ["gcPerc", "align_perc", "exp_cnvwin_log"]
+            else:
+                d['selectcovs'] = ["input_count"]
+                d['selecttype'] = 'complete'
+        d = dict_to_Rdict(d)
+
+        R ("""
+        library(zinba)
+        run.zinba(
+            #filelist={filelist},
+            formula = {formula},
+            formulaE = {formulaE},
+            formulaZ = {formulaZ},
+            outfile='{outfileprefix}',
+            seq='{seq}',
+            align='{alignability}',
+            input='{input}',
+            twoBit='{twoBit}',
+            winSize={winSize},
+            offset={offset},
+            cnvWinSize={cnvWinSize},
+            cnvOffset={cnvOffset},
+            basecountfile='{basecountfile}',
+            threshold={threshold},
+            tol={tol},
+            numProc={numProc},
+            buildwin={buildwin},
+            winGap={winGap},
+            pWinSize={pWinSize},
+            pquant={pquant},
+            refinepeaks={refinepeaks},
+            printFullOut={printFullOut},
+            method = '{method}',
+            initmethod='{initmethod}',
+            diff={diff},
+            filetype='bed',
+            extension={extension},
+            cleanup={cleanup},
+            selectmodel={selectmodel},
+            selectchr='{selectchr}',
+            selecttype='{selecttype}',
+            selectcovs={selectcovs},
+            FDR={FDR},
+            interaction={interaction},
+        )""".format(**d))

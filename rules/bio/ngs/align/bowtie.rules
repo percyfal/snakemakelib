@@ -2,28 +2,28 @@
 import os
 from snakemakelib.config import update_sml_config, get_sml_config
 from snakemakelib.bio.ngs.db import index
+from snakemakelib.stat import is_compressed, is_installed
 from snakemakelib.bio.ngs.rnaseq.tuxedo import TuxedoReadGroup
 
 include: '../settings.rules'
 include: '../tools/samtools.rules'
- 
+
 ngs_cfg = get_sml_config('bio.ngs.settings')
 
 config_default = {
     'bio.ngs.align.bowtie' : {
         'index' : index,
         'ref' : ngs_cfg['db']['ref'],
-        'rg_fn' : TuxedoReadGroup(ngs_cfg['sampleorg'].run_id_re.re.pattern).parse,
+        'rg_fn' : TuxedoReadGroup(regexp=ngs_cfg['sampleorg'].run_id_re.re.pattern).parse,
         'version2' : True,
         'bowtie' : {
             'threads' : ngs_cfg['threads'],
-            'options' : '',
+            'options' : '--chunkmbs 200',
         },
         'build' : {
             'ext_v1' : [".1.ebwt", ".2.ebwt", ".3.ebwt", ".4.ebwt", ".rev.1.ebwt", ".rev.2.ebwt"],
             'ext_v2' : [".1.bt2", ".2.bt2", ".3.bt2", ".4.bt2", ".rev.1.bt2", ".rev.2.bt2"],
-
-        },   
+        },
     },
 }
 
@@ -32,22 +32,38 @@ update_sml_config(config_default)
 bwt_cfg = get_sml_config('bio.ngs.align.bowtie')
 samtools_cfg = get_sml_config('bio.ngs.tools.samtools')
 
+bowtie = 'bowtie2' if bwt_cfg['version2'] else 'bowtie'
+ext = bwt_cfg['build']['ext_v2'] if bwt_cfg['version2'] else bwt_cfg['build']['ext_v2']
+
+if not is_installed(bowtie):
+    raise Exception("\nbio.ngs.align.bowtie: {prog} not installed or not in PATH\n".format(prog=bowtie))
+
 rule bowtie_align:
     """Bowtie paired end alignment"""
-    params: cmd = 'bowtie2' if bwt_cfg['version2'] else 'bowtie',
+    params: cmd = bowtie,
             options = bwt_cfg['bowtie']['options'],
-            index = ("-x " if bwt_cfg['version2'] else "") + bwt_cfg['index', 'bowtie']
-    input: read1="{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],\
-           read2="{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['fastq_suffix']
-    output: "{prefix}.bam"
+            indexopt = ("-x" if bwt_cfg['version2'] else ""),
+            index = bwt_cfg['index', 'bowtie']
+    input: read1 = "{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],\
+           read2 = "{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['fastq_suffix'],
+           index = expand("{index}{ext}", index=bwt_cfg['index', 'bowtie'], ext=bwt_cfg['build']['ext_v2'] if bwt_cfg['version2'] else bwt_cfg['build']['ext_v1'])
+    output: bam = "{prefix}.bam"
     threads: bwt_cfg['bowtie']['threads']
-    shell: "{params.cmd} -p {threads} {params.options} {params.index} -1 {input.read1} -2 {input.read2} | " + samtools_cfg['cmd'] + " view -Sb - > {output}.tmp && mv {output}.tmp {output}"
+    run:
+        # For some reason, I can't get fifos to work. There is an
+        # alternative; process substitution. See
+        # http://arstechnica.com/civis/viewtopic.php?f=16&t=1180805.
+        if is_compressed(input.read1):
+            shell("{cmd} -S -p {threads} {options} {indexopt} {index} -1 <(gunzip -c {read1}) -2 <(gunzip -c {read2}) | {samtools} view -bS - > {bam}".format(cmd=params.cmd, threads=threads, options=params.options, indexopt=params.indexopt, index=params.index, read1=input.read1, read2=input.read2, bam=output.bam, samtools=samtools_cfg['cmd']))
+        else:
+            shell("{cmd} -S -p {threads} {options} {indexopt} {index} -1 {read1} -2 {read2} | {samtools} view -bS - > {bam}".format(cmd=params.cmd, threads=threads, options=params.options, indexopt=params.indexopt, index=params.index, read1=input.read1, read2=input.read2, bam=output.bam, samtools=samtools_cfg['cmd']))
 
 rule bowtie_build:
     """Bowtie build index"""
     params: ref = bwt_cfg['ref'],
             cmd = 'bowtie-build'
-    input: "{prefix}" + ".fa"
+    #input: "{prefix}" + ".fa"
+    input: bwt_cfg['ref']
     output: expand("{{prefix}}{ext}", ext=bwt_cfg['build']['ext_v1'])
     shell: "{params.cmd} {input} {wildcards.prefix}"
 

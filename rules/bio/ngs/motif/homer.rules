@@ -1,0 +1,28 @@
+# -*- snakemake -*-
+#
+# HOMER: Software for motif discovery and next-gen sequencing analysis
+#
+# http://homer.salk.edu/homer/motif/
+#
+import os
+from snakemakelib.config import update_sml_config, get_sml_config
+
+include: '../settings.rules'
+
+ngs_cfg = get_sml_config('bio.ngs.settings')
+
+GEM_JAR_PROGRAM = "gem.jar"
+
+config_default = {
+    'bio.ngs.motif.gem' : {
+        'home' : os.curdir,
+        'java_mem' : ngs_cfg['java']['java_mem'],
+        'java_tmpdir' : ngs_cfg['java']['java_tmpdir'],
+        'options' : '',
+    },
+}
+
+update_sml_config(config_default)
+
+gem_cfg = get_sml_config('bio.ngs.motif.gem')
+

@@ -1,4 +1,10 @@
 # -*- snakemake -*-
+#
+# GEM: ChIP-seq and ChIP-exo analysis tool
+# Genome wide Event finding and Motif discovery 
+#
+# http://www.psrg.csail.mit.edu/gem/
+#
 import os
 from snakemakelib.config import update_sml_config, get_sml_config
 

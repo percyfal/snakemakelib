@@ -16,7 +16,7 @@ ngs_cfg = get_sml_config('bio.ngs.settings')
 config_default = {
     'bio.ngs.enrichment.dfilter' : {
         'ref' : ngs_cfg['db']['ref'],
-        'options' : "",
+        'options' : "-lpval=2 -ks=50 -bs=100",
         'cmd' : 'run_dfilter.sh',
     },
 }
@@ -34,4 +34,4 @@ rule dfilter_run_dfilter_bam:
             cmd = dfilt_cfg['cmd']
     input: chipfile = "{prefix}.bam"
     output: outfile = "{prefix}.dfilt.bed"
-    shell: "{params.cmd} {params.options} -f bam -d {input.chipfile} -o {output.outfile}"
+    shell: "{params.cmd} {params.options} -f=bam -d={input.chipfile} -o={output.outfile}"

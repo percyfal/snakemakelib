@@ -41,7 +41,7 @@ def find_scrnaseq_merge_inputs(wildcards):
 config_default = {
     'settings' : {
         'temp_rules' : [],
-        'temp_rules_default' : ['sratools_prefetch', 'star_align', ],
+        'temp_rules_default' : ['sratools_prefetch', 'star_align', 'bamtools_filter'],
     },
     'workflows.bio.scrnaseq' : {
         'qc' : {

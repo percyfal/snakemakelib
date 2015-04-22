@@ -70,6 +70,9 @@ MERGE_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re
 ZINBA_TARGET_SUFFIX = ".sort.merge.offset.zinba.peaks"
 ZINBA_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, src_re = ngs_cfg['sampleorg'].raw_run_re, target_suffix = ZINBA_TARGET_SUFFIX, filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],  **ngs_cfg)
 
+DFILTER_TARGET_SUFFIX = ".sort.merge.offset.dfilt.bed"
+DFILTER_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, src_re = ngs_cfg['sampleorg'].raw_run_re, target_suffix = DFILTER_TARGET_SUFFIX, filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],  **ngs_cfg)
+
 # Rules
 rule atacseq_merge:
     """Run ATAC-seq alignment, duplication removal and merge"""
@@ -77,7 +80,7 @@ rule atacseq_merge:
 
 rule atacseq_all:
     """Run ATAC-seq pipeline"""
-    input: ZINBA_TARGETS + ['zinba_alignability/']
+    input: DFILTER_TARGETS + ZINBA_TARGETS
 
 rule atacseq_correct_coordinates_for_zinba:
     """From Buenrostro paper: 
@@ -105,3 +108,24 @@ rule atacseq_correct_coordinates_for_zinba:
                     s.pos -= 5
                     s.pnext += 4
             outfile.write(s)
+
+#
+# Putative additional data and methods
+#
+# Section ATAC-seq insertion size enrichment analysis
+# No Segmentation data available for current ensembl build ?!? Use old data:
+# ftp://ftp.ensembl.org/pub/release-73/regulation/homo_sapiens/Segmentation_GM12878.gff.gz
+#
+# Section Nucleosome positioning
+# Danpos, Dantools: https://sites.google.com/site/danposdoc/
+# 
+# Section ChIP-seq peak-calling and clustering
+# ChIP data for 50 antibodies downloaded from
+# Stanford/Yale/USC/Harvard (SYDH) ENCODE data repository available at the UCSC genome browser:
+# http://hgdownload.cse.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeSydhTfbs/
+# 
+# Section Footprinting using CENTIPEDE
+
+# Use motif data from http://compbio.mit.edu/encode-motifs/; most
+# likely need matches.txt.gz to find genomic regions matching a motif;
+# the genome-wide set of motifs is in motifs.txt (?).

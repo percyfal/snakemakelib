@@ -27,12 +27,14 @@ def register_metadata(metadata_file):
             'bio.ngs.tools.sratools': {'_datadir': os.path.dirname(metadata_file),
                                        '_run2sample' : run2sample,
                                        '_metadata' : metadata_list}})
-    except IOError:
-        print ("""
+    except Exception as e:
+        raise Exception("""
+
         no metadata file '{metadata}' found
 
         please initiate analysis by running 'snakemake {metadata}'
 
         """.format(metadata=metadata_file))
-        raise
+
+
 

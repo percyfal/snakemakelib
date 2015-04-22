@@ -1,0 +1,37 @@
+# -*- snakemake -*-
+#
+# http://collaborations.gis.a-star.edu.sg/~cmb6/kumarv1/dfilter/
+#
+# Requires manual install
+#
+
+import os
+from snakemakelib.config import update_sml_config, get_sml_config
+from snakemakelib.stat import is_installed
+
+include: '../settings.rules'
+
+ngs_cfg = get_sml_config('bio.ngs.settings')
+
+config_default = {
+    'bio.ngs.enrichment.dfilter' : {
+        'ref' : ngs_cfg['db']['ref'],
+        'options' : "-lpval=2 -ks=50 -bs=100",
+        'cmd' : 'run_dfilter.sh',
+    },
+}
+
+update_sml_config(config_default)
+
+dfilt_cfg = get_sml_config('bio.ngs.enrichment.dfilter')
+
+if not is_installed(dfilt_cfg['cmd']):
+    raise Exception("\nbio.ngs.enrichment.dfilter: {prog} not installed or not in PATH\n".format(prog=dfilt_cfg['cmd']))
+
+rule dfilter_run_dfilter_bam:
+    """Run run_dfilter command. Currently only works on one file."""
+    params: options = dfilt_cfg['options'],
+            cmd = dfilt_cfg['cmd']
+    input: chipfile = "{prefix}.bam"
+    output: outfile = "{prefix}.dfilt.bed"
+    shell: "{params.cmd} {params.options} -f=bam -d={input.chipfile} -o={output.outfile}"

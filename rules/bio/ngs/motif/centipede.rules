@@ -1,0 +1,26 @@
+# -*- snakemake -*-
+#
+# CENTIPEDE: Transcription factor footprinting and binding site prediction
+# install.packages("CENTIPEDE", repos="http://R-Forge.R-project.org") 
+#  
+# http://centipede.uchicago.edu/
+#
+import os
+from snakemakelib.config import update_sml_config, get_sml_config
+
+include: '../settings.rules'
+
+ngs_cfg = get_sml_config('bio.ngs.settings')
+
+config_default = {
+    'bio.ngs.motif.centipede' : {
+        'options' : '',
+    },
+}
+
+update_sml_config(config_default)
+
+cpd_cfg = get_sml_config('bio.ngs.motif.centipede')
+
+rule 
+

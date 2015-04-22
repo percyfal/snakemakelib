@@ -7,6 +7,20 @@ smllogger = LoggerManager().getLogger(__name__)
 
 sml_config = get_sml_config()
 
+def chromosomes(ref):
+    """Return the chromosome names for a given reference.
+
+    Currently assumes the existence of a dictionary file.
+    """
+    dictfile = ref.replace(".fa", ".dict")
+    try:
+        with open(dictfile, "r") as fh:
+            chroms = [x.split()[1].replace("SN:", "") for x in fh.readlines() if x.startswith("@SQ")]
+    except:
+        raise Exception("failed to read dict file {dict}".format(dictfile))
+    return chroms
+
+
 def ref():
     """Return the fasta reference sequence as a string
     

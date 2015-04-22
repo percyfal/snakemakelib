@@ -1,5 +1,9 @@
 # Copyright (c) 2014 Per Unneberg
+import os
 from datetime import datetime, date
+from snakemakelib.log import LoggerManager
+
+smllogger = LoggerManager().getLogger(__name__)
 
 def utc_time():
     """Make an utc_time with appended 'Z'"""
@@ -18,3 +22,17 @@ def isoformat(s=None):
 def rreplace(s, old, new, occurrence):
     li = s.rsplit(old, occurrence)
     return new.join(li)
+
+## From bcbb
+def safe_makedir(dname):
+    """Make a directory if it doesn't exist, handling concurrent race conditions.
+    """
+    if not os.path.exists(dname):
+        try:
+            os.makedirs(dname)
+        except OSError:
+            if not os.path.isdir(dname):
+                raise
+    else:
+        smllogger.warning("Directory {} already exists; not making directory".format(dname))
+    return dname

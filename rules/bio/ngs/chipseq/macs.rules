@@ -1,0 +1,29 @@
+# -*- snakemake -*-
+import os
+from snakemakelib.config import update_sml_config, get_sml_config
+
+include: '../settings.rules'
+
+ngs_cfg = get_sml_config('bio.ngs.settings')
+
+config_default = {
+    'bio.ngs.chipseq.macs' : {
+        'version2' : True,
+        'options' : '-g hs',
+    },
+}
+
+update_sml_config(config_default)
+
+macs_cfg = get_sml_config('bio.ngs.chipseq.macs')
+
+python2 = get_sml_config('comp.settings')['python2']['activate_cmd']
+
+rule macs_callpeak:
+    """Run macs callpeak"""
+    params: cmd = 'macs2' if macs_cfg['version2'] else 'macs',
+            options = " ".join([macs_cfg['options'],
+                                ])
+    input: chip = "{chip}.bam", control = "{control}.bam"
+    output: "{prefix}.macs"
+    shell: python2 + " && {params.cmd} {params.options} -f BAM -t {input.chip} -c {input.control}" 

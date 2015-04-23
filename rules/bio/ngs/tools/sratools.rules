@@ -1,5 +1,6 @@
 # -*- snakemake -*-
 import os
+import re
 import csv
 from snakemakelib.config import update_sml_config, get_sml_config
 from snakemakelib.utils import utc_time
@@ -7,11 +8,17 @@ from snakemakelib.utils import utc_time
 import logging
 
 #smllogger = LoggerManager().getLogger(__name__)
-smlloger = logging.getLogger(__name__)
+smllogger = logging.getLogger(__name__)
 
 include: '../settings.rules'
+include: '../../../settings.rules'
 
-config_default = { 
+cfg = get_sml_config("settings")
+
+config_default = {
+    'settings' : {
+        'temp_rules_default' : list(set(['sratools_prefetch'] + cfg['temp_rules_default'])),
+    },
     "bio.ngs.tools.sratools" : {
         "email" : os.getenv("USER_EMAIL", None),
         "srastudy" : "",
@@ -106,18 +113,23 @@ rule sratools_fastq_dump:
                                 '--gzip' if ngs_cfg["fastq_suffix"].endswith(".gz") else '',
                                 '--bzip2' if ngs_cfg["fastq_suffix"].endswith(".bzip2") else ''])
     input: _sra_file
-    output: read1 = "{prefix}" + ngs_cfg["read1_label"] + ngs_cfg["fastq_suffix"],
-            read2 = "{prefix}" + ngs_cfg["read2_label"] + ngs_cfg["fastq_suffix"]
+    # Disable . and _ in sra file name
+    output: read1 = "{prefix,[A-Za-z0-9]+}" + ngs_cfg["read1_label"] + ngs_cfg["fastq_suffix"],
+            read2 = "{prefix,[A-Za-z0-9]+}" + ngs_cfg["read2_label"] + ngs_cfg["fastq_suffix"]
     shell: "{params.cmd} {params.options} -O $(dirname {wildcards.prefix}) $(basename {wildcards.prefix})"
 
 def _get_run(wildcards):
-    (sample, run) = wildcards.prefix.split("_")
+    tmp = wildcards.prefix.split("_")
+    if len (tmp) == 1:
+        run = tmp[0]
+    else:
+        (_, run) = tmp
     return os.path.join(sra_cfg['_datadir'], "{run}_{read}".format(run=run, read=wildcards.read) + ngs_cfg["fastq_suffix"])
 
 rule sratools_link_sra_fastq:
     """Link sra run fastq file from download directory to output path"""
     input: fastq = _get_run
-    output: fastq = os.path.join("{path}", "{prefix}_{read}" + ngs_cfg["fastq_suffix"])
+    output: fastq = os.path.join("{path}", "{prefix}" + "_{read}" + ngs_cfg["fastq_suffix"])
     shell: "ln -s {input.fastq} {output.fastq}"
 
 ruleorder: sratools_link_sra_fastq > sratools_fastq_dump

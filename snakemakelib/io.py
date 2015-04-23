@@ -6,7 +6,7 @@ from snakemakelib.log import LoggerManager
 
 smllogger = LoggerManager().getLogger(__name__)
 
-def set_temp_output(workflow, rules=[], temp_filetypes=[]):
+def set_temp_output(workflow, rules, temp_filetypes):
     """Given list of rules, set their corresponding outputs to temporary outputs.
 
     Args:
@@ -25,6 +25,7 @@ def set_temp_output(workflow, rules=[], temp_filetypes=[]):
             for o in workflow._rules[rule].output:
                 if r.search(o) is None:
                     output.remove(o)
+                    smllogger.debug("removing output {output} from temporary output in rule {rule}".format(output=o, rule=rule))
             workflow._rules[rule].temp_output = set(output)
         except:
             smllogger.warn("failed to set output in rule {rule} to temporary".format(rule=rule))

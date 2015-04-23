@@ -4,6 +4,7 @@ import shutil
 import glob
 from snakemakelib.config import update_sml_config, get_sml_config, sml_path
 from snakemakelib.bio.ngs.targets import generic_target_generator
+from snakemakelib.bio.ngs.qc.picard import collect_picard_qc_results
 
 def _find_merge_inputs(wildcards):
     ngs_cfg = get_sml_config('bio.ngs.settings')
@@ -53,6 +54,7 @@ config_default = {
             'output' : [],
             'inputfun' : _find_merge_inputs,
         },
+        'qcrules' : ['picard_collect_insert_size_metrics', 'picard_collect_alignment_summary_metrics', 'picard_mark_duplicates'],
     },
 }
 
@@ -100,10 +102,11 @@ rule picard_reorder_bam:
 rule picard_mark_duplicates:
     """Picard: mark duplicates"""
     params: cmd = picard_config['cmd'] + MARK_DUPLICATES,
-            options = picard_config['options']
+            options = picard_config['options'],
+            suffix = ".dup_metrics"
     input: "{prefix}.bam", "{prefix}.bai"
-    output: "{prefix}.dup.bam"
-    shell: "{params.cmd} I={input[0]} O={output} {params.options} M={wildcards.prefix}.dup.dup_metrics"
+    output: bam = "{prefix}.dup.bam", metrics = "{prefix}.dup.dup_metrics"
+    shell: "{params.cmd} I={input[0]} O={output.bam} {params.options} M={output.metrics}"
 
 ruleorder: picard_mark_duplicates > picard_build_bam_index
 
@@ -136,25 +139,17 @@ ruleorder: picard_create_region_dict_awk > picard_create_dict_awk
 rule picard_collect_insert_size_metrics:
     """Picard: collect insertion size metrics"""
     params: cmd = picard_config['cmd'] + COLLECT_INSERT_SIZE_METRICS,
-            options = picard_config['options']
+            options = picard_config['options'],
+            suffix = ".insert_metrics"
     input: "{prefix}.bam", "{prefix}.bai", picard_config['ref']
     output: "{prefix}.insert_metrics"
     shell: "{params.cmd} {params.options} H={wildcards.prefix}.hist I={input[0]} O={output} R={input[2]}"
 
-rule picard_mark_duplicates_metrics:
-    """Picard: mark duplicates metrics. See also picard_mark_duplicates."""
-    params: cmd = picard_config['cmd'] + MARK_DUPLICATES,
-            options = picard_config['options']
-    input: "{prefix}.bam", "{prefix}.bai"
-    output: "{prefix}.dup.dup_metrics"
-    shell: "{params.cmd} {params.options} I={input[0]} M={output} O={wildcards.prefix}.dup.bam"
-
-ruleorder: picard_mark_duplicates > picard_mark_duplicates_metrics
-
 rule picard_collect_alignment_summary_metrics:
     """Picard: collect alignment summary metrics"""
     params: cmd = picard_config['cmd'] + COLLECT_ALIGNMENT_SUMMARY_METRICS,
-            options = picard_config['options']
+            options = picard_config['options'],
+            suffix = ".align_metrics"
     input: "{prefix}.bam", "{prefix}.bai", picard_config['ref']
     output: "{prefix}.align_metrics"
     shell: "{params.cmd} {params.options} I={input[0]} O={output[0]} R={input[2]}"
@@ -164,7 +159,8 @@ rule picard_calculate_hs_metrics:
     params: cmd = picard_config['cmd'] + CALCULATE_HS_METRICS,
             options = picard_config['options'],
             target_regions = picard_config['target_regions'],
-            bait_regions = picard_config['bait_regions']
+            bait_regions = picard_config['bait_regions'],
+            suffix = ".hs_metrics"
     input: "{prefix}.bam", "{prefix}.bai", picard_config['ref']
     output: "{prefix}.hs_metrics"
     shell: "{params.cmd} {params.options} TI={params.target_regions} BI={params.bait_regions} I={input[0]} O={output} R={input[2]}"
@@ -173,6 +169,7 @@ rule picard_calculate_region_hs_metrics:
     """Picard: calculate hybrid selection metrics based on regions"""
     params: cmd = picard_config['cmd'] + CALCULATE_HS_METRICS,
             options = picard_config['options'],
+            suffix = ".hs_metrics"
     input: bam = "{prefix}.region_{gene}.{sfx}.bam", targets="{prefix}.region_{gene}.targets.dict", baits="{prefix}.region_{gene}.baits.dict", ref=picard_config['ref']
     output: "{prefix}.region_{gene}.{sfx}.hs_metrics"
     shell: "{params.cmd} {params.options} TI={input.targets} BI={input.baits} I={input.bam} O={output} R={input.ref}"
@@ -223,3 +220,28 @@ rule picard_merge_sam:
           if os.path.exists(output.merge):
               os.unlink(output.merge)
           shutil.copy(input[0], output.merge)
+
+rule picard_do_qc:
+    """Run picard metrics commands on a bam file"""
+    input: ["{{prefix}}{sfx}".format(sfx=workflow._rules[x].params.suffix) for x in picard_config['qcrules']]
+    output: out="{prefix}.picardqc.txt"
+    run:
+        with open (output.out, "w") as fh:
+            fh.write("Completed rule 'picard_do_qc' using qcrules {qcrules}".format(qcrules=",".join(picard_config['qcrules'])))
+
+def _picard_find_picard_do_qc_result_files_fn(wildcards):
+    ngs_cfg = get_sml_config('bio.ngs.settings')
+    sources = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, src_re=ngs_cfg['sampleorg'].run_id_re, target_suffix = os.path.join("." + wildcards.label), filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg)
+    return sources
+
+rule picard_qc_summary:
+    """Summarize results from picard_do_qc"""
+    input: _picard_find_picard_do_qc_result_files_fn
+    output: out = os.path.join("{path}", "{label}.csv")
+    run:
+        try:
+            samples = [ngs_cfg['sampleorg'].sample_re.parse(f)['SM'] for f in input]
+        except KeyError:
+            raise Exception("failed to parse sample name 'SM' from input list")
+        d = collect_picard_qc_results(input, samples)
+        #print (d)

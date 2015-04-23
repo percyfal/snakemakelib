@@ -58,23 +58,6 @@ sml_config = get_sml_config()
 sp_cfg = sml_config['bio.ngs.qc.sequenceprocessing']
 ngs_cfg = sml_config['bio.ngs.settings']
 
-rule cutadapt_cut_threeprime:
-    """Cutadapt: cut threeprime adaptor"""
-    params: cmd = sp_cfg['cutadapt']['cmd'],
-            options = sp_cfg['cutadapt']['options'],
-            threeprime = sp_cfg['cutadapt']['threeprime']
-    input: "{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']
-    output: "{prefix}" + ngs_cfg['read1_label'] + ".trimmed" + ngs_cfg['fastq_suffix']
-    shell: "{params.cmd} {params.options} -a {params.threeprime} {input} -o {output} > {wildcards.prefix}.cutadapt_metrics"
-
-rule cutadapt_cut_fiveprime:
-    """Cutadapt: cut fiveprime adaptor"""
-    params: cmd = sp_cfg['cutadapt']['cmd'],
-            options = sp_cfg['cutadapt']['options'],
-            fiveprime = sp_cfg['cutadapt']['fiveprime']
-    input: "{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix']
-    output: "{prefix}" + ngs_cfg['read1_label'] + ".trimmed" + ngs_cfg['fastq_suffix']
-    shell: "{params.cmd} {params.options} -a {params.fiveprime} {input} -o {output} > {wildcards.prefix}.cutadapt_metrics"
 
 # rule rule_3:
 # 	input: " {prefix}$('read1_label').trimmed.fastq.gz {prefix}$('read2_label').trimmed.fastq.gz"

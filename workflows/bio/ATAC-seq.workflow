@@ -5,17 +5,32 @@ from snakemakelib.io import set_temp_output
 from snakemakelib.config import update_sml_config, get_sml_config
 from snakemakelib.bio.ngs.targets import generic_target_generator
 
+def _merge_suffix():
+    """Determine the merge suffix of the run files"""
+    atac_cfg = get_sml_config('workflows.bio.atac_seq')
+    if atac_cfg['trimadaptor']:
+        return ".trimmed.sort.bam"
+    else:
+        return ".sort.bam"
+
+# Default configuration settings custom-tailored for ATAC-Seq analysis
 atac_config = {
-    'settings' : {
-        'temp_rules' : [],
-        'temp_rules_default' : ['sratools_prefetch'],
-    },
     'workflows.bio.atac_seq' : {
         'aligner' : 'bowtie',
+        'peakcallers' : ['zinba', 'dfilter', 'macs2'],
+        'trimadaptor' : True,
+    },
+    'settings' : {
+        'temp_rules' : [],
     },
     'bio.ngs.qc.picard' : {
         'merge_sam' : {
-            'suffix' : '.sort.dup.bam',
+            'suffix' : '.sort.bam',
+        },
+    },
+    'bio.ngs.enrichment.macs' : {
+        'callpeak' : {
+            'options' : '-g dm --nomodel --shiftsize 50 -q 0.01',
         },
     },
 }
@@ -29,11 +44,16 @@ aligner_config = {
     'bio.ngs.align.bwa' : {
     },
 }
+
 aligner = atac_config['workflows.bio.atac_seq']['aligner']
 key = 'bio.ngs.align.' + aligner
 
 update_sml_config(atac_config)
 update_sml_config({key : aligner_config[key]})
+
+ngs_cfg = get_sml_config('bio.ngs.settings')
+main_cfg = get_sml_config('settings')
+atac_cfg = get_sml_config('workflows.bio.atac_seq')
 
 p = os.path.join(os.pardir, os.pardir, 'rules')
 include: os.path.join(p, 'settings.rules')
@@ -42,8 +62,12 @@ include: os.path.join(p, "bio/ngs", "settings.rules")
 include: os.path.join(p, "bio/ngs/align", aligner + ".rules")
 include: os.path.join(p, "bio/ngs/align", "blat.rules")
 include: os.path.join(p, "bio/ngs/qc", "picard.rules")
+include: os.path.join(p, "bio/ngs/qc", "sequenceprocessing.rules")
 include: os.path.join(p, "bio/ngs/enrichment", "zinba.rules")
 include: os.path.join(p, "bio/ngs/enrichment", "dfilter.rules")
+include: os.path.join(p, "bio/ngs/enrichment", "macs.rules")
+if atac_cfg['trimadaptor']:
+    include: os.path.join(p, "bio/ngs/qc", "cutadapt.rules")
 
 ruleorder: picard_merge_sam > picard_sort_bam 
 ruleorder: picard_sort_bam > picard_add_or_replace_read_groups
@@ -54,12 +78,10 @@ ruleorder: picard_sort_bam > bowtie_align
 ruleorder: picard_merge_sam > bowtie_align
 ruleorder: picard_mark_duplicates > bowtie_align
 ruleorder: dfilter_run_dfilter_bam > bedtool_bamtobed
-
-ngs_cfg = get_sml_config('bio.ngs.settings')
-main_cfg = get_sml_config('settings')
+ruleorder: macs_callpeak_treatment_only_bam > bedtool_bamtobed
 
 # Set temporary outputs
-set_temp_output(workflow, main_cfg['temp_rules'] + main_cfg['temp_rules_default'])
+set_temp_output(workflow, rules = main_cfg['temp_rules'] + main_cfg['temp_rules_default'], temp_filetypes=main_cfg['temp_filetypes'] + main_cfg['temp_filetypes_default'])
 
 if workflow._workdir is None:
     raise Exception("no workdir set, or set after include of 'ATAC-seq.workflow'; set workdir before include statement!")
@@ -68,19 +90,36 @@ MERGE_TARGET_SUFFIX = ".sort.merge.bam"
 MERGE_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, src_re = ngs_cfg['sampleorg'].raw_run_re, target_suffix = MERGE_TARGET_SUFFIX, filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],  **ngs_cfg)
 
 ZINBA_TARGET_SUFFIX = ".sort.merge.offset.zinba.peaks"
-ZINBA_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, src_re = ngs_cfg['sampleorg'].raw_run_re, target_suffix = ZINBA_TARGET_SUFFIX, filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],  **ngs_cfg)
+ZINBA_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, src_re = ngs_cfg['sampleorg'].raw_run_re, target_suffix = ZINBA_TARGET_SUFFIX, filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],  **ngs_cfg) if 'zinba' in atac_cfg['peakcallers'] else []
 
 DFILTER_TARGET_SUFFIX = ".sort.merge.offset.dfilt.bed"
-DFILTER_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, src_re = ngs_cfg['sampleorg'].raw_run_re, target_suffix = DFILTER_TARGET_SUFFIX, filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],  **ngs_cfg)
+DFILTER_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, src_re = ngs_cfg['sampleorg'].raw_run_re, target_suffix = DFILTER_TARGET_SUFFIX, filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],  **ngs_cfg) if 'dfilter' in atac_cfg['peakcallers'] else []
+
+MACS2_TARGET_SUFFIX = ".sort.merge.offset_peaks.bed"
+MACS2_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, src_re = ngs_cfg['sampleorg'].raw_run_re, target_suffix = MACS2_TARGET_SUFFIX, filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],  **ngs_cfg) if 'macs2' in atac_cfg['peakcallers'] else []
+
+DUP_METRICS_SUFFIX=".sort.merge.dup.dup_metrics"
+DUP_METRICS_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, target_suffix =  DUP_METRICS_SUFFIX, src_re = ngs_cfg['sampleorg'].raw_run_re, filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg)
+
+ALIGN_METRICS_SUFFIX=".sort.merge.dup.align_metrics"
+ALIGN_METRICS_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, target_suffix =  ALIGN_METRICS_SUFFIX, src_re = ngs_cfg['sampleorg'].raw_run_re, filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg)
+
+INSERT_METRICS_SUFFIX=".sort.merge.dup.insert_metrics"
+INSERT_METRICS_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, target_suffix =  INSERT_METRICS_SUFFIX, src_re = ngs_cfg['sampleorg'].raw_run_re, filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg)
+
 
 # Rules
 rule atacseq_merge:
     """Run ATAC-seq alignment, duplication removal and merge"""
     input: MERGE_TARGETS
 
+rule atacseq_metrics:
+    """Run ATAC-seq alignment and corresponding metrics only"""
+    input: DUP_METRICS_TARGETS + ALIGN_METRICS_TARGETS + INSERT_METRICS_TARGETS
+
 rule atacseq_all:
     """Run ATAC-seq pipeline"""
-    input: DFILTER_TARGETS + ZINBA_TARGETS
+    input: DFILTER_TARGETS + ZINBA_TARGETS + MACS2_TARGETS + DUP_METRICS_TARGETS + ALIGN_METRICS_TARGETS + INSERT_METRICS_TARGETS
 
 rule atacseq_correct_coordinates_for_zinba:
     """From Buenrostro paper: 
@@ -98,15 +137,15 @@ rule atacseq_correct_coordinates_for_zinba:
         samfile = pysam.AlignmentFile(input.bam, "rb")
         outfile = pysam.AlignmentFile(output.bam, "wb", template=samfile)
         for s in samfile:
-            # Modify s here NB: currently not checking if position is
-            # <0 or >chr_len, should be done
+            # Modify s here
             if not s.is_unmapped:
+                l = samfile.lengths[s.rname]
                 if not s.is_reverse:
-                    s.pos += 4
-                    s.pnext -= 5
+                    s.pos = min(l, s.pos + 4)
+                    s.pnext = max(0, s.pnext - 5)
                 else:
-                    s.pos -= 5
-                    s.pnext += 4
+                    s.pos = max(0, s.pos - 5)
+                    s.pnext = min(l, s.pnext + 4)
             outfile.write(s)
 
 #
@@ -129,3 +168,8 @@ rule atacseq_correct_coordinates_for_zinba:
 # Use motif data from http://compbio.mit.edu/encode-motifs/; most
 # likely need matches.txt.gz to find genomic regions matching a motif;
 # the genome-wide set of motifs is in motifs.txt (?).
+
+# Other papers
+# http://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1004994
+# use macs2 with -g dm –nomodel –shiftsize 50 –q 0.01; however single-end 50bp reads
+

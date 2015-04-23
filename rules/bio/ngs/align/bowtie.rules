@@ -17,6 +17,12 @@ config_default = {
         'rg_fn' : TuxedoReadGroup(regexp=ngs_cfg['sampleorg'].run_id_re.re.pattern).parse,
         'version2' : True,
         'bowtie' : {
+            'cmd' : 'bowtie',
+            'threads' : ngs_cfg['threads'],
+            'options' : '--chunkmbs 200',
+        },
+        'bowtie2' : {
+            'cmd' : 'bowtie2',
             'threads' : ngs_cfg['threads'],
             'options' : '--chunkmbs 200',
         },
@@ -35,18 +41,18 @@ samtools_cfg = get_sml_config('bio.ngs.tools.samtools')
 bowtie = 'bowtie2' if bwt_cfg['version2'] else 'bowtie'
 ext = bwt_cfg['build']['ext_v2'] if bwt_cfg['version2'] else bwt_cfg['build']['ext_v2']
 
-if not is_installed(bowtie):
-    raise Exception("\nbio.ngs.align.bowtie: {prog} not installed or not in PATH\n".format(prog=bowtie))
+if not is_installed(bwt_cfg[bowtie]['cmd']):
+    raise Exception("\nbio.ngs.align.bowtie: {prog} not installed or not in PATH\n".format(prog=bwt_cfg[bowtie]['cmd']))
 
 rule bowtie_align:
     """Bowtie paired end alignment"""
-    params: cmd = bowtie,
+    params: cmd = bwt_cfg[bowtie]['cmd'],
             options = bwt_cfg['bowtie']['options'],
             indexopt = ("-x" if bwt_cfg['version2'] else ""),
             index = bwt_cfg['index', 'bowtie']
     input: read1 = "{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],\
            read2 = "{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['fastq_suffix'],
-           index = expand("{index}{ext}", index=bwt_cfg['index', 'bowtie'], ext=bwt_cfg['build']['ext_v2'] if bwt_cfg['version2'] else bwt_cfg['build']['ext_v1'])
+           index = expand("{index}{ext}", index=bwt_cfg['index', bowtie], ext=bwt_cfg['build']['ext_v2'] if bwt_cfg['version2'] else bwt_cfg['build']['ext_v1'])
     output: bam = "{prefix}.bam"
     threads: bwt_cfg['bowtie']['threads']
     run:
@@ -61,7 +67,7 @@ rule bowtie_align:
 rule bowtie_build:
     """Bowtie build index"""
     params: ref = bwt_cfg['ref'],
-            cmd = 'bowtie-build'
+            cmd = os.path.join(os.path.dirname(bwt_cfg[bowtie]['cmd']), 'bowtie-build')
     #input: "{prefix}" + ".fa"
     input: bwt_cfg['ref']
     output: expand("{{prefix}}{ext}", ext=bwt_cfg['build']['ext_v1'])
@@ -70,7 +76,7 @@ rule bowtie_build:
 rule bowtie_build2:
     """Bowtie build index"""
     params: ref = bwt_cfg['ref'],
-            cmd = 'bowtie2-build'
+            cmd = os.path.join(os.path.dirname(bwt_cfg[bowtie]['cmd']), 'bowtie2-build')
     input: "{prefix}" + ".fa"
     output: expand("{{prefix}}{ext}", ext=bwt_cfg['build']['ext_v2'])
     shell: "{params.cmd} {input} {wildcards.prefix}"

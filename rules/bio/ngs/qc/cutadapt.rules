@@ -1,0 +1,39 @@
+# -*- snakemake -*-
+import os
+from snakemakelib.config import update_sml_config, get_sml_config
+
+include: '../settings.rules'
+
+ngs_cfg = get_sml_config('bio.ngs.settings')
+
+config_default = { 
+    'bio.ngs.qc.cutadapt' : {
+        'cmd' : "cutadapt",
+        'threeprime': "AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC",
+        'fiveprime' : "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT",
+        'options' : "",
+        'fastq_suffix' : ngs_cfg['fastq_suffix'],
+    },
+}
+
+update_sml_config(config_default)
+
+ca_cfg = get_sml_config('bio.ngs.qc.cutadapt')
+
+rule cutadapt_cut_threeprime:
+    """Cutadapt: cut threeprime adaptor"""
+    params: cmd = ca_cfg['cmd'],
+            options = ca_cfg['options'],
+            threeprime = ca_cfg['threeprime']
+    input: fastq = "{prefix}" +  ngs_cfg['read1_label'] + ca_cfg['fastq_suffix']
+    output: trim = "{prefix}" + ".trimmed" + ngs_cfg['read1_label'] + ca_cfg['fastq_suffix']
+    shell: "{params.cmd} {params.options} -a {params.threeprime} {input.fastq} -o {output.trim} > {wildcards.prefix}.cutadapt_metrics"
+
+rule cutadapt_cut_fiveprime:
+    """Cutadapt: cut fiveprime adaptor"""
+    params: cmd = ca_cfg['cmd'],
+            options = ca_cfg['options'],
+            fiveprime = ca_cfg['fiveprime']
+    input: fastq = "{prefix}" + ngs_cfg['read2_label'] + ca_cfg['fastq_suffix']
+    output: trim = "{prefix}" + ".trimmed" + ngs_cfg['read2_label'] + ca_cfg['fastq_suffix']
+    shell: "{params.cmd} {params.options} -a {params.fiveprime} {input.fastq} -o {output.trim} > {wildcards.prefix}.cutadapt_metrics"

@@ -84,7 +84,7 @@ if workflow._workdir is None:
     raise Exception("no workdir set, or set after include of 'scrnaseq.workflow'; set workdir before include statement!")
 
 # Set temporary outputs
-set_temp_output(workflow, main_cfg['temp_rules'] + main_cfg['temp_rules_default'])
+set_temp_output(workflow, rules = main_cfg['temp_rules'] + main_cfg['temp_rules_default'], temp_filetypes=main_cfg['temp_filetypes'] + main_cfg['temp_filetypes_default'])
 
 ##################################################
 # Target definitions

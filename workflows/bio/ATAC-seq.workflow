@@ -45,6 +45,9 @@ aligner_config = {
     },
 }
 
+if atac_config['workflows.bio.atac_seq']['trimadaptor']:
+    atac_config['bio.ngs.qc.picard']['merge_sam']['suffix'] = '.trimmed.sort.bam'
+
 aligner = atac_config['workflows.bio.atac_seq']['aligner']
 key = 'bio.ngs.align.' + aligner
 
@@ -54,6 +57,9 @@ update_sml_config({key : aligner_config[key]})
 ngs_cfg = get_sml_config('bio.ngs.settings')
 main_cfg = get_sml_config('settings')
 atac_cfg = get_sml_config('workflows.bio.atac_seq')
+
+
+    
 
 p = os.path.join(os.pardir, os.pardir, 'rules')
 include: os.path.join(p, 'settings.rules')
@@ -72,8 +78,8 @@ if atac_cfg['trimadaptor']:
 ruleorder: picard_merge_sam > picard_sort_bam 
 ruleorder: picard_sort_bam > picard_add_or_replace_read_groups
 ruleorder: picard_add_or_replace_read_groups > picard_mark_duplicates
-ruleorder: picard_mark_duplicates > atacseq_correct_coordinates_for_zinba
-ruleorder: atacseq_correct_coordinates_for_zinba > bowtie_align
+ruleorder: picard_mark_duplicates > atacseq_correct_coordinates
+ruleorder: atacseq_correct_coordinates > bowtie_align
 ruleorder: picard_sort_bam > bowtie_align
 ruleorder: picard_merge_sam > bowtie_align
 ruleorder: picard_mark_duplicates > bowtie_align
@@ -121,7 +127,7 @@ rule atacseq_all:
     """Run ATAC-seq pipeline"""
     input: DFILTER_TARGETS + ZINBA_TARGETS + MACS2_TARGETS + DUP_METRICS_TARGETS + ALIGN_METRICS_TARGETS + INSERT_METRICS_TARGETS
 
-rule atacseq_correct_coordinates_for_zinba:
+rule atacseq_correct_coordinates:
     """From Buenrostro paper: 
 
     'Previous descriptions of the Tn5 transposase show that the

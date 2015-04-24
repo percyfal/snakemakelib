@@ -2,6 +2,7 @@
 import os
 import re
 import io
+import math
 import pandas as pd
 import jinja2
 import numpy as np
@@ -9,7 +10,9 @@ from bokeh.models import HoverTool, ColumnDataSource, BoxSelectTool
 from bokeh.models.widgets import VBox, HBox, TableColumn, DataTable
 from bokeh.plotting import figure, output_file, show, gridplot
 from bokeh.palettes import brewer
+from bokeh.charts import Scatter, Line
 from snakemakelib.log import LoggerManager
+from snakemakelib.bokeh.plot import scatterplot, lineplot
 
 smllogger = LoggerManager().getLogger(__name__)
 
@@ -48,11 +51,103 @@ def collect_picard_qc_results(inputfiles, samples):
                 smllogger.warn("failed to append data")
     return (df_met, df_hist)
 
+
+class Metrics(pd.DataFrame):
+    def __init__(self, *args, **kwargs):
+        super(Metrics, self).__init__(*args, **kwargs)
+        self._metadata = {'type': 'metrics'}
+        self.plots = []
+        self._label = str(type(self)).split(".")[-1].replace("'>", "")
+
+    @property
+    def label(self):
+        return self._label
+        
+    def plot_metrics(self, **kwargs):
+        plist = []
+        for (x,y) in self.plots:
+            fig = scatterplot(x, y, source = ColumnDataSource(self), **kwargs)
+            plist.append(fig)
+        return plist
+        
+class HistMetrics(Metrics):
+    def __init__(self, *args, **kwargs):
+        super(HistMetrics, self).__init__(*args, **kwargs)
+        self._metadata = {'type' : 'histogram'}
+
+
+    def plot_hist(self, **kwargs):
+        fig = figure(**kwargs)
+        g = self.groupby("Sample")
+        colors = {k:v for (k,v) in zip(g.groups.keys(), brewer["PiYG"][min(max(3, len(g.groups.keys())), 10)] * math.ceil(len(g.groups.keys())/ 10))}
+        for i in g.groups.keys():
+            labels = g.get_group(i).columns
+            xname = labels[0]
+            # Here we currently assume second column is y; this is not
+            # always the case for insertion metrics
+            yname = labels[1]
+            x = getattr(g.get_group(i), xname)
+            y = getattr(g.get_group(i), yname)
+            fig.line(x, y, legend=i, color = colors[i])
+        return (fig)
+    
+class AlignMetrics(Metrics):
+    def __init__(self, *args, **kwargs):
+        super(AlignMetrics, self).__init__(*args, **kwargs)
+        self.plots = [('Sample', 'PCT_PF_READS_ALIGNED')]
+
+class InsertMetrics(Metrics):
+    def __init__(self, *args, **kwargs):
+        super(InsertMetrics, self).__init__(*args, **kwargs)
+        self.plots = [('Sample','MEAN_INSERT_SIZE')]
+
+class InsertHist(HistMetrics):
+    def __init__(self, *args, **kwargs):
+        super(InsertHist, self).__init__(*args, **kwargs)
+        
+class DuplicationMetrics(Metrics):
+    def __init__(self, *args, **kwargs):
+        super(DuplicationMetrics, self).__init__(*args, **kwargs)
+        self._metadata = {'type': 'metrics'}
+
+class DuplicationHist(HistMetrics):
+    def __init__(self, *args, **kwargs):
+        super(DuplicationHist, self).__init__(*args, **kwargs)
+        self._metadata = {'type': 'histogram'}
+        
+def _read_metrics(infile):
+    if infile.endswith(".align_metrics.metrics"):
+        return AlignMetrics(pd.read_csv(infile))
+    elif infile.endswith(".align_metrics.hist"):
+        return None
+    elif infile.endswith(".insert_metrics.metrics"):
+        return InsertMetrics(pd.read_csv(infile))
+    elif infile.endswith(".insert_metrics.hist"):
+        return InsertHist(pd.read_csv(infile))
+    elif infile.endswith(".dup_metrics.metrics"):
+        return DuplicationMetrics(pd.read_csv(infile))
+    elif infile.endswith(".dup_metrics.hist"):
+        return DuplicationHist(pd.read_csv(infile))
+    else:
+        smllogger.warn("Unknown metrics type {f}; skipping".format(f=infile))
+        return None
+    
 def make_picard_summary_plots(inputfiles):
+    d = {}
     for (metrics_file, hist_file) in zip(inputfiles[0::2], inputfiles[1::2]):
         print (metrics_file, hist_file)
-        df_met = pd.read_csv(metrics_file)
-        df_hist = pd.read_csv(hist_file)
-        if df_hist.endswith("has no histogram data"):
-            df_hist = None
+        df_met = _read_metrics(metrics_file)
+        df_hist = _read_metrics(hist_file)
+        p1 = df_met.plot_metrics()
+        if not df_hist is None:
+            p2 = [df_hist.plot_hist()]
+        else:
+            p2 = []
+        key = os.path.splitext(metrics_file)[0]
+        if not df_met.label in d:
+            d[df_met.label] = {}
+        d[df_met.label][key] = gridplot([p1 + p2])
+    return d
 
+        
+            

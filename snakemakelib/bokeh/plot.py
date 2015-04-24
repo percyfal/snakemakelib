@@ -69,3 +69,10 @@ def scatterplot(x, y,
         h.tooltips = tt['tips']
     return (fig)
     
+def lineplot(x, y,
+            xaxis = {'axis_label' : "", 'major_label_orientation' : np.pi/3},
+            yaxis = {'axis_label' : "", 'major_label_orientation' : 1},
+            grid = {'grid_line_color' : None, 'grid_line_alpha' : 1.0},
+            tooltips=[], qc=None, **kwargs):
+    """Make a scatter plot"""
+    fig = figure (**kwargs)

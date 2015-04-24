@@ -54,6 +54,7 @@ rule bowtie_align:
            read2 = "{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['fastq_suffix'],
            index = expand("{index}{ext}", index=bwt_cfg['index', bowtie], ext=bwt_cfg['build']['ext_v2'] if bwt_cfg['version2'] else bwt_cfg['build']['ext_v1'])
     output: bam = "{prefix}.bam"
+    benchmark: "{prefix}.json"
     threads: bwt_cfg['bowtie']['threads']
     run:
         # For some reason, I can't get fifos to work. There is an

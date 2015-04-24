@@ -4,7 +4,7 @@ import shutil
 import glob
 from snakemakelib.config import update_sml_config, get_sml_config, sml_path
 from snakemakelib.bio.ngs.targets import generic_target_generator
-from snakemakelib.bio.ngs.qc.picard import collect_picard_qc_results
+from snakemakelib.bio.ngs.qc.picard import collect_picard_qc_results, make_picard_summary_plots
 
 def _find_merge_inputs(wildcards):
     ngs_cfg = get_sml_config('bio.ngs.settings')
@@ -237,11 +237,26 @@ def _picard_find_picard_do_qc_result_files_fn(wildcards):
 rule picard_qc_summary:
     """Summarize results from picard_do_qc"""
     input: _picard_find_picard_do_qc_result_files_fn
-    output: out = os.path.join("{path}", "{label}.csv")
+    output: metrics = os.path.join("{path}", "picard.{label}.metrics"), 
+            hist = os.path.join("{path}", "picard.{label}.hist")
     run:
         try:
             samples = [ngs_cfg['sampleorg'].sample_re.parse(f)['SM'] for f in input]
         except KeyError:
             raise Exception("failed to parse sample name 'SM' from input list")
-        d = collect_picard_qc_results(input, samples)
-        #print (d)
+        (df_met, df_hist) = collect_picard_qc_results(input, samples)
+        if not df_met is None:
+            df_met.to_csv(output.metrics)
+        if not df_hist is None:
+            df_hist.to_csv(output.hist, index=False)
+        else:
+            with open(output.hist, "w") as fh:
+                fh.write("{ext} metrics has no histogram data".format(ext=os.path.splitext(input[0])[1]))
+
+
+rule picard_plot_qc_summary:
+    """Plot picard summary data"""
+    input: [("{{prefix}}{sfx}.metrics".format(sfx=sfx), "{{prefix}}{sfx}.hist".format(sfx=sfx)) for sfx in [workflow._rules[x].params.suffix for x in picard_config['qcrules']]]
+    output: picard_summary = "{prefix}.html"
+    run:
+        d = make_picard_summary_plots(input)

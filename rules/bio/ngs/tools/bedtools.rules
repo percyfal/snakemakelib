@@ -11,6 +11,7 @@ config_default = {
     'bio.ngs.tools.bedtools' : {
         'bfile' : "",
         'options' : "",
+        'home' : os.getenv("BEDTOOLS_HOME", ""),
         'coveragebed' : {
             'cmd' : 'coverageBed',
         },
@@ -37,12 +38,12 @@ bedtools_cfg = get_sml_config('bio.ngs.tools.bedtools')
 
 for (section, cfg) in bedtools_cfg.items():
     if isinstance(cfg, dict):
-        if cfg.get('cmd', "") and not is_installed(cfg.get('cmd', "")):
+        if cfg.get('cmd', "") and not is_installed(os.path.join(bedtools_cfg['home'], cfg.get('cmd', ""))):
             raise Exception("\nbio.ngs.tools.bedtools: {prog} not installed or not in PATH\n".format(prog=cfg.get('cmd')))
 
 rule bedtool_bamtobed:
     """Convert a bam file to bed format"""
-    params: cmd = bedtools_cfg['bamtobed']['cmd'],
+    params: cmd = os.path.join(bedtools_cfg['home'], bedtools_cfg['bamtobed']['cmd']),
             options = bedtools_cfg['options']
     input: "{prefix}.bam"
     output: "{prefix}.bed"
@@ -53,7 +54,7 @@ rule bedtools_bam2coverage:
 
     Input: {prefix}.bam; output: {prefix}.coverage
     """
-    params: cmd = bedtools_cfg['coveragebed']['cmd'],
+    params: cmd = os.path.join(bedtools_cfg['home'], bedtools_cfg['coveragebed']['cmd']),
             options=bedtools_cfg['options'],
             bfile = bedtools_cfg['bfile']
     input: "{prefix}.bam"
@@ -63,7 +64,7 @@ rule bedtools_bam2coverage:
 
 rule bedtools_intersectbed_make_region_baits:
     """Generate overlapping bed file for bait definition file"""
-    params: cmd = bedtools_cfg['intersectbed']['cmd'],
+    params: cmd = os.path.join(bedtools_cfg['home'], bedtools_cfg['intersectbed']['cmd']),
             options = bedtools_cfg['intersectbed']['options']
     input: a="{prefix}.region_{gene}.bed", b=bedtools_cfg['sequence_capture']['bait_regions']
     output: "{prefix}.region_{gene}.baits.bed"
@@ -71,7 +72,7 @@ rule bedtools_intersectbed_make_region_baits:
 
 rule bedtools_intersectbed_make_region_targets:
     """Generate overlapping bed file for target definition file"""
-    params: cmd = bedtools_cfg['intersectbed']['cmd'],
+    params: cmd = os.path.join(bedtools_cfg['home'], bedtools_cfg['intersectbed']['cmd']),
             options = bedtools_cfg['intersectbed']['options']
     input: a="{prefix}.region_{gene}.bed", b=bedtools_cfg['sequence_capture']['target_regions']
     output: "{prefix}.region_{gene}.targets.bed"

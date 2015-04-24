@@ -22,33 +22,37 @@ def collect_picard_qc_results(inputfiles, samples):
         try:
             with open(f) as fh:
                 data = [x.strip("\n").split("\t") for x in fh.readlines() if not x.strip() == ""]
-            if f.endswith(".insert_metrics"):
-                indices = list((i for i,val in enumerate(data) if val[0].startswith("## METRICS CLASS") or val[0].startswith("## HISTOGRAM")))
-                met_tmp = pd.DataFrame (data[indices[0]+2:indices[1]])
-                met_tmp.columns = data[indices[0] + 1]
-                print ("sample: ", s)
-                met_tmp.index = s
-                #print (s, met_tmp)
-                print (s)
-                
-                hist_tmp = pd.DataFrame (data[indices[1]+2:], index=s)
+            indices = list((i for i,val in enumerate(data) if val[0].startswith("## METRICS CLASS") or val[0].startswith("## HISTOGRAM")))
+            if len(indices) == 1:
+                indices += [len(data)]
+            met_tmp = pd.DataFrame (data[indices[0]+2:indices[1]])
+            met_tmp.columns = data[indices[0] + 1]
+            met_tmp["Sample"] = s
+            if indices[1] != len(data):
+                hist_tmp = pd.DataFrame (data[indices[1]+2:])
                 hist_tmp.columns = data[indices[1] + 1]
+                hist_tmp["Sample"] = s
         except:
             smllogger.warn("pandas reading table {f} failed".format(f=f))
         try:
             if first:
                 df_met = met_tmp
-                df_hist = hist_tmp
+                if indices[1] != len(data):
+                    df_hist = hist_tmp
                 first = False
             else:
                 df_met = df_met.append(met_tmp)
-                df_hist = df_hist.append(hist_temp)
+                if indices[1] != len(data):
+                    df_hist = df_hist.append(hist_tmp)
         except:
                 smllogger.warn("failed to append data")
-    return {'metrics' : df_met, 'hist' : df_hist}
+    return (df_met, df_hist)
 
-def make_picard_summary_plots(d):
-    pass
-# def make_picard_summary_plots(df_rd, df_gc, do_qc=True, min_exonmap=60.0, max_three_prime_map=10.0):
-#     """Make picard summary plots"""
-#     pass
+def make_picard_summary_plots(inputfiles):
+    for (metrics_file, hist_file) in zip(inputfiles[0::2], inputfiles[1::2]):
+        print (metrics_file, hist_file)
+        df_met = pd.read_csv(metrics_file)
+        df_hist = pd.read_csv(hist_file)
+        if df_hist.endswith("has no histogram data"):
+            df_hist = None
+

@@ -71,13 +71,75 @@ def scatterplot(x, y,
         h = fig.select(dict(type=tt['type']))
         h.tooltips = tt['tips']
     return (fig)
+
+def scatterplot2(y, df, x="i", groups=[],
+                 xaxis = {'axis_label' : "", 'major_label_orientation' : np.pi/3},
+                 yaxis = {'axis_label' : "", 'major_label_orientation' : 1},
+                 grid = {'grid_line_color' : None, 'grid_line_alpha' : 1.0},
+                 tooltips=[], qc=None, **kwargs):
+    """Make a scatter plot"""
+    # Update data frame
+    df['i'] = list(range(1, len(df.index) + 1))
+    # Catchall groupby group
+    df['all'] = "ALL"
+    # grouping
+    g = df.groupby(groups) if groups else df.groupby('all')
+    colors = list({k:v for (k,v) in zip(g.groups.keys(), brewer["PiYG"][min(max(3, len(g.groups.keys())), 10)] * g.size()[0])}.values()) * g.size()[0]
+
+    source = ColumnDataSource(df)
+    # Fix ranges
+    x_range = list(df[x]) if df[x].dtype is np.dtype('object') else []
+    x = "i" if df[x].dtype is np.dtype('object') else x
+
+    # Get figure
+    fig = figure (x_range = x_range, **kwargs)
+
+    # sort out arguments
+    figmembers = [x[0] for x in inspect.getmembers(Figure)]
+    circle_kwargs_keys = list(set(list(kwargs.keys())).difference(set(figmembers)))
+    circle_kwargs = {k:kwargs.pop(k) for k in circle_kwargs_keys}
+    # Add qc cutoff if required
+    if not qc is None:
+        getattr(fig, qc.plot_type)(x=qc.x, y=qc.y, **qc.kwargs)
+    # Add scatter points - check if list of strings, if present in source we do several
+    if set(y) <= set(source.column_names):
+        color = brewer["PiYG"][10]
+        if 'color' in circle_kwargs.keys():
+            color = circle_kwargs.pop('color')
+        for (yy, c) in zip(y, color):
+            fig.circle(x=x, y=yy, color=c, legend=yy, source=source, **circle_kwargs)
+    else:
+        fig.circle(x=x, y=y, source=source, color=colors, legend=groups, **circle_kwargs)
+    for k in xaxis.keys():
+        [setattr(x, k, xaxis[k]) for x in fig.xaxis]
+    for k in yaxis.keys():
+        [setattr(y, k, yaxis[k]) for y in fig.yaxis]
+    for k in grid.keys():
+        [setattr(x, k, grid[k]) for x in fig.grid]
+    # NB: currently assume it is a dictionary
+    for tt in tooltips:
+        h = fig.select(dict(type=tt['type']))
+        h.tooltips = tt['tips']
+    return fig
     
-def lineplot(x, y,
+def lineplot(df, x=None, y=None, groups = [],
             xaxis = {'axis_label' : "", 'major_label_orientation' : np.pi/3},
             yaxis = {'axis_label' : "", 'major_label_orientation' : 1},
             grid = {'grid_line_color' : None, 'grid_line_alpha' : 1.0},
             tooltips=[], qc=None, **kwargs):
-    pass
+    fig = figure (**kwargs)
+    g = df.groupby(groups)
+    colors = {k:v for (k,v) in zip(g.groups.keys(), brewer["PiYG"][min(max(3, len(g.groups.keys())), 10)] * math.ceil(len(g.groups.keys())/ 10))}
+    for i in g.groups.keys():
+        labels = g.get_group(i).columns
+        xname = labels[0]
+        # Here we currently assume second column is y; this is not
+        # always the case for insertion metrics
+        yname = labels[1]
+        x = getattr(g.get_group(i), xname)
+        y = getattr(g.get_group(i), yname)
+        fig.line(x, y, legend=i, color = colors[i])
+    return (fig)
 
 def dotplot(y, df, groups=[],
             xaxis = {'axis_label' : "", 'major_label_orientation' : np.pi/3},

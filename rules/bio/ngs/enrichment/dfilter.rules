@@ -27,6 +27,9 @@ dfilt_cfg = get_sml_config('bio.ngs.enrichment.dfilter')
 
 if not is_installed(dfilt_cfg['cmd']):
     raise Exception("\nbio.ngs.enrichment.dfilter: {prog} not installed or not in PATH\n".format(prog=dfilt_cfg['cmd']))
+else:
+    # Make sure PATH is updated
+    os.environ["PATH"] += os.pathsep + os.path.dirname(dfilt_cfg['cmd'])
 
 rule dfilter_run_dfilter_bam:
     """Run run_dfilter command. Currently only works on one file."""

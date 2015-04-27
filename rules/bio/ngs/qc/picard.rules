@@ -240,8 +240,8 @@ def _picard_find_picard_do_qc_result_files_fn(wildcards):
 rule picard_qc_summary:
     """Summarize results from picard_do_qc"""
     input: _picard_find_picard_do_qc_result_files_fn
-    output: metrics = os.path.join("{path}", "picard.{label}.metrics"), 
-            hist = os.path.join("{path}", "picard.{label}.hist")
+    output: metrics = os.path.join("{path}", "picard.{label}.metrics.csv"), 
+            hist = os.path.join("{path}", "picard.{label}.hist.csv")
     run:
         try:
             samples = [ngs_cfg['sampleorg'].sample_re.parse(f)['SM'] for f in input]
@@ -259,10 +259,10 @@ rule picard_qc_summary:
 
 rule picard_plot_qc_summary:
     """Plot picard summary data"""
-    input: [("{{prefix}}{sfx}.metrics".format(sfx=sfx), "{{prefix}}{sfx}.hist".format(sfx=sfx)) for sfx in [workflow._rules[x].params.suffix for x in picard_config['qcrules']]]
+    input: [("{{prefix}}{sfx}.metrics.csv".format(sfx=sfx), "{{prefix}}{sfx}.hist.csv".format(sfx=sfx)) for sfx in [workflow._rules[x].params.suffix for x in picard_config['qcrules']]]
     output: picard_summary = "{prefix}.html"
     run:
-        uri = {}
+        uri = {k : {"uri" : data_uri(k), "file" : k} for k in input}
         d = make_picard_summary_plots(input)
         d.update({'uri' : uri})
         tp = jinja2.Template(open(os.path.join(sml_templates_path(), 'bio_ngs_qc_picard_summary.html')).read())

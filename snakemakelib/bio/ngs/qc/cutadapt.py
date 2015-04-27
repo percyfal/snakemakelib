@@ -42,8 +42,7 @@ def collect_cutadapt_qc_results(inputfiles, sampleruns):
     df_ret = df.pivot_table(columns=["statistic"], values=["count"], index=["sample", "run"])
     return df_ret
 
-def make_cutadapt_summary_plot(summaryfile):
-    df_summary = pd.read_csv(summaryfile)
+def make_cutadapt_summary_plot(df_summary):
     df_summary["read1_pct"] = 100.0 * df_summary["Read 1 with adapter"]/df_summary["Total read pairs processed"]
     df_summary["read2_pct"] = 100.0 * df_summary["Read 2 with adapter"]/df_summary["Total read pairs processed"]
 

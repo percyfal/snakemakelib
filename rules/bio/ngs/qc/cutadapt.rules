@@ -84,8 +84,8 @@ rule cutadapt_qc_plot:
     input: summary = os.path.join("{path}", "cutadapt{label}summary.csv")
     output: html = os.path.join("{path}", "cutadapt{label}summary.html")
     run:
-        fig = make_cutadapt_summary_plot(summaryfile = input.summary)
+        df_summary = pd.read_csv(input.summary)
+        uri = {'summary_uri':data_uri(input.summary), 'summary_file':input.summary}
+        fig = make_cutadapt_summary_plot(df_summary)
         output_file(output.html)
-        show (fig)
-        
-    
+        show(fig)

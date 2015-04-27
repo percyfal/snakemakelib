@@ -1,8 +1,11 @@
 # Copyright (C) 2015 by Per Unneberg
 import os
+import math
 import inspect
 import numpy as np
 from snakemakelib.config import sml_base_path
+from bokeh.models import ColumnDataSource
+from bokeh.palettes import brewer
 from bokeh.plotting import figure, Figure
 from snakemakelib.log import LoggerManager
 
@@ -53,7 +56,7 @@ def scatterplot(x, y,
         if 'color' in circle_kwargs.keys():
             color = circle_kwargs.pop('color')
         for (yy, c) in zip(y, color):
-            fig.circle(x=x, y=yy, color=c, **circle_kwargs)
+            fig.circle(x=x, y=yy, color=c, legend=yy, **circle_kwargs)
     else:
         fig.circle(x=x, y=y, **circle_kwargs)
     # Apparently fig.xaxis and friends are lists so need to loop here. 
@@ -74,5 +77,39 @@ def lineplot(x, y,
             yaxis = {'axis_label' : "", 'major_label_orientation' : 1},
             grid = {'grid_line_color' : None, 'grid_line_alpha' : 1.0},
             tooltips=[], qc=None, **kwargs):
-    """Make a scatter plot"""
-    fig = figure (**kwargs)
+    pass
+
+def dotplot(y, df, groups=[],
+            xaxis = {'axis_label' : "", 'major_label_orientation' : np.pi/3},
+            yaxis = {'axis_label' : "", 'major_label_orientation' : 1},
+            grid = {'grid_line_color' : None, 'grid_line_alpha' : 1.0},
+            tooltips=[], **kwargs):
+    """Make a dotplot"""
+    g = df.groupby(groups)
+    df['i'] = list(range(1, len(df.index) + 1))
+    source = ColumnDataSource(df.sort())
+    figmembers = [x[0] for x in inspect.getmembers(Figure)]
+    circle_kwargs_keys = list(set(list(kwargs.keys())).difference(set(figmembers)))
+    circle_kwargs = {k:kwargs.pop(k) for k in circle_kwargs_keys}
+    x_range = ["_".join(x) for x in sorted(list(g.groups.keys()))]
+    fig = figure (x_range = x_range, **kwargs)
+    # Applying jitter fails for some reason: j = -
+    # math.ceil(len(y)/2); offset = 1 / (3*len(y))
+    if set(y) <= set(source.column_names):
+        color = ['black'] * len(y) 
+        color = brewer["PiYG"][10]# [min(max(3, len(y)), 10)]
+        if 'color' in circle_kwargs.keys():
+            color = circle_kwargs.pop('color')
+        for (yy, c) in zip(y, color):
+            fig.circle(x="i", y=yy, color=c, legend=yy, source=source, alpha=1, **circle_kwargs)
+    for k in xaxis.keys():
+        [setattr(x, k, xaxis[k]) for x in fig.xaxis]
+    for k in yaxis.keys():
+        [setattr(y, k, yaxis[k]) for y in fig.yaxis]
+    for k in grid.keys():
+        [setattr(x, k, grid[k]) for x in fig.grid]
+    # NB: currently assume it is a dictionary
+    for tt in tooltips:
+        h = fig.select(dict(type=tt['type']))
+        h.tooltips = tt['tips']
+    return (fig)

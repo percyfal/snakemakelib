@@ -124,7 +124,7 @@ def _get_run(wildcards):
 rule sratools_link_sra_fastq:
     """Link sra run fastq file from download directory to output path"""
     input: fastq = _get_run
-    output: fastq = os.path.join("{path}", "{prefix}" + "_{read}" + ngs_cfg["fastq_suffix"])
+    output: fastq = os.path.join("{path}", "{prefix,[0-9]+$}" + "_{read}" + ngs_cfg["fastq_suffix"])
     shell: "ln -fs {input.fastq} {output.fastq}"
 
 ruleorder: sratools_link_sra_fastq > sratools_fastq_dump

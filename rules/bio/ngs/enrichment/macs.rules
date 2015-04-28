@@ -1,8 +1,6 @@
 # -*- snakemake -*-
 #
-# Latest version does not work: now using
-#
-# pip install MACS2==2.0.10.7032012
+# Install with pip; use recent version of gcc (>=4.9)
 #
 from snakemakelib.config import update_sml_config, get_sml_config
 from snakemakelib.stat import is_installed
@@ -73,4 +71,4 @@ rule macs_callpeak_treatment_only_bam:
             xls = "{prefix}_peaks.xls",
             summits = "{prefix}_summits.bed"
     log: "{prefix}." + macs + ".log"
-    shell: python2 + " && {params.cmd} callpeak {params.options} -n {wildcards.prefix} -t {input.bam} -f BAM"
+    shell: python2 + " && {params.cmd} callpeak {params.options} -n {wildcards.prefix} -t {input.bam} -f BAM > {log}"

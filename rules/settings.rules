@@ -9,6 +9,8 @@ from snakemakelib.config import update_sml_config, get_sml_config
 TEMP_FILETYPES_DEFAULT = ['.bam', '.gz', '.zip', '.bigWig', '.wig', '.bed', '.sra',
                           '.fastq', '.fq', '.fasta', '.fa']
 
+PROTECTED_FILETYPES_DEFAULT = TEMP_FILETYPES_DEFAULT    
+
 # Add configuration variable to snakemake global config object
 config['section'] = config.get("section", "")
 
@@ -18,6 +20,10 @@ config_default = {
         'temp_filetypes_default' : TEMP_FILETYPES_DEFAULT,
         'temp_rules' : [],
         'temp_rules_default' : [],
+        'protected_filetypes' : [],
+        'protected_filetypes_default' : PROTECTED_FILETYPES_DEFAULT,
+        'protected_rules' : [],
+        'protected_rules_default' : [],
     },
 }
 

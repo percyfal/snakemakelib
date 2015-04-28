@@ -16,7 +16,7 @@ snakefile = """# -*- snakemake -*-
 import os
 import sys
 import re
-from snakemakelib.config import init_sml_config, get_sml_config
+from snakemakelib.config import update_snakemake_config
 from snakemakelib.utils import rreplace
 from snakemakelib.bio.ngs.targets import generic_target_generator
 
@@ -59,14 +59,14 @@ local_config = {{
     }},
 }}
 
-init_sml_config(local_config)
+config = update_snakemake_config(config, local_config)
 
 if any([re.search('bismark', arg) for arg in sys.argv]):
     include: '{methylseq}'
 else:
     include: '{variation}'
 
-cfg = get_sml_config('bio.ngs.settings')
+cfg = config['bio.ngs.settings']
 path = cfg.get('path') if not cfg.get('path') is None else os.curdir
 
 """

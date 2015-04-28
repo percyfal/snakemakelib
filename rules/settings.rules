@@ -3,8 +3,7 @@
 Main settings for snakemakelib. Defines top-level configuration
 settings for all rules. 
 """
-
-from snakemakelib.config import update_sml_config, get_sml_config
+from snakemakelib.config import update_snakemake_config
 
 TEMP_FILETYPES_DEFAULT = ['.bam', '.gz', '.zip', '.bigWig', '.wig', '.bed', '.sra',
                           '.fastq', '.fq', '.fasta', '.fa']
@@ -21,4 +20,4 @@ config_default = {
     },
 }
 
-update_sml_config(config_default)
+config = update_snakemake_config(config, config_default)

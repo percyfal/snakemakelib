@@ -1,7 +1,7 @@
 # -*- snakemake -*-
 import os
 from collections import namedtuple
-from snakemakelib.config import update_sml_config, get_sml_config
+from snakemakelib.config import update_snakemake_config
 from snakemakelib.bio.ngs.regexp import RunRegexp, SampleRegexp
 
 # Add configuration variable to snakemake global config object
@@ -93,9 +93,9 @@ config_default = {
     },
 }
 
-update_sml_config(config_default)
+config = update_snakemake_config(config, config_default)
 
-ngs_conf = get_sml_config('bio.ngs.settings')
+ngs_conf = config['bio.ngs.settings']
 
-update_sml_config({'bio.ngs.settings' : sample_organization[ngs_conf['sample_organization']]})
+config = update_snakemake_config(config, {'bio.ngs.settings' : sample_organization[ngs_conf['sample_organization']]})
 

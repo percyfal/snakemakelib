@@ -1,11 +1,10 @@
 # Copyright (C) 2015 by Per Unneberg
 import os
+from snakemake.workflow import config
 from snakemakelib.config import get_sml_config
 from snakemakelib.log import LoggerManager
 
 smllogger = LoggerManager().getLogger(__name__)
-
-sml_config = get_sml_config()
 
 def chromosomes(ref):
     """Return the chromosome names for a given reference.
@@ -30,7 +29,7 @@ def ref():
     Returns:
       seq: A <string> representing the reference fasta sequence
     """
-    cfg = get_sml_config("bio.ngs.settings")
+    cfg = config["bio.ngs.settings"]
     # If no build issue a warning
     if not cfg['db']['build']:
         raise ValueError('No build defined: cannot generate reference fasta file name. Either provide a build, a reference file name or write a custom ref() function that returns the full path name of the reference fasta file.')
@@ -49,8 +48,7 @@ def index(application):
     Returns:
       index: a <string> representing the index in the format required by the particular application
     """
-    sml_cfg = get_sml_config()
-    ngs_cfg = sml_cfg["bio.ngs.settings"]
+    ngs_cfg = config["bio.ngs.settings"]
 
     if not ngs_cfg['db']['build_config']:
         smllogger.debug("No build_config present: assuming index locations are organized according to cloudbiolinux conventions")
@@ -61,7 +59,7 @@ def index(application):
         index_root = os.path.dirname(os.path.dirname(prefix))
         basename = os.path.basename(prefix)
         if application in ["star"]:
-            return os.path.join(index_root, application, sml_cfg['bio.ngs.align.star']['star_index']['genome'])
+            return os.path.join(index_root, application, config['bio.ngs.align.star']['star_index']['genome'])
         else:
             return os.path.join(index_root, application, basename)
     else:

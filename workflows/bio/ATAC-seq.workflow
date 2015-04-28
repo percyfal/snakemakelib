@@ -30,7 +30,7 @@ atac_config = {
     },
     'bio.ngs.enrichment.macs' : {
         'callpeak' : {
-            'options' : '-g dm --nomodel --shiftsize 50 -q 0.01',
+            'options' : '-g hs --nomodel --shiftsize 37 --extsize 73 -q 0.01',
         },
     },
 }

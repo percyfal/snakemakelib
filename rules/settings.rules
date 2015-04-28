@@ -6,7 +6,8 @@ settings for all rules.
 
 from snakemakelib.config import update_sml_config, get_sml_config
 
-TEMP_FILETYPES_DEFAULT = ['.bam', '.gz', '.zip', '.bigWig', '.wig', '.bed']
+TEMP_FILETYPES_DEFAULT = ['.bam', '.gz', '.zip', '.bigWig', '.wig', '.bed', '.sra',
+                          '.fastq', '.fq', '.fasta', '.fa']
 
 # Add configuration variable to snakemake global config object
 config['section'] = config.get("section", "")

@@ -19,7 +19,7 @@ def set_temp_output(workflow, rules, temp_filetypes):
     """
     r = re.compile("|".join("{}$".format(x) for x in list(set(temp_filetypes))))
     for rule in rules:
-        smllogger.info("setting output in rule {rule} to temporary".format(rule=rule))
+        smllogger.info("setting output in rule '{rule}' to temporary".format(rule=rule))
         try:
             output = copy.copy(workflow._rules[rule].output)
             for o in workflow._rules[rule].output:
@@ -27,5 +27,7 @@ def set_temp_output(workflow, rules, temp_filetypes):
                     output.remove(o)
                     smllogger.debug("removing output {output} from temporary output in rule {rule}".format(output=o, rule=rule))
             workflow._rules[rule].temp_output = set(output)
+            if len(list(set(output))) == 0:
+                smllogger.warn("no outputs set to temporary for rule '{rule}'; make sure output file extension is included in list temp_filetypes; see configuration section 'settings.temp_filetypes' and 'settings.temp_filetypes_default'".format(rule=rule))
         except:
             smllogger.warn("failed to set output in rule {rule} to temporary".format(rule=rule))

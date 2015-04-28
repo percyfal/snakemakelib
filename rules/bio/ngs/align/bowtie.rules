@@ -56,14 +56,15 @@ rule bowtie_align:
     output: bam = "{prefix}.bam"
     benchmark: "{prefix}.json"
     threads: bwt_cfg['bowtie']['threads']
+    log: "{prefix}.bwt.log"
     run:
         # For some reason, I can't get fifos to work. There is an
         # alternative; process substitution. See
         # http://arstechnica.com/civis/viewtopic.php?f=16&t=1180805.
         if is_compressed(input.read1):
-            shell("{cmd} -S -p {threads} {options} {indexopt} {index} -1 <(gunzip -c {read1}) -2 <(gunzip -c {read2}) | {samtools} view -bS - > {bam}".format(cmd=params.cmd, threads=threads, options=params.options, indexopt=params.indexopt, index=params.index, read1=input.read1, read2=input.read2, bam=output.bam, samtools=samtools_cfg['cmd']))
+            shell("{cmd} -S -p {threads} {options} {indexopt} {index} -1 <(gunzip -c {read1}) -2 <(gunzip -c {read2}) 2> {log} | {samtools} view -bS - > {bam}".format(cmd=params.cmd, threads=threads, options=params.options, indexopt=params.indexopt, index=params.index, read1=input.read1, read2=input.read2, bam=output.bam, samtools=samtools_cfg['cmd'], log=log))
         else:
-            shell("{cmd} -S -p {threads} {options} {indexopt} {index} -1 {read1} -2 {read2} | {samtools} view -bS - > {bam}".format(cmd=params.cmd, threads=threads, options=params.options, indexopt=params.indexopt, index=params.index, read1=input.read1, read2=input.read2, bam=output.bam, samtools=samtools_cfg['cmd']))
+            shell("{cmd} -S -p {threads} {options} {indexopt} {index} -1 {read1} -2 {read2} 2> {log} | {samtools} view -bS - > {bam}".format(cmd=params.cmd, threads=threads, options=params.options, indexopt=params.indexopt, index=params.index, read1=input.read1, read2=input.read2, bam=output.bam, samtools=samtools_cfg['cmd'], log=log))
 
 rule bowtie_build:
     """Bowtie build index"""

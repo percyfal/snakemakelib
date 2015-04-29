@@ -26,7 +26,7 @@ config = update_snakemake_config(config, config_default)
 
 # Update index
 config['bio.ngs.align.bwa']['index'] = index(
-    ref = config['bio.ngs.align.bwa']['ref'],
+    ref = config['bio.ngs.settings']['db']['ref'],
     index = config['bio.ngs.align.bwa']['index'],
     application = 'bwa',
     build = config['bio.ngs.settings']['db']['build'])

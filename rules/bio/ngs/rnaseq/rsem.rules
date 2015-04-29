@@ -43,6 +43,10 @@ config['bio.ngs.rnaseq.rsem']['index'] = index(
     application = 'rsem',
     build = config['bio.ngs.settings']['db']['build'])
 
+# Need bowtie1(!) path
+if config['bio.ngs.align.bowtie']['bowtie']['home']:
+    os.environ["PATH"] += os.pathsep + config['bio.ngs.align.bowtie']['bowtie']['home']
+
 aligner = config['bio.ngs.settings']['aligner']
 rsem_cfg = config['bio.ngs.rnaseq.rsem']
 
@@ -70,7 +74,8 @@ rule rsem_prepare_reference:
             index = rsem_cfg['index']
     input: ref = rsem_cfg['ref']
     output: rsem_cfg['index'] + rsem_cfg['ref_sfx']
-    shell: "{params.cmd} {params.options} {input.ref} {params.index}"
+    log: rsem_cfg['index'] + rsem_cfg['ref_sfx'] + ".log"
+    shell: "{params.cmd} {params.options} {input.ref} {params.index} > {log}"
 
 rule rsem_calculate_expression_bowtie:
     """Run RSEM on bowtie output. Requires a fifo hack to work: see
@@ -84,7 +89,7 @@ rule rsem_calculate_expression_bowtie:
            index = rsem_cfg['index'] + rsem_cfg['ref_sfx'],
            bowtie_index = expand(rsem_cfg['index'] + "{ext}", ext=align_cfg.get('build', {}).get('ext_v1', ""))
     output: "{prefix}.rsem"
-    threads: ngs_cfg["threads"]
+    threads: rsem_cfg["threads"]
     run: 
       fifo1 = input.read1 + ".read1.fifo"
       fifo2 = input.read2 + ".read2.fifo"
@@ -107,7 +112,7 @@ rule rsem_calculate_expression:
     input: index = rsem_cfg['index'] + rsem_cfg['ref_sfx'],
            bam = "{prefix}.bam"
     output: isoforms = "{prefix}.isoforms.results", genes = "{prefix}.genes.results"
-    threads: ngs_cfg["threads"]
+    threads: rsem_cfg["threads"]
     shell: "{params.cmd} {params.options} -p {threads} {input.bam} {params.index} {wildcards.prefix}"
 
 def _rsem_find_result_files_fn(wildcards):

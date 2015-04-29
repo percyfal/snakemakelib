@@ -55,7 +55,7 @@ def ref(ref, db_cfg):
             # TODO: make sure build_config points to a file; read file and parse to find reference
     return None
 
-def index(ref, application="", build=None, index="", index_name=""):
+def index(ref, application, build=None, index="", index_name=""):
     if os.path.isabs(index):
         return index
     else:
@@ -73,34 +73,6 @@ def index(ref, application="", build=None, index="", index_name=""):
         index_root = os.path.join(os.path.dirname(prefix), os.pardir, subdir, application, os.path.dirname(index))
         index_name = os.path.basename(prefix) if not index_name else index_name
         return os.path.join(index_root, index_name)
-    else:
-        return None
-
-    
-def index2(application):
-    """Return the index files for a given application.
-
-    Args:
-      application: a <string> representing the application.
-
-    Returns:
-      index: a <string> representing the index in the format required by the particular application
-    """
-    ngs_cfg = config["bio.ngs.settings"]
-
-    if not ngs_cfg['db']['build_config']:
-        smllogger.debug("No build_config present: assuming index locations are organized according to cloudbiolinux conventions")
-        if application in ["bwa", "rsem", "bowtie"]:
-            prefix, _ = os.path.splitext(ngs_cfg['db']['ref'])
-        else:
-            prefix = ngs_cfg['db']['ref']
-        index_root = os.path.dirname(os.path.dirname(prefix))
-        basename = os.path.basename(prefix)
-        if application in ["star"]:
-            print (index_root)
-            return os.path.join(index_root, "rnaseq", application, config['bio.ngs.align.star']['star_index']['genome'])
-        else:
-            return os.path.join(index_root, application, basename)
     else:
         return None
 

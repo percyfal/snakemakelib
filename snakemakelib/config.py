@@ -95,7 +95,7 @@ class BaseConfig(dict):
         """Return sections"""
         return self._sections
 
-def load_sml_config(cfg_file=None):
+def load_sml_config(config, cfg_file=None):
     """Load snakemakelib configuration file(s).
 
     Will search for configuration files in following order:
@@ -106,12 +106,13 @@ def load_sml_config(cfg_file=None):
     3. cfg_file, if provided
 
     Args:
+      config: snakemake configuration object
       cfg_file: custom configuration file to load
 
     Returns:
       config: updated configuration
     """
-    config = BaseConfig({})
+    config = BaseConfig(config)
     for fn in [os.path.join(os.getenv("HOME"), ".smlconf.yaml"),
                os.path.join(os.curdir, "smlconf.yaml"),
                cfg_file]:
@@ -153,7 +154,7 @@ def update_snakemake_config(config, update_config):
     if not isinstance(config, BaseConfig):
         raise TypeError(
             """config object is not a <BaseConfig> object;
-            you *must* do a 'config = load_sml_config()' statement prior to including any
+            you *must* do a 'config = load_sml_config(config)' statement prior to including any
             snakemakelib rules""")
     try:
         update_config = BaseConfig(update_config)

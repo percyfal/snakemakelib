@@ -18,11 +18,13 @@ config_default = {
         'version2' : True,
         'bowtie' : {
             'cmd' : 'bowtie',
+            'home' : "",
             'threads' : ngs_cfg['threads'],
             'options' : '--chunkmbs 200',
         },
         'bowtie2' : {
             'cmd' : 'bowtie2',
+            'home' : "",
             'threads' : ngs_cfg['threads'],
             'options' : '--chunkmbs 200',
         },
@@ -48,6 +50,8 @@ samtools_cfg = config['bio.ngs.tools.samtools']
 bowtie = 'bowtie2' if bwt_cfg['version2'] else 'bowtie'
 ext = bwt_cfg['build']['ext_v2'] if bwt_cfg['version2'] else bwt_cfg['build']['ext_v2']
 
+if bwt_cfg[bowtie]['home']:
+    os.environ["PATH"] += os.pathsep + bwt_cfg[bowtie]['home']
 if not is_installed(bwt_cfg[bowtie]['cmd']):
     raise Exception("\nbio.ngs.align.bowtie: {prog} not installed or not in PATH\n".format(prog=bwt_cfg[bowtie]['cmd']))
 

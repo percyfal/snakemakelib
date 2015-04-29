@@ -32,7 +32,12 @@ rule cloudbiolinux_update_annotation_gtf:
                     out.write(line)
             for f in input.ref:
                 from Bio import SeqIO
-                seqs = SeqIO.parse(open(f), format = "gb")
+                # Use genbank if present - it should be
+                gb = re.sub("(.fa$|.fasta$)", ".gb", f)
+                if os.path.exists(gb):
+                    seqs = SeqIO.parse(open(gb), format = "gb")
+                else:
+                    continue
                 for seq in seqs:
                     features = [sf.type for sf in seq.features]
                     d = {
@@ -46,4 +51,4 @@ rule cloudbiolinux_update_annotation_gtf:
                         'gene_id' : seq.name,
                         'transcript_id' : seq.name,
                     }
-                    out.write("{name}\tsnakemakelib\t{feature}\t{start}\t{end}\t{score}\t{strand}\t{frame}\t{gene_id}\t{transcript_id}\n".format(**d))
+                    out.write('{name}\tsnakemakelib\t{feature}\t{start}\t{end}\t{score}\t{strand}\t{frame}\tgene_id "{gene_id}"; transcript_id "{transcript_id}"\n'.format(**d))

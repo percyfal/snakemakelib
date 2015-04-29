@@ -12,7 +12,7 @@ include: "../settings.rules"
 
 config_default = {
     'bio.ngs.db.ercc' : {
-        'ref' : 'ERCC_spikes.gb',
+        'ref' : 'ERCC_spikes.fa',
         # Using Lifetech's source for now
         'source' : 'https://tools.lifetechnologies.com/content/sfs/manuals/cms_095047.txt',
         'retmax' : 100,
@@ -31,7 +31,8 @@ rule ercc_download_metadata:
 rule ercc_create_ref:
     """Create ERCC reference file"""
     input: txt = os.path.basename(config['bio.ngs.db.ercc']['source'])
-    output: gb = protected(ref(config['bio.ngs.db.ercc']['ref'], config['bio.ngs.settings']['db']))
+    output: gb = protected(re.sub("(.fa$|.fasta$)", ".gb", ref(config['bio.ngs.db.ercc']['ref'], config['bio.ngs.settings']['db']))),
+            fa = protected(ref(config['bio.ngs.db.ercc']['ref'], config['bio.ngs.settings']['db']))
     run:
         with open(input.txt, 'r') as fh:
             reader = csv.DictReader(fh, delimiter='\t')
@@ -48,5 +49,7 @@ rule ercc_create_ref:
                 outrecords = []
                 for rec in records:
                     rec.name = gb2ercc[rec.name]
+                    rec.id = rec.name
                     outrecords.append(rec)
                 SeqIO.write(outrecords, output.gb, "gb")
+                SeqIO.write(outrecords, output.fa, "fasta")

@@ -28,7 +28,7 @@ def register_metadata(metadata_file, config):
             'bio.ngs.tools.sratools': {'_datadir': os.path.dirname(metadata_file),
                                        '_run2sample' : run2sample,
                                        '_metadata' : metadata_list}})
-    except Exception as e:
+    except Exception:
         raise Exception("""
 
         no metadata file '{metadata}' found

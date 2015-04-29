@@ -2,21 +2,18 @@
 import os
 import re
 import csv
-from snakemakelib.config import update_sml_config, get_sml_config
+from snakemakelib.config import update_snakemake_config
 from snakemakelib.utils import utc_time
 from snakemakelib.log import LoggerManager
-import logging
 
-smllogger = LoggerManager().getLogger(__name__)
+smllogger = LoggerManager().getLogger('bio/ngs/tools/sratools.rules')
 
 include: '../settings.rules'
 include: '../../../settings.rules'
 
-cfg = get_sml_config("settings")
-
 config_default = {
     'settings' : {
-        'temp_rules_default' : list(set(['sratools_prefetch'] + cfg['temp_rules_default'])),
+        'temp_rules_default' : list(set(['sratools_prefetch'] + config['settings']['temp_rules_default'])),
     },
     "bio.ngs.tools.sratools" : {
         "email" : os.getenv("USER_EMAIL", None),
@@ -39,20 +36,38 @@ config_default = {
     },
 }
 
-update_sml_config(config_default)
+config = update_snakemake_config(config, config_default)
 
-sra_cfg = get_sml_config('bio.ngs.tools.sratools')
-ngs_cfg = get_sml_config('bio.ngs.settings')
+sra_cfg = config['bio.ngs.tools.sratools']
+ngs_cfg = config['bio.ngs.settings']
+
+rule sratools_compile_srastudy_metadata:
+    """Combine output from rules below"""
+    input: metadata = "{prefix}_metadata.csv",
+           biosample = "{prefix}_biosample.csv"
+    output: csv = "{prefix}_info.csv"
+    run:
+        with open(input.metadata, "r") as fh:
+            md_reader = csv.DictReader(fh.readlines())
+        with open(input.biosample, "r") as fh:
+            bio_reader = csv.DictReader(fh.readlines())
+        with open(output.csv, "w") as fh:
+            fieldnames = md_reader.fieldnames + bio_reader.fieldnames
+            writer = csv.DictWriter(fh, fieldnames=fieldnames)
+            writer.writeheader()
+            for (md, bio) in zip(md_reader, bio_reader):
+                md.update(bio)
+                writer.writerow(md)
 
 rule sratools_download_srastudy_metadata:
     """Download srastudy metadata."""
     params: traces = sra_cfg['tracearchive']
-    output: csv = "{prefix}_info.csv"
+    output: csv = "{prefix}_metadata.csv"
     run:
         shell ("wget -O {output}  '{traces}sra.cgi?save=efetch&db=sra&rettype=runinfo&term={basename}'".format(output=output.csv, traces=params.traces, basename=os.path.basename(wildcards.prefix)))
 
 rule sratools_download_srastudy_biosample:
-    input: metadata = "{prefix}_info.csv"
+    input: metadata = "{prefix}_metadata.csv"
     output: csv = "{prefix}_biosample.csv"
     run:
         with open(input.metadata, "r") as fh:

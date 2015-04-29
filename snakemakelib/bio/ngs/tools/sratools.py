@@ -1,21 +1,19 @@
 # Copyright (C) 2015 by Per Unneberg
 import os
 import csv
-
 from snakemakelib.config import update_snakemake_config
 from snakemakelib.log import LoggerManager
 
 smllogger = LoggerManager().getLogger(__name__)
 
-def register_metadata(metadata_file):
+def register_metadata(metadata_file, config):
     """Read an SRA project file and register metadata in sml_config. Will
     issue a warning if file does not exists.
 
     Args: 
       metadata - file name
+      config - configuration to update
     """
-    print ("Configuration : ")
-    print (config)
     metadata_list = []
     import sys
     if metadata_file in sys.argv:
@@ -31,7 +29,6 @@ def register_metadata(metadata_file):
                                        '_run2sample' : run2sample,
                                        '_metadata' : metadata_list}})
     except Exception as e:
-        print (e)
         raise Exception("""
 
         no metadata file '{metadata}' found
@@ -40,5 +37,4 @@ def register_metadata(metadata_file):
 
         """.format(metadata=metadata_file))
 
-
-
+    return config

@@ -1,7 +1,7 @@
 # -*- snakemake -*-
 import os
 import pysam
-from snakemakelib.io import set_temp_output
+from snakemakelib.io import set_output
 from snakemakelib.config import update_sml_config, get_sml_config
 from snakemakelib.bio.ngs.targets import generic_target_generator
 
@@ -30,7 +30,7 @@ atac_config = {
     },
     'bio.ngs.enrichment.macs' : {
         'callpeak' : {
-            'options' : '-g hs --nomodel --shiftsize 37 --extsize 73 -q 0.01',
+            'options' : '-g hs --nomodel --shift 37 --extsize 73 -q 0.01',
         },
     },
 }
@@ -85,8 +85,12 @@ ruleorder: picard_mark_duplicates > bowtie_align
 ruleorder: dfilter_run_dfilter_bam > bedtool_bamtobed
 ruleorder: macs_callpeak_treatment_only_bam > bedtool_bamtobed
 
-# Set temporary outputs
-set_temp_output(workflow, rules = main_cfg['temp_rules'] + main_cfg['temp_rules_default'], temp_filetypes=main_cfg['temp_filetypes'] + main_cfg['temp_filetypes_default'])
+# Set temporary and protected outputs
+set_output(workflow,
+           temp_rules = main_cfg['temp_rules'] + main_cfg['temp_rules_default'],
+           temp_filetypes=main_cfg['temp_filetypes'] + main_cfg['temp_filetypes_default'],
+           protected_rules = main_cfg['protected_rules'] + main_cfg['protected_rules_default'],
+           protected_filetypes=main_cfg['protected_filetypes'] + main_cfg['protected_filetypes_default'])
 
 if workflow._workdir is None:
     raise Exception("no workdir set, or set after include of 'ATAC-seq.workflow'; set workdir before include statement!")

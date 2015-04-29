@@ -2,12 +2,18 @@
 import os
 import shutil
 import re
-from snakemakelib.config import get_sml_config
 
-def is_compressed(f):
-    """Ascertain whether a file is compressed or not"""
-    cfg = get_sml_config('comp.settings')
-    return not re.search(cfg['compression']['re'], f) is None
+def is_compressed(f, comp_re):
+    """Ascertain whether a file is compressed or not.
+
+    Args:
+      f: filename
+      comp_re: regular expression of compression suffixes
+
+    returns:
+      boolean
+    """
+    return not re.search(comp_re, f) is None
 
 def is_installed(prog):
     if not shutil.which(prog) is None:

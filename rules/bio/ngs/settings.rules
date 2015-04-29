@@ -71,11 +71,12 @@ config_default = {
         'threads' : 8,
         'annotation' : {
             'annot_label' : "",
-            'transcript_annot_gtf' : "",
+            'transcript_annot_gtf' : "ref-transcripts.gtf",
         },
         'db' : {
             'dbsnp' : "",
             'ref' : "",
+            'extra_ref' : [],
             'build' : '',
             'build_config' : None,
         },

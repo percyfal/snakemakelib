@@ -5,8 +5,6 @@ from snakemakelib.config import update_sml_config, get_sml_config
 
 include: '../settings.rules'
 
-sml_config = get_sml_config()
-
 config_default = { 
     'bio.ngs.tools.bedtools' : {
         'bfile' : "",
@@ -24,17 +22,15 @@ config_default = {
             'options' : "",
         },
         'sequence_capture' : {
-            'bait_regions' : sml_config['bio.ngs.settings']['sequence_capture']['bait_regions'],
-            'target_regions' : sml_config['bio.ngs.settings']['sequence_capture']['target_regions'],
+            'bait_regions' : config['bio.ngs.settings']['sequence_capture']['bait_regions'],
+            'target_regions' : config['bio.ngs.settings']['sequence_capture']['target_regions'],
         },
     },
 }
 
-update_sml_config(config_default)
+config = update_snakemake_config(config, config_default)
 
-sml_cfg = get_sml_config()
-
-bedtools_cfg = get_sml_config('bio.ngs.tools.bedtools')
+bedtools_cfg = config['bio.ngs.tools.bedtools']
 
 for (section, cfg) in bedtools_cfg.items():
     if isinstance(cfg, dict):

@@ -2,12 +2,12 @@
 import os
 from bokeh.plotting import show, output_file
 from snakemakelib.bio.ngs.targets import generic_target_generator
-from snakemakelib.config import update_sml_config, get_sml_config
+from snakemakelib.config import update_snakemake_config
 from snakemakelib.bio.ngs.qc.cutadapt import collect_cutadapt_qc_results, make_cutadapt_summary_plot
 
 include: '../settings.rules'
 
-ngs_cfg = get_sml_config('bio.ngs.settings')
+ngs_cfg = config['bio.ngs.settings']
 
 config_default = { 
     'bio.ngs.qc.cutadapt' : {
@@ -22,9 +22,9 @@ config_default = {
     },
 }
 
-update_sml_config(config_default)
+config = update_snakemake_config(config, config_default)
 
-ca_cfg = get_sml_config('bio.ngs.qc.cutadapt')
+ca_cfg = config['bio.ngs.qc.cutadapt']
 
 rule cutadapt_cut_threeprime:
     """Cutadapt: cut threeprime adapter"""
@@ -61,7 +61,7 @@ ruleorder: cutadapt_cut_paired_end > cutadapt_cut_threeprime
 ruleorder: cutadapt_cut_paired_end > cutadapt_cut_fiveprime
 
 def _cutadapt_find_result_files_fn(wildcards):
-    ngs_cfg = get_sml_config('bio.ngs.settings')
+    ngs_cfg = config['bio.ngs.settings']
     sources = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].run_id_re, src_re=ngs_cfg['sampleorg'].run_id_re, target_suffix = wildcards.label + "cutadapt_metrics", filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg)
     return sources
 

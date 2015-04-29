@@ -1,6 +1,6 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.config import update_sml_config, get_sml_config
+from snakemakelib.config import update_snakemake_config
 from snakemakelib.bio.ngs.db import index
 from snakemakelib.stat import is_compressed, is_installed
 from snakemakelib.bio.ngs.rnaseq.tuxedo import TuxedoReadGroup
@@ -8,11 +8,11 @@ from snakemakelib.bio.ngs.rnaseq.tuxedo import TuxedoReadGroup
 include: '../settings.rules'
 include: '../tools/samtools.rules'
 
-ngs_cfg = get_sml_config('bio.ngs.settings')
+ngs_cfg = config['bio.ngs.settings']
 
 config_default = {
     'bio.ngs.align.bowtie' : {
-        'index' : index,
+        'index' : "",
         'ref' : ngs_cfg['db']['ref'],
         'rg_fn' : TuxedoReadGroup(regexp=ngs_cfg['sampleorg'].run_id_re.re.pattern).parse,
         'version2' : True,
@@ -33,10 +33,17 @@ config_default = {
     },
 }
 
-update_sml_config(config_default)
+config = update_snakemake_config(config, config_default)
 
-bwt_cfg = get_sml_config('bio.ngs.align.bowtie')
-samtools_cfg = get_sml_config('bio.ngs.tools.samtools')
+# Update index
+config['bio.ngs.align.bowtie']['index'] = index(
+    ref = config['bio.ngs.align.bowtie']['ref'],
+    index = config['bio.ngs.align.bowtie']['index'],
+    application = 'bowtie',
+    build = config['bio.ngs.settings']['db']['build'])
+
+bwt_cfg = config['bio.ngs.align.bowtie']
+samtools_cfg = config['bio.ngs.tools.samtools']
 
 bowtie = 'bowtie2' if bwt_cfg['version2'] else 'bowtie'
 ext = bwt_cfg['build']['ext_v2'] if bwt_cfg['version2'] else bwt_cfg['build']['ext_v2']
@@ -49,10 +56,10 @@ rule bowtie_align:
     params: cmd = bwt_cfg[bowtie]['cmd'],
             options = bwt_cfg['bowtie']['options'],
             indexopt = ("-x" if bwt_cfg['version2'] else ""),
-            index = bwt_cfg['index', 'bowtie']
+            index = bwt_cfg['index']
     input: read1 = "{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],\
            read2 = "{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['fastq_suffix'],
-           index = expand("{index}{ext}", index=bwt_cfg['index', bowtie], ext=bwt_cfg['build']['ext_v2'] if bwt_cfg['version2'] else bwt_cfg['build']['ext_v1'])
+           index = expand("{index}{ext}", index=bwt_cfg['index'], ext=bwt_cfg['build']['ext_v2'] if bwt_cfg['version2'] else bwt_cfg['build']['ext_v1'])
     output: bam = "{prefix}.bam"
     benchmark: "{prefix}.json"
     threads: bwt_cfg['bowtie']['threads']

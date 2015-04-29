@@ -21,7 +21,7 @@ config_default = {
         'temp_rules' : [],
         'temp_rules_default' : [],
         'protected_filetypes' : [],
-        'protected_filetypes_default' : TEMP_FILETYPES_DEFAULT,
+        'protected_filetypes_default' : PROTECTED_FILETYPES_DEFAULT,
         'protected_rules' : [],
         'protected_rules_default' : [],
         'email' : os.getenv("USER_EMAIL", None),

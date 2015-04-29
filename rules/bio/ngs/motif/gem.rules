@@ -6,11 +6,11 @@
 # http://www.psrg.csail.mit.edu/gem/
 #
 import os
-from snakemakelib.config import update_sml_config, get_sml_config
+from snakemakelib.config import update_snakemake_config
 
 include: '../settings.rules'
 
-ngs_cfg = get_sml_config('bio.ngs.settings')
+ngs_cfg = config['bio.ngs.settings']
 
 GEM_JAR_PROGRAM = "gem.jar"
 
@@ -23,22 +23,22 @@ config_default = {
     },
 }
 
-update_sml_config(config_default)
+config = update_snakemake_config(config, config_default)
 
-gem_cfg = get_sml_config('bio.ngs.motif.gem')
+gem_cfg = config['bio.ngs.motif.gem']
 
 config_default['bio.ngs.motif.gem']['read_distribution'] = os.path.join(gem_cfg['home'], 'Read_Distribution_default.txt')
 config_default['bio.ngs.motif.gem']['jar'] = os.path.join(gem_cfg['home'], GEM_JAR_PROGRAM)
 
-update_sml_config(config_default)
+config = update_snakemake_config(config, config_default)
 
-gem_cfg = get_sml_config('bio.ngs.motif.gem')
+gem_cfg = config['bio.ngs.motif.gem']
 
 config_default['bio.ngs.motif.gem']['cmd'] = "java -Xmx" + gem_cfg['java_mem'] + " -Djava.io.tmpdir=" + gem_cfg['java_tmpdir'] +  " -jar " + gem_cfg['jar']
 
-update_sml_config(config_default)
+config = update_snakemake_config(config, config_default)
 
-gem_cfg = get_sml_config('bio.ngs.motif.gem')
+gem_cfg = config['bio.ngs.motif.gem']
 
 def _gem_read_file_format(f):
     ext = os.path.splitext(f)[1]

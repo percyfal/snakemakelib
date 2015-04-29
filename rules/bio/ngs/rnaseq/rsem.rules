@@ -32,6 +32,10 @@ config_default = {
 
 config = update_snakemake_config(config, config_default)
 
+# Update annotation
+config['bio.ngs.rnaseq.rsem']['annot_gtf'] = \
+    annotation(gtf = config['bio.ngs.rnaseq.rsem']['annot_gtf'],
+               db_cfg = config['bio.ngs.settings']['db'])
 # Update index
 config['bio.ngs.rnaseq.rsem']['index'] = index(
     ref = config['bio.ngs.rnaseq.rsem']['ref'],

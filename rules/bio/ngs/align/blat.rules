@@ -1,17 +1,17 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.config import update_sml_config, get_sml_config
+from snakemakelib.config import update_snakemake_config
 from snakemakelib.bio.ngs.db import index
 
 include: '../settings.rules'
 include: '../tools/samtools.rules'
 
-ngs_cfg = get_sml_config('bio.ngs.settings')
+ngs_cfg = config['bio.ngs.settings']
 
 config_default = {
     'bio.ngs.align.blat' : {
         'ref' : ngs_cfg['db']['ref'],
-        'index' : index,
+        'index' : "",
         'faToTwoBit' : {
             'cmd' : 'faToTwoBit',
             'options' : "",
@@ -19,9 +19,16 @@ config_default = {
     },
 }
 
-update_sml_config(config_default)
+config = update_snakemake_config(config, config_default)
 
-blat_cfg = get_sml_config('bio.ngs.align.blat')
+# Update index
+config['bio.ngs.align.blat']['index'] = index(
+    ref = config['bio.ngs.align.blat']['ref'],
+    index = config['bio.ngs.align.blat']['index'],
+    application = 'blat',
+    build = config['bio.ngs.settings']['db']['build'])
+
+blat_cfg = config['bio.ngs.align.blat']
 
 rule blat_faToTwoBit:
     params: cmd = blat_cfg['faToTwoBit']['cmd'],

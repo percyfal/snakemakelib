@@ -1,7 +1,7 @@
 # -*- snakemake -*-
 import os
 from snakemakelib.stat import is_installed
-from snakemakelib.config import update_sml_config, get_sml_config
+from snakemakelib.config import update_snakemake_config
 
 include: '../settings.rules'
 

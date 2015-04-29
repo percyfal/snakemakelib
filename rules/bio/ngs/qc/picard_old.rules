@@ -1,7 +1,7 @@
 # -*- snakemake -*-
 # picard old rules predating version ??? (1.1, 1.0) where individual jar files still were used 
 import os
-from snakemakelib.config import update_sml_config, get_sml_config, sml_path
+from snakemakelib.config import update_snakemake_config, sml_path
 
 include: '../settings.rules'
 include: '../../../comp/settings.rules'
@@ -17,8 +17,6 @@ COLLECT_INSERT_SIZE_METRICS = "CollectInsertSizeMetrics.jar"
 COLLECT_ALIGNMENT_SUMMARY_METRICS = "CollectAlignmentSummaryMetrics.jar"
 CALCULATE_HS_METRICS = "CalculateHsMetrics.jar"
 ADD_OR_REPLACE_READ_GROUPS = "AddOrReplaceReadGroups.jar"
-
-sml_config = get_sml_config()
 
 config_default = { 
     'bio.ngs.qc.picard' : {
@@ -46,19 +44,17 @@ config_default = {
     },
 }
 
-update_sml_config(config_default)
-
-sml_config = get_sml_config()
+config = update_snakemake_config(config, config_default)
 
 config_default['bio.ngs.qc.picard']['options'] = sml_config['bio.ngs.qc.picard']['common_options'] 
 
 config_default['bio.ngs.qc.picard']['cmd'] = "java -Xmx" + sml_config['bio.ngs.qc.picard']['java_mem'] + " -Djava.io.tmpdir=" + sml_config['bio.ngs.qc.picard']['java_tmpdir'] + " -jar "
 
-update_sml_config(config_default)
+config = update_snakemake_config(config, config_default)
 
 # Use picard config to increase readibility
-sml_config = get_sml_config()
-picard_config = sml_config['bio.ngs.qc.picard']
+
+picard_config = config['bio.ngs.qc.picard']
 
 rule picard_build_bam_index:
     """Picard: build bam index from bam file"""
@@ -107,7 +103,7 @@ rule picard_create_interval_list_awk:
             options = picard_config['options']
     input: "{prefix}.bed", picard_config['ref'].replace(".fa", ".interval_list")
     output: "{prefix}.interval_list"
-    shell: sml_config['comp.settings']['awk'] + " '{{printf(\"%s\\t%s\\t%s\\t%s\\t%s\\n\", $$1,$$2,$$3,\"+\",$$4)}}' $< >> {output}"
+    shell: config['comp.settings']['awk'] + " '{{printf(\"%s\\t%s\\t%s\\t%s\\t%s\\n\", $$1,$$2,$$3,\"+\",$$4)}}' $< >> {output}"
 
 rule picard_collect_insert_size_metrics:
     """Picard: collect insertion size metrics"""

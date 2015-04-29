@@ -15,7 +15,7 @@
 import os
 from snakemake.utils import R
 from snakemakelib.bio.ngs.db import chromosomes, index
-from snakemakelib.config import update_sml_config, get_sml_config
+from snakemakelib.config import update_snakemake_config
 from snakemakelib.bio.ngs.utils import dict_to_Rdict
 
 include: "../settings.rules"
@@ -23,7 +23,7 @@ include: "peakseq.rules"
 include: "../db/ucsc.rules"
 include: "../tools/bedtools.rules"
 
-ngs_cfg = get_sml_config('bio.ngs.settings')
+ngs_cfg = config['bio.ngs.settings']
 
 # Options have been compiled by looking at functions zinba (zinba.R),
 # run.zinba (run_zinba.R) and generateAlignability (generateAlignability.R)
@@ -42,7 +42,7 @@ config_default = {
             'seq' : None, # path to mapped experimental reads
             'align' : None, # path to alignability directory      
             'input' : "none", # path to mapped input reads if available (default is "none")
-            'twoBit' : index, # path to genome build in .2bit format
+            'twoBit' : "", # path to genome build in .2bit format
             'basecountfile' : None, # path to basecount file if refinepeaks is 1
             'threshold': 0.05, # FDR threshhold, default is 0.05
             'numProc' : ngs_cfg['threads'], # number of CPUs to use, must be less than max available (default 1)
@@ -85,11 +85,17 @@ config_default = {
     },
 }
 
-update_sml_config(config_default)
+config = update_snakemake_config(config, config_default)
 
-zinba_cfg = get_sml_config('bio.ngs.enrichment.zinba')
-ps_cfg = get_sml_config('bio.ngs.enrichment.peakseq')
-mapdir = os.path.join(os.path.dirname(ps_cfg['index', 'mappability']), ps_cfg['mappability']['merlen'])
+config['bio.ngs.enrichment.zinba']['zinba_common']['twoBit'] = index(
+    ref = config['bio.ngs.settings']['ref'],
+    index = config['bio.ngs.enrichment.zinba']['zinba_common']['twoBit'],
+    application = 'ucsc',
+    build = config['bio.ngs.settings']['db']['build'])
+
+zinba_cfg = config['bio.ngs.enrichment.zinba']
+ps_cfg = config['bio.ngs.enrichment.peakseq']
+mapdir = os.path.join(os.path.dirname(ps_cfg['index']), ps_cfg['mappability']['merlen'])
 
 rule zinba_generate_alignability:
     """Generate alignability. Depends on mappability files from peakseq.
@@ -99,7 +105,7 @@ rule zinba_generate_alignability:
 
     """
     input: mappability = [os.path.join(mapdir, "{chr}b.out".format(chr=x)) for x in chromosomes(ps_cfg['ref'])],
-           twobit = os.path.splitext(zinba_cfg['zinba_common']['twoBit', 'ucsc'])[0] + ".2bit"
+           twobit = os.path.splitext(zinba_cfg['zinba_common']['twoBit'])[0] + ".2bit"
     output: out = "align_athresh" + str(zinba_cfg['generateAlignability']['athresh']) + "_extension" + str(zinba_cfg['zinba_common']['extension'])
     threads: zinba_cfg['zinba_common']['numProc']
     run:
@@ -126,7 +132,7 @@ rule zinba_basealigncount:
     accept bam input. bed seems to be the most reasonable compromise.
     """
     input: bed = "{prefix}.bed",
-           twobit = os.path.splitext(zinba_cfg['zinba_common']['twoBit', 'ucsc'])[0] + ".2bit"
+           twobit = os.path.splitext(zinba_cfg['zinba_common']['twoBit'])[0] + ".2bit"
     output: out = "{prefix}." + str(zinba_cfg['zinba_common']['extension']) + ".basecount"
     run:
         d = zinba_cfg['zinba_common']
@@ -150,7 +156,7 @@ rule zinba_main_wrapper:
     input: bed = "{prefix}.bed",
            basealigncount = rules.zinba_basealigncount.output.out,
            alignability = rules.zinba_generate_alignability.output.out,
-           twobit = os.path.splitext(zinba_cfg['zinba_common']['twoBit', 'ucsc'])[0] + ".2bit"
+           twobit = os.path.splitext(zinba_cfg['zinba_common']['twoBit'])[0] + ".2bit"
     output: zinba_peaks = "{prefix}.zinba.peaks", zinba_peaks_bed = "{prefix}.zinba.peaks.bed",
             zinba_files = temp("{prefix}.zinba_files")
     threads: zinba_cfg['zinba_common']['numProc']
@@ -193,7 +199,7 @@ rule zinba_run_zinba:
     input: bed = "{prefix}.bed",
            basealigncount = rules.zinba_basealigncount.output.out,
            alignability = rules.zinba_generate_alignability.output.out,
-           twobit = os.path.splitext(zinba_cfg['zinba_common']['twoBit', 'ucsc'])[0] + ".2bit"
+           twobit = os.path.splitext(zinba_cfg['zinba_common']['twoBit'])[0] + ".2bit"
     output: zinba_peaks = "{prefix}.run_zinba.peaks", zinba_peaks_bed = "{prefix}.run_zinba.peaks.bed",
             zinba_files = temp("{prefix}.run_zinba_files")
     threads: zinba_cfg['zinba_common']['numProc']

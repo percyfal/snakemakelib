@@ -10,6 +10,7 @@ from bokeh.models.widgets import VBox, HBox, TableColumn, DataTable
 from bokeh.plotting import figure, output_file, show, gridplot
 from bokeh.palettes import brewer
 from snakemakelib.log import LoggerManager
+from snakemakelib.bokeh.plot import scatterplot, QCArgs
 
 smllogger = LoggerManager().getLogger(__name__)
 
@@ -76,34 +77,35 @@ def make_rseqc_summary_plots(df_rd, df_gc, do_qc=True, min_exonmap=60.0, max_thr
 
     # Default tools, plot_config and tooltips
     TOOLS="pan,box_zoom,box_select,lasso_select,reset,save,hover"
-    plot_config=dict(plot_width=300, plot_height=300, tools=TOOLS, title_text_font_size='12pt')
-    
-    # Exonmap plot
-    c1 = list(map(lambda x: colormap[str(x)], df['ExonMap'] < min_exonmap)) if do_qc else colors[0]
-    p1 = figure(x_range=[0, len(samples)], y_range=[0, 105], x_axis_type=None, y_axis_type="linear", title="Tags mapping to exons", **plot_config)
-    if do_qc:
-        p1.line(x=[0,len(samples)], y=[min_exonmap, min_exonmap], line_dash=[2,4])
-    p1.circle(x='i', y='ExonMap', color=c1, source=source)
-    p1.xaxis.major_label_orientation = np.pi/3
-    p1.grid.grid_line_color = None
-    hover = p1.select(dict(type=HoverTool))
-    hover.tooltips = [
-        ('Sample', '@samples'),
-        ('ExonMap', '@ExonMap'),
-    ]
+    plot_config=dict(plot_width=300, plot_height=300, 
+                     tools=TOOLS, title_text_font_size='12pt',
+                     x_range=[0, len(samples)], y_range=[0, 105],
+                     x_axis_type=None, y_axis_type="linear", 
+                     xaxis={'axis_label' : "sample", 'major_label_orientation' : np.pi/3, 'axis_label_text_font_size' : '10pt'}, 
+                     yaxis={'axis_label' : "percent (%)", 'major_label_orientation' : 1, 'axis_label_text_font_size' : '10pt'})
 
+    # Exonmap plot
+    qc = QCArgs(x=[0,len(samples)], 
+                y=[min_exonmap, min_exonmap], 
+                line_dash=[2,4]) if do_qc else None
+    c1 = list(map(lambda x: colormap[str(x)], 
+                  df['ExonMap'] < min_exonmap)) if do_qc else colors[0]
+    p1 = scatterplot(x='i', y='ExonMap', 
+                     source=source, color=c1, qc=qc, 
+                     tooltips = [{'type':HoverTool, 'tips' : [
+                         ('Sample', '@samples'),('ExonMap', '@ExonMap'),]}], 
+                     title="Tags mapping to exons", **plot_config)
     # Fraction reads mapping to the 10% right-most end
-    c2 = list(map(lambda x: colormap[str(x)], df['three_prime_map'] > max_three_prime_map)) if do_qc else colors[0]
-    p2 = figure(x_range=[0, len(samples)], y_range=[0, 105], x_axis_type=None, y_axis_type="linear", title="Reads mapping to 3' end", **plot_config)
-    p2.circle(x='i', y='three_prime_map', color=c2, source=source)
-    if do_qc:
-        p2.line(x=[0,len(samples)], y=[max_three_prime_map, max_three_prime_map], line_dash=[2,4])
-    p2.xaxis.major_label_orientation = np.pi/3
-    p2.grid.grid_line_color = None
-    hover = p2.select(dict(type=HoverTool))
-    hover.tooltips = [
-        ('Sample', '@samples'),
-        ("3' map", '@three_prime_map'),
-    ]
+    qc = QCArgs(x=[0,len(samples)], 
+                y=[max_three_prime_map, max_three_prime_map], 
+                line_dash=[2,4]) if do_qc else None
+    c2 = list(map(lambda x: colormap[str(x)], 
+                  df['three_prime_map'] > max_three_prime_map)) if do_qc else colors[0]
+    p2 = scatterplot(x = 'i', y = 'three_prime_map', 
+                     color = c2, source = source, 
+                     qc=qc,
+                     tooltips = [{'type':HoverTool, 'tips' : [
+                         ('Sample', '@samples'),('ExonMap', '@ExonMap'),]}], 
+                     title="Reads mapping to 3' end", **plot_config)
 
     return {'plots' : gridplot([[p1, p2]])}

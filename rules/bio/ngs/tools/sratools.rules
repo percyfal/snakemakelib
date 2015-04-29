@@ -1,17 +1,20 @@
 # -*- snakemake -*-
 import os
+import re
 import csv
-from snakemakelib.config import update_sml_config, get_sml_config
+from snakemakelib.config import update_snakemake_config
 from snakemakelib.utils import utc_time
-#from snakemakelib.log import LoggerManager
-import logging
+from snakemakelib.log import LoggerManager
 
-#smllogger = LoggerManager().getLogger(__name__)
-smlloger = logging.getLogger(__name__)
+smllogger = LoggerManager().getLogger('bio/ngs/tools/sratools.rules')
 
 include: '../settings.rules'
+include: '../../../settings.rules'
 
-config_default = { 
+config_default = {
+    'settings' : {
+        'temp_rules_default' : list(set(['sratools_prefetch'] + config['settings']['temp_rules_default'])),
+    },
     "bio.ngs.tools.sratools" : {
         "email" : os.getenv("USER_EMAIL", None),
         "srastudy" : "",
@@ -33,20 +36,38 @@ config_default = {
     },
 }
 
-update_sml_config(config_default)
+config = update_snakemake_config(config, config_default)
 
-sra_cfg = get_sml_config('bio.ngs.tools.sratools')
-ngs_cfg = get_sml_config('bio.ngs.settings')
+sra_cfg = config['bio.ngs.tools.sratools']
+ngs_cfg = config['bio.ngs.settings']
+
+rule sratools_compile_srastudy_metadata:
+    """Combine output from rules below"""
+    input: metadata = "{prefix}_metadata.csv",
+           biosample = "{prefix}_biosample.csv"
+    output: csv = "{prefix}_info.csv"
+    run:
+        with open(input.metadata, "r") as fh:
+            md_reader = csv.DictReader(fh.readlines())
+        with open(input.biosample, "r") as fh:
+            bio_reader = csv.DictReader(fh.readlines())
+        with open(output.csv, "w") as fh:
+            fieldnames = md_reader.fieldnames + bio_reader.fieldnames
+            writer = csv.DictWriter(fh, fieldnames=fieldnames)
+            writer.writeheader()
+            for (md, bio) in zip(md_reader, bio_reader):
+                md.update(bio)
+                writer.writerow(md)
 
 rule sratools_download_srastudy_metadata:
     """Download srastudy metadata."""
     params: traces = sra_cfg['tracearchive']
-    output: csv = "{prefix}_info.csv"
+    output: csv = "{prefix}_metadata.csv"
     run:
         shell ("wget -O {output}  '{traces}sra.cgi?save=efetch&db=sra&rettype=runinfo&term={basename}'".format(output=output.csv, traces=params.traces, basename=os.path.basename(wildcards.prefix)))
 
 rule sratools_download_srastudy_biosample:
-    input: metadata = "{prefix}_info.csv"
+    input: metadata = "{prefix}_metadata.csv"
     output: csv = "{prefix}_biosample.csv"
     run:
         with open(input.metadata, "r") as fh:
@@ -94,7 +115,7 @@ rule sratools_prefetch:
             options = sra_cfg['prefetch']['options']
     output: temp(os.path.join(sra_cfg['workspacelocation'], "sra", os.path.basename("{prefix}") + ".sra"))
     log: os.path.join(sra_cfg['workspacelocation'], "sra", "{prefix}.log")
-    shell: "{params.cmd} {params.options} $(basename {wildcards.prefix})"
+    shell: "{params.cmd} {params.options} $(basename {wildcards.prefix}) > {log}"
 
 def _sra_file(wildcards):
     return os.path.join(sra_cfg['workspacelocation'], "sra", os.path.basename(wildcards.prefix) + ".sra")
@@ -106,18 +127,19 @@ rule sratools_fastq_dump:
                                 '--gzip' if ngs_cfg["fastq_suffix"].endswith(".gz") else '',
                                 '--bzip2' if ngs_cfg["fastq_suffix"].endswith(".bzip2") else ''])
     input: _sra_file
-    output: read1 = "{prefix}" + ngs_cfg["read1_label"] + ngs_cfg["fastq_suffix"],
-            read2 = "{prefix}" + ngs_cfg["read2_label"] + ngs_cfg["fastq_suffix"]
-    shell: "{params.cmd} {params.options} -O $(dirname {wildcards.prefix}) $(basename {wildcards.prefix})"
+    # Disable . and _ in sra file name
+    output: read1 = os.path.join("{path}", "{prefix,[A-Za-z0-9]+}" + ngs_cfg["read1_label"] + ngs_cfg["fastq_suffix"]),
+            read2 = os.path.join("{path}", "{prefix,[A-Za-z0-9]+}" + ngs_cfg["read2_label"] + ngs_cfg["fastq_suffix"])
+    shell: "{params.cmd} {params.options} -O {wildcards.path} {wildcards.prefix}"
 
 def _get_run(wildcards):
-    (sample, run) = wildcards.prefix.split("_")
+    run = ngs_cfg['sampleorg'].raw_run_re.parse(os.path.join(wildcards.path, wildcards.prefix))['PU']
     return os.path.join(sra_cfg['_datadir'], "{run}_{read}".format(run=run, read=wildcards.read) + ngs_cfg["fastq_suffix"])
 
 rule sratools_link_sra_fastq:
     """Link sra run fastq file from download directory to output path"""
     input: fastq = _get_run
-    output: fastq = os.path.join("{path}", "{prefix}_{read}" + ngs_cfg["fastq_suffix"])
-    shell: "ln -s {input.fastq} {output.fastq}"
+    output: fastq = os.path.join("{path}", "{prefix,[0-9]+$}" + "_{read}" + ngs_cfg["fastq_suffix"])
+    shell: "ln -fs {input.fastq} {output.fastq}"
 
 ruleorder: sratools_link_sra_fastq > sratools_fastq_dump

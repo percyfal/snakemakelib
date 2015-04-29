@@ -5,11 +5,11 @@
 # http://homer.salk.edu/homer/motif/
 #
 import os
-from snakemakelib.config import update_sml_config, get_sml_config
+from snakemakelib.config import update_snakemake_config
 
 include: '../settings.rules'
 
-ngs_cfg = get_sml_config('bio.ngs.settings')
+ngs_cfg = config['bio.ngs.settings']
 
 GEM_JAR_PROGRAM = "gem.jar"
 
@@ -22,7 +22,7 @@ config_default = {
     },
 }
 
-update_sml_config(config_default)
+config = update_snakemake_config(config, config_default)
 
-gem_cfg = get_sml_config('bio.ngs.motif.gem')
+gem_cfg = config['bio.ngs.motif.gem']
 

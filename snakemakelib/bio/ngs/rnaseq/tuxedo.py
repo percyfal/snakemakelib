@@ -1,8 +1,5 @@
 # Copyright (C) 2015 by Per Unneberg
-from snakemakelib.config import get_sml_config
 from snakemakelib.bio.ngs.regexp import ReadGroup
-
-sml_config = get_sml_config()
 
 # From tophat2:
 # --rg-id                        <string>    (read group ID)

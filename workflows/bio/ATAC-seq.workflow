@@ -86,7 +86,6 @@ ruleorder: dfilter_run_dfilter_bam > bedtool_bamtobed
 ruleorder: macs_callpeak_treatment_only_bam > bedtool_bamtobed
 
 # Set temporary and protected outputs
-# Set temporary outputs
 set_output(workflow,
            temp_rules = main_cfg['temp_rules'] + main_cfg['temp_rules_default'],
            temp_filetypes=main_cfg['temp_filetypes'] + main_cfg['temp_filetypes_default'],

@@ -1,6 +1,6 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.config import update_sml_config, get_sml_config, init_sml_config
+from snakemakelib.config import update_snakemake_config, sml_rules_path
 from snakemakelib.bio.ngs.targets import generic_target_generator
 
 def read_backed_phasing_create_input(wildcards):
@@ -18,23 +18,22 @@ variation_config = {
     },
 }
 
-update_sml_config(variation_config)
+config = update_snakemake_config(config, variation_config)
 
-p = os.path.join(os.pardir, os.pardir, 'rules')
-include: os.path.join(p, 'settings.rules')
-include: os.path.join(p, 'utils.rules')
-include: os.path.join(p, 'bio/ngs/variation', 'variation.rules')
-include: os.path.join(p, 'bio/ngs/tools', 'gatk.rules')
-include: os.path.join(p, 'bio/ngs/qc', 'picard.rules')
-include: os.path.join(p, 'bio/ngs/align', 'bwa.rules')
+include: os.path.join(sml_rules_path(), 'settings.rules')
+include: os.path.join(sml_rules_path(), 'utils.rules')
+include: os.path.join(sml_rules_path(), 'bio/ngs/variation', 'variation.rules')
+include: os.path.join(sml_rules_path(), 'bio/ngs/tools', 'gatk.rules')
+include: os.path.join(sml_rules_path(), 'bio/ngs/qc', 'picard.rules')
+include: os.path.join(sml_rules_path(), 'bio/ngs/align', 'bwa.rules')
 
-variation_workflow_cfg = get_sml_config()
+variation_workflow_cfg = config
 
 ruleorder: gatk_print_reads > picard_build_bam_index
 
 ruleorder: picard_build_bam_index > samtools_index
 
-cfg = get_sml_config('bio.ngs.settings')
+cfg = config['bio.ngs.settings']
 path = cfg.get('path') if not cfg.get('path') is None else os.curdir
 
 # Target suffices

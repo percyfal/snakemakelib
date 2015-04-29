@@ -1,7 +1,7 @@
 # -*- snakemake -*-
 import os
 from mako.template import Template
-from snakemakelib.config import update_sml_config, sml_rules_path, get_sml_config
+from snakemakelib.config import update_snakemake_config, sml_rules_path
 
 include: '../settings.rules'
 include: './settings.rules'
@@ -14,28 +14,26 @@ config_default = {
     },
 }
 
-cfg = get_sml_config()
-
-report_cfg = get_sml_config('bio.ngs.reports.settings')
+report_cfg = config['bio.ngs.reports.settings']
 
 rule report_rulegraphs:
-    """Generate rulegraphs for targets specified by cfg['bio.ngs.reports.rulegraphs']['rulegraphs']"""
-    input: [os.path.join(report_cfg['reportdir'], x) for x in cfg['bio.ngs.reports.rulegraphs']['rulegraphs']]
+    """Generate rulegraphs for targets specified by config['bio.ngs.reports.rulegraphs']['rulegraphs']"""
+    input: [os.path.join(report_cfg['reportdir'], x) for x in config['bio.ngs.reports.rulegraphs']['rulegraphs']]
     output: os.path.join(report_cfg['reportdir'], "rules.html")
     run:
       kw = {
           'project_name' : report_cfg['project_name'],
           'application' : report_cfg['application'],
-          'rulegraphs' : [x for x in cfg['bio.ngs.reports.rulegraphs']['rulegraphs']],
+          'rulegraphs' : [x for x in config['bio.ngs.reports.rulegraphs']['rulegraphs']],
       }
       d = {}
-      d.update([(x,os.path.join(report_cfg['reportdir'], x)) for x in cfg['bio.ngs.reports.rulegraphs']['rulegraphs']])
+      d.update([(x,os.path.join(report_cfg['reportdir'], x)) for x in config['bio.ngs.reports.rulegraphs']['rulegraphs']])
       s = rule_report.render(**kw)
       report(s, str(output), **d)
       
 rule sample_dag:
     """Utility rule to generate dag for first sample in sample list"""
-    input: "{prefix}", cfg['bio.ngs.settings']['samples'][0]
+    input: "{prefix}", config['bio.ngs.settings']['samples'][0]
     output: "{prefix}_dag.png"
     shell: "snakemake  --dag {input[0]} --config samples=\"['{input[1]}']\" | dot -Tpng -o {output}"
 

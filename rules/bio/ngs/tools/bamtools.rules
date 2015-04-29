@@ -1,17 +1,15 @@
 # -*- snakemake -*-
 import os
 from snakemakelib.stat import is_installed
-from snakemakelib.config import update_sml_config, get_sml_config
+from snakemakelib.config import update_snakemake_config
 
 include: '../settings.rules'
 
-sml_config = get_sml_config()
-
 config_default = { 
     'bio.ngs.tools.bamtools' : {
-        'ref' : sml_config['bio.ngs.settings']['db']['ref'],
+        'ref' : config['bio.ngs.settings']['db']['ref'],
         'cmd' : "bamtools",
-        'threads' : sml_config['bio.ngs.settings']['threads'],
+        'threads' : config['bio.ngs.settings']['threads'],
         'options' : "",
         'filter' : {
             'options' : '-mapQuality 255',
@@ -19,9 +17,9 @@ config_default = {
     },
 }
 
-update_sml_config(config_default)
+config = update_snakemake_config(config, config_default)
 
-bamtools_cfg = sml_config['bio.ngs.tools.bamtools']
+bamtools_cfg = config['bio.ngs.tools.bamtools']
 
 if bamtools_cfg.get('cmd', "") and not is_installed(os.path.join(bamtools_cfg.get('cmd', ""))):
     raise Exception("\nbio.ngs.tools.bamtools: {prog} not installed or not in PATH\n".format(prog=bamtools_cfg.get('cmd')))

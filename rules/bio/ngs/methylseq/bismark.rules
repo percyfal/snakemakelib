@@ -1,14 +1,14 @@
 # -*- snakemake -*-
 import os
 import re
-from snakemakelib.config import update_sml_config, get_sml_config
+from snakemakelib.config import update_snakemake_config
 from snakemakelib.bio.ngs.methylseq.bismark import report_label, align_suffix
 
 include: '../settings.rules'
 include: '../qc/sequenceprocessing.rules'
 include: '../qc/picard.rules'
 
-ngs_cfg = get_sml_config('bio.ngs.settings')
+ngs_cfg = config['bio.ngs.settings']
 
 config_default = {
     'bio.ngs.methylseq.bismark' : {
@@ -42,12 +42,12 @@ config_default = {
     },
 }
 
-update_sml_config(config_default)
+config = update_snakemake_config(config, config_default)
 
-cfg = get_sml_config('bio.ngs.methylseq.bismark')
-ngs_cfg = get_sml_config('bio.ngs.settings')
-qc_cfg = get_sml_config('bio.ngs.qc.sequenceprocessing')
-picard_cfg = get_sml_config('bio.ngs.qc.picard')
+cfg = config['bio.ngs.methylseq.bismark']
+ngs_cfg = config['bio.ngs.settings']
+qc_cfg = config['bio.ngs.qc.sequenceprocessing']
+picard_cfg = config['bio.ngs.qc.picard']
 
 rule bismark_genome_preparation:
     """bismark: Prepare genome sequence"""

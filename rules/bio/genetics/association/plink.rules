@@ -1,6 +1,6 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.config import update_sml_config, get_sml_config
+from snakemakelib.config import update_snakemake_config
 
 include: '../../ngs/settings.rules'
 
@@ -14,17 +14,13 @@ config_default = {
     },
 }
 
-update_sml_config(config_default)
+config = update_snakemake_config(config, config_default)
 
-sml_config = get_sml_config()
+config_default['bio.genetics.association.plink']['plink']['options'] = config['bio.genetics.association.plink']['plink']['common_options']
 
-config_default['bio.genetics.association.plink']['plink']['options'] = sml_config['bio.genetics.association.plink']['plink']['common_options']
+config = update_snakemake_config(config, config_default)
 
-update_sml_config(config_default)
-
-sml_config = get_sml_config()
-
-plink_config = sml_config['bio.genetics.association.plink']
+plink_config = config['bio.genetics.association.plink']
 
 rule plink_ped2ld_r2:
     """calculate r-squared linked disequilibrium from ped file. 

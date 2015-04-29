@@ -5,13 +5,13 @@ import glob
 import jinja2
 from snakemake.report import data_uri
 from snakemakelib.bokeh.publish import static_html
-from snakemakelib.config import update_sml_config, get_sml_config, sml_path, sml_templates_path
+from snakemakelib.config import sml_path, sml_templates_path
 from snakemakelib.bio.ngs.targets import generic_target_generator
 from snakemakelib.bio.ngs.qc.picard import collect_picard_qc_results, make_picard_summary_plots
 
 def _find_merge_inputs(wildcards):
-    ngs_cfg = get_sml_config('bio.ngs.settings')
-    picard_cfg = get_sml_config('bio.ngs.qc.picard')
+    ngs_cfg = config['bio.ngs.settings']
+    picard_cfg = config['bio.ngs.qc.picard']
     sources = generic_target_generator(tgt_re=ngs_cfg['sampleorg'].run_id_re, target_suffix = picard_cfg['merge_sam']['suffix'], filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg)
     sources = [src for src in sources if os.path.dirname(src).startswith(wildcards.prefix)]
     return sources
@@ -32,7 +32,7 @@ COLLECT_ALIGNMENT_SUMMARY_METRICS = "CollectAlignmentSummaryMetrics"
 CALCULATE_HS_METRICS = "CalculateHsMetrics"
 ADD_OR_REPLACE_READ_GROUPS = "AddOrReplaceReadGroups"
 
-ngs_cfg = get_sml_config('bio.ngs.settings')
+ngs_cfg = config['bio.ngs.settings']
 
 config_default = { 
     'bio.ngs.qc.picard' : {
@@ -61,9 +61,9 @@ config_default = {
     },
 }
 
-update_sml_config(config_default)
+config = update_snakemake_config(config, config_default)
 
-picard_config = get_sml_config('bio.ngs.qc.picard')
+picard_config = config['bio.ngs.qc.picard']
 
 config_default['bio.ngs.qc.picard']['options'] = picard_config['common_options'] 
 
@@ -71,11 +71,11 @@ config_default['bio.ngs.qc.picard']['cmd'] = " ".join(["java -Xmx" + picard_conf
                                                        "-Djava.io.tmpdir=" + picard_config['java_tmpdir'], 
                                                        "-jar", os.path.join(picard_config['home'], "picard.jar ")])
 
-update_sml_config(config_default)
+config = update_snakemake_config(config, config_default)
 
 # Use picard config to increase readibility
-sml_config = get_sml_config()
-picard_config = get_sml_config('bio.ngs.qc.picard')
+sml_config = config
+picard_config = config['bio.ngs.qc.picard']
 
 rule picard_build_bam_index:
     """Picard: build bam index from bam file"""
@@ -233,7 +233,7 @@ rule picard_do_qc:
             fh.write("Completed rule 'picard_do_qc' using qcrules {qcrules}".format(qcrules=",".join(picard_config['qcrules'])))
 
 def _picard_find_picard_do_qc_result_files_fn(wildcards):
-    ngs_cfg = get_sml_config('bio.ngs.settings')
+    ngs_cfg = config['bio.ngs.settings']
     sources = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, src_re=ngs_cfg['sampleorg'].run_id_re, target_suffix = os.path.join("." + wildcards.label), filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg)
     return sources
 

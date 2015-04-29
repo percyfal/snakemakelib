@@ -3,13 +3,13 @@
 Main settings for snakemakelib. Defines top-level configuration
 settings for all rules. 
 """
-
-from snakemakelib.config import update_sml_config, get_sml_config
+import os
+from snakemakelib.config import update_snakemake_config
 
 TEMP_FILETYPES_DEFAULT = ['.bam', '.gz', '.zip', '.bigWig', '.wig', '.bed', '.sra',
                           '.fastq', '.fq', '.fasta', '.fa']
 
-PROTECTED_FILETYPES_DEFAULT = TEMP_FILETYPES_DEFAULT    
+PROTECTED_FILETYPES_DEFAULT = TEMP_FILETYPES_DEFAULT
 
 # Add configuration variable to snakemake global config object
 config['section'] = config.get("section", "")
@@ -24,7 +24,9 @@ config_default = {
         'protected_filetypes_default' : PROTECTED_FILETYPES_DEFAULT,
         'protected_rules' : [],
         'protected_rules_default' : [],
+        'email' : os.getenv("USER_EMAIL", None),
+
     },
 }
 
-update_sml_config(config_default)
+config = update_snakemake_config(config, config_default)

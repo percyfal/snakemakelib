@@ -2,24 +2,24 @@
 import os
 from snakemake.workflow import workflow
 from snakemakelib.io import set_output
-from snakemakelib.config import update_sml_config, get_sml_config
+from snakemakelib.config import update_snakemake_config
 from snakemakelib.bio.ngs.targets import generic_target_generator
 
 def _merge_suffix(aligner, quantification=[]):
-    align_cfg = get_sml_config('bio.ngs.align.' + aligner)
+    align_cfg = config['bio.ngs.align.' + aligner]
     if aligner == "star":
         return align_cfg['align']['suffix'].replace('.bam', '_unique.bam')
     elif aligner in ["bowtie", "bowtie2"]:
         return '_unique.bam'
 
 def _merge_tx_suffix(aligner, quantification=[]):
-    align_cfg = get_sml_config('bio.ngs.align.' + aligner)
+    align_cfg = config['bio.ngs.align.' + aligner]
     if aligner == "star":
         return ".Aligned.toTranscriptome.out_unique.bam"
 
 def _find_transcript_bam(wildcards):
-    ngs_cfg = get_sml_config('bio.ngs.settings')
-    picard_cfg = get_sml_config('bio.ngs.qc.picard')
+    ngs_cfg = config['bio.ngs.settings']
+    picard_cfg = config['bio.ngs.qc.picard']
     sources = generic_target_generator(tgt_re=ngs_cfg['sampleorg'].run_id_re, target_suffix = _merge_tx_suffix(ngs_cfg['aligner'], ngs_cfg['rnaseq']['quantification']), filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg)
     sources = [src for src in sources if os.path.dirname(src).startswith(wildcards.prefix)]
     return sources
@@ -30,9 +30,12 @@ def find_scrnaseq_merge_inputs(wildcards):
 
     NB: these are *not* the transcript-specific alignment files.
     """
-    ngs_cfg = get_sml_config('bio.ngs.settings')
-    picard_cfg = get_sml_config('bio.ngs.qc.picard')
-    sources = generic_target_generator(tgt_re=ngs_cfg['sampleorg'].run_id_re, target_suffix = _merge_suffix(ngs_cfg['aligner'], ngs_cfg['rnaseq']['quantification']), filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg)
+    ngs_cfg = config['bio.ngs.settings']
+    sources = generic_target_generator(
+        tgt_re=ngs_cfg['sampleorg'].run_id_re, 
+        target_suffix = _merge_suffix(ngs_cfg['aligner'], ngs_cfg['rnaseq']['quantification']), 
+        filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],
+        **ngs_cfg)
     sources = [src for src in sources if os.path.dirname(src).startswith(wildcards.prefix)]
     return sources
 
@@ -59,9 +62,9 @@ config_default = {
     },
 }
 
-update_sml_config(config_default)
-main_cfg = get_sml_config('settings')
-ngs_cfg = get_sml_config('bio.ngs.settings')
+config = update_snakemake_config(config, config_default)
+main_cfg = config['settings']
+ngs_cfg = config['bio.ngs.settings']
 aligner = ngs_cfg['aligner']
 
 # Include necessary snakemakelib rules
@@ -83,7 +86,7 @@ if aligner in ["bowtie", "bowtie2"]:
 if workflow._workdir is None:
     raise Exception("no workdir set, or set after include of 'scrnaseq.workflow'; set workdir before include statement!")
 
-# Set temporary outputs
+# Set temporary and protected outputs
 set_output(workflow,
            temp_rules = main_cfg['temp_rules'] + main_cfg['temp_rules_default'],
            temp_filetypes=main_cfg['temp_filetypes'] + main_cfg['temp_filetypes_default'],
@@ -103,7 +106,7 @@ RSEM_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re,
 
 REPORT_TARGETS = ['report/star.Aligned.out.csv', 'report/star.Aligned.out.mapping_summary.html']
 
-picard_config = get_sml_config("bio.ngs.qc.picard")
+picard_config = config["bio.ngs.qc.picard"]
 
 # Additional merge rule for transcript alignment files
 rule scrnaseq_picard_merge_sam_transcript:

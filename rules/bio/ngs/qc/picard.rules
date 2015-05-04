@@ -12,7 +12,7 @@ from snakemakelib.bio.ngs.qc.picard import collect_picard_qc_results, make_picar
 def _find_merge_inputs(wildcards):
     ngs_cfg = config['bio.ngs.settings']
     picard_cfg = config['bio.ngs.qc.picard']
-    sources = generic_target_generator(tgt_re=ngs_cfg['sampleorg'].run_id_re, target_suffix = picard_cfg['merge_sam']['suffix'], filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg)
+    sources = generic_target_generator(tgt_re=ngs_cfg['sampleorg'].run_id_re, target_suffix = picard_cfg['merge_sam']['suffix'], **ngs_cfg)
     sources = [src for src in sources if os.path.dirname(src).startswith(wildcards.prefix)]
     return sources
 

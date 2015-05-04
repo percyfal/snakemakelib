@@ -72,7 +72,7 @@ rule rsem_prepare_reference:
             "--gtf {annot}".format(annot=rsem_cfg['annot_gtf']) if rsem_cfg['annot_gtf'] else ""]),
             ref = rsem_cfg['ref'],
             index = rsem_cfg['index']
-    input: ref = rsem_cfg['ref']
+    input: rsem_cfg['annot_gtf'] if rsem_cfg['annot_gtf'] else [], ref = rsem_cfg['ref'], 
     output: rsem_cfg['index'] + rsem_cfg['ref_sfx']
     log: rsem_cfg['index'] + rsem_cfg['ref_sfx'] + ".log"
     shell: "{params.cmd} {params.options} {input.ref} {params.index} > {log}"

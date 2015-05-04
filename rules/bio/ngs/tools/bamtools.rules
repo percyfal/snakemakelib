@@ -9,6 +9,7 @@ config_default = {
     'bio.ngs.tools.bamtools' : {
         'ref' : config['bio.ngs.settings']['db']['ref'],
         'cmd' : "bamtools",
+        'home' : "",
         'threads' : config['bio.ngs.settings']['threads'],
         'options' : "",
         'filter' : {
@@ -21,7 +22,15 @@ config = update_snakemake_config(config, config_default)
 
 bamtools_cfg = config['bio.ngs.tools.bamtools']
 
-if bamtools_cfg.get('cmd', "") and not is_installed(os.path.join(bamtools_cfg.get('cmd', ""))):
+# see http://stackoverflow.com/questions/23244418/set-ld-library-path-before-importing-in-python
+libpath = ""
+if bamtools_cfg['home']:
+    os.environ["PATH"] += os.pathsep + bamtools_cfg['home']
+    bamtools_lib = os.path.join(os.path.dirname(os.path.dirname(bamtools_cfg['home'])), "lib")
+    libpath = "LD_LIBRARY_PATH=" + bamtools_lib
+    if not os.path.exists(bamtools_lib):
+        raise Exception("\nbio.ngs.tools.bamtools: couldn't find bamtools library path {libpath}".format(libpath=libpath))
+if not is_installed(os.path.join(bamtools_cfg.get('cmd', ""))):
     raise Exception("\nbio.ngs.tools.bamtools: {prog} not installed or not in PATH\n".format(prog=bamtools_cfg.get('cmd')))
 
 rule bamtools_filter:
@@ -30,4 +39,5 @@ rule bamtools_filter:
             options = bamtools_cfg['filter']['options']
     input: "{prefix}.bam"
     output: "{prefix}_unique.bam"
-    shell: "{params.cmd} filter -in {input} -out {output} {params.options}"
+    log: "{prefix}_unique.log"
+    shell: libpath + " {params.cmd} filter -in {input} -out {output} {params.options} > {log}"

@@ -1,6 +1,7 @@
 # -*- snakemake -*-
 import os
 import pysam
+from jinja2 import Environment, PackageLoader
 from snakemakelib.io import set_output
 from snakemakelib.config import update_snakemake_config
 from snakemakelib.bio.ngs.targets import generic_target_generator
@@ -168,6 +169,8 @@ INSERT_METRICS_TARGETS = generic_target_generator(
     src_re = ngs_cfg['sampleorg'].raw_run_re, 
     **ngs_cfg)
 
+REPORT_TARGETS = ["report/atacseq_all_rulegraph.png", "report/atacseq_summary.html"]
+
 # Rules
 rule atacseq_all:
     """Run ATAC-seq pipeline"""
@@ -212,6 +215,25 @@ rule atacseq_correct_coordinates:
                     s.pnext = min(l, s.pnext + 4)
             outfile.write(s)
 
+rule atacseq_report:
+    """Write report"""
+    input: cutadapt = os.path.join("{path}", "cutadapt.summary.csv") if atac_cfg['trimadaptor'] else [],
+           picard = [("report/picard.sort.merge.dup{sfx}.metrics.csv".format(sfx=sfx), 
+           "report/picard.sort.merge.dup{sfx}.hist.csv".format(sfx=sfx)) for sfx in [workflow._rules[x].params.suffix for x in picard_config['qcrules']]],
+           rulegraph = "report/atacseq_all_rulegraph.png"
+    output: html = os.path.join("{path}", "atacseq_summary.html")
+    run:
+        d = {}
+        env = Environment(loader = PackageLoader("snakemakelib", "../templates"))
+        tp = env.get_template('workflow_atacseq_qc.html')
+        if atac_cfg['trimadaptor']:
+            d.update({'cutadapt' : make_cutadapt_summary_plot(input.cutadapt)})
+        d.update({'picard' : make_picard_summary_plots(input.picard)})
+        d.update({'rulegraph' : {'uri' : data_uri(input.rulegraph), 'file' : input.rulegraph, 'fig' : input.rulegraph, 'target' : 'atacseq_all'}})
+        with open(output.html, "w") as fh:
+            fh.write(static_html(tp, **d))
+
+                
 #
 # Putative additional data and methods
 #

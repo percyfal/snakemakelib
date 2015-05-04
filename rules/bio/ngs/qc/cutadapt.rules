@@ -62,7 +62,7 @@ ruleorder: cutadapt_cut_paired_end > cutadapt_cut_fiveprime
 
 def _cutadapt_find_result_files_fn(wildcards):
     ngs_cfg = config['bio.ngs.settings']
-    sources = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].run_id_re, src_re=ngs_cfg['sampleorg'].run_id_re, target_suffix = wildcards.label + "cutadapt_metrics", filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg)
+    sources = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].run_id_re, src_re=ngs_cfg['sampleorg'].run_id_re, target_suffix = wildcards.label + "cutadapt_metrics", **ngs_cfg)
     return sources
 
 rule cutadapt_qc_summary:
@@ -78,14 +78,3 @@ rule cutadapt_qc_summary:
         df = collect_cutadapt_qc_results(input, list(zip(samples, runs)))
         df.columns = df.columns.droplevel()
         df.to_csv(output.summary)
-
-rule cutadapt_qc_plot:
-    """Make cutadapt qc plot"""
-    input: summary = os.path.join("{path}", "cutadapt{label}summary.csv")
-    output: html = os.path.join("{path}", "cutadapt{label}summary.html")
-    run:
-        df_summary = pd.read_csv(input.summary)
-        uri = {'summary_uri':data_uri(input.summary), 'summary_file':input.summary}
-        fig = make_cutadapt_summary_plot(df_summary)
-        output_file(output.html)
-        show(fig)

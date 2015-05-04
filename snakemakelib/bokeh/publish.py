@@ -26,6 +26,7 @@ def static_html(template, resources=CDN, as_utf8=True, **kw):
 
     with open (os.path.join(sml_base_path(), 'static/basic.css')) as fh:
         css = "".join(fh.readlines())
+
     # Hack to get on-the-fly double mapping. Can this be rewritten with e.g. map?
     def _update(kw):
         tmp = {}
@@ -45,4 +46,4 @@ def static_html(template, resources=CDN, as_utf8=True, **kw):
     if as_utf8:
         return encode_utf8(template.render(plot_resources=plot_resources, css=css, **kw))
     else:
-        return template.render(plot_resources=plot_resources, css=css, **tmp)
+        return template.render(plot_resources=plot_resources, css=css, **kw)

@@ -7,6 +7,7 @@ import numpy as np
 from bokeh.models import ColumnDataSource
 from bokeh.plotting import figure, gridplot
 from bokeh.palettes import brewer
+from snakemake.report import data_uri
 from snakemakelib.log import LoggerManager
 from snakemakelib.bokeh.plot import lineplot, scatterplot2
 
@@ -82,7 +83,7 @@ class HistMetrics(Metrics):
         self._metadata = {'type' : 'histogram'}
 
     def plot_hist(self, **kwargs):
-        fig = lineplot(self, groups=["Sample"])
+        fig = lineplot(self, groups=["Sample"], title="")
         return fig
     
 class AlignMetrics(Metrics):
@@ -132,14 +133,20 @@ def make_picard_summary_plots(inputfiles):
         df_met = _read_metrics(metrics_file)
         df_hist = _read_metrics(hist_file)
         p1 = df_met.plot_metrics(tools=TOOLS)
-        if not df_hist is None:
-            p2 = [df_hist.plot_hist(tools=TOOLS)]
-        else:
-            p2 = []
         key = os.path.splitext(metrics_file)[0]
         if not df_met.label in d:
             d[df_met.label] = {}
-        d[df_met.label][key] = gridplot([p1 + p2])
+            d[df_met.label][key] = {}
+            d[df_met.label][key]['uri'] = [data_uri(metrics_file)]
+            d[df_met.label][key]['file'] = [metrics_file]
+        if not df_hist is None:
+            p2 = [df_hist.plot_hist(tools=TOOLS)]
+            d[df_met.label][key]['uri'].append(data_uri(hist_file))
+            d[df_met.label][key]['file'].append(hist_file)
+        else:
+            p2 = []
+        d[df_met.label][key]['fig'] = gridplot([p1 + p2])
+
     return d
 
         

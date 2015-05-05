@@ -1,32 +1,17 @@
-<!doctype html>
-<html lang="en">
-<head>
+<!-- -*- jinja2 -*- -->
+{% if rseqc is defined %}
+  <h3>RSeQC summary</h3>
+  
+  <figure>
+    {{ rseqc['fig']['div']|indent(8) }}
+    <figcaption>RSeQC summary plots. The plots are based on raw data in 
+      <ol>
+	{% for uri, file in zip(rseqc['uri'], rseqc['file']) %}
+	  <li><a href="{{ uri }}" download="{{ file }}" draggable="true">{{ file }}</a></li>
+	{% endfor %}
+      </ol>
 
-<meta charset="utf-8">
-<title>{{ title if title else "RSeQC summary" }}</title>
-{{ plot_resources|indent(8) }}
-<style>
-{{ css|indent(8) }}
-</style>
-{{ rseqc_plots['script']|indent(8) }}
-</head>
-<body>
-<h3>RSeQC summary</h3>
+    </figcaption>
+  </figure>
 
-<figure>
-{{ rseqc_plots['div']|indent(8) }}
-<figcaption>RSeQC summary plots. </figcaption>
-</figure>
-
-
-<h3>Attachments</h3>
-<table>
-	<tr>
-		<td><a href="{{ uri['rd_uri'] }}" download="{{ uri['rd_file'] }}" draggable="true">{{ uri['rd_file'] }}</a></td>
-	</tr>
-	<tr>
-		<td><a href="{{ uri['gc_uri'] }}" download="{{ uri['gc_file'] }}" draggable="true">{{ uri['gc_file'] }}</a></td>
-	</tr>
-</table>
-</body>
-</html>
+{% endif %}

@@ -3,10 +3,10 @@ import os
 import math
 import inspect
 import numpy as np
-from snakemakelib.config import sml_base_path
 from bokeh.models import ColumnDataSource
 from bokeh.palettes import brewer
 from bokeh.plotting import figure, Figure
+from snakemakelib.config import sml_base_path
 from snakemakelib.log import LoggerManager
 
 smllogger = LoggerManager().getLogger(__name__)
@@ -42,7 +42,8 @@ def scatterplot(x, y,
                 grid = {'grid_line_color' : None, 'grid_line_alpha' : 1.0},
                 tooltips=[], qc=None, **kwargs):
     """Make a scatter plot"""
-    figmembers = [x[0] for x in inspect.getmembers(Figure)]
+    # x_axis_type, y_axis_type missed by inspect
+    figmembers = [x[0] for x in inspect.getmembers(Figure)] + ['x_axis_type', 'y_axis_type']
     circle_kwargs_keys = list(set(list(kwargs.keys())).difference(set(figmembers)))
     circle_kwargs = {k:kwargs.pop(k) for k in circle_kwargs_keys}
     # Get a reference to a figure

@@ -3,7 +3,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>Single-cell RNA-Seq summary report"</title>
+    <title>Single-cell RNA-Seq summary report</title>
 
     {{ plot_resources|indent(8) }}
     
@@ -16,57 +16,39 @@
       {{ rseqc['fig']['script'] | indent(8) }}
     {% endif %}
 
-    {{ rseqc_plots['script']|indent(8) }}
-    {{ star_plots['script']|indent(8) }}
-    {{ star_table['script']|indent(8) }}
+    {% if star is defined %}
+      {{ star['fig']['script'] | indent(8) }}
+      {{ star['table']['script'] | indent(8) }}
+    {% endif %}
+
   </head>
   <body>
 
-    <h1>Single-cell RNA-Seq summary report</h1>
+    <h1>scRNA-seq workflow</h1>
+    
+    The current single cell RNA-seq workflow does the following steps:
+    
+    <ol>
+      <li>Alignment with star</li>
+      <li>Quality control with RSeQC</li>
+      <li>Quantification with RSEM</li>
+    </ol>
 
-<h3>Star alignment summary</h3>
+    {% include 'workflow.html' ignore missing %}
 
-<figure>
-{{ star_plots['div']|indent(8) }}
-<figcaption>STAR summary plots. </figcaption>
-</figure>
-<figure>
-{{ star_table['div']|indent(8) }}
-<figcaption>Table of all STAR alignment statistics. </figcaption>
-</figure>
-	
-	<h3>RSeQC summary</h3>
+    <h1>Single-cell RNA-seq QC summary</h1>
 
-<figure>
-{{ rseqc_plots['div']|indent(8) }}
-<figcaption>RSeQC summary plots. </figcaption>
-</figure>
+    <h2>Run-level QC metrics</h2>
 
-<h3>Workflow configuration</h3>
+    <h3>Alignment</h3>
 
-<figure>
-	<img src="{{ rulegraph | indent(8) }}" alt="{{ workflow_target | indent(8) }}" width="600"/>
-	<figcaption> Rulegraph representation of workflow; target {{ workflow_target | indent(8) }} </figcaption>
-</figure>
+    {% include 'star.html' ignore missing %}
 
+    <h2>Sample-leve QC metrics</h2>
 
-<h3>Attachments</h3>
-<table>
-	<tr>
-		<td><a href="{{ uri['rd_uri'] }}" download="{{ uri['rd_file'] }}" draggable="true">{{ uri['rd_file'] }}</a></td>
-	</tr>
-	<tr>
-		<td><a href="{{ uri['gc_uri'] }}" download="{{ uri['gc_file'] }}" draggable="true">{{ uri['gc_file'] }}</a></td>
-	</tr>
-	<tr>
-		<td><a href="{{ uri['star_uri'] }}" download="{{ uri['star_file'] }}" draggable="true">{{ uri['star_file'] }}</a></td>
-	</tr>
-	<tr>
-		<td>{{ uri['rsem_genes_file'] }} (too large for attachment)</td>
-	</tr>
-	<tr>
-		<td>{{ uri['rsem_isoforms_file'] }} (too large for attachment)</td>
-	</tr>
-</table>
-</body>
+    <h3>RSeQC</h3>
+
+    {% include 'rseqc.html' ignore missing %}
+    
+  </body>
 </html>

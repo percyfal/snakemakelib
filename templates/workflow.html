@@ -10,13 +10,13 @@ snakemake target {{ rulegraph['target'] }}. The workflow can be
 launched by running
 
 <pre><code>
-    snakemake --rerun-incomplete atacseq_all
+    snakemake --rerun-incomplete {{ rulegraph['target'] }}
 </code></pre>
 
 If you have the SLURM queue manager, you can run
 
 <pre><code>
-    snakemake --rerun-incomplete atacseq_all --drmaa " -t TIME -A account -p core -n {threads}"
+    snakemake --rerun-incomplete {{ rulegraph['target'] }} --drmaa " -t TIME -A account -p core -n {threads}"
 </code></pre>
 
 <h4>Workflow illustration</h4>

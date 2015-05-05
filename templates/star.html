@@ -1,0 +1,17 @@
+<!-- -*- jinja2 -*- -->
+{% if star is defined %}
+  <h3>Star alignment summary</h3>
+    
+  <figure>
+    {{ star['fig']['div']|indent(8) }}
+    <figcaption>STAR summary plots. The plots are based on raw data in <a href="{{ star['uri'] }}" download="{{ star['file'] }}" draggable="true">{{ star['file'] }}</a>
+    </figcaption>
+  </figure>
+  <figure>
+    {{ star['table']['div']|indent(8) }}
+    <figcaption>Table of all STAR alignment statistics. Source 
+      <a href="{{ star['uri'] }}" download="{{ star['file']}}" draggable="true">{{ star['file'] }}</a>
+    </figcaption>
+  </figure>
+
+{% endif %}

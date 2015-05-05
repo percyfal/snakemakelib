@@ -1,8 +1,9 @@
 # -*- snakemake -*-
 import os
 from collections import namedtuple
-from snakemakelib.config import update_sml_config, get_sml_config
+from snakemakelib.config import update_snakemake_config
 from snakemakelib.bio.ngs.regexp import RunRegexp, SampleRegexp
+from snakemakelib.bio.ngs.db import ref
 
 # Add configuration variable to snakemake global config object
 config['samples'] = config.get("samples", [])
@@ -71,11 +72,12 @@ config_default = {
         'threads' : 8,
         'annotation' : {
             'annot_label' : "",
-            'transcript_annot_gtf' : "",
+            'transcript_annot_gtf' : "ref-transcripts.gtf",
         },
         'db' : {
             'dbsnp' : "",
             'ref' : "",
+            'extra_ref' : [],
             'build' : '',
             'build_config' : None,
         },
@@ -93,9 +95,14 @@ config_default = {
     },
 }
 
-update_sml_config(config_default)
+config = update_snakemake_config(config, config_default)
 
-ngs_conf = get_sml_config('bio.ngs.settings')
+config['bio.ngs.settings']['db']['ref'] = ref(config['bio.ngs.settings']['db']['ref'], 
+                                              config['bio.ngs.settings']['db'])
+config_default['bio.ngs.settings']['filter_suffix'] = config['bio.ngs.settings']['read1_label'] + config['bio.ngs.settings']['fastq_suffix']
+config = update_snakemake_config(config, config_default)
 
-update_sml_config({'bio.ngs.settings' : sample_organization[ngs_conf['sample_organization']]})
+ngs_conf = config['bio.ngs.settings']
+
+config = update_snakemake_config(config, {'bio.ngs.settings' : sample_organization[ngs_conf['sample_organization']]})
 

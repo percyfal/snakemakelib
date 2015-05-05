@@ -1,18 +1,16 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.config import update_sml_config, get_sml_config
+from snakemakelib.config import update_snakemake_config
 from snakemakelib.bio.ngs.db import index
 
 include: '../settings.rules'
 include: '../tools/samtools.rules'
 
-sml_config = get_sml_config()
-
 config_default = { 
     'bio.ngs.align.bwa' : {
         'cmd' : "bwa",
-        'index' : index,
-        'threads' : sml_config['bio.ngs.settings']['threads'],
+        'index' : "",
+        'threads' : config['bio.ngs.settings']['threads'],
         'options' : "-M",
         'mem' :{
             'options' : "",
@@ -20,25 +18,29 @@ config_default = {
     },
 }
 
-update_sml_config(config_default)
+config = update_snakemake_config(config, config_default)
 
-sml_config = get_sml_config()
+config_default['bio.ngs.align.bwa']['mem']['options'] = config['bio.ngs.align.bwa']['options']
 
-config_default['bio.ngs.align.bwa']['mem']['options'] = sml_config['bio.ngs.align.bwa']['options']
+config = update_snakemake_config(config, config_default)
 
-update_sml_config(config_default)
+# Update index
+config['bio.ngs.align.bwa']['index'] = index(
+    ref = config['bio.ngs.settings']['db']['ref'],
+    index = config['bio.ngs.align.bwa']['index'],
+    application = 'bwa',
+    build = config['bio.ngs.settings']['db']['build'])
 
-sml_config = get_sml_config()
 
-bwa_cfg = sml_config['bio.ngs.align.bwa']
-ngs_cfg = sml_config['bio.ngs.settings']
-samtools_cfg = sml_config['bio.ngs.tools.samtools']
+bwa_cfg = config['bio.ngs.align.bwa']
+ngs_cfg = config['bio.ngs.settings']
+samtools_cfg = config['bio.ngs.tools.samtools']
 
 rule bwa_mem:
     """Run bwa mem"""
     params: options = bwa_cfg['mem']['options'],
             cmd = bwa_cfg['cmd'],
-            index = bwa_cfg['index', 'bwa']
+            index = bwa_cfg['index']
     input: "{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],\
     "{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['fastq_suffix']
     output: "{prefix}.bam"

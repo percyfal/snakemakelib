@@ -1,10 +1,10 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.config import update_sml_config, get_sml_config
+from snakemakelib.config import update_snakemake_config
 
 include: '../settings.rules'
 
-bio_cfg = get_sml_config('bio.ngs.settings')
+bio_cfg = config['bio.ngs.settings']
 
 RNASEQC_JAR_PROGRAM = "RNA-SeQC.jar"
 
@@ -21,21 +21,21 @@ config_default = {
     },
 }
 
-update_sml_config(config_default)
+config = update_snakemake_config(config, config_default)
 
-rnaseqc_conf = get_sml_config('bio.ngs.rnaseq.rnaseqc')
+rnaseqc_conf = config['bio.ngs.rnaseq.rnaseqc']
 
 config_default['bio.ngs.rnaseq.rnaseqc']['jar'] = os.path.join(rnaseqc_conf['home'], RNASEQC_JAR_PROGRAM)
 
-update_sml_config(config_default)
+config = update_snakemake_config(config, config_default)
 
-rnaseqc_conf = get_sml_config('bio.ngs.rnaseq.rnaseqc')
+rnaseqc_conf = config['bio.ngs.rnaseq.rnaseqc']
 
 config_default['bio.ngs.rnaseq.rnaseqc']['cmd'] = "java -Xmx" + rnaseqc_conf['java_mem'] + " -Djava.io.tmpdir=" + rnaseqc_conf['java_tmpdir'] +  " -jar " + rnaseqc_conf['jar']
 
-update_sml_config(config_default)
+config = update_snakemake_config(config, config_default)
 
-rnaseqc_conf = get_sml_config('bio.ngs.rnaseq.rnaseqc')
+rnaseqc_conf = config['bio.ngs.rnaseq.rnaseqc']
 
 # RNASEQC uses tophat alignments as input!
 rule rnaseqc_main:

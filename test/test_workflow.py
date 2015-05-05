@@ -16,11 +16,13 @@ snakefile = """# -*- snakemake -*-
 import os
 import sys
 import re
-from snakemakelib.config import init_sml_config, get_sml_config
+from snakemakelib.config import update_snakemake_config, load_sml_config
 from snakemakelib.utils import rreplace
 from snakemakelib.bio.ngs.targets import generic_target_generator
 
 workdir: '{workdir}'
+
+config = load_sml_config(config)
 
 local_config = {{
     'bio.ngs.settings' : {{
@@ -54,19 +56,13 @@ local_config = {{
              'genome_version' : 'hg19',
         }},
     }},
-    'bio.ngs.methylseq.bismark' : {{
-        'ref' : '{bismarkref}',
-    }},
 }}
 
-init_sml_config(local_config)
+config = update_snakemake_config(config, local_config)
 
-if any([re.search('bismark', arg) for arg in sys.argv]):
-    include: '{methylseq}'
-else:
-    include: '{variation}'
+include: '{variation}'
 
-cfg = get_sml_config('bio.ngs.settings')
+cfg = config['bio.ngs.settings']
 path = cfg.get('path') if not cfg.get('path') is None else os.curdir
 
 """
@@ -84,11 +80,9 @@ def setUp():
     with open("Snakefile", "w") as fh:
         fh.write(snakefile.format(workdir=os.path.join(os.path.abspath(os.curdir), os.pardir, 'data', 'projects', 'J.Doe_00_01'),
                                   variation=os.path.join(os.path.abspath(os.curdir), os.pardir, 'workflows', 'bio', 'variation.workflow'),
-                                  methylseq=os.path.join(os.path.abspath(os.curdir), os.pardir, 'workflows', 'bio', 'methylseq.workflow'),
                                   ref=os.path.join(os.path.abspath(os.curdir), os.pardir, 'data', 'genomes', 'Hsapiens', 'hg19', 'seq', 'chr11.fa'),
                                   dbsnp=os.path.join(os.path.abspath(os.curdir), os.pardir, 'data', 'genomes', 'Hsapiens', 'hg19', 'variation', 'dbsnp132_chr11.vcf'),
                                   bwaref=os.path.join(os.path.abspath(os.curdir), os.pardir, 'data', 'genomes', 'Hsapiens', 'hg19', 'bwa', 'chr11.fa'),
-                                  bismarkref=os.path.join(os.path.abspath(os.curdir), os.pardir, 'data', 'genomes', 'Hsapiens', 'hg19', 'bismark', 'chr11.fa'),
                                   picard=os.getenv("PICARD_HOME"),
                                   gatk=os.getenv("GATK_HOME"),
                                   snpeff=os.getenv("SNPEFF_HOME"),
@@ -124,18 +118,3 @@ class TestBwaAlign(unittest.TestCase):
         bwaout = 'P001_101/120924_AC003CCCXX/1_120924_AC003CCCXX_P001_101.bam'
         subprocess.check_call(['snakemake', '-F', bwaout])
         subprocess.check_call(['rm', '-f', os.path.join(os.path.abspath(os.curdir), os.pardir, 'data', 'projects', 'J.Doe_00_01', 'P001_101/120924_AC003CCCXX/1_120924_AC003CCCXX_P001_101.bam')])
-
-@unittest.skipIf(shutil.which('fastqc') is None, "No executable fastqc found; skipping")
-@unittest.skipIf(shutil.which('bismark') is None, "No executable bismark found; skipping")
-@unittest.skipIf(shutil.which('bowtie2') is None, "No executable bowtie2 found; skipping")
-@attr('slow')
-class TestMethylSeq(unittest.TestCase):
-    def setUp(self):
-        bismarkdir = os.path.join(os.path.abspath(os.curdir), os.pardir, 'data', 'genomes', 'Hsapiens', 'hg19', 'bismark')
-        if not os.path.exists(os.path.join(bismarkdir, 'Bisulfite_Genome')):
-            subprocess.check_call(['bismark_genome_preparation', '--bowtie2', os.path.join(bismarkdir)])
-
-    def test_bismark(self):
-        """Test bismark"""
-        subprocess.check_call(['snakemake', '-F', 'run_bismark_run'])
-

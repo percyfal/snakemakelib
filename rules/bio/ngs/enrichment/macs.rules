@@ -1,15 +1,13 @@
 # -*- snakemake -*-
 #
-# Latest version does not work: now using
+# Install with pip; use recent version of gcc (>=4.9)
 #
-# pip install MACS2==2.0.10.7032012
-#
-from snakemakelib.config import update_sml_config, get_sml_config
+from snakemakelib.config import update_snakemake_config
 from snakemakelib.stat import is_installed
 
 include: "../settings.rules"
 
-ngs_cfg = get_sml_config('bio.ngs.settings')
+ngs_cfg = config['bio.ngs.settings']
 
 config_default = {
     'bio.ngs.enrichment.macs' : {
@@ -55,13 +53,13 @@ config_default = {
         },
     },
 }
-update_sml_config(config_default)
 
-macs_cfg = get_sml_config('bio.ngs.enrichment.macs')
-python2 = get_sml_config('comp.settings')['python2']['activate_cmd']
+config = update_snakemake_config(config, config_default)
+
+macs_cfg = config['bio.ngs.enrichment.macs']
+python2 = config['comp.settings']['python2']['activate_cmd']
 
 macs = 'macs2' if macs_cfg['version2'] else 'macs'
-
 
 rule macs_callpeak_treatment_only_bam:
     """MACS callpeak on sample with no control."""
@@ -73,4 +71,4 @@ rule macs_callpeak_treatment_only_bam:
             xls = "{prefix}_peaks.xls",
             summits = "{prefix}_summits.bed"
     log: "{prefix}." + macs + ".log"
-    shell: python2 + " && {params.cmd} callpeak {params.options} -n {wildcards.prefix} -t {input.bam} -f BAM"
+    shell: python2 + " && {params.cmd} callpeak {params.options} -n {wildcards.prefix} -t {input.bam} -f BAM > {log}"

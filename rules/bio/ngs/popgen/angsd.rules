@@ -1,10 +1,10 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.config import update_sml_config, get_sml_config, sml_path
+from snakemakelib.config import update_snakemake_config, sml_path
 
 include: '../settings.rules'
 
-bio_cfg = get_sml_config('bio.ngs.settings')
+bio_cfg = config['bio.ngs.settings']
 
 config_default = { 
     'bio.ngs.popgen.angsd' : {
@@ -13,7 +13,7 @@ config_default = {
         'chr_extra' : "chrM",
         # I seem to have set a whole lot of specific options. Put them in subsection options for now
         'options' : {
-            'anc' : sml_config['bio.ngs.settings']['db']['ref'],
+            'anc' : config['bio.ngs.settings']['db']['ref'],
             'chr' : "",
             'chr_enum_from' : 1,
             'chr_enum_to' : 1,
@@ -57,10 +57,10 @@ config_default = {
     },
 }
 
-update_sml_config(config_default)
+config = update_snakemake_config(config, config_default)
 
-cfg = get_sml_config('bio.ngs.popgen.angsd')
-ngstools_cfg = get_sml_config('bio.ngs.popgen.ngstools')
+cfg = config['bio.ngs.popgen.angsd']
+ngstools_cfg = config['bio.ngs.popgen.ngstools']
 
 # Second round
 config_default = {
@@ -106,9 +106,9 @@ config_default = {
 }
 
 
-update_sml_config(config_default)
+config = update_snakemake_config(config, config_default)
 
-cfg = get_sml_config('bio.ngs.popgen.angsd')
+cfg = config['bio.ngs.popgen.angsd']
 
 rule generate_sfs:
     """Estimate the site frequency spectrum. Note that the implementation has changed for angsd versions > 0.5"""

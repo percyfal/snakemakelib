@@ -2,14 +2,17 @@
 import os
 import shutil
 import glob
-from snakemakelib.config import update_sml_config, get_sml_config, sml_path
+import jinja2
+from snakemake.report import data_uri
+from snakemakelib.bokeh.publish import static_html
+from snakemakelib.config import sml_path, sml_templates_path
 from snakemakelib.bio.ngs.targets import generic_target_generator
-from snakemakelib.bio.ngs.qc.picard import collect_picard_qc_results
+from snakemakelib.bio.ngs.qc.picard import collect_picard_qc_results, make_picard_summary_plots
 
 def _find_merge_inputs(wildcards):
-    ngs_cfg = get_sml_config('bio.ngs.settings')
-    picard_cfg = get_sml_config('bio.ngs.qc.picard')
-    sources = generic_target_generator(tgt_re=ngs_cfg['sampleorg'].run_id_re, target_suffix = picard_cfg['merge_sam']['suffix'], filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg)
+    ngs_cfg = config['bio.ngs.settings']
+    picard_cfg = config['bio.ngs.qc.picard']
+    sources = generic_target_generator(tgt_re=ngs_cfg['sampleorg'].run_id_re, target_suffix = picard_cfg['merge_sam']['suffix'], **ngs_cfg)
     sources = [src for src in sources if os.path.dirname(src).startswith(wildcards.prefix)]
     return sources
 
@@ -29,7 +32,7 @@ COLLECT_ALIGNMENT_SUMMARY_METRICS = "CollectAlignmentSummaryMetrics"
 CALCULATE_HS_METRICS = "CalculateHsMetrics"
 ADD_OR_REPLACE_READ_GROUPS = "AddOrReplaceReadGroups"
 
-ngs_cfg = get_sml_config('bio.ngs.settings')
+ngs_cfg = config['bio.ngs.settings']
 
 config_default = { 
     'bio.ngs.qc.picard' : {
@@ -58,9 +61,9 @@ config_default = {
     },
 }
 
-update_sml_config(config_default)
+config = update_snakemake_config(config, config_default)
 
-picard_config = get_sml_config('bio.ngs.qc.picard')
+picard_config = config['bio.ngs.qc.picard']
 
 config_default['bio.ngs.qc.picard']['options'] = picard_config['common_options'] 
 
@@ -68,11 +71,11 @@ config_default['bio.ngs.qc.picard']['cmd'] = " ".join(["java -Xmx" + picard_conf
                                                        "-Djava.io.tmpdir=" + picard_config['java_tmpdir'], 
                                                        "-jar", os.path.join(picard_config['home'], "picard.jar ")])
 
-update_sml_config(config_default)
+config = update_snakemake_config(config, config_default)
 
 # Use picard config to increase readibility
-sml_config = get_sml_config()
-picard_config = get_sml_config('bio.ngs.qc.picard')
+sml_config = config
+picard_config = config['bio.ngs.qc.picard']
 
 rule picard_build_bam_index:
     """Picard: build bam index from bam file"""
@@ -230,18 +233,39 @@ rule picard_do_qc:
             fh.write("Completed rule 'picard_do_qc' using qcrules {qcrules}".format(qcrules=",".join(picard_config['qcrules'])))
 
 def _picard_find_picard_do_qc_result_files_fn(wildcards):
-    ngs_cfg = get_sml_config('bio.ngs.settings')
-    sources = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, src_re=ngs_cfg['sampleorg'].run_id_re, target_suffix = os.path.join("." + wildcards.label), filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg)
+    ngs_cfg = config['bio.ngs.settings']
+    sources = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, src_re=ngs_cfg['sampleorg'].run_id_re, target_suffix = os.path.join("." + wildcards.label), **ngs_cfg)
     return sources
 
 rule picard_qc_summary:
     """Summarize results from picard_do_qc"""
     input: _picard_find_picard_do_qc_result_files_fn
-    output: out = os.path.join("{path}", "{label}.csv")
+    output: metrics = os.path.join("{path}", "picard.{label}.metrics.csv"), 
+            hist = os.path.join("{path}", "picard.{label}.hist.csv")
     run:
         try:
             samples = [ngs_cfg['sampleorg'].sample_re.parse(f)['SM'] for f in input]
         except KeyError:
             raise Exception("failed to parse sample name 'SM' from input list")
-        d = collect_picard_qc_results(input, samples)
-        #print (d)
+        (df_met, df_hist) = collect_picard_qc_results(input, samples)
+        if not df_met is None:
+            df_met.to_csv(output.metrics)
+        if not df_hist is None:
+            df_hist.to_csv(output.hist, index=False)
+        else:
+            with open(output.hist, "w") as fh:
+                fh.write("{ext} metrics has no histogram data".format(ext=os.path.splitext(input[0])[1]))
+
+
+rule picard_plot_qc_summary:
+    """Plot picard summary data"""
+    input: [("{{prefix}}{sfx}.metrics.csv".format(sfx=sfx), "{{prefix}}{sfx}.hist.csv".format(sfx=sfx)) for sfx in [workflow._rules[x].params.suffix for x in picard_config['qcrules']]]
+    output: picard_summary = "{prefix}.html"
+    run:
+        uri = {k : {"uri" : data_uri(k), "file" : k} for k in input}
+        d = make_picard_summary_plots(input)
+        d.update({'uri' : uri})
+        tp = jinja2.Template(open(os.path.join(sml_templates_path(), 'bio_ngs_qc_picard_summary.html')).read())
+        with open(output.picard_summary, "w") as fh:
+            fh.write(static_html(tp, **d))
+

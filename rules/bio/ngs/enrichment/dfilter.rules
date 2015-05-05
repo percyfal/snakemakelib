@@ -6,12 +6,12 @@
 #
 
 import os
-from snakemakelib.config import update_sml_config, get_sml_config
+from snakemakelib.config import update_snakemake_config
 from snakemakelib.stat import is_installed
 
 include: '../settings.rules'
 
-ngs_cfg = get_sml_config('bio.ngs.settings')
+ngs_cfg = config['bio.ngs.settings']
 
 config_default = {
     'bio.ngs.enrichment.dfilter' : {
@@ -21,12 +21,15 @@ config_default = {
     },
 }
 
-update_sml_config(config_default)
+config = update_snakemake_config(config, config_default)
 
-dfilt_cfg = get_sml_config('bio.ngs.enrichment.dfilter')
+dfilt_cfg = config['bio.ngs.enrichment.dfilter']
 
 if not is_installed(dfilt_cfg['cmd']):
     raise Exception("\nbio.ngs.enrichment.dfilter: {prog} not installed or not in PATH\n".format(prog=dfilt_cfg['cmd']))
+else:
+    # Make sure PATH is updated
+    os.environ["PATH"] += os.pathsep + os.path.dirname(dfilt_cfg['cmd'])
 
 rule dfilter_run_dfilter_bam:
     """Run run_dfilter command. Currently only works on one file."""

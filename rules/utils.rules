@@ -3,7 +3,7 @@ import os
 import yaml
 import sys
 import io
-from snakemakelib.config import get_sml_config, sml_rules_path, BaseConfig
+from snakemakelib.config import sml_rules_path, BaseConfig
 from snakemake.io import Wildcards, Namedlist
 
 include: './settings.rules'
@@ -14,9 +14,8 @@ rule conf_yaml:
     run:
         from yaml.representer import Representer
         yaml.add_representer(BaseConfig, Representer.represent_dict)
-        d = get_sml_config()
         with open (output.yaml,"w") as fh:
-            fh.write(yaml.dump(d, default_flow_style=False))
+            fh.write(yaml.dump(config, default_flow_style=False))
 
 rule conf:
     """Print global configuration settings for loaded rules"""
@@ -26,7 +25,7 @@ rule conf:
       logger.info("=" * len(s))
       for (k,v) in sorted(config.items()):
           logger.info (" {k} : {v}".format(k=k, v=v))
-      d = get_sml_config()
+      d = config
       d = {config.get("section") : d[config.get("section")]} if config.get("section") in d.keys() else d
       s = "Top-level configuration variables"
       logger.info("\n" + s)
@@ -45,7 +44,7 @@ rule conf:
 rule conf_sections:
     """Print configuration sections. TODO: insert docstring from each rule file without running an import statement"""
     run:
-      d = get_sml_config()
+      d = config
       s = "Top-level configuration variables"
       logger.info(s)
       logger.info("=" * len(s))
@@ -109,7 +108,7 @@ rule rule_l:
 
 rule rulegraph:
     """Print rulegraph"""
-    output: rulegraph = "{prefix}.dot"
+    output: rulegraph = "{prefix}_rulegraph.dot"
     run:
         # see http://stackoverflow.com/questions/5136611/capture-stdout-from-a-script-in-python
         backup = sys.stdout
@@ -123,7 +122,7 @@ rule rulegraph:
 
 rule rulegraph_png:
     """Convert rulegraph to png"""
-    input: rulegraph = "{prefix}.dot"
-    output: png = "{prefix}.png"
+    input: rulegraph = "{prefix}_rulegraph.dot"
+    output: png = "{prefix}_rulegraph.png"
     shell: "dot -T png {input.rulegraph} -o {output.png}"
 

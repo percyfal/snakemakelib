@@ -1,0 +1,17 @@
+<!-- -*- jinja2 -*- -->
+{% if rseqc is defined %}
+  <h3>RSeQC summary</h3>
+  
+  <figure>
+    {{ rseqc['fig']['div']|indent(8) }}
+    <figcaption>RSeQC summary plots. The plots are based on raw data in 
+      <ol>
+	{% for uri, file in zip(rseqc['uri'], rseqc['file']) %}
+	  <li><a href="{{ uri }}" download="{{ file }}" draggable="true">{{ file }}</a></li>
+	{% endfor %}
+      </ol>
+
+    </figcaption>
+  </figure>
+
+{% endif %}

@@ -1,26 +1,30 @@
 # -*- snakemake -*-
 import os
 from snakemake.workflow import workflow
-from snakemakelib.io import set_temp_output
-from snakemakelib.config import update_sml_config, get_sml_config
+from snakemakelib.io import set_output
+from snakemakelib.utils import SmlTemplateEnv
+from snakemakelib.config import update_snakemake_config
 from snakemakelib.bio.ngs.targets import generic_target_generator
 
 def _merge_suffix(aligner, quantification=[]):
-    align_cfg = get_sml_config('bio.ngs.align.' + aligner)
+    align_cfg = config['bio.ngs.align.' + aligner]
     if aligner == "star":
         return align_cfg['align']['suffix'].replace('.bam', '_unique.bam')
     elif aligner in ["bowtie", "bowtie2"]:
         return '_unique.bam'
 
 def _merge_tx_suffix(aligner, quantification=[]):
-    align_cfg = get_sml_config('bio.ngs.align.' + aligner)
+    align_cfg = config['bio.ngs.align.' + aligner]
     if aligner == "star":
         return ".Aligned.toTranscriptome.out_unique.bam"
 
 def _find_transcript_bam(wildcards):
-    ngs_cfg = get_sml_config('bio.ngs.settings')
-    picard_cfg = get_sml_config('bio.ngs.qc.picard')
-    sources = generic_target_generator(tgt_re=ngs_cfg['sampleorg'].run_id_re, target_suffix = _merge_tx_suffix(ngs_cfg['aligner'], ngs_cfg['rnaseq']['quantification']), filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg)
+    ngs_cfg = config['bio.ngs.settings']
+    picard_cfg = config['bio.ngs.qc.picard']
+    sources = generic_target_generator(
+        tgt_re=ngs_cfg['sampleorg'].run_id_re,
+        target_suffix = _merge_tx_suffix(ngs_cfg['aligner'], ngs_cfg['rnaseq']['quantification']),
+        **ngs_cfg)
     sources = [src for src in sources if os.path.dirname(src).startswith(wildcards.prefix)]
     return sources
 
@@ -30,9 +34,11 @@ def find_scrnaseq_merge_inputs(wildcards):
 
     NB: these are *not* the transcript-specific alignment files.
     """
-    ngs_cfg = get_sml_config('bio.ngs.settings')
-    picard_cfg = get_sml_config('bio.ngs.qc.picard')
-    sources = generic_target_generator(tgt_re=ngs_cfg['sampleorg'].run_id_re, target_suffix = _merge_suffix(ngs_cfg['aligner'], ngs_cfg['rnaseq']['quantification']), filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg)
+    ngs_cfg = config['bio.ngs.settings']
+    sources = generic_target_generator(
+        tgt_re=ngs_cfg['sampleorg'].run_id_re, 
+        target_suffix = _merge_suffix(ngs_cfg['aligner'], ngs_cfg['rnaseq']['quantification']), 
+        **ngs_cfg)
     sources = [src for src in sources if os.path.dirname(src).startswith(wildcards.prefix)]
     return sources
 
@@ -59,9 +65,9 @@ config_default = {
     },
 }
 
-update_sml_config(config_default)
-main_cfg = get_sml_config('settings')
-ngs_cfg = get_sml_config('bio.ngs.settings')
+config = update_snakemake_config(config, config_default)
+main_cfg = config['settings']
+ngs_cfg = config['bio.ngs.settings']
 aligner = ngs_cfg['aligner']
 
 # Include necessary snakemakelib rules
@@ -83,23 +89,47 @@ if aligner in ["bowtie", "bowtie2"]:
 if workflow._workdir is None:
     raise Exception("no workdir set, or set after include of 'scrnaseq.workflow'; set workdir before include statement!")
 
-# Set temporary outputs
-set_temp_output(workflow, rules = main_cfg['temp_rules'] + main_cfg['temp_rules_default'], temp_filetypes=main_cfg['temp_filetypes'] + main_cfg['temp_filetypes_default'])
+# Set temporary and protected outputs
+set_output(workflow,
+           temp_rules = main_cfg['temp_rules'] + main_cfg['temp_rules_default'],
+           temp_filetypes=main_cfg['temp_filetypes'] + main_cfg['temp_filetypes_default'],
+           protected_rules = main_cfg['protected_rules'] + main_cfg['protected_rules_default'],
+           protected_filetypes=main_cfg['protected_filetypes'] + main_cfg['protected_filetypes_default'])
 
 ##################################################
 # Target definitions
 ##################################################
-ALIGN_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].run_id_re, src_re = ngs_cfg['sampleorg'].raw_run_re, target_suffix = _merge_suffix(aligner), filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],  **ngs_cfg)
+ALIGN_TARGETS = generic_target_generator(
+    tgt_re = ngs_cfg['sampleorg'].run_id_re,
+    src_re = ngs_cfg['sampleorg'].raw_run_re,
+    target_suffix = _merge_suffix(aligner),
+    **ngs_cfg)
 
-RSEQC_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, target_suffix = '.merge_rseqc/rseqc_qc_8.txt', src_re = ngs_cfg['sampleorg'].raw_run_re, filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg)
+RSEQC_TARGETS = generic_target_generator(
+    tgt_re = ngs_cfg['sampleorg'].sample_re,
+    target_suffix = '.merge_rseqc/rseqc_qc_8.txt',
+    src_re = ngs_cfg['sampleorg'].raw_run_re,
+    **ngs_cfg)
 
-RPKMFORGENES_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, target_suffix = '.merge.rpkmforgenes', src_re = ngs_cfg['sampleorg'].raw_run_re, filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg) if 'rpkmforgenes' in ngs_cfg['rnaseq']['quantification']  else []
+RPKMFORGENES_TARGETS = []
+if 'rpkmforgenes' in ngs_cfg['rnaseq']['quantification']:
+    RPKMFORGENES_TARGETS = generic_target_generator(
+        tgt_re = ngs_cfg['sampleorg'].sample_re,
+        target_suffix = '.merge.rpkmforgenes',
+        src_re = ngs_cfg['sampleorg'].raw_run_re,
+        **ngs_cfg) 
 
-RSEM_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, target_suffix = '.merge.tx.isoforms.results', src_re = ngs_cfg['sampleorg'].raw_run_re, filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg) + ['report/rsem.merge.tx.genes.csv', 'report/rsem.merge.tx.isoforms.csv'] if 'rsem' in ngs_cfg['rnaseq']['quantification']  else []
+RSEM_TARGETS = []
+if 'rsem' in ngs_cfg['rnaseq']['quantification']:
+    RSEM_TARGETS = generic_target_generator(
+        tgt_re = ngs_cfg['sampleorg'].sample_re,
+        target_suffix = '.merge.tx.isoforms.results',
+        src_re = ngs_cfg['sampleorg'].raw_run_re,
+        **ngs_cfg) + ['report/rsem.merge.tx.genes.csv', 'report/rsem.merge.tx.isoforms.csv']
 
 REPORT_TARGETS = ['report/star.Aligned.out.csv', 'report/star.Aligned.out.mapping_summary.html']
 
-picard_config = get_sml_config("bio.ngs.qc.picard")
+picard_config = config["bio.ngs.qc.picard"]
 
 # Additional merge rule for transcript alignment files
 rule scrnaseq_picard_merge_sam_transcript:
@@ -131,25 +161,14 @@ rule scrnaseq_qc:
            rulegraph = os.path.join("{path}", "scrnaseq_all.png")
     output: html = os.path.join("{path}", "scrnaseq_summary.html")
     run:
-        df_star = pd.read_csv(input.starcsv, index_col=0)
-        df_rd = pd.read_csv(input.rseqc_read_distribution, index_col=0)
-        df_gc = pd.read_csv(input.rseqc_gene_coverage, index_col=0)
-        uri = {'rd_uri':data_uri(input.rseqc_read_distribution), 'rd_file':input.rseqc_read_distribution,
-               'gc_uri':data_uri(input.rseqc_gene_coverage), 'gc_file':input.rseqc_gene_coverage,
-               'star_uri':data_uri(input.starcsv), 'star_file' : input.starcsv,
-               'rsem_genes_file' : input.rsemgenes, 'rsem_isoforms_file' : input.rsemisoforms}
-        rseqc_d = make_rseqc_summary_plots(df_rd, df_gc)
-        samples = list(df_star.index)
-        star_d = make_star_alignment_plots(df_star, samples)
-        workflow_target = os.path.splitext(os.path.basename(input.rulegraph))[0]
-        tp = jinja2.Template(open(os.path.join(sml_templates_path(), 'workflow_scrnaseq_qc.html')).read())
+        d = {}
+        d.update({'rseqc' : make_rseqc_summary_plots(input.rseqc_read_distribution, input.rseqc_gene_coverage)})
+        d.update({'star'  : make_star_alignment_plots(input.starcsv)})
+        d.update({'rulegraph' : {'uri' : data_uri(input.rulegraph), 'file' : input.rulegraph, 'fig' : input.rulegraph, 'target' : 'scrnaseq_all'}})
+        d.update({'rsem' : {'file': [input.rsemgenes, input.rsemisoforms]}})
+        tp = SmlTemplateEnv.get_template('workflow_scrnaseq_qc.html')
         with open(output.html, "w") as fh:
-            fh.write(static_html(tp, **{'rseqc_plots' : rseqc_d['plots'], 
-                                        'star_plots' : star_d['plots'], 
-                                        'star_table' : star_d['table'], 
-                                        'rulegraph' : data_uri(input.rulegraph),
-                                        'workflow_target' : workflow_target,
-                                        'uri' : uri}))
+            fh.write(static_html(tp, **d))
 
 rule scrnaseq_pca:
     input: csv = os.path.join("{path}", "rsem.merge.tx.{type}.csv")

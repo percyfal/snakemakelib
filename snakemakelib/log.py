@@ -68,3 +68,5 @@ class LoggerManager(object):
             LoggerManager._loggers[name] = logging.getLogger(str(name))
             LoggerManager._loggers[name].addHandler(LoggerManager._ch)
             return LoggerManager._loggers[name]
+        else:
+            logging.warn("Trying to get already existing logger")

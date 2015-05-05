@@ -1,3 +1,4 @@
+<!-- -*- jinja2 -*- -->
 <h3>Workflow configuration</h3>
 
 {% if rulegraph is defined %}
@@ -9,23 +10,23 @@ snakemake target {{ rulegraph['target'] }}. The workflow can be
 launched by running
 
 <pre><code>
-snakemake --rerun-incomplete atacseq_all
+    snakemake --rerun-incomplete atacseq_all
 </code></pre>
 
 If you have the SLURM queue manager, you can run
 
 <pre><code>
-snakemake --rerun-incomplete atacseq_all --drmaa " -t TIME -A account -p core -n {threads}"
+    snakemake --rerun-incomplete atacseq_all --drmaa " -t TIME -A account -p core -n {threads}"
 </code></pre>
 
 <h4>Workflow illustration</h4>
 <figure>
-	<img src="{{ rulegraph['uri'] | indent(8) }}" alt="{{ rulegraph['target'] | indent(8) }}" width="600"/>
-	<figcaption> Rulegraph representation of workflow; target {{ rulegraph['target'] | indent(8) }} </figcaption>
+  <img src="{{ rulegraph['uri'] | indent(8) }}" alt="{{ rulegraph['target'] | indent(8) }}" width="600"/>
+  <figcaption> Rulegraph representation of workflow; target {{ rulegraph['target'] | indent(8) }} </figcaption>
 </figure>
 
 {% else %}
-
-<p>No rulegraph has been defined</p>
-
+  
+  <p>No rulegraph has been defined</p>
+  
 {% endif %}

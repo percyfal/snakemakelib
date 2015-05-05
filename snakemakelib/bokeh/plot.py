@@ -139,6 +139,10 @@ def lineplot(df, x=None, y=None, groups = [],
         x = getattr(g.get_group(i), xname)
         y = getattr(g.get_group(i), yname)
         fig.line(x, y, legend=i, color = colors[i])
+    for k in xaxis.keys():
+        [setattr(x, k, xaxis[k]) for x in fig.xaxis]
+    for k in yaxis.keys():
+        [setattr(y, k, yaxis[k]) for y in fig.yaxis]
     return (fig)
 
 def dotplot(y, df, groups=[],

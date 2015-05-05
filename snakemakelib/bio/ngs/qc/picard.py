@@ -68,12 +68,9 @@ class Metrics(pd.DataFrame):
         
     def plot_metrics(self, **kwargs):
         plist = []
-        for (x,y,g) in self.plots:
-            fig = scatterplot2(x=x, y=y, df=self, groups=g,
-                               xaxis = {'axis_label' : x, 'major_label_orientation' : np.pi/3, 'axis_label_text_font_size' : '10pt'},
-                              yaxis = {'axis_label' : y, 'major_label_orientation' : np.pi/3, 'axis_label_text_font_size' : '10pt'},
-                               title="",
-                              **kwargs)
+        for kw in self.plots:
+            kwargs.update(kw)
+            fig = scatterplot2(df=self, **kwargs)
             plist.append(fig)
         return plist
         
@@ -81,33 +78,48 @@ class HistMetrics(Metrics):
     def __init__(self, *args, **kwargs):
         super(HistMetrics, self).__init__(*args, **kwargs)
         self._metadata = {'type' : 'histogram'}
+        self.kw = {}
 
     def plot_hist(self, **kwargs):
-        fig = lineplot(self, groups=["Sample"], title="")
+        kwargs.update(self.kw)
+        fig = lineplot(self, **kwargs)
         return fig
     
 class AlignMetrics(Metrics):
     def __init__(self, *args, **kwargs):
         super(AlignMetrics, self).__init__(*args, **kwargs)
-        self.plots = [('Sample', 'PCT_PF_READS_ALIGNED', 'CATEGORY')]
+        self.plots = [{'x' : 'Sample', 'y' : 'PCT_PF_READS_ALIGNED', 'groups' : 'CATEGORY', 'y_range' : [0, 100], 'title' : 'Percent PF_READS aligned per sample',
+                        'xaxis' : {'axis_label' : 'Sample', 'major_label_orientation' : np.pi/3, 'axis_label_text_font_size' : '10pt'},
+                        'yaxis' : {'axis_label' : 'Percentage reads', 'major_label_orientation' : np.pi/3, 'axis_label_text_font_size' : '10pt'}}]
 
 class InsertMetrics(Metrics):
     def __init__(self, *args, **kwargs):
         super(InsertMetrics, self).__init__(*args, **kwargs)
-        self.plots = [('Sample','MEAN_INSERT_SIZE', [])]
+        self.plots = [{'x' : 'Sample', 'y' : 'MEAN_INSERT_SIZE', 'title' : 'Mean insert size',
+                        'xaxis' : {'axis_label' : 'Sample', 'major_label_orientation' : np.pi/3, 'axis_label_text_font_size' : '10pt'},
+                        'yaxis' : {'axis_label' : 'Mean insert size', 'major_label_orientation' : np.pi/3, 'axis_label_text_font_size' : '10pt'}}]
 
 class InsertHist(HistMetrics):
     def __init__(self, *args, **kwargs):
         super(InsertHist, self).__init__(*args, **kwargs)
+        self.kw = {'groups' : ["Sample"], 'title' : "Insert size distribution",
+                   'xaxis' : {'axis_label' : 'Insert size', 'axis_label_text_font_size' : '10pt'},
+                   'yaxis' : {'axis_label' : 'Count', 'axis_label_text_font_size' : '10pt'}}
         
 class DuplicationMetrics(Metrics):
     def __init__(self, *args, **kwargs):
         super(DuplicationMetrics, self).__init__(*args, **kwargs)
-        self.plots = [('Sample', 'PERCENT_DUPLICATION', [])]
+        self.plots = [{'x' : 'Sample', 'y' : 'PERCENT_DUPLICATION', 'y_range' : [0, 100], 'title' : 'Percent duplication per sample',
+                        'xaxis' : {'axis_label' : 'Sample', 'major_label_orientation' : np.pi/3, 'axis_label_text_font_size' : '10pt'},
+                        'yaxis' : {'axis_label' : 'Percent duplication', 'major_label_orientation' : np.pi/3, 'axis_label_text_font_size' : '10pt'}}]
 
 class DuplicationHist(HistMetrics):
+    # see http://sourceforge.net/p/picard/wiki/Main_Page/#q-what-is-meaning-of-the-histogram-produced-by-markduplicates
     def __init__(self, *args, **kwargs):
         super(DuplicationHist, self).__init__(*args, **kwargs)
+        self.kw = {'groups' : ["Sample"], 'title' : "Return of investment",
+                   'xaxis' : {'axis_label' : 'Coverage multiple', 'axis_label_text_font_size' : '10pt'},
+                   'yaxis' : {'axis_label' : 'Multiple of additional coverage', 'axis_label_text_font_size' : '10pt'}}
         
 def _read_metrics(infile):
     if infile.endswith(".align_metrics.metrics.csv"):

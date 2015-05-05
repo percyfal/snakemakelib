@@ -174,7 +174,7 @@ REPORT_TARGETS = ["report/atacseq_all_rulegraph.png", "report/atacseq_summary.ht
 # Rules
 rule atacseq_all:
     """Run ATAC-seq pipeline"""
-    input: DFILTER_TARGETS + ZINBA_TARGETS + MACS2_TARGETS + DUP_METRICS_TARGETS + ALIGN_METRICS_TARGETS + INSERT_METRICS_TARGETS
+    input: DFILTER_TARGETS + ZINBA_TARGETS + MACS2_TARGETS + DUP_METRICS_TARGETS + ALIGN_METRICS_TARGETS + INSERT_METRICS_TARGETS + REPORT_TARGETS
 
 rule atacseq_align:
     """Run ATAC-seq alignment"""

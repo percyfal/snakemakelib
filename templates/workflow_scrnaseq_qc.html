@@ -1,19 +1,28 @@
+<!-- -*- jinja2 -*- -->
 <!doctype html>
 <html lang="en">
-<head>
+  <head>
+    <meta charset="utf-8">
+    <title>Single-cell RNA-Seq summary report"</title>
 
-<meta charset="utf-8">
-<title>{{ title if title else "Single-cell RNA-Seq summary report" }}</title>
-{{ plot_resources|indent(8) }}
-<style>
-{{ css|indent(8) }}
-</style>
-{{ rseqc_plots['script']|indent(8) }}
-{{ star_plots['script']|indent(8) }}
-{{ star_table['script']|indent(8) }}
-</head>
-<body>
-<h1>{{ title if title else "Single-cell RNA-Seq summary report" }}</h1>
+    {{ plot_resources|indent(8) }}
+    
+    <style>
+      {{ css|indent(8) }}
+    </style>
+
+    <!-- Include bokeh script commands -->
+    {% if rseqc is defined %}
+      {{ rseqc['fig']['script'] | indent(8) }}
+    {% endif %}
+
+    {{ rseqc_plots['script']|indent(8) }}
+    {{ star_plots['script']|indent(8) }}
+    {{ star_table['script']|indent(8) }}
+  </head>
+  <body>
+
+    <h1>Single-cell RNA-Seq summary report</h1>
 
 <h3>Star alignment summary</h3>
 

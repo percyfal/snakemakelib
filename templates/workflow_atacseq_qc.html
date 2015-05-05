@@ -1,81 +1,83 @@
+<!-- -*- jinja2 -*- -->
 <!doctype html>
 <html lang="en">
-	<head>
-		<meta charset="utf-8">
-		<title>ATAC-seq QC summary report</title>
-
-		{{ plot_resources|indent(8) }}
-
-		<style>
-		{{ css|indent(8) }}
-		</style>
-
-		<!-- Include bokeh script commands -->
-
-		<!-- cutadapt -->
-		{% if cutadapt is defined %}
-		{{ cutadapt['fig']['script'] | indent(8) }}
-		{% endif %}
-
-		<!-- picard -->
-		{% if picard is defined %}
-		{% if picard['InsertMetrics'] is defined %}
-		{% for key, val in picard['InsertMetrics'].items() %}
-		{{ val['fig']['script'] | indent(8) }}
-		{% endfor %}
-		{% endif %}
-		{% if picard['AlignMetrics'] is defined %}
-		{% for key, val in picard['AlignMetrics'].items() %}
-		{{ val['fig']['script'] | indent(8) }}
-		{% endfor %}
-		{% endif %}
-		{% if picard['DuplicationMetrics'] is defined %}
-		{% for key, val in picard['DuplicationMetrics'].items() %}
-		{{ val['fig']['script'] | indent(8) }}
-		{% endfor %}
-		{% endif %}
-		{% endif %}
-
-	</head>
-	<body>
-
-		<h1>ATAC-seq workflow</h1>
-
-		The current ATAC-seq workflow does the following steps:
-		
-		<ol>
-			<li>Adapter trimming (if <it>config</it> set)</li>
-			<li>Alignment with bowtie</li>
-			<li>Peak calling with any of MACS2, zinba, and dfilter</li>
-			<li>QC metrics with picard</li>
-		</ol>
-
-		{% include 'workflow.html' ignore missing %}
-
-		<h1>ATAC-seq QC summary report</h1>
-
-		<h2>Run-level QC metrics</h2>
-
-		{% include 'cutadapt.html' ignore missing %}
-
-		<h2>Sample-level QC metrics</h2>
-		<h3>Picard metrics</h3>
-
-		Things to look out for:
-		<ol>
-			<li>Insertion size histograms should show
-			    periodical behaviour reflecting integer
-			    values of nucleosomes (periodicity approx
-			    200 bp = nucleosome size 147 bp + two
-			    times Tn5 binding = 2 * 38 bp). In
-			    addition, DNA helical length (10 bp)
-			    should also be seen</li>
-			<li>Duplication metrics can be high,
-			reflecting the fact that there are only
-			limited number of accessible cleavage sites</li>
-			
-		</ol>
-		{% include 'picard.html' ignore missing %}
-
-	</body>
+  <head>
+    <meta charset="utf-8">
+    <title>ATAC-seq QC summary report</title>
+    
+    {{ plot_resources|indent(8) }}
+    
+    <style>
+      {{ css|indent(8) }}
+    </style>
+    
+    <!-- Include bokeh script commands -->
+    
+    <!-- cutadapt -->
+    {% if cutadapt is defined %}
+      {{ cutadapt['fig']['script'] | indent(8) }}
+    {% endif %}
+    
+    <!-- picard -->
+    {% if picard is defined %}
+      {% if picard['InsertMetrics'] is defined %}
+	{% for key, val in picard['InsertMetrics'].items() %}
+	  {{ val['fig']['script'] | indent(8) }}
+	{% endfor %}
+      {% endif %}
+      {% if picard['AlignMetrics'] is defined %}
+	{% for key, val in picard['AlignMetrics'].items() %}
+	  {{ val['fig']['script'] | indent(8) }}
+	{% endfor %}
+      {% endif %}
+      {% if picard['DuplicationMetrics'] is defined %}
+	{% for key, val in picard['DuplicationMetrics'].items() %}
+	  {{ val['fig']['script'] | indent(8) }}
+	{% endfor %}
+      {% endif %}
+    {% endif %}
+    
+  </head>
+  <body>
+    
+    <h1>ATAC-seq workflow</h1>
+    
+    The current ATAC-seq workflow does the following steps:
+    
+    <ol>
+      <li>Adapter trimming (if <it>config</it> set)</li>
+      <li>Alignment with bowtie</li>
+      <li>Peak calling with any of MACS2, zinba, and dfilter</li>
+      <li>QC metrics with picard</li>
+    </ol>
+    
+    {% include 'workflow.html' ignore missing %}
+    
+    <h1>ATAC-seq QC summary report</h1>
+    
+    <h2>Run-level QC metrics</h2>
+    
+    {% include 'cutadapt.html' ignore missing %}
+    
+    <h2>Sample-level QC metrics</h2>
+    <h3>Picard metrics</h3>
+    
+    Things to look out for:
+    <ol>
+      <li>
+	Insertion size histograms should show periodical behaviour
+	reflecting integer values of nucleosomes (periodicity approx
+	200 bp = nucleosome size 147 bp + two times Tn5 binding = 2 *
+	38 bp). In addition, DNA helical length (10 bp) should also be
+	seen
+      </li>
+	
+      <li>
+	Duplication metrics can be high, reflecting the fact that
+	there are only limited number of accessible cleavage sites
+      </li>
+    </ol>
+    {% include 'picard.html' ignore missing %}
+    
+  </body>
 </html>

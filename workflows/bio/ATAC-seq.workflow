@@ -139,7 +139,7 @@ if 'dfilter' in atac_cfg['peakcallers']:
         target_suffix = DFILTER_TARGET_SUFFIX, 
         **ngs_cfg) 
 
-MACS2_TARGET_SUFFIX = ".sort.merge.offset_peaks.bed"
+MACS2_TARGET_SUFFIX = ".sort.merge.offset_peaks.xls"
 MACS2_TARGETS = []
 if 'macs2' in atac_cfg['peakcallers']:
     MACS2_TARGETS = generic_target_generator(

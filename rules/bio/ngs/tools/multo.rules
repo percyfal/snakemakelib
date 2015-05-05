@@ -31,5 +31,5 @@ rule multo_transcriptome_gene:
             multohome = multo_cfg['home'],
             options = multo_cfg['options']
     threads: multo_cfg['threads']
-    output: os.path.normpath(os.path.join(multo_cfg['home'], "files", "{species}", "{assembly}", "MULfiles", "{assembly}_{annotationtype}_geneLevel_{kmin}_{kmax}"))
+    output: os.path.join("files", "{species}", "{assembly}", "MULfiles", "{assembly}_{annotationtype}_geneLevel_{kmin}-{kmax}")
     shell: "cd {params.multohome} && " + python2 + " && python {params.cmd} {params.options} -s {wildcards.species} -a {wildcards.assembly} -t {wildcards.annotationtype} -k {wildcards.kmin} -m {wildcards.kmax} -p {threads}"

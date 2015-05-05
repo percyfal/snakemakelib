@@ -1,12 +1,12 @@
 # -*- snakemake -*-
 import os
 import shutil
-from snakemakelib.config import update_sml_config, get_sml_config
+from snakemakelib.config import update_snakemake_config
 
 include: '../settings.rules'
 include: '../tools/bedtools.rules'
 
-ngs_cfg = get_sml_config('bio.ngs.settings')
+ngs_cfg = config['bio.ngs.settings']
 
 config_default = {
     'bio.ngs.rnaseq.rpkmforgenes' : {
@@ -17,10 +17,10 @@ config_default = {
     },
 }
 
-update_sml_config(config_default)
+config = update_snakemake_config(config, config_default)
 
-rfg_cfg = get_sml_config('bio.ngs.rnaseq.rpkmforgenes')
-python2 = get_sml_config('comp.settings')['python2']['activate_cmd']
+rfg_cfg = config['bio.ngs.rnaseq.rpkmforgenes']
+python2 = config['comp.settings']['python2']['activate_cmd']
 
 # rpkmforgenes.py -readcount -fulltranscript -mRNAnorm -rmnameoverlap -bothendsceil -n 15_115 -i /home/asab/perlmann/nobackup/mapping/star_mm10egfp_T.Perlmann_14_01/15_115/15_115_unique.bam -p 1 -a /proj/b2014109/private/genomes/annotation/refGene_140508_norandom_egfp.txt -u /proj/b2014109/private/genomes/MULTo1.0/mm10_20-255/ -o test_refseq_rpkms.txt    
 rule rnaseq_rpkmforgenes_from_bam:

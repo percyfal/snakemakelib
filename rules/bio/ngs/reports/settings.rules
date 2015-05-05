@@ -2,7 +2,7 @@
 import os
 import glob
 import math
-from snakemakelib.config import update_sml_config, get_sml_config
+from snakemakelib.config import update_snakemake_config
 from snakemakelib.utils import utc_time
 
 include: '../settings.rules'
@@ -20,4 +20,4 @@ config_default = {
     },
 }
 
-update_sml_config(config_default)
+config = update_snakemake_config(config, config_default)

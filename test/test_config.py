@@ -3,7 +3,7 @@
 import unittest
 import logging
 from nose.tools import raises
-from snakemakelib.config import BaseConfig, init_sml_config, update_sml_config, get_sml_config
+from snakemakelib.config import BaseConfig, update_snakemake_config
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -152,22 +152,19 @@ class TestSmlConfig(unittest.TestCase):
         del self.default_nested
 
     def test_init_sml_config_from_dict(self):
-        init_sml_config({'foo':'bar'})
-        cfg = get_sml_config()
+        cfg = BaseConfig({'foo':'bar'})
         self.assertIsInstance(cfg, BaseConfig)
         self.assertDictEqual(cfg, {'foo': 'bar'})
 
     def test_init_sml_config(self):
         """Test initalizing the sml config object"""
-        init_sml_config(BaseConfig({'foo':'bar'}))
-        cfg = get_sml_config()
+        cfg = BaseConfig(BaseConfig({'foo':'bar'}))
         self.assertDictEqual(cfg, {'foo': 'bar'})
 
     def test_update_sml_config_from_init(self):
         """Test initializing the sml config object from an init"""
-        init_sml_config(self.cfg)
-        update_sml_config(self.cfg_nested)
-        cfg = get_sml_config()
+        cfg = BaseConfig(self.cfg)
+        cfg = update_snakemake_config(cfg, self.cfg_nested)
         self.assertDictEqual(cfg, {'bar': {'bar': {'bar': 'customfoo'}, 'foo': 'customfoo'}})
 
     def test_update_sml_config_with_default(self):
@@ -184,23 +181,16 @@ class TestSmlConfig(unittest.TestCase):
            once so that custom changes are reflected in rules (is this
            true?)
         """
-        init_sml_config(self.cfg)
-        update_sml_config(self.default)
-        cfg = get_sml_config()
+        cfg = update_snakemake_config(self.cfg, self.default)
         self.assertDictEqual(cfg, {'bar': {'bar': 'foo', 'foo': 'customfoo'}, 'foo': 'bar'})
 
     def test_update_sml_config_with_default_nested(self):
-        init_sml_config(self.cfg)
-        update_sml_config(self.default_nested)
-        cfg = get_sml_config()
+        cfg = update_snakemake_config(self.cfg, self.default_nested)
         self.assertDictEqual(cfg, {'foo': 'bar', 'bar': {'foo': 'customfoo', 'bar': {'foo': 'bar'}}})
-
 
     def test_update_sml_config_with_both_nested(self):
         """Test updating a configuration object where both are nested. Note that in this example  self.cfg_nested has a key (section) not defined in default so a warning should be raised. In other words, at a given level, if default is a BaseConfig, the keys in config should be a subset of keys in default."""
-        init_sml_config(self.cfg_nested)
-        update_sml_config(self.default_nested)
-        cfg = get_sml_config()
+        cfg = update_snakemake_config(self.cfg_nested, self.default_nested)
         self.assertDictEqual(cfg, {'foo': 'bar', 'bar': {'foo': 'foobar', 'bar': {'foo': 'bar', 'bar': 'customfoo'}}})
 
     @raises(TypeError)
@@ -211,29 +201,27 @@ class TestSmlConfig(unittest.TestCase):
                 'bar' : 'test'
                 })
             })
-        init_sml_config(cfg)
-        update_sml_config(self.default_nested)
+        cfg = update_snakemake_config(cfg, self.default_nested)
 
     @raises(TypeError)
     def test_update_sml_config_with_string(self):
         cfg = "foo"
-        update_sml_config(cfg)
+        update_snakemake_config(cfg, {})
 
     def test_get_sml_config_section(self):
         """Test getting a config section section"""
-        init_sml_config(self.cfg_nested)
-        update_sml_config(self.default_nested)
-        cfg = get_sml_config(section="bar")
-        self.assertDictEqual(cfg, {'bar': {'bar': 'customfoo', 'foo': 'bar'}, 'foo': 'foobar'})
+        cfg = BaseConfig(self.cfg_nested)
+        cfg = update_snakemake_config(cfg, self.default_nested)
+        self.assertDictEqual(cfg['bar'], {'bar': {'bar': 'customfoo', 'foo': 'bar'}, 'foo': 'foobar'})
 
     def test_set_sml_config_with_list(self):
         """Test setting an sml_config object with a list value"""
-        init_sml_config(self.cfg_list)
-        cfg = get_sml_config()
+        cfg = BaseConfig(self.cfg_list)
         self.assertIsInstance(cfg['bar'], list)
         self.assertListEqual(cfg['bar'], ['foo', 'bar'])
 
     def test_update_sml_config_with_function(self):
         """Test setting an sml_config object with a function that requires a parameter"""
-        init_sml_config(self.cfg)
-        update_sml_config({'foo':lambda x: x})
+        cfg = BaseConfig(self.cfg)
+        cfg = update_snakemake_config(cfg, {'foo':lambda x: x})
+        self.assertEqual(str(type(dict(cfg)['foo'])), "<class 'function'>")

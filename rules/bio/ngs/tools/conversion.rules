@@ -1,17 +1,17 @@
 # -*- snakemake -*-
 # Miscallaneous tools for conversion between file formats
 import os
-from snakemakelib.config import update_sml_config, get_sml_config
+from snakemakelib.config import update_snakemake_config
 
 include: '../settings.rules'
-
-sml_config = get_sml_config()
 
 config_default = { 
     'bio.ngs.tools.conversion' : {
     },
 }
 
+config = update_snakemake_config(config, config_default)
+    
 rule gtf_to_bed12:
     """Convert gtf file to bed12 format.
     """

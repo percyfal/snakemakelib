@@ -1,16 +1,14 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.config import update_sml_config, get_sml_config
+from snakemakelib.config import update_snakemake_config
 
 include: '../settings.rules'
 
-sml_config = get_sml_config()
-
 config_default = { 
     'bio.ngs.tools.samtools' : {
-        'ref' : sml_config['bio.ngs.settings']['db']['ref'],
+        'ref' : config['bio.ngs.settings']['db']['ref'],
         'cmd' : "samtools",
-        'threads' : sml_config['bio.ngs.settings']['threads'],
+        'threads' : config['bio.ngs.settings']['threads'],
         'options' : "",
         'index' : {
             'options' : '',
@@ -18,9 +16,9 @@ config_default = {
     },
 }
 
-update_sml_config(config_default)
+config = update_snakemake_config(config, config_default)
 
-samtools_cfg = sml_config['bio.ngs.tools.samtools']
+samtools_cfg = config['bio.ngs.tools.samtools']
 
 rule samtools_sam2bam:
     """Convert sam file to bam."""

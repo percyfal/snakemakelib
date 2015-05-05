@@ -8,6 +8,7 @@ from bokeh.models.widgets import VBox, HBox, TableColumn, DataTable
 from bokeh.plotting import figure, output_file, show, gridplot
 from bokeh.palettes import brewer
 from snakemakelib.report.utils import recast, trim_header
+from snakemakelib.bokeh.plot import scatterplot, QCArgs
 
 def collect_star_alignment_results(input, samples):
     """Collect star alignment results"""
@@ -21,7 +22,7 @@ def collect_star_alignment_results(input, samples):
             df = df.append(pd.DataFrame(d, index=[s]))
     return df
 
-def make_star_alignment_plots(df, samples, do_qc=False, min_reads=200000, min_map=40):
+def make_star_alignment_plots(df, samples, do_qc=False, min_reads=200000, min_map=40, max_unmap=20):
     """Make star alignment plots"""
     # Currently hover tool and categorical variables don't play
     # nicely together in bokeh: see
@@ -31,6 +32,7 @@ def make_star_alignment_plots(df, samples, do_qc=False, min_reads=200000, min_ma
     df['i'] = list(range(0, len(df.index)))
     df['samples'] = samples
     df['mismatch_sum'] = df['Mismatch_rate_per_base__PCT'] + df['Deletion_rate_per_base'] + df['Insertion_rate_per_base']
+    df['PCT_of_reads_unmapped'] = df['PCT_of_reads_unmapped:_other'] + df['PCT_of_reads_unmapped:_too_many_mismatches'] + df['PCT_of_reads_unmapped:_too_short']
 
     colors = brewer["PiYG"][3]
     colormap = {'False' : colors[0], 'True' : colors[1]}
@@ -42,6 +44,7 @@ def make_star_alignment_plots(df, samples, do_qc=False, min_reads=200000, min_ma
         TableColumn(field="Mismatch_rate_per_base__PCT", title="Mismatch rate per base (%)"),
         TableColumn(field="Insertion_rate_per_base", title="Insertion rate per base (%)"),
         TableColumn(field="Deletion_rate_per_base", title="Deletion rate per base (%)"),
+        TableColumn(field="PCT_of_reads_unmapped", title="Unmapped reads (%)"),
     ]
         
     source = ColumnDataSource(df)
@@ -50,89 +53,71 @@ def make_star_alignment_plots(df, samples, do_qc=False, min_reads=200000, min_ma
 
     # Default tools, plot_config and tooltips
     TOOLS="pan,box_zoom,box_select,lasso_select,reset,save,hover"
-    plot_config=dict(plot_width=300, plot_height=300, tools=TOOLS, title_text_font_size='12pt')
+    plot_config=dict(plot_width=300, plot_height=300, tools=TOOLS, title_text_font_size='12pt',
+                     x_axis_type = None, y_axis_type = "log",
+                     xaxis = {'axis_label' : 'sample', 'axis_label_text_font_size' : '10pt', 'major_label_orientation' : np.pi/3},
+                     yaxis = {'axis_label' : 'reads', 'axis_label_text_font_size' : '10pt', 'major_label_orientation' : np.pi/3},
+                     x_range = [0, len(samples)]
+                     )
+
     # Number of input reads
     c1 = list(map(lambda x: colormap[str(x)], df['Number_of_input_reads'] < min_reads)) if do_qc else "blue"
-    p1 = figure(x_range=[0, len(samples)], x_axis_type=None, y_axis_type="log", title="Number of input reads", **plot_config)
-    if do_qc:
-        p1.line(x=[0,len(samples)], y=[min_reads, min_reads], line_dash=[2,4])
-    p1.circle(x='i', y='Number_of_input_reads', color=c1, source=source)
-    p1.xaxis.major_label_orientation = np.pi/3
-    p1.grid.grid_line_color = None
-    hover = p1.select(dict(type=HoverTool))
-    hover.tooltips = [
-        ('Sample', '@samples'),
-        ('Num_input_reads', '@Number_of_input_reads'),
-    ]
+    qc = QCArgs(x=[0,len(samples)], y=[min_reads, min_reads], line_dash=[2,4]) if do_qc else None
+    p1 = scatterplot(x='i', y='Number_of_input_reads', source=source, color=c1, qc=qc,
+                     title="Number of input reads",
+                     tooltips = [{'type':HoverTool, 'tips' : [('Sample', '@samples'),('Reads', '@Number_of_input_reads'),]}],
+                     **plot_config)
 
     # Uniquely mapped reads
+    plot_config.update({'yaxis_type' : 'linear', 'axis_label' : 'percent (%)'})
     c2 = list(map(lambda x: colormap[str(x)], df['Uniquely_mapped_reads_PCT'] < min_map))  if do_qc else "blue"
-    p2 = figure(x_range=[0, len(samples)], y_range=[-5,105], x_axis_type=None, title="Uniquely mapping reads", **plot_config)
-    if do_qc:
-        p2.line(y=[min_map,min_map], x=[0, len(samples)], line_dash=[2,4])
-    p2.circle(x='i', y='Uniquely_mapped_reads_PCT', color=c2, source=source)
-    p2.xaxis.major_label_orientation = np.pi/3
-    p2.grid.grid_line_color = None
-    hover = p2.select(dict(type=HoverTool))
-    hover.tooltips = [
-        ('Sample', '@samples'),
-        ('Pct_mapped_reads', '@Uniquely_mapped_reads_PCT'),
-    ]
+    qc = QCArgs(x=[0,len(samples)], y=[min_map, min_map], line_dash=[2,4]) if do_qc else None
+    p2 = scatterplot(x='i', y='Uniquely_mapped_reads_PCT', source=source, color=c2, qc=qc,
+                     title="Uniquely mapping reads",
+                     tooltips = [{'type':HoverTool, 'tips' : [('Sample', '@samples'),('Pct_mapped', '@Uniquely_mapped_reads_PCT'),]}],
+                     **plot_config)
 
-    # Uniquely mapped reads vs number of input reads
-    c3 = list(map(lambda x: colormap[str(x)], (df['Uniquely_mapped_reads_PCT'] < min_map) | (df['Number_of_input_reads'] < min_reads)))  if do_qc else "blue"
-    p3 = figure(title="Number of input reads vs uniquely mapping reads", y_axis_type="log", **plot_config)
-    p3.circle(y='Number_of_input_reads', x='Uniquely_mapped_reads_PCT', color=c3, source=source)
-    p3.xaxis.major_label_orientation = np.pi/3
-    p3.grid.grid_line_color = None
-    hover = p3.select(dict(type=HoverTool))
-    hover.tooltips = [
-        ('Sample', '@samples'),
-        ('Num_input_reads', '@Number_of_input_reads'),
-        ('Pct_mapped_reads', '@Uniquely_mapped_reads_PCT'),
-    ]
-
+    # Mapping reads in general
+    c3 = list(map(lambda x: colormap[str(x)], df['PCT_of_reads_unmapped'] > max_unmap))  if do_qc else "blue"
+    qc = QCArgs(x=[0,len(samples)], y=[max_unmap, max_unmap], line_dash=[2,4]) if do_qc else None
+    p3 = scatterplot(x='i', y='PCT_of_reads_unmapped',
+                     source=source, color=c3, qc=qc, title="Unmapped reads",
+                     tooltips = [{'type':HoverTool, 'tips' : [('Sample', '@samples'),('Pct_unmapped', '@PCT_of_reads_unmapped'),]}], **plot_config)
+    
     # Mismatch/indel rate
     plot_config['tools'] = TOOLS.replace("lasso_select,", "")
-    p4 = figure(title="Mismatch and indel rates", x_axis_type=None, **plot_config)
-    p4.circle(x='i', y='Mismatch_rate_per_base__PCT', color="blue", source=source)
-    p4.circle(x='i', y='Insertion_rate_per_base', color="red", source=source)
-    p4.circle(x='i', y='Deletion_rate_per_base', color="green", source=source)
-    p4.xaxis.major_label_orientation = np.pi/3
-    p4.grid.grid_line_color = None
-    hover = p4.select(dict(type=HoverTool))
-    hover.tooltips = [
-        ('Sample', '@samples'),
-        ('Mismatch rate per base', '@Mismatch_rate_per_base__PCT'),
-        ('Insertion rate per base', '@Insertion_rate_per_base'),
-        ('Deletion rate per base', '@Deletion_rate_per_base'),
-    ]
+    plot_config['yaxis'].update({'axis_label' : 'Rate per base'})
+    p4 = scatterplot(x='i', y = ['Mismatch_rate_per_base__PCT', 'Insertion_rate_per_base', 'Deletion_rate_per_base'],
+                color = ["blue", "red", "green"], source = source,
+                title="Mismatch and indel rates",
+                tooltips =  [{'type':HoverTool, 'tips' : [('Sample', '@samples'),
+                                                            ('Mismatch rate per base', '@Mismatch_rate_per_base__PCT'),
+                                                            ('Insertion rate per base', '@Insertion_rate_per_base'),
+                                                            ('Deletion rate per base', '@Deletion_rate_per_base'),
+                                                          ]},
+                                                          ],
+                **plot_config)
     select_tool = p4.select(dict(type=BoxSelectTool))
     select_tool.dimensions=['width']
-    p4.yaxis.axis_label = "Rate per base"
-    p4.xaxis.axis_label = "Sample"
 
     # Plot sum
+    plot_config['yaxis'].update({'axis_label' : 'Mismatch/indel sum'})
     c5 = list(map(lambda x: colormap[str(x)], df['mismatch_sum'] > 1.0))  if do_qc else "blue"
-    p5 = figure(title="Mismatch/indel sum", **plot_config)
-    p5.circle(x='i', y='mismatch_sum', color=c5, source=source)
+    qc = QCArgs(x=[0,len(samples)], y=[1.0, 1.0], line_dash=[2,4]) if do_qc else None
+    p5 = scatterplot(x='i', y='mismatch_sum',
+                     source=source, color=c5, qc=qc, title="Mismatch / indel sum",
+                     tooltips = [{'type':HoverTool, 'tips' : [('Sample', '@samples'),('Mismatch/indel rate per base', '@mismatch_sum'),]}], **plot_config)
     select_tool = p5.select(dict(type=BoxSelectTool))
     select_tool.dimensions=['width']
-    hover = p5.select(dict(type=HoverTool))
-    hover.tooltips = [
-        ('Sample', '@samples'),
-        ('Mismatch/indel rate per base', '@mismatch_sum'),
-    ]
-    p5.yaxis.axis_label = "Mismatch/indel sum"
 
     # Plot histogram of ratio
-    plot_config['tools'] = "pan,box_zoom,reset,save"
-    p6 = figure(title="Histogram of mismatch and indel rates", **plot_config)
-    hist, edges = np.histogram(df['mismatch_sum'], density=False, bins=50)
-    p6.quad(top=hist, bottom=0, left=edges[:-1], right=edges[1:],
-       fill_color="#036564", line_color="#033649")
-    p6.xaxis.axis_label = "Mismatch/indel sum"
-    p6.yaxis.axis_label = "Count"
+    # plot_config['tools'] = "pan,box_zoom,reset,save"
+    # p6 = figure(title="Histogram of mismatch and indel rates", **plot_config)
+    # hist, edges = np.histogram(df['mismatch_sum'], density=False, bins=50)
+    # p6.quad(top=hist, bottom=0, left=edges[:-1], right=edges[1:],
+    #    fill_color="#036564", line_color="#033649")
+    # p6.xaxis.axis_label = "Mismatch/indel sum"
+    # p6.yaxis.axis_label = "Count"
 
     df_qc = None
     if do_qc:
@@ -145,4 +130,4 @@ def make_star_alignment_plots(df, samples, do_qc=False, min_reads=200000, min_ma
         d['filter'] = d['read_filter'] | d['map_filter'] | d['mismatch_filter']
         df_qc = pd.DataFrame(data=d, index=df.samples)
     
-    return {'plots' : VBox(children=[gridplot([[p1, p2, p3]]), HBox(children=[gridplot([[p4, p5]]), p6])]), 'table' : table, 'qctable' : df_qc}
+    return {'plots' : VBox(children=[gridplot([[p1, p2, p3]]), HBox(children=[gridplot([[p4, p5]])])]), 'table' : table, 'qctable' : df_qc}

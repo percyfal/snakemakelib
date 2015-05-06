@@ -24,6 +24,7 @@ setup(name = "snakemakelib",
       ],
       package_data = {
           'snakemakelib':[
+              'data/*',
               'rules/*',
               'examples/*',
               'templates/*',

@@ -53,6 +53,7 @@ config_default = {
         'qc' : {
             
         },
+        'quantification' :  ['rsem', 'rpkmforgenes']
     },
     'bio.ngs.settings' : {
         'aligner' : 'bowtie',
@@ -69,6 +70,7 @@ config = update_snakemake_config(config, config_default)
 main_cfg = config['settings']
 ngs_cfg = config['bio.ngs.settings']
 aligner = ngs_cfg['aligner']
+work_cfg = config['workflows.bio.scrnaseq']
 
 # Include necessary snakemakelib rules
 p = os.path.join(os.pardir, os.pardir, 'rules')
@@ -112,7 +114,7 @@ RSEQC_TARGETS = generic_target_generator(
     **ngs_cfg)
 
 RPKMFORGENES_TARGETS = []
-if 'rpkmforgenes' in ngs_cfg['rnaseq']['quantification']:
+if 'rpkmforgenes' in work_cfg['quantification']:
     RPKMFORGENES_TARGETS = generic_target_generator(
         tgt_re = ngs_cfg['sampleorg'].sample_re,
         target_suffix = '.merge.rpkmforgenes',
@@ -120,7 +122,7 @@ if 'rpkmforgenes' in ngs_cfg['rnaseq']['quantification']:
         **ngs_cfg) 
 
 RSEM_TARGETS = []
-if 'rsem' in ngs_cfg['rnaseq']['quantification']:
+if 'rsem' in work_cfg['quantification']:
     RSEM_TARGETS = generic_target_generator(
         tgt_re = ngs_cfg['sampleorg'].sample_re,
         target_suffix = '.merge.tx.isoforms.results',

@@ -38,7 +38,7 @@ def setUp():
             [HsMetrics(filename=x) for x in hs_metrics]
         )
     ))
-    pm = combine_metrics(mlist)
+    #pm = combine_metrics(mlist)
 
 class TestSampleReport(unittest.TestCase):
     """Test sample reports"""

@@ -8,6 +8,7 @@ import pandas as pd
 from bokeh.models import HoverTool, ColumnDataSource
 from bokeh.plotting import figure
 from bokeh.palettes import brewer
+from snakemake.report import data_uri
 from snakemakelib.log import LoggerManager
 from snakemakelib.bokeh.plot import dotplot
 
@@ -42,7 +43,8 @@ def collect_cutadapt_qc_results(inputfiles, sampleruns):
     df_ret = df.pivot_table(columns=["statistic"], values=["count"], index=["sample", "run"])
     return df_ret
 
-def make_cutadapt_summary_plot(df_summary):
+def make_cutadapt_summary_plot(inputfile):
+    df_summary = pd.read_csv(inputfile)
     df_summary["read1_pct"] = 100.0 * df_summary["Read 1 with adapter"]/df_summary["Total read pairs processed"]
     df_summary["read2_pct"] = 100.0 * df_summary["Read 2 with adapter"]/df_summary["Total read pairs processed"]
 
@@ -58,6 +60,6 @@ def make_cutadapt_summary_plot(df_summary):
                   yaxis={'axis_label' : "percent reads", 'major_label_orientation' : 1, 'axis_label_text_font_size' : '10pt'}, 
                   x_axis_type=None, y_axis_type="linear", 
                   y_range=[0, 105], size=3)
-    return fig
+    return {'fig' : fig, 'uri' : data_uri(inputfile), 'file' : inputfile}
 
 

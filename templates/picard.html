@@ -1,0 +1,44 @@
+<!-- -*- jinja2 -*- -->
+{% if picard is defined %}
+  <!-- Alignment metrics -->  
+  {% if picard['AlignMetrics'] is defined %}
+    <h4>Alignment metrics</h4>
+    
+    {% for key, val in picard['AlignMetrics'].items() %}
+      <figure>
+	{{ val['fig']['div'] | indent(8) }}
+	<figcaption>Alignment metrics plot for {{ key }}. The plots are based on raw data in <a href="{{ val['uri'][0] }}" download="{{ val['file'][0] }}" draggable="true">{{ val['file'][0] }}</a>.
+	</figcaption>
+      </figure>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Insertion metrics -->
+  {% if picard['InsertMetrics'] is defined %}
+    <h4>Insertion metrics</h4>
+    
+    {% for key, val in picard['InsertMetrics'].items() %}
+      <figure>
+	{{ val['fig']['div'] | indent(8) }}
+	<figcaption>Insertion metrics plot for {{ key }}. The plots are based on raw data in <a href="{{ val['uri'][0] }}" download="{{ val['file'][0] }}" draggable="true">{{ val['file'][0] }}</a> and <a href="{{ val['uri'][1] }}" download="{{ val['file'][1] }}" draggable="true">{{ val['file'][1] }}</a>
+	</figcaption>
+      </figure>
+    {% endfor %}
+  {% endif %}
+
+
+  <!-- Duplication metrics -->  
+  {% if picard['DuplicationMetrics'] is defined %}
+    <h4>Duplication metrics</h4>
+    
+    {% for key, val in picard['DuplicationMetrics'].items() %}
+      <figure>
+	{{ val['fig']['div'] | indent(8) }}
+	<figcaption>Duplication metrics plot for {{ key }}. The plots are based on raw data in <a href="{{ val['uri'][0] }}" download="{{ val['file'][0] }}" draggable="true">{{ val['file'][0] }}</a> and <a href="{{ val['uri'][1] }}" download="{{ val['file'][1] }}" draggable="true">{{ val['file'][1] }}</a>
+	</figcaption>
+      </figure>
+      
+    {% endfor %}
+  {% endif %}
+
+{% endif %}

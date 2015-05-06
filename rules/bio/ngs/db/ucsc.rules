@@ -11,7 +11,7 @@ include: "../settings.rules"
 config_default = {
     'bio.ngs.db.ucsc' : { 
         'ref' : config['bio.ngs.settings']['db']['ref'],
-        'index' : index,
+        'index' : "",
         'home' : "",
         'urldownload' : 'http://hgdownload.cse.ucsc.edu/goldenPath/',
         'gtfToGenePred' : {
@@ -26,14 +26,17 @@ config = update_snakemake_config(config, config_default)
 config['bio.ngs.db.ucsc']['index'] = index(
     ref = config['bio.ngs.db.ucsc']['ref'],
     index = config['bio.ngs.db.ucsc']['index'],
-    build = config['bio.ngs.settings']['db']['build']
+    build = config['bio.ngs.settings']['db']['build'],
+    application = "ucsc",
 )
 
 ucsc_cfg = config['bio.ngs.db.ucsc']
 
+if ucsc_cfg['home']:
+    os.environ["PATH"] += os.pathsep + ucsc_cfg['home']
 for (section, cfg) in ucsc_cfg.items():
     if isinstance(cfg, dict):
-        if cfg.get('cmd', "") and not is_installed(os.path.join(ucsc_cfg['home'], cfg.get('cmd', ""))):
+        if cfg.get('cmd', "") and not is_installed(cfg.get('cmd', "")):
             raise Exception("\nbio.ngs.db.ucsc: {prog} not installed or not in PATH\n".format(prog=cfg.get('cmd')))
 
 

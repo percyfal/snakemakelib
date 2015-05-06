@@ -3,7 +3,7 @@ import os
 import shutil
 import re
 
-def is_compressed(f, comp_re):
+def is_compressed(f, comp_re = "(.gz$|.zip$|.bzip2$)"):
     """Ascertain whether a file is compressed or not.
 
     Args:

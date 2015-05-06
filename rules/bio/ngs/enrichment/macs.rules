@@ -66,9 +66,9 @@ rule macs_callpeak_treatment_only_bam:
     params: cmd = macs_cfg[macs]['cmd'],
             options = macs_cfg['callpeak']['options']
     input: bam = "{prefix}.bam"
-    output: bed = "{prefix}_peaks.bed",
-            encodePeak = "{prefix}_peaks.encodePeak",
-            xls = "{prefix}_peaks.xls",
-            summits = "{prefix}_summits.bed"
+    output: xls = "{prefix}_peaks.xls"
+            #bed = "{prefix}_peaks.bed",
+            #summits = "{prefix}_summits.bed"
+            #encodePeak = "{prefix}_peaks.encodePeak",
     log: "{prefix}." + macs + ".log"
-    shell: python2 + " && {params.cmd} callpeak {params.options} -n {wildcards.prefix} -t {input.bam} -f BAM > {log}"
+    shell: python2 + " && {params.cmd} callpeak {params.options} -n {wildcards.prefix} -t {input.bam} -f BAM &> {log}"

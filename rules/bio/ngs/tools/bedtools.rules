@@ -37,7 +37,7 @@ for (section, cfg) in bedtools_cfg.items():
         if cfg.get('cmd', "") and not is_installed(os.path.join(bedtools_cfg['home'], cfg.get('cmd', ""))):
             raise Exception("\nbio.ngs.tools.bedtools: {prog} not installed or not in PATH\n".format(prog=cfg.get('cmd')))
 
-rule bedtool_bamtobed:
+rule bedtools_bamtobed:
     """Convert a bam file to bed format"""
     params: cmd = os.path.join(bedtools_cfg['home'], bedtools_cfg['bamtobed']['cmd']),
             options = bedtools_cfg['options']

@@ -2,8 +2,13 @@
 import os
 from datetime import datetime, date
 from snakemakelib.log import LoggerManager
+from jinja2 import Environment, PackageLoader
 
 smllogger = LoggerManager().getLogger(__name__)
+
+# TODO: move this elsewhere
+SmlTemplateEnv = Environment(loader = PackageLoader("snakemakelib", "../templates"))
+SmlTemplateEnv.globals.update(zip=zip)
 
 def utc_time():
     """Make an utc_time with appended 'Z'"""

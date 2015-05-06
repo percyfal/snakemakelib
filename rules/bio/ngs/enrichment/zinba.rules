@@ -88,7 +88,7 @@ config_default = {
 config = update_snakemake_config(config, config_default)
 
 config['bio.ngs.enrichment.zinba']['zinba_common']['twoBit'] = index(
-    ref = config['bio.ngs.settings']['ref'],
+    ref = config['bio.ngs.settings']['db']['ref'],
     index = config['bio.ngs.enrichment.zinba']['zinba_common']['twoBit'],
     application = 'ucsc',
     build = config['bio.ngs.settings']['db']['build'])

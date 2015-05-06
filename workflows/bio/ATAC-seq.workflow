@@ -1,19 +1,26 @@
 # -*- snakemake -*-
 import os
 import pysam
+from jinja2 import Environment, PackageLoader
 from snakemakelib.io import set_output
-from snakemakelib.config import update_sml_config, get_sml_config
+from snakemakelib.config import update_snakemake_config
 from snakemakelib.bio.ngs.targets import generic_target_generator
 
+##############################
+# Functions
+##############################
 def _merge_suffix():
     """Determine the merge suffix of the run files"""
-    atac_cfg = get_sml_config('workflows.bio.atac_seq')
+    atac_cfg = config['workflows.bio.atac_seq']
     if atac_cfg['trimadaptor']:
         return ".trimmed.sort.bam"
     else:
         return ".sort.bam"
 
+
+##############################
 # Default configuration settings custom-tailored for ATAC-Seq analysis
+##############################
 atac_config = {
     'workflows.bio.atac_seq' : {
         'aligner' : 'bowtie',
@@ -53,13 +60,15 @@ if atac_config['workflows.bio.atac_seq']['trimadaptor']:
 aligner = atac_config['workflows.bio.atac_seq']['aligner']
 key = 'bio.ngs.align.' + aligner
 
-update_sml_config(atac_config)
-update_sml_config({key : aligner_config[key]})
+config = update_snakemake_config(config, atac_config)
+config = update_snakemake_config(config, {key :  aligner_config[key]})
+ngs_cfg = config['bio.ngs.settings']
+main_cfg = config['settings']
+atac_cfg = config['workflows.bio.atac_seq']
 
-ngs_cfg = get_sml_config('bio.ngs.settings')
-main_cfg = get_sml_config('settings')
-atac_cfg = get_sml_config('workflows.bio.atac_seq')
-
+##############################
+# Include statements
+##############################
 p = os.path.join(os.pardir, os.pardir, 'rules')
 include: os.path.join(p, 'settings.rules')
 include: os.path.join(p, 'utils.rules')
@@ -68,9 +77,12 @@ include: os.path.join(p, "bio/ngs/align", aligner + ".rules")
 include: os.path.join(p, "bio/ngs/align", "blat.rules")
 include: os.path.join(p, "bio/ngs/qc", "picard.rules")
 include: os.path.join(p, "bio/ngs/qc", "sequenceprocessing.rules")
-include: os.path.join(p, "bio/ngs/enrichment", "zinba.rules")
-include: os.path.join(p, "bio/ngs/enrichment", "dfilter.rules")
-include: os.path.join(p, "bio/ngs/enrichment", "macs.rules")
+if 'zinba' in config['workflows.bio.atac_seq']['peakcallers']:
+    include: os.path.join(p, "bio/ngs/enrichment", "zinba.rules")
+if 'dfilter' in config['workflows.bio.atac_seq']['peakcallers']:
+    include: os.path.join(p, "bio/ngs/enrichment", "dfilter.rules")
+if 'macs2' in config['workflows.bio.atac_seq']['peakcallers']:
+    include: os.path.join(p, "bio/ngs/enrichment", "macs.rules")
 if atac_cfg['trimadaptor']:
     include: os.path.join(p, "bio/ngs/qc", "cutadapt.rules")
 
@@ -82,8 +94,6 @@ ruleorder: atacseq_correct_coordinates > bowtie_align
 ruleorder: picard_sort_bam > bowtie_align
 ruleorder: picard_merge_sam > bowtie_align
 ruleorder: picard_mark_duplicates > bowtie_align
-ruleorder: dfilter_run_dfilter_bam > bedtool_bamtobed
-ruleorder: macs_callpeak_treatment_only_bam > bedtool_bamtobed
 
 # Set temporary and protected outputs
 set_output(workflow,
@@ -95,31 +105,77 @@ set_output(workflow,
 if workflow._workdir is None:
     raise Exception("no workdir set, or set after include of 'ATAC-seq.workflow'; set workdir before include statement!")
 
-ALIGN_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].run_id_re, src_re = ngs_cfg['sampleorg'].raw_run_re, target_suffix = ALIGN_TARGET_SUFFIX, filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],  **ngs_cfg)
+##############################
+# Targets
+##############################
+ALIGN_TARGETS = generic_target_generator(
+    tgt_re = ngs_cfg['sampleorg'].run_id_re, 
+    src_re = ngs_cfg['sampleorg'].raw_run_re, 
+    target_suffix = ALIGN_TARGET_SUFFIX, 
+    **ngs_cfg)
 
 MERGE_TARGET_SUFFIX = ".sort.merge.bam"
-MERGE_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, src_re = ngs_cfg['sampleorg'].raw_run_re, target_suffix = MERGE_TARGET_SUFFIX, filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],  **ngs_cfg)
+MERGE_TARGETS = generic_target_generator(
+    tgt_re = ngs_cfg['sampleorg'].sample_re, 
+    src_re = ngs_cfg['sampleorg'].raw_run_re, 
+    target_suffix = MERGE_TARGET_SUFFIX, 
+    **ngs_cfg)
 
 ZINBA_TARGET_SUFFIX = ".sort.merge.offset.zinba.peaks"
-ZINBA_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, src_re = ngs_cfg['sampleorg'].raw_run_re, target_suffix = ZINBA_TARGET_SUFFIX, filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],  **ngs_cfg) if 'zinba' in atac_cfg['peakcallers'] else []
+ZINBA_TARGETS = []
+if 'zinba' in atac_cfg['peakcallers']:
+    ZINBA_TARGETS = generic_target_generator(
+        tgt_re = ngs_cfg['sampleorg'].sample_re, 
+        src_re = ngs_cfg['sampleorg'].raw_run_re, 
+        target_suffix = ZINBA_TARGET_SUFFIX, 
+        **ngs_cfg) 
 
 DFILTER_TARGET_SUFFIX = ".sort.merge.offset.dfilt.bed"
-DFILTER_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, src_re = ngs_cfg['sampleorg'].raw_run_re, target_suffix = DFILTER_TARGET_SUFFIX, filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],  **ngs_cfg) if 'dfilter' in atac_cfg['peakcallers'] else []
+DFILTER_TARGETS = []
+if 'dfilter' in atac_cfg['peakcallers']:
+    DFILTER_TARGETS = generic_target_generator(
+        tgt_re = ngs_cfg['sampleorg'].sample_re, 
+        src_re = ngs_cfg['sampleorg'].raw_run_re, 
+        target_suffix = DFILTER_TARGET_SUFFIX, 
+        **ngs_cfg) 
 
-MACS2_TARGET_SUFFIX = ".sort.merge.offset_peaks.bed"
-MACS2_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, src_re = ngs_cfg['sampleorg'].raw_run_re, target_suffix = MACS2_TARGET_SUFFIX, filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],  **ngs_cfg) if 'macs2' in atac_cfg['peakcallers'] else []
+MACS2_TARGET_SUFFIX = ".sort.merge.offset_peaks.xls"
+MACS2_TARGETS = []
+if 'macs2' in atac_cfg['peakcallers']:
+    MACS2_TARGETS = generic_target_generator(
+        tgt_re = ngs_cfg['sampleorg'].sample_re, 
+        src_re = ngs_cfg['sampleorg'].raw_run_re, 
+        target_suffix = MACS2_TARGET_SUFFIX,  
+        **ngs_cfg) 
 
 DUP_METRICS_SUFFIX=".sort.merge.dup.dup_metrics"
-DUP_METRICS_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, target_suffix =  DUP_METRICS_SUFFIX, src_re = ngs_cfg['sampleorg'].raw_run_re, filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg)
+DUP_METRICS_TARGETS = generic_target_generator(
+    tgt_re = ngs_cfg['sampleorg'].sample_re, 
+    target_suffix =  DUP_METRICS_SUFFIX, 
+    src_re = ngs_cfg['sampleorg'].raw_run_re, 
+    **ngs_cfg)
 
 ALIGN_METRICS_SUFFIX=".sort.merge.dup.align_metrics"
-ALIGN_METRICS_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, target_suffix =  ALIGN_METRICS_SUFFIX, src_re = ngs_cfg['sampleorg'].raw_run_re, filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg)
+ALIGN_METRICS_TARGETS = generic_target_generator(
+    tgt_re = ngs_cfg['sampleorg'].sample_re, 
+    target_suffix =  ALIGN_METRICS_SUFFIX, 
+    src_re = ngs_cfg['sampleorg'].raw_run_re, 
+    **ngs_cfg)
 
 INSERT_METRICS_SUFFIX=".sort.merge.dup.insert_metrics"
-INSERT_METRICS_TARGETS = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, target_suffix =  INSERT_METRICS_SUFFIX, src_re = ngs_cfg['sampleorg'].raw_run_re, filter_suffix = ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'], **ngs_cfg)
+INSERT_METRICS_TARGETS = generic_target_generator(
+    tgt_re = ngs_cfg['sampleorg'].sample_re, 
+    target_suffix =  INSERT_METRICS_SUFFIX, 
+    src_re = ngs_cfg['sampleorg'].raw_run_re, 
+    **ngs_cfg)
 
+REPORT_TARGETS = ["report/atacseq_all_rulegraph.png", "report/atacseq_summary.html"]
 
 # Rules
+rule atacseq_all:
+    """Run ATAC-seq pipeline"""
+    input: DFILTER_TARGETS + ZINBA_TARGETS + MACS2_TARGETS + DUP_METRICS_TARGETS + ALIGN_METRICS_TARGETS + INSERT_METRICS_TARGETS + REPORT_TARGETS
+
 rule atacseq_align:
     """Run ATAC-seq alignment"""
     input: ALIGN_TARGETS
@@ -131,10 +187,6 @@ rule atacseq_merge:
 rule atacseq_metrics:
     """Run ATAC-seq alignment and corresponding metrics only"""
     input: DUP_METRICS_TARGETS + ALIGN_METRICS_TARGETS + INSERT_METRICS_TARGETS
-
-rule atacseq_all:
-    """Run ATAC-seq pipeline"""
-    input: DFILTER_TARGETS + ZINBA_TARGETS + MACS2_TARGETS + DUP_METRICS_TARGETS + ALIGN_METRICS_TARGETS + INSERT_METRICS_TARGETS
 
 rule atacseq_correct_coordinates:
     """From Buenrostro paper: 
@@ -163,6 +215,25 @@ rule atacseq_correct_coordinates:
                     s.pnext = min(l, s.pnext + 4)
             outfile.write(s)
 
+rule atacseq_report:
+    """Write report"""
+    input: cutadapt = os.path.join("{path}", "cutadapt.summary.csv") if atac_cfg['trimadaptor'] else [],
+           picard = [("report/picard.sort.merge.dup{sfx}.metrics.csv".format(sfx=sfx), 
+           "report/picard.sort.merge.dup{sfx}.hist.csv".format(sfx=sfx)) for sfx in [workflow._rules[x].params.suffix for x in picard_config['qcrules']]],
+           rulegraph = "report/atacseq_all_rulegraph.png"
+    output: html = os.path.join("{path}", "atacseq_summary.html")
+    run:
+        d = {}
+        env = Environment(loader = PackageLoader("snakemakelib", "../templates"))
+        tp = env.get_template('workflow_atacseq_qc.html')
+        if atac_cfg['trimadaptor']:
+            d.update({'cutadapt' : make_cutadapt_summary_plot(input.cutadapt)})
+        d.update({'picard' : make_picard_summary_plots(input.picard)})
+        d.update({'rulegraph' : {'uri' : data_uri(input.rulegraph), 'file' : input.rulegraph, 'fig' : input.rulegraph, 'target' : 'atacseq_all'}})
+        with open(output.html, "w") as fh:
+            fh.write(static_html(tp, **d))
+
+                
 #
 # Putative additional data and methods
 #

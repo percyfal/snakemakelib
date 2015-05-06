@@ -7,8 +7,9 @@ from bokeh.models import HoverTool, ColumnDataSource, BoxSelectTool
 from bokeh.models.widgets import VBox, HBox, TableColumn, DataTable
 from bokeh.plotting import figure, output_file, show, gridplot
 from bokeh.palettes import brewer
+from snakemake.report import data_uri
 from snakemakelib.report.utils import recast, trim_header
-from snakemakelib.bokeh.plot import scatterplot, QCArgs
+from snakemakelib.bokeh.plot import scatterplot, QCArgs, scatterplot2
 
 def collect_star_alignment_results(input, samples):
     """Collect star alignment results"""
@@ -22,8 +23,10 @@ def collect_star_alignment_results(input, samples):
             df = df.append(pd.DataFrame(d, index=[s]))
     return df
 
-def make_star_alignment_plots(df, samples, do_qc=False, min_reads=200000, min_map=40, max_unmap=20):
+def make_star_alignment_plots(inputfile, do_qc=False, min_reads=200000, min_map=40, max_unmap=20):
     """Make star alignment plots"""
+    df = pd.read_csv(inputfile, index_col=0)
+    samples = list(df.index)
     # Currently hover tool and categorical variables don't play
     # nicely together in bokeh: see
     # https://github.com/bokeh/bokeh/issues/624
@@ -52,12 +55,11 @@ def make_star_alignment_plots(df, samples, do_qc=False, min_reads=200000, min_ma
     table = DataTable(source=source, columns=columns, editable=False, width = 1000)
 
     # Default tools, plot_config and tooltips
-    TOOLS="pan,box_zoom,box_select,lasso_select,reset,save,hover"
-    plot_config=dict(plot_width=300, plot_height=300, tools=TOOLS, title_text_font_size='12pt',
-                     x_axis_type = None, y_axis_type = "log",
+    TOOLS="pan,wheel_zoom,box_zoom,box_select,lasso_select,reset,save,hover"
+    plot_config=dict(plot_width=400, plot_height=400, tools=TOOLS, title_text_font_size='12pt',
+                     x_axis_type = 'linear', x_range = [0, len(samples)],
                      xaxis = {'axis_label' : 'sample', 'axis_label_text_font_size' : '10pt', 'major_label_orientation' : np.pi/3},
-                     yaxis = {'axis_label' : 'reads', 'axis_label_text_font_size' : '10pt', 'major_label_orientation' : np.pi/3},
-                     x_range = [0, len(samples)]
+                     yaxis = {'axis_label' : 'reads', 'axis_label_text_font_size' : '10pt', 'major_label_orientation' : np.pi/3}
                      )
 
     # Number of input reads
@@ -66,14 +68,17 @@ def make_star_alignment_plots(df, samples, do_qc=False, min_reads=200000, min_ma
     p1 = scatterplot(x='i', y='Number_of_input_reads', source=source, color=c1, qc=qc,
                      title="Number of input reads",
                      tooltips = [{'type':HoverTool, 'tips' : [('Sample', '@samples'),('Reads', '@Number_of_input_reads'),]}],
+                     y_range=[0, max(df['Number_of_input_reads'])],
+                     y_axis_type = "log",
                      **plot_config)
 
     # Uniquely mapped reads
-    plot_config.update({'yaxis_type' : 'linear', 'axis_label' : 'percent (%)'})
+    plot_config.update({'y_axis_type' : 'linear', 'axis_label' : 'percent (%)'})
     c2 = list(map(lambda x: colormap[str(x)], df['Uniquely_mapped_reads_PCT'] < min_map))  if do_qc else "blue"
     qc = QCArgs(x=[0,len(samples)], y=[min_map, min_map], line_dash=[2,4]) if do_qc else None
     p2 = scatterplot(x='i', y='Uniquely_mapped_reads_PCT', source=source, color=c2, qc=qc,
                      title="Uniquely mapping reads",
+                     y_range = [0, 100],
                      tooltips = [{'type':HoverTool, 'tips' : [('Sample', '@samples'),('Pct_mapped', '@Uniquely_mapped_reads_PCT'),]}],
                      **plot_config)
 
@@ -82,6 +87,7 @@ def make_star_alignment_plots(df, samples, do_qc=False, min_reads=200000, min_ma
     qc = QCArgs(x=[0,len(samples)], y=[max_unmap, max_unmap], line_dash=[2,4]) if do_qc else None
     p3 = scatterplot(x='i', y='PCT_of_reads_unmapped',
                      source=source, color=c3, qc=qc, title="Unmapped reads",
+                     y_range = [0, 100],
                      tooltips = [{'type':HoverTool, 'tips' : [('Sample', '@samples'),('Pct_unmapped', '@PCT_of_reads_unmapped'),]}], **plot_config)
     
     # Mismatch/indel rate
@@ -89,7 +95,7 @@ def make_star_alignment_plots(df, samples, do_qc=False, min_reads=200000, min_ma
     plot_config['yaxis'].update({'axis_label' : 'Rate per base'})
     p4 = scatterplot(x='i', y = ['Mismatch_rate_per_base__PCT', 'Insertion_rate_per_base', 'Deletion_rate_per_base'],
                 color = ["blue", "red", "green"], source = source,
-                title="Mismatch and indel rates",
+                title = "Mismatch and indel rates",
                 tooltips =  [{'type':HoverTool, 'tips' : [('Sample', '@samples'),
                                                             ('Mismatch rate per base', '@Mismatch_rate_per_base__PCT'),
                                                             ('Insertion rate per base', '@Insertion_rate_per_base'),
@@ -130,4 +136,7 @@ def make_star_alignment_plots(df, samples, do_qc=False, min_reads=200000, min_ma
         d['filter'] = d['read_filter'] | d['map_filter'] | d['mismatch_filter']
         df_qc = pd.DataFrame(data=d, index=df.samples)
     
-    return {'plots' : VBox(children=[gridplot([[p1, p2, p3]]), HBox(children=[gridplot([[p4, p5]])])]), 'table' : table, 'qctable' : df_qc}
+    return {'fig' : VBox(children=[gridplot([[p1, p2, p3]]), HBox(children=[gridplot([[p4, p5]])])]),
+            'table' : table, 'qctable' : df_qc,
+            'uri' : data_uri(inputfile),
+            'file' : inputfile}

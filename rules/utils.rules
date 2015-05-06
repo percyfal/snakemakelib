@@ -108,7 +108,7 @@ rule rule_l:
 
 rule rulegraph:
     """Print rulegraph"""
-    output: rulegraph = "{prefix}.dot"
+    output: rulegraph = "{prefix}_rulegraph.dot"
     run:
         # see http://stackoverflow.com/questions/5136611/capture-stdout-from-a-script-in-python
         backup = sys.stdout
@@ -122,7 +122,7 @@ rule rulegraph:
 
 rule rulegraph_png:
     """Convert rulegraph to png"""
-    input: rulegraph = "{prefix}.dot"
-    output: png = "{prefix}.png"
+    input: rulegraph = "{prefix}_rulegraph.dot"
+    output: png = "{prefix}_rulegraph.png"
     shell: "dot -T png {input.rulegraph} -o {output.png}"
 

@@ -26,5 +26,6 @@ setup(name = "snakemakelib",
           'snakemakelib':[
               'rules/*',
               'examples/*',
+              'templates/*',
           ]},
   )

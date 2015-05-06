@@ -9,6 +9,7 @@ from bokeh.models import HoverTool, ColumnDataSource, BoxSelectTool
 from bokeh.models.widgets import VBox, HBox, TableColumn, DataTable
 from bokeh.plotting import figure, output_file, show, gridplot
 from bokeh.palettes import brewer
+from snakemake.report import data_uri
 from snakemakelib.log import LoggerManager
 from snakemakelib.bokeh.plot import scatterplot, QCArgs
 
@@ -53,8 +54,10 @@ def collect_rseqc_results(inputfiles, samples):
             smllogger.warn("failed to append data")
     return {'rd': df_rd, 'gc':df_gc}
 
-def make_rseqc_summary_plots(df_rd, df_gc, do_qc=True, min_exonmap=60.0, max_three_prime_map=10.0):
+def make_rseqc_summary_plots(rd_file, gc_file, do_qc=True, min_exonmap=60.0, max_three_prime_map=10.0):
     """Make rseqc summary plots"""
+    df_rd = pd.read_csv(rd_file, index_col=0)
+    df_gc = pd.read_csv(gc_file, index_col=0)
     samples = list(df_gc.index)
     # Use tags for formula 
     df = df_rd.pivot_table(columns=["Group"], values=["Tag_count"], index="sample")
@@ -108,4 +111,6 @@ def make_rseqc_summary_plots(df_rd, df_gc, do_qc=True, min_exonmap=60.0, max_thr
                          ('Sample', '@samples'),('ExonMap', '@ExonMap'),]}], 
                      title="Reads mapping to 3' end", **plot_config)
 
-    return {'plots' : gridplot([[p1, p2]])}
+    return {'fig' : gridplot([[p1, p2]]),
+            'uri' : [data_uri(rd_file), data_uri(gc_file)],
+            'file' : [rd_file, gc_file]}

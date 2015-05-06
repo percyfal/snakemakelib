@@ -214,7 +214,7 @@ def _update_snakemake_config(config, update_config):
             # else make sure variable is expanded
             else:
                 if isinstance(dict(config)[section], str):
-                    smllogger.debug("expanding variables in config string, if present")
+                    smllogger.debug("expanding variables in config string '{s}', if present".format(s=dict(config)[section]))
                     config[section] = os.path.expandvars(config[section])
         else:
             config[section] = _update_snakemake_config(config[section], dict(update_config)[section])

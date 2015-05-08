@@ -124,7 +124,7 @@ def load_sml_config(config, cfg_file=None):
         with open(fn, "r") as fh:
             cfg = yaml.load(fh)
         smllogger.info("Read configuration from {}".format(fn))
-        config = update_snakemake_config(config, cfg)
+        config.update(cfg)
     return config
 
 def sml_path():

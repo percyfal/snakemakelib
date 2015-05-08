@@ -124,7 +124,7 @@ def load_sml_config(config, cfg_file=None):
         with open(fn, "r") as fh:
             cfg = yaml.load(fh)
         smllogger.info("Read configuration from {}".format(fn))
-        config.update(cfg)
+        config = update_snakemake_config(config, cfg, overwrite=True)
     return config
 
 def sml_path():
@@ -144,7 +144,7 @@ def sml_templates_path():
 # New configuration functions
 # Work directly on global config object
 ##############################
-def update_snakemake_config(config, update_config):
+def update_snakemake_config(config, update_config, overwrite=False):
     """Update configuration object.
 
     Args:
@@ -160,19 +160,13 @@ def update_snakemake_config(config, update_config):
         update_config = BaseConfig(update_config)
     except:
         raise TypeError("Failed to convert update_config object to <BaseConfig> object; recieved {cd}".format(cd=type(update_config)))
-    config = _update_snakemake_config(config, update_config)
+    config = _update_snakemake_config(config, update_config, overwrite)
     return config
 
-def _update_snakemake_config(config, update_config):
+def _update_snakemake_config(config, update_config, overwrite=False):
     """Update snakemake global configuration object. The default object is
     defined in the preamble of rules files and contains sensitive
     default settings.
-
-    While traversing the config dictionary, make sure that the
-    configuration settings correspond to those in the default
-    dictionary, i.e. that if a section in default points to another
-    BaseConfig object, then the config object should also point to a
-    BaseConfig object.
 
     Loops through items in update_config and updates the config
     configuration. There are two cases:
@@ -181,7 +175,7 @@ def _update_snakemake_config(config, update_config):
        update_config is used to set the coresponding value in
        config
 
-    2. Else, use the set value in config.
+    2. Else, use the set value in config, unles overwrite=True.
 
     This procedure ensures that if a section is undefined in
     config, a default value will always be present.
@@ -213,9 +207,12 @@ def _update_snakemake_config(config, update_config):
                 config[section] = dict(update_config)[section]
             # else make sure variable is expanded
             else:
-                if isinstance(dict(config)[section], str):
-                    smllogger.debug("expanding variables in config string '{s}', if present".format(s=dict(config)[section]))
-                    config[section] = os.path.expandvars(config[section])
+                if overwrite is True:
+                    config[section] = dict(update_config)[section]
+                else:
+                    if isinstance(dict(config)[section], str):
+                        smllogger.debug("expanding variables in config string '{s}', if present".format(s=dict(config)[section]))
+                        config[section] = os.path.expandvars(config[section])
         else:
-            config[section] = _update_snakemake_config(config[section], dict(update_config)[section])
+            config[section] = _update_snakemake_config(config[section], dict(update_config)[section], overwrite)
     return config

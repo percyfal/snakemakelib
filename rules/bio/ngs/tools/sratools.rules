@@ -75,12 +75,11 @@ rule sratools_download_srastudy_biosample:
             bioproject = list(set([x["BioProject"] for x in reader]))
         if len(bioproject) > 1:
             smllogger.warn("More than one bioproject defined! This may or may not be ok, depending on what you're doing")
-        with open(output.csv, "w") as fh:
-            if sra_cfg['email'] is None:
-                s = "bio.ngs.tools.sratools: No email set; must tell NCBI mail address! Either set USER_EMAIL environment variable or configuration variable bio.ngs.tools.sratools.email"
-                smllogger.warn(s)
-                fh.write(s)
-            else:
+        if sra_cfg['email'] is None:
+            s = "bio.ngs.tools.sratools: No email set; must tell NCBI mail address! Either set USER_EMAIL environment variable or configuration variable bio.ngs.tools.sratools.email"
+            smllogger.warn(s)
+        else:
+            with open(output.csv, "w") as fh:
                 from Bio import Entrez
                 import xml.etree.ElementTree as ET
                 Entrez.email = sra_cfg['email']

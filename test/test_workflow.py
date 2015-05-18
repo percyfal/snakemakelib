@@ -12,6 +12,8 @@ from nose.plugins.attrib import attr
 
 logger = logging.getLogger(__name__)
 
+BASEPATH = os.path.dirname(__file__)
+
 snakefile = """# -*- snakemake -*-
 import os
 import sys
@@ -78,20 +80,20 @@ def setUp():
     
     # Create Snakefile in test directory
     with open("Snakefile", "w") as fh:
-        fh.write(snakefile.format(workdir=os.path.join(os.path.abspath(os.curdir), os.pardir, 'data', 'projects', 'J.Doe_00_01'),
-                                  variation=os.path.join(os.path.abspath(os.curdir), os.pardir, 'workflows', 'bio', 'variation.workflow'),
-                                  ref=os.path.join(os.path.abspath(os.curdir), os.pardir, 'data', 'genomes', 'Hsapiens', 'hg19', 'seq', 'chr11.fa'),
-                                  dbsnp=os.path.join(os.path.abspath(os.curdir), os.pardir, 'data', 'genomes', 'Hsapiens', 'hg19', 'variation', 'dbsnp132_chr11.vcf'),
-                                  bwaref=os.path.join(os.path.abspath(os.curdir), os.pardir, 'data', 'genomes', 'Hsapiens', 'hg19', 'bwa', 'chr11.fa'),
+        fh.write(snakefile.format(workdir=os.path.join(BASEPATH, os.pardir, 'data', 'projects', 'J.Doe_00_01'),
+                                  variation=os.path.join(BASEPATH, os.pardir, 'workflows', 'bio', 'variation.workflow'),
+                                  ref=os.path.join(BASEPATH, os.pardir, 'data', 'genomes', 'Hsapiens', 'hg19', 'seq', 'chr11.fa'),
+                                  dbsnp=os.path.join(BASEPATH, os.pardir, 'data', 'genomes', 'Hsapiens', 'hg19', 'variation', 'dbsnp132_chr11.vcf'),
+                                  bwaref=os.path.join(BASEPATH, os.pardir, 'data', 'genomes', 'Hsapiens', 'hg19', 'bwa', 'chr11.fa'),
                                   picard=os.getenv("PICARD_HOME"),
                                   gatk=os.getenv("GATK_HOME"),
                                   snpeff=os.getenv("SNPEFF_HOME"),
-                                  baits=os.path.join(os.path.abspath(os.curdir), os.pardir, 'data', 'genomes', 'Hsapiens', 'hg19', 'seqcap', 'chr11_baits.interval_list'),
-                                  targets=os.path.join(os.path.abspath(os.curdir), os.pardir, 'data', 'genomes', 'Hsapiens', 'hg19', 'seqcap', 'chr11_targets.interval_list')
+                                  baits=os.path.join(BASEPATH, os.pardir, 'data', 'genomes', 'Hsapiens', 'hg19', 'seqcap', 'chr11_baits.interval_list'),
+                                  targets=os.path.join(BASEPATH, os.pardir, 'data', 'genomes', 'Hsapiens', 'hg19', 'seqcap', 'chr11_targets.interval_list')
                               ))
     # Format bwa ref if not already done
-    genomedir = os.path.join(os.path.abspath(os.curdir), os.pardir, 'data', 'genomes', 'Hsapiens', 'hg19', 'seq')
-    bwadir = os.path.join(os.path.abspath(os.curdir), os.pardir, 'data', 'genomes', 'Hsapiens', 'hg19', 'bwa')
+    genomedir = os.path.join(BASEPATH, os.pardir, 'data', 'genomes', 'Hsapiens', 'hg19', 'seq')
+    bwadir = os.path.join(BASEPATH, os.pardir, 'data', 'genomes', 'Hsapiens', 'hg19', 'bwa')
     if not os.path.exists(os.path.join(bwadir, 'chr11.fa.bwt')):
         subprocess.check_call(['bwa', 'index', os.path.join(bwadir, 'chr11.fa')])
     if not os.path.exists(os.path.join(genomedir, 'chr11.dict')):
@@ -117,4 +119,4 @@ class TestBwaAlign(unittest.TestCase):
         """Test bwa alignment"""
         bwaout = 'P001_101/120924_AC003CCCXX/1_120924_AC003CCCXX_P001_101.bam'
         subprocess.check_call(['snakemake', '-F', bwaout])
-        subprocess.check_call(['rm', '-f', os.path.join(os.path.abspath(os.curdir), os.pardir, 'data', 'projects', 'J.Doe_00_01', 'P001_101/120924_AC003CCCXX/1_120924_AC003CCCXX_P001_101.bam')])
+        subprocess.check_call(['rm', '-f', os.path.join(BASEPATH, os.pardir, 'data', 'projects', 'J.Doe_00_01', 'P001_101/120924_AC003CCCXX/1_120924_AC003CCCXX_P001_101.bam')])

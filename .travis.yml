@@ -12,4 +12,4 @@ script: nosetests
 branches:
   only:
     - master
-    - feature/add_reference_test
+    - develop

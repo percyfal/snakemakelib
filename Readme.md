@@ -1,6 +1,15 @@
 ## snakemakelib ##
 
-<img src="https://travis-ci.org/percyfal/snakemakelib.svg" alt="master" />
+<table>
+<tr>
+<td>master</td>	
+<td><img src="https://travis-ci.org/percyfal/snakemakelib.svg?branch=master" alt="master" /></td>
+</tr>
+<tr>
+<td>develop</td>
+<td><img src="https://travis-ci.org/percyfal/snakemakelib.svg?branch=develop" alt="develop" /></td>
+</tr>
+</table>
 
 ## About ##
 

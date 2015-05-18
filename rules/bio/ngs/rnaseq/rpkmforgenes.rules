@@ -56,7 +56,6 @@ rule rpkmforgenes_from_bam:
             clist.append(" -a {annotation}".format(**d))
         clist.append(" &> {log}".format(log=log))
         command = " ".join(clist)
-        #print (command)
         shell(command)
 
 rule rpkmforgenes_from_bed:

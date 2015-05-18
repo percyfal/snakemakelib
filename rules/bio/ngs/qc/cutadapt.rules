@@ -54,6 +54,7 @@ rule cutadapt_cut_paired_end:
            read2 = "{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['fastq_suffix']
     output: read1 = "{prefix}" + ".trimmed" + ngs_cfg['read1_label']  + ngs_cfg['fastq_suffix'],
             read2 = "{prefix}" + ".trimmed" + ngs_cfg['read2_label']  + ngs_cfg['fastq_suffix'],
+            log = "{prefix}.cutadapt_metrics"
     log: "{prefix}.cutadapt_metrics"
     shell: "{params.cmd} {params.options} {input.read1} {input.read2} -b {params.fiveprime} -b {params.threeprime} -B {params.threeprime} -B {params.fiveprime} -o {output.read1} -p {output.read2} > {log}"
 

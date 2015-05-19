@@ -1,0 +1,3 @@
+global-exclude .git*
+include versioneer.py
+include snakemakelib/_version.py

@@ -22,9 +22,11 @@ cbl_cfg = config['bio.ngs.db.cloudbiolinux']
 #     output: protected(annotation(gtf = 'ref-transcripts.gtf', db_cfg = config['bio.ngs.settings']['db']))
 
 rule cloudbiolinux_update_annotation_gtf:
-    input: gtf = annotation(gtf = 'ref-transcripts.gtf', db_cfg = config['bio.ngs.settings']['db'], ignore_extra_ref=True),
+    input: gtf = annotation(annotation='ref-transcripts.gtf',\
+                            db_cfg=config['bio.ngs.settings']['db'], ignore_extra_ref=True),
            ref = [ref(x, config['bio.ngs.settings']['db']) for x in config['bio.ngs.settings']['db']['extra_ref']]
-    output: gtf = protected(annotation(gtf = "ref-transcripts-" + "-".join([os.path.splitext(os.path.basename(x))[0] for x in config['bio.ngs.settings']['db']['extra_ref']]) + ".gtf", db_cfg = config['bio.ngs.settings']['db']))
+    output: gtf = protected(annotation(annotation="ref-transcripts-" + "-".join([os.path.splitext(os.path.basename(x))[0] for x in config['bio.ngs.settings']['db']['extra_ref']]) + ".gtf",\
+                                       db_cfg=config['bio.ngs.settings']['db']))
     run:
         with open(output.gtf, "w") as out:
             with open (input.gtf, "r") as fh:

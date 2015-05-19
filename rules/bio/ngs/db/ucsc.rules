@@ -16,7 +16,7 @@ config_default = {
         'urldownload' : 'http://hgdownload.cse.ucsc.edu/goldenPath/',
         'gtfToGenePred' : {
             'cmd' : 'gtfToGenePred',
-            'options' : '-genePredExt',
+            'options' : '-genePredExt -ignoreGroupsWithoutExons',
         },
     },
 }
@@ -124,3 +124,15 @@ rule ucsc_gtf_to_genepred:
     input: gtf = "{prefix}.gtf"
     output: genepred = "{prefix}.genePred"
     shell: "{params.cmd} {params.options} {input.gtf} {output.genepred}"
+
+rule ucsc_genepred_to_refFlat:
+    """Convert genepred to refFlat.
+
+    See
+    https://github.com/chapmanb/cloudbiolinux/blob/master/utils/prepare_tx_gff.py#L355;
+    we need to add extra column at start.
+
+    """
+    input: genepred = "{prefix}.genePred"
+    output: refflat = "{prefix}.refFlat"
+    shell: "awk '{{printf(\"%s\\t%s\\n\", $1, $0)}}'  {input.genepred} > {output.refflat}"

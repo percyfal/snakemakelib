@@ -18,17 +18,20 @@ def chromosomes(ref):
     return chroms
 
 
-def annotation(db_cfg, gtf = "ref-transcripts.gtf", ignore_extra_ref=False):
+def annotation(db_cfg, annotation="ref-transcripts.gtf", ignore_extra_ref=False, fmt="gtf"):
     """Return the annotation as a string"""
-    if os.path.isabs(gtf):
-        return gtf
+    if os.path.isabs(annotation):
+        if not annotation.endswith(fmt):
+            (root, ext) = os.path.splitext(annotation)
+            annotation = "{root}.{ext}".format(root=root, ext=fmt)
+        return annotation
     if db_cfg['ref']:
         smllogger.debug("reference set: assuming index locations are organized according to cloudbiolinux conventions")
         if db_cfg['extra_ref'] and not ignore_extra_ref:
             smllogger.debug("extra references set: renaming annotation file")
-            gtf = "ref-transcripts-" + "-".join([os.path.splitext(os.path.basename(x))[0] for x in db_cfg['extra_ref']]) + ".gtf"
-        gtf = os.path.join(os.path.dirname(db_cfg['ref']), os.pardir, 'rnaseq', gtf)
-        return gtf
+            annotation = "ref-transcripts-" + "-".join([os.path.splitext(os.path.basename(x))[0] for x in db_cfg['extra_ref']]) + "." + fmt
+        annotation = os.path.join(os.path.dirname(db_cfg['ref']), os.pardir, 'rnaseq', annotation)
+        return annotation
 
 def ref(ref, db_cfg):
     """Return the fasta reference sequence as a string

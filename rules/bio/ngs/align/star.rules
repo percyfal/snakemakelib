@@ -41,8 +41,8 @@ config_default = {
 config = update_snakemake_config(config, config_default)
 # Update annotation
 config['bio.ngs.align.star']['star_index']['sjdbGTFfile'] = \
-    annotation(gtf = config['bio.ngs.align.star']['star_index']['sjdbGTFfile'],
-               db_cfg = config['bio.ngs.settings']['db'])
+    annotation(annotation=config['bio.ngs.align.star']['star_index']['sjdbGTFfile'],\
+               db_cfg=config['bio.ngs.settings']['db'])
 
 # Update index
 config['bio.ngs.align.star']['index'] = index(

@@ -11,6 +11,7 @@
 </tr>
 </table>
 
+[![Coverage Status](https://coveralls.io/repos/percyfal/snakemakelib/badge.svg)](https://coveralls.io/r/percyfal/snakemakelib)
 ## About ##
 
 Snakemake library for all kinds of tasks, with a focus on

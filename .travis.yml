@@ -7,9 +7,13 @@ python:
 install:
   - pip install --upgrade pip
   - pip install -r requirements.txt
+  - pip install coveralls
   - python setup.py develop
-script: nosetests
+script:
+  coverage run --source=snakemakelib setup.py test
 branches:
   only:
     - master
     - develop
+after_success:
+  coveralls

@@ -24,7 +24,7 @@ setup(
     author_email = "per.unneberg@scilifelab.se",
     description = "Snakemake rule library with additional utilities",
     license = "MIT",
-    url = "http://github.com/percyfal/snakemakelib',
+    url = "http://github.com/percyfal/snakemakelib",
     scripts = glob.glob('scripts/*.py'),
     install_requires = install_requires,
     test_suite = 'nose.collector',

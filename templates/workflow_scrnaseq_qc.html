@@ -36,6 +36,8 @@
 
     {% include 'workflow.html' ignore missing %}
 
+    {% include 'snakemake.html' ignore missing %}
+
     <h1>Single-cell RNA-seq QC summary</h1>
 
     <h2>Run-level QC metrics</h2>
@@ -44,9 +46,7 @@
 
     {% include 'star.html' ignore missing %}
 
-    <h2>Sample-leve QC metrics</h2>
-
-    <h3>RSeQC</h3>
+    <h2>Sample-level QC metrics</h2>
 
     {% include 'rseqc.html' ignore missing %}
     

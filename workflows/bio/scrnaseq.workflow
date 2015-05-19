@@ -160,7 +160,8 @@ rule scrnaseq_qc:
            rseqc_gene_coverage = os.path.join("{path}", "gene_coverage_summary_merge_rseqc.csv"),
            rsemgenes = os.path.join("{path}", "rsem.merge.tx.genes.csv"),
            rsemisoforms = os.path.join("{path}", "rsem.merge.tx.isoforms.csv"),
-           rulegraph = os.path.join("{path}", "scrnaseq_all.png")
+           rulegraph = os.path.join("{path}", "scrnaseq_all.png"),
+           globalconf = os.path.join("{path}", "smlconf_global.yaml")
     output: html = os.path.join("{path}", "scrnaseq_summary.html")
     run:
         d = {}
@@ -168,6 +169,8 @@ rule scrnaseq_qc:
         d.update({'star'  : make_star_alignment_plots(input.starcsv)})
         d.update({'rulegraph' : {'uri' : data_uri(input.rulegraph), 'file' : input.rulegraph, 'fig' : input.rulegraph, 'target' : 'scrnaseq_all'}})
         d.update({'rsem' : {'file': [input.rsemgenes, input.rsemisoforms]}})
+
+        d.update({'version' : config['_version'], 'config' : {'uri' : data_uri(input.globalconf), 'file' : input.globalconf}})
         tp = SmlTemplateEnv.get_template('workflow_scrnaseq_qc.html')
         with open(output.html, "w") as fh:
             fh.write(static_html(tp, **d))

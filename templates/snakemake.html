@@ -1,0 +1,21 @@
+<!-- -*- jinja2 -*- -->
+<h3>Snakemake version and configuration</h3>
+
+{% if version is defined %}
+
+<table>
+  <tr>
+    <td>Version</td>
+    <td>{{ version['version'] }}</td>
+  </tr>
+  <tr>
+    <td>Full</td>
+    <td>{{ version['full'] }}</td>
+  </tr>
+</table>
+
+The full configuration of the run is defined in <a href="{{ config['uri'] }}" download="{{ config['file']}}" draggable="true">{{ config['file'] }}</a>
+
+{% else %}
+No snakemake version defined!
+{% endif %}

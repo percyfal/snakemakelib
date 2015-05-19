@@ -9,9 +9,13 @@
 <td>develop</td>
 <td><img src="https://travis-ci.org/percyfal/snakemakelib.svg?branch=develop" alt="develop" /></td>
 </tr>
+<tr>
+<td>coverage</td>
+<td>[![Coverage Status](https://coveralls.io/repos/percyfal/snakemakelib/badge.svg)](https://coveralls.io/r/percyfal/snakemakelib)</td>
+</tr>
 </table>
 
-[![Coverage Status](https://coveralls.io/repos/percyfal/snakemakelib/badge.svg)](https://coveralls.io/r/percyfal/snakemakelib)
+
 ## About ##
 
 Snakemake library for all kinds of tasks, with a focus on

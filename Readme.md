@@ -4,17 +4,14 @@
 <tr>
 <td>master</td>	
 <td><img src="https://travis-ci.org/percyfal/snakemakelib.svg?branch=master" alt="master" /></td>
+<td><img src="https://coveralls.io/repos/percyfal/snakemakelib/badge.svg?branch=master" alt="coverage master" /></td>
 </tr>
 <tr>
 <td>develop</td>
 <td><img src="https://travis-ci.org/percyfal/snakemakelib.svg?branch=develop" alt="develop" /></td>
-</tr>
-<tr>
-<td>coverage</td>
-<td>[![Coverage Status](https://coveralls.io/repos/percyfal/snakemakelib/badge.svg)](https://coveralls.io/r/percyfal/snakemakelib)</td>
+<td><img src="https://coveralls.io/repos/percyfal/snakemakelib/badge.svg?branch=develop" alt="coverage develop" /></td>
 </tr>
 </table>
-
 
 ## About ##
 

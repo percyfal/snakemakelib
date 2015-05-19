@@ -4,7 +4,9 @@ Main settings for snakemakelib. Defines top-level configuration
 settings for all rules. 
 """
 import os
+from snakemakelib._version import get_versions
 from snakemakelib.config import update_snakemake_config
+
 
 TEMP_FILETYPES_DEFAULT = ['.bam', '.gz', '.zip', '.bigWig', '.wig', '.bed', '.sra',
                           '.fastq', '.fq', '.fasta', '.fa']
@@ -25,8 +27,8 @@ config_default = {
         'protected_rules' : [],
         'protected_rules_default' : [],
         'email' : os.getenv("USER_EMAIL", None),
-
     },
 }
 
 config = update_snakemake_config(config, config_default)
+config['_version'] = get_versions()

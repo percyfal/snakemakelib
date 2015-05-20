@@ -3,18 +3,20 @@
 
 {% if version is defined %}
 
-<table>
+<table class="table-version">
   <tr>
-    <td>Version</td>
-    <td>{{ version['version'] }}</td>
+    <td style="text-align:left;padding-right:50px">Version</td>
+    <td style="text-align:right">{{ version['version'] }}</td>
   </tr>
   <tr>
-    <td>Full</td>
-    <td>{{ version['full'] }}</td>
+    <td style="text-align:left;padding-right:50px">Full</td>
+    <td style="text-align:right">{{ version['full'] }}</td>
   </tr>
 </table>
 
+<p>
 The full configuration of the run is defined in <a href="{{ config['uri'] }}" download="{{ config['file']}}" draggable="true">{{ config['file'] }}</a>
+</p>
 
 {% else %}
 No snakemake version defined!

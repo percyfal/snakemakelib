@@ -77,6 +77,7 @@ include: os.path.join(p, "bio/ngs/align", aligner + ".rules")
 include: os.path.join(p, "bio/ngs/align", "blat.rules")
 include: os.path.join(p, "bio/ngs/qc", "picard.rules")
 include: os.path.join(p, "bio/ngs/qc", "sequenceprocessing.rules")
+include: os.path.join(p, "bio/ngs/chromatin", "danpos.rules")
 if 'zinba' in config['workflows.bio.atac_seq']['peakcallers']:
     include: os.path.join(p, "bio/ngs/enrichment", "zinba.rules")
 if 'dfilter' in config['workflows.bio.atac_seq']['peakcallers']:

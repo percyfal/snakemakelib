@@ -81,7 +81,6 @@ rule bowtie_build:
     """Bowtie build index"""
     params: ref = bwt_cfg['ref'],
             cmd = os.path.join(os.path.dirname(bwt_cfg[bowtie]['cmd']), 'bowtie-build')
-    #input: "{prefix}" + ".fa"
     input: bwt_cfg['ref']
     output: expand("{{prefix}}{ext}", ext=bwt_cfg['build']['ext_v1'])
     shell: "{params.cmd} {input} {wildcards.prefix}"
@@ -90,6 +89,6 @@ rule bowtie_build2:
     """Bowtie build index"""
     params: ref = bwt_cfg['ref'],
             cmd = os.path.join(os.path.dirname(bwt_cfg[bowtie]['cmd']), 'bowtie2-build')
-    input: "{prefix}" + ".fa"
+    input: bwt_cfg['ref']
     output: expand("{{prefix}}{ext}", ext=bwt_cfg['build']['ext_v2'])
     shell: "{params.cmd} {input} {wildcards.prefix}"

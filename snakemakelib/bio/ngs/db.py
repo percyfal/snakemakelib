@@ -65,7 +65,7 @@ def index(ref, application, build=None, index="", index_name=""):
         smllogger.debug("index not an absolute path: assuming index locations are organized according to cloudbiolinux conventions")
     if not build:
         smllogger.debug("No build_config present: assuming index locations are organized according to cloudbiolinux conventions")
-        if application in ["bwa", "rsem", "bowtie"]:
+        if application in ["rsem", "bowtie"]:
             prefix, _ = os.path.splitext(ref)
         else:
             prefix = ref

@@ -2,14 +2,19 @@
 import os
 from snakemakelib.config import update_snakemake_config
 from snakemakelib.bio.ngs.db import index
+from snakemakelib.stat import is_installed
 
 include: '../settings.rules'
 include: '../tools/samtools.rules'
 
+ngs_cfg = config['bio.ngs.settings']
+
 config_default = { 
     'bio.ngs.align.bwa' : {
         'cmd' : "bwa",
+        'ref' : ngs_cfg['db']['ref'],
         'index' : "",
+        'index_ext' : ['.amb', '.ann', '.bwt', '.pac', '.sa'],
         'threads' : config['bio.ngs.settings']['threads'],
         'options' : "-M",
         'mem' :{
@@ -31,18 +36,40 @@ config['bio.ngs.align.bwa']['index'] = index(
     application = 'bwa',
     build = config['bio.ngs.settings']['db']['build'])
 
-
 bwa_cfg = config['bio.ngs.align.bwa']
-ngs_cfg = config['bio.ngs.settings']
 samtools_cfg = config['bio.ngs.tools.samtools']
+
+if not is_installed(bwa_cfg['cmd']):
+    raise Exception("\nbio.ngs.align.bwa: {prog} not installed or not in PATH\n".format(prog=bwa_cfg['cmd']))
 
 rule bwa_mem:
     """Run bwa mem"""
     params: options = bwa_cfg['mem']['options'],
             cmd = bwa_cfg['cmd'],
-            index = bwa_cfg['index']
-    input: "{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],\
-    "{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['fastq_suffix']
-    output: "{prefix}.bam"
+            index = bwa_cfg['index'],
+            label = ""
+    input: read1 = "{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],
+           read2 = "{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['fastq_suffix'],
+           index = expand("{index}{ext}", index=bwa_cfg['index'], ext=bwa_cfg['index_ext'])
+    # output: bam = "{prefix}{params.label}.bam"
+    # log: log = "{prefix}{params.label}.log"
+    output: bam = "{prefix}.bam"
+    log: log = "{prefix}.log"
     threads: bwa_cfg['threads']
-    shell: "{params.cmd} mem -t {threads} {params.options} {params.index} {input} | " + samtools_cfg['cmd'] + " view -Sb - > {output}"
+    shell: "{params.cmd} mem -t {threads} {params.options} {params.index} {input.read1} {input.read2} | " + samtools_cfg['cmd'] + " view -Sb - > {output.bam}"
+
+rule bwa_index:
+    """bwa index a reference"""
+    params: cmd = bwa_cfg['cmd']
+    input: indexref = bwa_cfg['index']
+    output: expand("{{prefix}}{{ext}}{bwaext}", bwaext=bwa_cfg['index_ext'])
+    shell: "{params.cmd} index {input.indexref} {wildcards.prefix}"
+
+rule bwa_link_ref:
+    """bwa link reference file to bwa index directory"""
+    input: ref = bwa_cfg['ref']
+    output: indexref = bwa_cfg['index']
+    shell: "if [ ! -e {output.indexref} ]; then ln -s {input.ref} {output.indexref}; fi"
+
+
+ruleorder: bwa_mem > samtools_sam2bam

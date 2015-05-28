@@ -54,7 +54,7 @@ class TestDbConfig(unittest.TestCase):
         bwa_cfg = config['bio.ngs.align.bwa']
         bwa_cfg['index'] =  index(ref= cfg['db']['ref'], index=bwa_cfg['index'], application="bwa")
         self.assertEqual(os.path.normpath(bwa_cfg['index']), os.path.abspath(
-            os.path.join(os.curdir, "bwa", "reference")))
+            os.path.join(os.curdir, "bwa", "reference.fa")))
 
     @raises(TypeError)
     def test_index_missing_application(self):

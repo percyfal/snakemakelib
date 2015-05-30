@@ -1,3 +1,6 @@
+Configuration
+=============
+
 The purpose of snakemakelib is to build a library of rules that can be
 reused without actually writing them anew. The motivation is that only
 parameters, e.g. program options, inputs and outputs, of a rule change
@@ -8,14 +11,18 @@ rule parameters can be modified with simple strings.
 Implementation
 ~~~~~~~~~~~~~~
 
-The backbone configuration object is the class *BaseConfig*, which is a
-modified *dict* class. It does simple type checking and also overrides
-the *\_\_getitem\_\_*, *\_\_setitem\_\_*, and *update* methods, ensuring
-that all entries are *BaseConfig* objects.
+The backbone configuration object is the class :class:`BaseConfig
+<snakemakelib.config.BaseConfig>`, which is a modified :class:`dict`
+class. It does simple type checking and also overrides the
+:meth:`__getitem__ <object.__getitem__>`, :meth:`__setitem__
+<object.__setitem__>`, and :meth:`dict.update` methods, ensuring that
+all entries are :class:`BaseConfig <snakemakelib.config.BaseConfig>`
+objects.
 
-An auxiliary function *update\_sml\_config* populates the backend
-configuration whenever a include statement loads a rules file. Another
-feature is that entries can point to regular python functions.
+An auxiliary function :meth:`~snakemakelib.config.update_snakemake_config`
+populates the backend configuration whenever a include statement loads
+a rules file. Another feature is that entries can point to regular
+python functions.
 
 The default configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -45,30 +52,34 @@ parameter related to the program, or a subprogram which in turn can have
 As an example, consider the default configuration for
 ``snakemakelib.bio.ngs.bwa``:
 
-::
+.. code-block:: python
 
-    config_default = { 
-        'bio.ngs.align.bwa' : {
-            'cmd' : "bwa",
-            'index' : index,
-            'threads' : sml_config['bio.ngs.settings']['threads'],
-            'options' : "-M",
-            'mem' :{
-                'options' : "",
-            },
-        },
-    }
+   config_default = { 
+       'bio.ngs.align.bwa' : {
+	   'cmd' : "bwa",
+	   'ref' : ngs_cfg['db']['ref'],
+	   'index' : "",
+	   'index_ext' : ['.amb', '.ann', '.bwt', '.pac', '.sa'],
+	   'threads' : config['bio.ngs.settings']['threads'],
+	   'options' : "-M",
+	   'mem' :{
+	       'options' : "",
+	   },
+       },
+   }
 
 The namespace is ``bio.ngs.align.bwa``, reflecting the fact that the
-rules file is located in the folder ``rules/bio/ngs/align`` and is named
-``bwa.rules``. ``sml_config`` is a reference to the backend global
-*BaseConfig* object that stores all loaded rule configurations.
-Incidentally, this example shows another key idea of the configuration,
-namely that some options inherit from rules files higher up in the file
-hierarchy. The rules file ``rules/bio/ngs/settings.rules`` contains a
-generic configuration that is common to all ngs rules. This
-implementation makes it possible to override settings for specific
-programs, like for instance the ``threads`` parameter above.
+rules file is located in the folder ``rules/bio/ngs/align`` and is
+named ``bwa.rules``. ``config`` is the global snakemake configuration
+object represented as an instance of the
+:class:`~snakemakelib.config.BaseConfig` class that stores all loaded
+rule configurations. Incidentally, this example shows another key idea
+of the configuration, namely that some options inherit from rules
+files higher up in the file hierarchy. The rules file
+``rules/bio/ngs/settings.rules`` contains a generic configuration that
+is common to all ngs rules. This implementation makes it possible to
+override settings for specific programs, like for instance the
+``threads`` parameter above.
 
 Viewing the default configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -76,7 +87,7 @@ Viewing the default configuration
 ``utils.rules`` defines a rule ``conf`` that can be used to view the
 current configuration of included files:
 
-::
+.. code-block:: shell
 
     snakemake conf
 
@@ -90,7 +101,7 @@ can be accessed via the command line. In
 ``rules/bio/ngs/settings.rules``, three Snakemake *config* options have
 been added that are useful in the context of ngs:
 
-::
+.. code-block:: python
 
     # Add configuration variable to snakemake global config object
     config['samples'] = config.get("samples", [])
@@ -99,28 +110,29 @@ been added that are useful in the context of ngs:
 
 For instance, a workflow can be run on a single sample by issuing
 
-::
+.. code-block:: shell
 
     snakemake rule --config samples=["SAMPLE1","SAMPLE2"]
 
 User-defined configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-A user can modify the configuration by defining a *BaseConfig* object
-and updating the ``sml_config`` object mentioned in the previous
-section. This is done in the Snakefile that uses ``include`` statements
-to include rules files, and must be done **before** any ``include``
-statement. The reason is that when a rules file is included, the default
-configuration values are compared to the existing ``sml_config``. If the
-user has defined custom configurations, these will take precedence over
-the default values. If no custom configuration exists, the default
-values are applied.
+A user can modify the configuration by defining a :class:`dict` object
+and passing it as an argument to
+:meth:`~snakemakelib.config.update_snakemake_config`. This is done in the
+Snakefile that uses ``include`` statements to include rules files, and
+must be done **before** any ``include`` statement. The reason is that
+when a rules file is included, the default configuration values are
+compared to the existing ``config``. If the user has defined
+custom configurations, these will take precedence over the default
+values. If no custom configuration exists, the default values are
+applied.
 
 As an example, imagine we want to change the options to ``-k 10 -w 50``
 for ``bwa mem`` in the example Snakefile above. The modified Snakefile
 would then look as follows:
 
-::
+.. code-block:: python
 
     #-*- snakemake -*-
     # Snakefile example
@@ -128,7 +140,7 @@ would then look as follows:
     sys.path.append('/path/to/snakemakelib')
 
     # Import config-related stuff
-    from snakemakelib.config import update_sml_config
+    from snakemakelib.config import update_snakemake_config
     my_config = {
         'bio.ngs.align.bwa' : {
             'mem' : {
@@ -138,7 +150,7 @@ would then look as follows:
     }
 
     # Initialize configuration
-    update_sml_config(my_config)
+    update_snakemake_config(my_config)
 
     # Include settings and utilities
     include: "/path/to/snakemake/rules/settings.rules"
@@ -154,12 +166,12 @@ Loading configuration from a yaml file
 
 Configuration settings can be loaded from external configuration files
 in ``yaml`` format. By default, ``snakemakelib`` will load a file
-~/.smlconf.yaml if it exists. Typically, here the user would set
+``~/.smlconf.yaml`` if it exists. Typically, here the user would set
 variables that are common to all applications, such as paths to
 reference databases and commonly used executables. Moreover, if a file
 smlconf.yaml is present in the Snakefile working directory, it is loaded
 by default. Finally, the user can manually load a file via the
-``load_sml_config`` function.
+:meth:`~snakemakelib.config.load_sml_config` function.
 
 Environment configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -171,7 +183,7 @@ instance, this is the case for GATK (environment variable GATK\_HOME)
 and picard (PICARD\_HOME). Finally, explicit paths can be set in the
 configuration file:
 
-::
+.. code-block:: yaml
 
     bio.ngs.align.bwa:
       cmd: /path/to/bwa
@@ -187,7 +199,7 @@ data that is based on the directory layout defined in
 `cloudbiolinux <http://cloudbiolinux.org/>`__. Basically, the structure
 looks as follows:
 
-::
+.. code-block:: shell
 
     biodata/genomes/ORGANISM/BUILD/
         bowtie/
@@ -209,7 +221,7 @@ the fly in a directory ``star`` located in the parent directory relative
 to the reference file defined in ``bio.ngs.settings.db.ref``. In the
 above example, we would have
 
-::
+.. code-block:: shell
 
     biodata/genomes/ORGANISM/BUILD/
         seq/

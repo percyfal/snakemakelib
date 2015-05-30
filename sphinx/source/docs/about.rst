@@ -49,7 +49,7 @@ Installation instructions
 Clone the repository https://github.com/percyfal/snakemakelib to an
 appropriate location:
 
-::
+.. code-block:: shell
 
     git clone https://github.com/percyfal/snakemakelib /path/to/snakemakelib
 
@@ -64,13 +64,13 @@ Running the tests
 
 Issue
 
-::
+.. code-block:: shell
 
     nosetests -v -s
 
 to run a suite of smaller tests. To run a working pipeline, issue
 
-::
+.. code-block:: shell
 
     nosetests --attr=slow
 

@@ -13,7 +13,7 @@ A simple example
 Let's start by writing a Snakefile that includes the rules for the
 aligner ``bwa``.
 
-::
+.. code-block:: python
 
     #-*- snakemake -*-
     # Snakefile example
@@ -30,7 +30,7 @@ Here, we make use of a function ``sml_rules_path`` which dynamically
 calculates the absolute installation path of the ``snakemakelib/rules``
 directory. Snakemake includes options to view tasks:
 
-::
+.. code-block:: shell
 
     $ snakemake -l
 
@@ -57,7 +57,7 @@ in ``bwa.rules``. In addition, the rules file ``utils.rules`` included
 above defines convenience rules for viewing more detailed rule
 information. For instance, the rule ``rule_ll`` shows the following:
 
-::
+.. code-block:: shell
 
     $ snakemake rule_ll
 
@@ -121,7 +121,7 @@ the output for rule ``bwa_mem`` looks like ``{prefix}.bam``, where
 ``{prefix}`` is a wildcard that matches a given pattern in the inputs.
 To see what they look like in this example, run
 
-::
+.. code-block:: shell
 
     $ snakemake test.bam
 
@@ -145,7 +145,7 @@ yet been configured. We'll see in the next example how these can be
 configured. For now, we can have a look at what is configured as
 follows:
 
-::
+.. code-block:: shell
 
     $ snakemake conf
 
@@ -200,8 +200,8 @@ follows:
 A slightly more complicated example
 -----------------------------------
 
-This example will be partly modelled on how I set up the `ATAC-seq
-protocol <https://github.com/percyfal/snakemakelib/blob/develop/workflows/bio/ATAC-seq.workflow>`__
+This example is partly modelled on how I set up the `ATAC-seq protocol
+<https://github.com/percyfal/snakemakelib/blob/develop/workflows/bio/ATAC-seq.workflow>`__
 
 Importing relevant libraries
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -234,7 +234,7 @@ Setting the default configuration
 The next step is to set default configuration values for the workflow.
 Here I've included a subsection of these defaults:
 
-::
+.. code-block:: python
 
     # Default configuration settings custom-tailored for ATAC-Seq analysis
     atac_config = {
@@ -292,21 +292,11 @@ the Snakefile contains the following code:
 ::
 
     # Load external configuration files
-    load_sml_config()
+    config = load_sml_config(config)
 
-The documentation for ``load_sml_config`` explains what it does:
+The documentation for :meth:`~snakemakelib.config.load_sml_config` explains what it does:
 
-::
-
-    Will search for configuration files in following order:
-
-    1. ~/.smlconf.yaml - a personal site-wide configuration file
-    2. ./smlconf.yaml - a standard configuration file residing in the
-        same directory as the Snakefile
-    3. cfg_file, if provided
-
-    Args:
-      cfg_file: custom configuration file to load
+.. autofunction:: snakemakelib.config.load_sml_config
 
 Consequently, one can have several layers of configurations, tailored
 for different analyses or computing environments.
@@ -320,7 +310,7 @@ configuration
 file <https://github.com/percyfal/repaper/tree/master/Buenrostro_2013/smlconf.yaml>`__,
 there configuration section ``bio.ngs.settings`` reads as follows:
 
-::
+.. code-block:: yaml
 
     bio.ngs.settings:
       sample_organization: sample_run_sra
@@ -342,7 +332,7 @@ the three levels of sample file names described above. In
 defines regular expressions for different naming conventions. For the
 ``sample_run_sra`` key, we have
 
-::
+.. code-block:: python
 
     sample_org = namedtuple('sample_organization', 'raw_run_re run_id_re sample_re')
     sample_organization = {
@@ -354,30 +344,31 @@ defines regular expressions for different naming conventions. For the
             },
 
 Setting ``sample_organization`` to ``sample_run_sra`` will load a
-dictionary with key ``sampleorg`` whose value is a ``namedtuple``
-consisting of three regular expression classes. The regular expressions
-use ``symbolic group names`` (here SM and PU) to access the matches in
-each parenthesis. SRA run names are on the format SRR###### (see
-`Understanding SRA Search
-Results <http://www.ncbi.nlm.nih.gov/books/NBK56913/#search.what_do_the_different_sra_accessi>`__),
-sample names SRS######, where # represents a digit. As can be seen
-above, snakemakelib assumes the following format for the three levels
-(even though there is no specific requirement that they begin with SRS
-and SRA in the regular expression):
+dictionary with key ``sampleorg`` whose value is a :class:`namedtuple`
+consisting of three regular expression classes. The regular
+expressions use *symbolic group names* (here ``SM`` and ``PU``) to
+access the matches in each parenthesis. SRA run names are on the
+format ``SRR######`` (see `Understanding SRA Search Results
+<http://www.ncbi.nlm.nih.gov/books/NBK56913/#search.what_do_the_different_sra_accessi>`__),
+sample names ``SRS######``, where ``#`` represents a digit. As can be
+seen above, snakemakelib assumes the following format for the three
+levels (even though there is no specific requirement that they begin
+with SRS and SRA in the regular expression):
 
-1. raw\_run: SRS###### / SRA###### / SRA######
-2. run\_id: SRS###### / SRA###### / SRA######
-3. sample: SRS###### / SRS######
+1. raw_run:  ``SRS###### / SRA###### / SRA######``
+2. run_id: ``SRS###### / SRA###### / SRA######``
+3. sample: ``SRS###### / SRS######``
 
-The symbolic group names SM and PU are not randomly chosen; the same
-tags are used here as for read group information in the `SAM format
-specification <https://www.google.se/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&cad=rja&uact=8&ved=0CCEQFjAA&url=https%3A%2F%2Fsamtools.github.io%2Fhts-specs%2FSAMv1.pdf&ei=Yyo6VaqIIYSMsAGBqoG4DA&usg=AFQjCNHFmjxTXKnxYqN0WpIFjZNylwPm0Q&bvm=bv.91427555,d.bGg>`__.
-Snakemakelib will use this information to write readgroup information to
-bam headers, if requested.
+The symbolic group names ``SM`` and ``PU`` are not randomly chosen;
+the same tags are used here as for read group information in the `SAM
+format specification
+<https://www.google.se/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&cad=rja&uact=8&ved=0CCEQFjAA&url=https%3A%2F%2Fsamtools.github.io%2Fhts-specs%2FSAMv1.pdf&ei=Yyo6VaqIIYSMsAGBqoG4DA&usg=AFQjCNHFmjxTXKnxYqN0WpIFjZNylwPm0Q&bvm=bv.91427555,d.bGg>`__.
+Snakemakelib will use this information to write readgroup information
+to bam headers, if requested.
 
 A more complicated example is shown below:
 
-::
+.. code-block:: python
 
     sample_organization = {
         ...
@@ -397,13 +388,14 @@ fastq file is
     P001_101/120924_AC003CCCXX/1_120924_AC003CCCXX_P001_101_1.fastq.gz
 
 Matching this up with the raw run regular expression above, we get
-SM=P001\_101, DT=120924, PU1=AC003CCC, and PU2=1. PU stands for Platform
-Unit and could be 'flowcell-barcode.lane' for Illumina data. This
-information is split above, hence the indexing. When snakemakelib writes
-the PU read group tag, it will concatenate the indexed PU tags in
-successive order with an underscore, so that PU=PU1\_PU2 above would be
-AC003CCC\_1. Hence, as sequencing data is a common starting point, given
-the file organization and regular expressions above, snakemakelib will
+``SM=P001_101``, ``DT=120924``, ``PU1=AC003CCC``, and ``PU2=1``.
+``PU`` stands for Platform Unit and could be 'flowcell-barcode.lane'
+for Illumina data. This information is split above, hence the
+indexing. When snakemakelib writes the ``PU`` read group tag, it will
+concatenate the indexed ``PU`` tags in successive order with an
+underscore, so that ``PU=PU1_PU2`` above would be ``AC003CCC_1``.
+Hence, as sequencing data is a common starting point, given the file
+organization and regular expressions above, snakemakelib will
 automatically generate names for downstream processing.
 
 Why the need for raw run versus run identifiers? Well, it turns out that
@@ -435,7 +427,7 @@ Finally, there is another setting in ``bio.ngs.settings`` in the
 `Buenrostro configuration
 file <https://github.com/percyfal/repaper/tree/master/Buenrostro_2013/smlconf.yaml>`__:
 
-::
+.. code-block:: yaml
 
     sample_column_map:
         SampleName: SM

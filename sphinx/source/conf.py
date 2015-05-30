@@ -370,6 +370,6 @@ epub_exclude_files = ['search.html']
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
-    'https://docs.python.org/': None,
+    'https://docs.python.org/3.4': None,
     'http://python.readthedocs.org/en/latest/' : None,
     }

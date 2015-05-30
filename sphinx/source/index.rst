@@ -16,7 +16,16 @@ Contents:
    docs/about
    docs/tutorial
    docs/configuration
+   docs/workflows
    docs/troubleshooting
+
+
+API reference
+=============
+
+.. toctree::
+   :maxdepth: 2
+
    api/modules
 
 Indices and tables

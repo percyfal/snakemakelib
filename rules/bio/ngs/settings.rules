@@ -5,6 +5,8 @@ from snakemakelib.config import update_snakemake_config
 from snakemakelib.bio.ngs.regexp import RunRegexp, SampleRegexp
 from snakemakelib.bio.ngs.db import ref
 
+include: "../../settings.rules"
+
 # Add configuration variable to snakemake global config object
 config['samples'] = config.get("samples", [])
 config['regions'] = config.get("regions", []) 

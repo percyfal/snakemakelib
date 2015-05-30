@@ -8,12 +8,15 @@ from bokeh.models.widget import Widget
 from bokeh.util.string import encode_utf8
 
 def static_html(template, resources=CDN, as_utf8=True, **kw):
-    """Render static html document. This is a minor modification of
-    bokeh.embed.file_html
+    """Render static html document.
+
+    This is a minor modification of bokeh.embed.file_html
+
     Args:
       template (Template): jinja2 HTML document template
       resources (Resources): a resource configuration for BokehJS assets
       kw: keyword argument list of bokeh components. Keywords must match with keywords in template
+      
     Returns:
       html : standalone HTML document with embedded plot
     """

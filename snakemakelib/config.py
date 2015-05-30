@@ -106,11 +106,11 @@ def load_sml_config(config, cfg_file=None):
     3. cfg_file, if provided
 
     Args:
-      config: snakemake configuration object
-      cfg_file: custom configuration file to load
+      config (dict): snakemake configuration object
+      cfg_file (str): custom configuration file to load
 
     Returns:
-      config: updated configuration
+      config (dict): updated configuration
     """
     config = BaseConfig(config)
     for fn in [os.path.join(os.getenv("HOME"), ".smlconf.yaml"),

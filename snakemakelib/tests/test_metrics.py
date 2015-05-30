@@ -17,7 +17,7 @@ def setUp():
     global PM, PH, AMa, IMa, DMa, HMa, AMf, IMf, DMf, HMf, align_metrics, dup_metrics, insert_metrics, hs_metrics, alnmet, insmet, dupmet, hsmet, inshist, duphist, Adf, Idf, Idfh, Ddf, Ddfh, Hdf
 
     metricsroot = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                               os.pardir, 'data', 'metrics', 'J.Doe_00_01')
+                               os.pardir, os.pardir, 'data', 'metrics', 'J.Doe_00_01')
     metricsfiles = []
     for root, dirs, files in os.walk(metricsroot):
         metricsfiles += [os.path.join(root, x) for x in files if x.endswith('metrics')]

@@ -1,0 +1,40 @@
+# -*- snakemake -*-
+# Qualimap: http://qualimap.bioinfo.cipf.es/
+#
+import os
+import shutil
+from snakemakelib.utils import set_cmd
+
+__module__ = 'bio.ngs.qc.qualimap'
+
+include: '../settings.rules'
+
+ngs_cfg = config['bio.ngs.settings']
+
+config_default = {
+    'bio.ngs.qc.qualimap' : {
+        'home' : os.getenv("QUALIMAP_HOME", os.curdir),
+        'cmd' : 'qualimap',
+        'threads' : ngs_cfg['threads'],
+        'bamqc' : {
+            'options' : [],
+        },
+    },
+}
+
+config = update_snakemake_config(config, config_default)
+
+qm_cfg = config['bio.ngs.qc.qualimap']
+
+qm_cfg['cmd'] = set_cmd(qm_cfg['home'], qm_cfg['cmd'], __module__)
+
+rule qualimap_bamqc:
+    """Qualimap: run bamqc on bam file"""
+    params: cmd = qm_cfg['cmd'],
+            options = " ".join(qm_cfg['bamqc']['options'])
+    input: bam = "{prefix}.bam"
+    output: html = os.path.join("{prefix}.bam.qualimap", "qualimapReport.html"),
+            genome = os.path.join("{prefix}.bam.qualimap", "genome_results.txt"),
+            outdir = "{prefix}.bam.qualimap"
+    threads: qm_cfg['threads']
+    shell: "{params.cmd} bamqc -bam {input.bam} -nt {threads} {params.options} -outdir {output.outdir}"

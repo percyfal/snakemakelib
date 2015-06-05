@@ -1,7 +1,9 @@
 # Copyright (c) 2014 Per Unneberg
 import os
+import shutil
 from datetime import datetime, date
 from snakemakelib.log import LoggerManager
+from snakemakelib.stat import is_installed
 from jinja2 import Environment, PackageLoader
 
 smllogger = LoggerManager().getLogger(__name__)
@@ -41,3 +43,50 @@ def safe_makedir(dname):
     else:
         smllogger.warning("Directory {} already exists; not making directory".format(dname))
     return dname
+
+class NotInstalledError(Exception):
+    """Error thrown if program/command/application cannot be found in path
+
+    Args:
+      msg (str): String described by exception
+      code (int, optional): Error code, defaults to 2.
+    
+    """
+    def __init__(self, msg, code=2):
+        self.msg = msg
+        self.code = code
+
+def set_cmd(home, cmd, module):
+    """Set the command, checking if the program is installed in the
+    process.
+
+    Args:
+      home (str): path to application
+      cmd (str): the actual command name
+      module (str): the calling module
+
+    Returns:
+      str: full path to the command
+
+    Example:
+
+        cmd = set_cmd("/path/to/cmd", "helloworld")
+        print(cmd)
+        # prints /path/to/cmd/helloworld
+
+    Raises:
+      NotInstalledError: if program not found in path
+
+    """
+    if home:
+        cmd = os.path.join(home, cmd)
+    else:
+        try:
+            cmd = shutil.which(cmd)
+        except:
+            pass
+
+    if not is_installed(cmd):
+        raise NotInstalledError("\n{module}: {prog} not installed or not in PATH\n".format(module=module, prog=cmd))
+
+    return cmd

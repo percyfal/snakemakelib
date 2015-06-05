@@ -1,0 +1,33 @@
+<!-- -*- jinja2 -*- -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Qualimap</title>
+
+    {{ plot_resources|indent(8) }}
+    
+    <style>
+      {{ css|indent(8) }}
+    </style>
+
+    <!-- Include bokeh script commands -->
+    {% if qualimap is defined %}
+      {{ qualimap['fig']['script'] | indent(8) }}
+    {% endif %}
+
+  </head>
+  <body>
+
+{% if qualimap is defined %}
+  <h3>Qualimap summary</h3>
+    
+  <figure>
+    {{ qualimap['fig']['div']|indent(8) }}
+    <figcaption>Qualimap summary plots. The plots are based on raw data in <a href="{{ qualimap['uri'] }}" download="{{ qualimap['file'] }}" draggable="true">{{ qualimap['file'] }}</a>
+    </figcaption>
+  </figure>
+{% endif %}
+    
+  </body>
+</html>

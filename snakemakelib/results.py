@@ -7,6 +7,8 @@ from snakemakelib.log import LoggerManager
 
 smllogger = LoggerManager().getLogger(__name__)
 
+RE_EMPTY = re.compile("^\s+$")
+
 class Results(dict):
     _inputfiles = []
     _samples = []
@@ -129,6 +131,6 @@ class Results(dict):
         indices = (0 if rs[0] is None else next((i for i in range(len(data)) if rs[0] in data[i]), -1),
                    len(data) if rs[1] is None else next((i for i in range(len(data)) if rs[0] in data[i]), -1))
         if split:
-            return pd.DataFrame ([x.strip(newline).split(sep) for x in data[indices[0] + skip:indices[1]] if not x == ""], **kw)
+            return pd.DataFrame ([x.lstrip().strip(newline).split(sep) for x in data[indices[0] + skip:indices[1]] if RE_EMPTY.match(x) is None], **kw)
         else:
             return pd.DataFrame (data[indices[0] + skip:indices[1]], **kw)

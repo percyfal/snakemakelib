@@ -12,7 +12,7 @@ class Results(dict):
     _samples = []
     _keys = ()
 
-    def __init__(self, inputs=(), samples=(), keys=(), *args, **kw):
+    def __init__(self, inputs=(), samples=(), *args, **kw):
         """Init Results.
 
         Args:
@@ -35,7 +35,6 @@ class Results(dict):
                 break
         if (len(self._samples) != len(self._inputfiles)):
             raise SamplesException("sample list must be as long as input file list")
-        self._keys = keys
         for k in self._keys:
             self[k] = pd.DataFrame()
         self._collect_results()
@@ -76,6 +75,18 @@ class Results(dict):
         """
         with open(infile) as fh:
             data = [x.strip(newline).split(sep) for x in fh.readlines() if not x.strip() == ""]
+            
+        return data
+
+    def load_lines(self, infile):
+        """Load the lines of a file.
+
+        Args:
+          infile (str): input file name
+
+        """
+        with open(infile) as fh:
+            data = fh.readlines()
         return data
 
     def load_data_frame(self, infile, default_loader="read_csv", **kwargs):
@@ -97,15 +108,19 @@ class Results(dict):
             loader = getattr(pd, default_loader)
         return loader(infile, **kwargs)
 
-    def parse_data(self, data, comment_char="#", rs=(None, None), skip=0):
+    def parse_data(self, data, sep="\t", newline="\n", comment_char="#", rs=(None, None), skip=0, split=False, **kw):
         """Parse a data set.
 
         Args:
           data (list): list of data lines split into columns
+          sep (str): field separator
+          newline (str): newline character
           comment_char (str): comment character
           rs (tuple): record separator, a 2-tuple (start_string,
             end_string) inbetween which data lines will be parsed
           skip (int): skip number of lines after first record separator match before reading
+          split (boolean): split and strip fields 
+          kw: keyword arguments to pass to data frame
 
         Returns:
           DataFrame: pandas DataFrame object with parsed data
@@ -113,4 +128,7 @@ class Results(dict):
         """
         indices = (0 if rs[0] is None else next((i for i in range(len(data)) if rs[0] in data[i]), -1),
                    len(data) if rs[1] is None else next((i for i in range(len(data)) if rs[0] in data[i]), -1))
-        return pd.DataFrame (data[indices[0] + skip:indices[1]])
+        if split:
+            return pd.DataFrame ([x.strip(newline).split(sep) for x in data[indices[0] + skip:indices[1]] if not x == ""], **kw)
+        else:
+            return pd.DataFrame (data[indices[0] + skip:indices[1]], **kw)

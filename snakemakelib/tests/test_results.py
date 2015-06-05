@@ -13,8 +13,9 @@ from snakemakelib.exceptions import SamplesException, OutputFilesException
 logging.basicConfig(level=logging.DEBUG)
 
 class Foo(Results):
+    _keys = ['foo', 'bar']
     def __init__(self, *args, **kw):
-        super(Foo, self).__init__(keys=['foo', 'bar'], *args, **kw)
+        super(Foo, self).__init__(*args, **kw)
         
     def _collect_results(self):
         pass

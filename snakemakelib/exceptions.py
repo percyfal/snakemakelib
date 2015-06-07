@@ -1,5 +1,5 @@
 # Copyright (C) 2015 by Per Unneberg
-import os
+
 
 class NotInstalledError(Exception):
     """Error thrown if program/command/application cannot be found in path
@@ -7,11 +7,12 @@ class NotInstalledError(Exception):
     Args:
       msg (str): String described by exception
       code (int, optional): Error code, defaults to 2.
-    
+
     """
     def __init__(self, msg, code=2):
         self.msg = msg
         self.code = code
+
 
 class SamplesException(Exception):
     """Error thrown if samples missing or wrong number.
@@ -19,11 +20,12 @@ class SamplesException(Exception):
     Args:
       msg (str): String described by exception
       code (int, optional): Error code, defaults to 2.
-    
+
     """
     def __init__(self, msg, code=2):
         self.msg = msg
         self.code = code
+
 
 class OutputFilesException(Exception):
     """Error thrown if outputfiles missing or wrong number.
@@ -31,7 +33,7 @@ class OutputFilesException(Exception):
     Args:
       msg (str): String described by exception
       code (int, optional): Error code, defaults to 2.
-    
+
     """
     def __init__(self, msg, code=2):
         self.msg = msg

@@ -51,9 +51,11 @@ class Results(dict):
         outputfiles correspond to the key names in sorted orde
 
         Args:
-          outputfiles (list): list of output file names. Length must correspond to number of keys.
-          kw (dict): keyword arguments to pass to pandas DataFrame.to_csv function
-        
+          outputfiles (list): list of output file names. Length must
+                              correspond to number of keys.
+          kw (dict): keyword arguments to pass to pandas DataFrame.to_csv
+                     function
+
         """
         if (len(self.keys()) != len(outputfiles)):
             raise OutputFilesException("wrong number of outputfiles; must be equal to number of keys: {klen}".format(klen=len(self)))

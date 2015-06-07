@@ -3,14 +3,18 @@ import re
 import os
 from snakemakelib.bio.ngs.regexp import RegexpDict
 
-def find_files(regexp, path = os.curdir, search=False, limit={}):
+
+def find_files(regexp, path=os.curdir, search=False, limit={}):
     """Find files in path that comply with a regular expression.
 
     Args:
-      regexp: regular expression object of class <RegexpDict> or string
-      path:   path to search
-      search: use re.search instead of re.match for pattern matching
-      limit: dictionary where keys correspond to regular expression grouping labels and values are lists that limit the returned pattern
+      regexp (RegexpDict | str): regular expression object of class
+                               <RegexpDict> or <str>
+      path (str):   path to search
+      search (bool): use re.search instead of re.match for pattern matching
+      limit (dict): dictionary where keys correspond to regular expression
+             grouping labels and values are lists that limit the 
+             returned pattern
 
     Returns:
       flist: list of file names, prepended with root path

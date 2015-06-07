@@ -20,6 +20,7 @@ config_default = {
         'home' : os.getenv("QUALIMAP_HOME", os.curdir),
         'cmd' : 'qualimap',
         'threads' : ngs_cfg['threads'],
+        'java_mem' : ngs_cfg['java']['java_mem'],
         'bamqc' : {
             'options' : [],
         },
@@ -35,13 +36,14 @@ qm_cfg['cmd'] = set_cmd(qm_cfg['home'], qm_cfg['cmd'], __module__)
 rule qualimap_bamqc:
     """Qualimap: run bamqc on bam file"""
     params: cmd = qm_cfg['cmd'],
-            options = " ".join(qm_cfg['bamqc']['options'])
+            options = " ".join(qm_cfg['bamqc']['options'] +
+                               [" --java-mem-size={java_mem}".format(**qm_cfg)])
     input: bam = "{prefix}.bam"
     output: html = os.path.join("{prefix}.bam.qualimap", "qualimapReport.html"),
             genome = os.path.join("{prefix}.bam.qualimap", "genome_results.txt"),
             outdir = "{prefix}.bam.qualimap"
     threads: qm_cfg['threads']
-    shell: "{params.cmd} bamqc -bam {input.bam} -nt {threads} {params.options} -outdir {output.outdir}"
+    shell: "unset DISPLAY; {params.cmd} bamqc -bam {input.bam} -nt {threads} {params.options} -outdir {output.outdir}"
 
 def _qualimap_find_result_files_fn(wildcards):
     tmp = "." + wildcards.label

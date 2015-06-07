@@ -1,6 +1,13 @@
 snakemakelib.report package
 ===========================
 
+Subpackages
+-----------
+
+.. toctree::
+
+    snakemakelib.report.tests
+
 Submodules
 ----------
 

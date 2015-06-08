@@ -61,11 +61,8 @@ rule qualimap_collect_results:
     output: coverage_per_contig = os.path.join("{path}", "{label}.coverage_per_contig.csv"),
     run:
         inputfiles = input
-        try:
-            samples = [ngs_cfg['sampleorg'].run_id_re.parse(f)['SM'] for f in inputfiles]
-        except KeyError:
-            raise Exception("failed to parse sample name 'SM' from input list")
-        qm = Qualimap(inputs=inputfiles, samples=samples)
+        qm = Qualimap(inputs=inputfiles,
+                      re=ngs_cfg['sampleorg'].run_id_re)
         qm.save([output.coverage_per_contig])
 
 rule qualimap_plot_summary:

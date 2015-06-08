@@ -36,7 +36,17 @@
 	{% endfor %}
       {% endif %}
     {% endif %}
-    
+
+    <!-- qualimap -->
+    {% if qualimap is defined %}
+      {% if qualimap['fig']['globals']['script'] is defined %}
+	{{ qualimap['fig']['globals']['script'] | indent(8) }}
+      {% endif %}
+      {% if qualimap['fig']['coverage_per_contig']['script'] is defined %}
+	{{ qualimap['fig']['coverage_per_contig']['script'] | indent(8) }}
+      {% endif %}
+    {% endif %}
+
   </head>
   <body>
     
@@ -60,6 +70,9 @@
     {% include 'cutadapt.html' ignore missing %}
     
     <h2>Sample-level QC metrics</h2>
+    
+    {% include 'qualimap.html' ignore missing %}
+    
     <h3>Picard metrics</h3>
     
     Things to look out for:

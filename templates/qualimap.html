@@ -1,33 +1,36 @@
 <!-- -*- jinja2 -*- -->
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <title>Qualimap</title>
-
-    {{ plot_resources|indent(8) }}
-    
-    <style>
-      {{ css|indent(8) }}
-    </style>
-
-    <!-- Include bokeh script commands -->
-    {% if qualimap is defined %}
-      {{ qualimap['fig']['script'] | indent(8) }}
-    {% endif %}
-
-  </head>
-  <body>
-
 {% if qualimap is defined %}
   <h3>Qualimap summary</h3>
-    
-  <figure>
-    {{ qualimap['fig']['div']|indent(8) }}
-    <figcaption>Qualimap summary plots. The plots are based on raw data in <a href="{{ qualimap['uri'] }}" download="{{ qualimap['file'] }}" draggable="true">{{ qualimap['file'] }}</a>
+
+  <h4>Global statistics</h4>
+  The global summary statistics show a summary of the following parameters:
+
+  <ol>
+    <li>Total number of reads</li>
+    <li>Number of mapped reads</li>
+    <li>Number of duplicated reads</li>
+    <li>Number of uniquely mapped reads</li>
+  </ol>
+  
+  {% if qualimap['fig']['globals']['div'] is defined %}
+    <figure>
+      {{ qualimap['fig']['globals']['div']|indent(8) }}
+      <figcaption>Qualimap global summary statistics. The plots are based on raw data in <a href="{{ qualimap['uri']['globals'] }}" download="{{ qualimap['file']['globals'] }}" draggable="true">{{ qualimap['file']['globals'] }}</a>
     </figcaption>
-  </figure>
+    </figure>
+  {% endif %}
+
+  <h4>Coverage per contig</h4>
+
+  The coverage per contig plots show the proportion of reads mapping
+  to a given chromosome versus the length of the chromosome expressed
+  as a proportion of the total genome length.
+  
+  {% if qualimap['fig']['coverage_per_contig']['div'] is defined %}
+    <figure>
+      {{ qualimap['fig']['coverage_per_contig']['div']|indent(8) }}
+      <figcaption>Qualimap coverage per contig summary plots. The plots are based on raw data in <a href="{{ qualimap['uri']['coverage_per_contig'] }}" download="{{ qualimap['file']['coverage_per_contig'] }}" draggable="true">{{ qualimap['file']['coverage_per_contig'] }}</a>
+    </figcaption>
+    </figure>
+  {% endif %}
 {% endif %}
-    
-  </body>
-</html>

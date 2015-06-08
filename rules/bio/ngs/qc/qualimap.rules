@@ -48,10 +48,13 @@ rule qualimap_bamqc:
 
 
 def _qualimap_find_result_files_fn(wildcards):
-    tmp = "." + wildcards.label
+    tmp = wildcards.label.lstrip("sample").lstrip("run")
     ngs_cfg = config['bio.ngs.settings']
+    tgt_re = ngs_cfg['sampleorg'].run_id_re
+    if wildcards.label.startswith("sample"):
+        tgt_re = ngs_cfg['sampleorg'].sample_re
     sources = generic_target_generator(
-        tgt_re = ngs_cfg['sampleorg'].run_id_re,
+        tgt_re = tgt_re,
         src_re = ngs_cfg['sampleorg'].run_id_re,
         target_suffix = os.path.join(tmp, 'genome_results.txt'),
         **ngs_cfg)
@@ -64,20 +67,22 @@ rule qualimap_collect_results:
     output: coverage_per_contig = os.path.join("{path}", "{label}.coverage_per_contig.csv"),
             qmglobals = os.path.join("{path}", "{label}.globals.csv")
     run:
-        qm = Qualimap(inputs=input,
-                      re=ngs_cfg['sampleorg'].run_id_re)
+        tgt_re = ngs_cfg['sampleorg'].run_id_re
+        if wildcards.label.startswith('sample'):
+            tgt_re = ngs_cfg['sampleorg'].sample_re
+        qm = Qualimap(inputs=input, re=tgt_re)
         qm.save(sorted([output.qmglobals, output.coverage_per_contig]))
 
 
 rule qualimap_plot_summary:
     """Qualimap: plot summary results"""
-    input: coverage_per_contig = os.path.join("{path}", "{label}.coverage_per_contig.csv"),
-           qmglobals = os.path.join("{path}", "{label}.globals.csv")
+    input: qmglobals = os.path.join("{path}", "{label}.globals.csv"),
+           coverage_per_contig = os.path.join("{path}", "{label}.coverage_per_contig.csv")
     output: qualimap_summary = os.path.join("{path}", "{label}.summary.html")
     run:
         d = {}
-        d.update({'qualimap' : make_qualimap_plots(**dict(input))})
-        tp = SmlTemplateEnv.get_template('qualimap_summary.html')
+        d.update({'qualimap' : make_qualimap_plots(*input)})
+        tp = SmlTemplateEnv.get_template('qualimap.html')
         with open(output.qualimap_summary, "w") as fh:
             fh.write(static_html(tp, **d))
 

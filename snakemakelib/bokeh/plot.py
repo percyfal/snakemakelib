@@ -2,6 +2,8 @@
 import math
 import inspect
 import numpy as np
+import pandas as pd
+from bokeh.io import hplot
 from bokeh.models import ColumnDataSource
 from bokeh.palettes import brewer
 from bokeh.plotting import figure, Figure, gridplot
@@ -201,7 +203,7 @@ def dotplot(y, df, groups=[],
     return (fig)
 
 
-def make_dotplot(y, df, groups=[],
+def make_dotplot(y, df, groups=[], both=False,
                  xaxis={'axis_label': "", 'major_label_orientation': np.pi/3},
                  yaxis={'axis_label': "", 'major_label_orientation': 1},
                  grid={'grid_line_color': "gray", 'grid_line_alpha': 0.2},
@@ -219,48 +221,63 @@ def make_dotplot(y, df, groups=[],
       circle (dict): args passed to figure circle object
       tooltips (list): tooltips to include
       relative_to (str): if set, calculate y values relative to parameter
+      both (bool): if relative_to, return both plots
       kwargs (dict): keyword arguments to pass to figure method
 
     Returns:
       fig (py:class:`bokeh.models.Figure`): Figure object
     """
+    def _make_plot():
+        df['i'] = list(range(1, len(df.index) + 1))
+        source = ColumnDataSource(df)
+        color = brewer["PiYG"][min(max(3, len(y)), 10)]
+        if 'color' in circle.keys():
+            color = circle.pop('color')
+        fig = figure(x_range=x_range, y_range=y_range, **kwargs)
+        for (yy, c) in zip(y, color):
+            fig.circle(x="i", y=yy, color=c,
+                       source=source, **circle)
+        for k in xaxis.keys():
+            [setattr(attr, k, xaxis[k]) for attr in fig.xaxis]
+        for k in yaxis.keys():
+            [setattr(attr, k, yaxis[k]) for attr in fig.yaxis]
+        for k in grid.keys():
+            [setattr(attr, k, grid[k]) for attr in fig.grid]
+        # NB: currently assume it is a dictionary
+        for tt in tooltips:
+            h = fig.select(dict(type=tt['type']))
+            h.tooltips = tt['tips']
+        return fig, color
+
     y_range = kwargs.pop('y_range')
     if groups:
         grouped = df.groupby(groups)
     else:
         grouped = {"all": df}
+    x_range = sorted(list(grouped.groups.keys()))
+    p, color = _make_plot()
     if relative_to is not None:
         df_tmp = df[y].T
         iloc = next((i for i in range(len(y)) if relative_to in y[i]))
         df_tmp = (100.0 * df_tmp/df_tmp.iloc[iloc]).T
         df = df_tmp
         y_range = [0, 110]
-        yaxis['axis_label'] = "Proportion (%)"
-    df['i'] = list(range(1, len(df.index) + 1))
-    source = ColumnDataSource(df)
-    x_range = sorted(list(grouped.groups.keys()))
-    fig = figure(x_range=x_range, y_range=y_range, **kwargs)
-    if set(y) <= set(source.column_names):
-        color = ['black'] * len(y)
-        color = brewer["PiYG"][10]  # [min(max(3, len(y)), 10)]
-        if 'color' in circle.keys():
-            color = circle.pop('color')
-        for (yy, c) in zip(y, color):
-            fig.circle(x="i", y=yy, color=c, legend=yy,
-                       source=source, **circle)
-    for k in xaxis.keys():
-        [setattr(attr, k, xaxis[k]) for attr in fig.xaxis]
-    for k in yaxis.keys():
-        [setattr(attr, k, yaxis[k]) for attr in fig.yaxis]
-    for k in grid.keys():
-        [setattr(attr, k, grid[k]) for attr in fig.grid]
-    # NB: currently assume it is a dictionary
-    for tt in tooltips:
-        h = fig.select(dict(type=tt['type']))
-        h.tooltips = tt['tips']
-    return fig
-
-
+        yaxis['axis_label'] = "Proportion of {} (%)".format(relative_to)
+        circle.update({'x_range': p.x_range})
+        prel, color = _make_plot()
+    # Make legend
+    df_leg = pd.DataFrame({'i': 1, 'y': list(range(len(color))), 'text': y})
+    source = ColumnDataSource(df_leg)
+    fig = figure(x_range=[0.5,2.5], y_range=[-.5, len(color)-.5], plot_width=kwargs.get('plot_width', 200),
+                 title="Legend", plot_height=kwargs.get('plot_height', 400),
+                 x_axis_type=None, y_axis_type=None)
+    fig.square(x=1, y='y', size=20, color=color, source=source)
+    fig.text(x=1.1, y='y', text='text', source=source)
+    fig.grid.grid_line_color = None
+    if both:
+        return gridplot([[p, prel, fig]])
+    else:
+        return gridplot([[p, fig]])
 
 
 def make_gridplot(y, df, x="i", text="None",

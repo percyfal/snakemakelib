@@ -13,8 +13,6 @@ RE_EMPTY = re.compile(r"^\s+$")
 
 class Results(dict):
     """Results dictionary"""
-    _inputfiles = []
-    _samples = []
     _keys = ()
 
     def __init__(self, inputs=(), samples=(), re=None, *args, **kw):
@@ -30,6 +28,9 @@ class Results(dict):
           keys (tuple): tuple of keys
 
         """
+        self._inputfiles = []
+        self._samples = []
+
         super(Results, self).__init__(*args, **kw)
         for x in inputs:
             if isinstance(x, tuple):

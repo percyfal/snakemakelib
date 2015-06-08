@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from snakemake.report import data_uri
 from snakemakelib.results import Results
-from snakemakelib.bokeh.plot import make_gridplot, make_dotplot, dotplot
+from snakemakelib.bokeh.plot import make_gridplot, make_dotplot
 from snakemakelib.log import LoggerManager
 
 smllogger = LoggerManager().getLogger(__name__)
@@ -30,10 +30,9 @@ class Qualimap(Results):
         df_tmp['Sample'] = sample
         try:
             if first:
-                self['globals'] = df_tmp.copy(deep=True)
+                self['globals'] = df_tmp
             else:
-                self['globals'] = self['globals'].append(
-                    df_tmp, ignore_index=True)
+                self['globals'] = self['globals'].append(df_tmp, ignore_index=True)
         except:
             smllogger.warn("failed to append data to globals dataframe")
 
@@ -50,7 +49,7 @@ class Qualimap(Results):
             sum(df_tmp['mapped_bases'])
         try:
             if first:
-                self['coverage_per_contig'] = df_tmp.copy(deep=True)
+                self['coverage_per_contig'] = df_tmp
             else:
                 self['coverage_per_contig'] = self['coverage_per_contig'].append(
                     df_tmp, ignore_index=True)
@@ -82,21 +81,26 @@ def make_qualimap_plots(qmglobals=None, coverage_per_contig=None,
     # Globals
     if qmglobals is not None:
         df_all = pd.read_csv(qmglobals)
-        dp = make_dotplot(y=['number of reads',
+        df_all['number of unique reads'] = df_all['number of mapped reads']\
+            - df_all['number of duplicated reads']
+        plot_config = {'y': ['number of reads',
                              'number of mapped reads',
-                             'number of duplicated reads'],
-                          df=df_all, groups=['Sample'], title="Test",
-                          y_range=[0,max(df_all['number of reads'])],
-                          xaxis={'axis_label': "sample",
+                             'number of duplicated reads',
+                             'number of unique reads'],
+                       'df': df_all, 'groups': ['Sample'],
+                       'y_range': [0, max(df_all['number of reads'])],
+                       'xaxis': {'axis_label': "sample",
                                  'major_label_orientation': np.pi/3,
-                                 'axis_label_text_font_size': '8pt'},
-                          yaxis={'axis_label' : "count",
+                                 'axis_label_text_font_size': '10pt'},
+                       'yaxis': {'axis_label': "count",
                                  'major_label_orientation': 1,
-                                 'axis_label_text_font_size': '8pt'},
-                          circle={'size': 20, 'alpha': 0.3},
-                          relative_to="number of reads")
-
-        retval['fig']['globals'] = dp
+                                 'axis_label_text_font_size': '10pt'},
+                       'circle': {'size': 20, 'alpha': 0.3},
+                       'title': "Qualimap summary",
+                       'relative_to': "number of reads",
+                       'plot_width': 400, 'plot_height': 400,
+                       'both': True}
+        retval['fig']['globals'] = make_dotplot(**plot_config)
 
     # Coverage per contig
     if coverage_per_contig is not None:

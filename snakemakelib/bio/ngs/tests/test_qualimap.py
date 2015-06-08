@@ -7,6 +7,7 @@ from snakemakelib.bio.ngs.qc.qualimap import Qualimap
 
 
 class TestQualimap(unittest.TestCase):
+    """Test Qualimap"""
     def setUp(self):
         self.data = ['>>>>>>> Globals\n',
                      'number of windows = 10\n',
@@ -17,16 +18,6 @@ class TestQualimap(unittest.TestCase):
                      '\n',
                      '\t'.join(['foo', '11', '12', '1.1', '1.2\n']),
                      '\t'.join(['bar', '21', '22', '2.1', '2.2\n'])]
-
-    @patch('pandas.DataFrame')
-    @patch('snakemakelib.results.Results.load_lines')
-    def test_collect_results(self, mock_load_lines, mock_df):
-        mock_load_lines.return_value = self.data
-        mock_df.return_value = pd.DataFrame()
-        Qualimap([('foo', 'bar')])
-        (args, kw) = mock_df.call_args
-        self.assertListEqual([x.strip("\n").split("\t")
-                              for x in self.data[7:]], args[0])
 
     @patch('snakemakelib.results.Results.load_lines')
     def test_qualimap_coverage(self, mock_load_lines):
@@ -39,5 +30,15 @@ class TestQualimap(unittest.TestCase):
     def test_qualimap_globals(self, mock_load_lines):
         mock_load_lines.return_value = self.data
         qm = Qualimap([('foo', 'bar')])
-        self.assertListEqual([10.0, 10000000.0, 9900000.0],
-                             list(qm['globals']['value']))
+        self.assertListEqual(sorted([10.0, 10000000.0, 9900000.0]),
+                             sorted(list(qm['globals'].loc['bar'])))
+
+    @patch('pandas.DataFrame')
+    @patch('snakemakelib.results.Results.load_lines')
+    def test_collect_results(self, mock_load_lines, mock_df):
+        mock_load_lines.return_value = self.data
+        mock_df.return_value = pd.DataFrame()
+        qm = Qualimap([('foo', 'bar')])
+        (args, kw) = mock_df.call_args
+        self.assertListEqual([x.strip("\n").split("\t")
+                              for x in self.data[7:]], args[0])

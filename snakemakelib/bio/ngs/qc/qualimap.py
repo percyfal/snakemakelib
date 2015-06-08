@@ -23,7 +23,6 @@ class Qualimap(Results):
         smllogger.info("Collecting results")
         first = True
         for (f, s) in zip(self._inputfiles, self._samples):
-            print ("File: ", f)
             data = self.load_lines(f)
             df_tmp = self.parse_data(data,
                                      rs=("Coverage per contig", None),
@@ -35,13 +34,8 @@ class Qualimap(Results):
                 if first:
                     df = df_tmp.copy(deep=True)
                     first = False
-                    print ("first: ", df.shape)
                 else:
-                    print (df.shape)
-                    print (df.iloc[1,])
-                    print (df_tmp.iloc[1,])
-                    df = df.append(df_tmp, ignore_index=True)
-                    print (df.shape)
+                    df.append(df_tmp, ignore_index=True)
             except:
                 smllogger.warn("failed to append data to coverage_per_contig dataframe")
         df['chrlen_percent'] = 100 * df['chrlen']/sum(df['chrlen'])
@@ -54,36 +48,45 @@ def make_qualimap_plots(coverage_per_contig=None,
     """Make qualimap summary plots"""
     df_all = pd.read_csv(coverage_per_contig, index_col=0)
     samples = list(set(df_all.Sample))
-    print (samples)
-    print (list(df_all.chrlen_percent))
-    plist = []
     source = ColumnDataSource(df_all)
     df = df_all
     p = figure(title="plot",
                x_range=[-1, max(df['chrlen_percent']) * 1.1],
                y_range=[-1, max(df['mapped_bases_percent']) * 1.1])
-    p.text('chrlen_percent',
-           'mapped_bases_percent',
-           text='chr', source=source)
-    m = max(df['chrlen_percent'] + df['mapped_bases_percent'])
-    p.line(x=[0, m], y=[0, m])
+    # p.text('chrlen_percent',
+    #        'mapped_bases_percent',
+    #        text='chr', source=source)
+    p.circle('chrlen_percent',
+             'mapped_bases_percent',
+             source=source)
+    # p.line(x=[0, max('chrlen_percent')],
+    #        y=[0, max('mapped_bases_percent')],
+    #        source=source)
     callback = Callback(args=dict(source=source), code="""
-    var data = source.get('data');
-    var sample = cb_obj.get('value')
-    x = data['mapped_bases_percent']
-    y = data['chrlen']
-    text = data['chr']
-    samples = data['Sample']
+    var dsource = source.get('data');
+    var ind = cb_obj.get('value')
+    var arrayUnique = function(a) {
+        return a.reduce(function(p, c) {
+            if (p.indexOf(c) < 0) p.push(c);
+                return p;
+            }, []);
+    };
+    var unique_samples = arrayUnique(dsource['Sample'])
+    var sample = unique_samples[ind - 1]
+    samples = dsource['Sample']
+    x = dsource['x']
+    y = dsource['y']
     for (i = 0; i < samples.length; i++) {
          if (sample == samples[i]) {
-             x[i] = data['mapped_bases_percent'][i]
-             y[i] = data['chrlen_percent'][i]
-             text[i] = data['chr'][i]
+    x[i] = 2* x[i]
          }
     }
     source.trigger('change');
     """)
-    dropdown= Dropdown(menu = [(s, s) for s in samples], callback=callback, label="Samples")
-    return {'fig': vform(dropdown, p),
+    # dropdown = Dropdown(menu=[(s, "change") for s in samples],
+    #                     callback=callback, label="Samples")
+    slider = Slider(start=0, end=len(samples), value=0, step=1,
+                    title="Sample", callback=callback)
+    return {'fig': vform(slider, p),
             'uri': data_uri(coverage_per_contig),
             'file': coverage_per_contig}

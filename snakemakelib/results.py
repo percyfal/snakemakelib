@@ -140,7 +140,8 @@ class Results(dict):
         return loader(infile, **kwargs)
 
     @classmethod
-    def parse_data(cls, data, sep="\t", newline="\n", comment_char="#", rs=(None, None), skip=0, split=False, **kw):
+    def parse_data(cls, data, sep="\t", newline="\n", comment_char="#",
+                   rs=(None, None), skip=0, split=False, **kw):
         """Parse a data set.
 
         Args:
@@ -162,7 +163,7 @@ class Results(dict):
         indices = (0 if rs[0] is None else next((i for i in range(len(data))
                                                  if rs[0] in data[i]), -1),
                    len(data) if rs[1] is None else next(
-                       (i for i in range(len(data)) if rs[0] in data[i]), -1))
+                       (i for i in range(len(data)) if rs[1] in data[i]), -1))
         if split:
             return pd.DataFrame([x.lstrip().strip(newline).split(sep)
                                  for x in data[indices[0] + skip:indices[1]]

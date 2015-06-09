@@ -38,7 +38,7 @@ class TestQualimap(unittest.TestCase):
     def test_collect_results(self, mock_load_lines, mock_df):
         mock_load_lines.return_value = self.data
         mock_df.return_value = pd.DataFrame()
-        qm = Qualimap([('foo', 'bar')])
+        Qualimap([('foo', 'bar')])
         (args, kw) = mock_df.call_args
         self.assertListEqual([x.strip("\n").split("\t")
                               for x in self.data[7:]], args[0])

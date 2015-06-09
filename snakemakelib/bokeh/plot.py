@@ -44,7 +44,7 @@ def scatterplot(x, y,
                 xaxis={'axis_label': "", 'major_label_orientation': np.pi/3},
                 yaxis={'axis_label': "", 'major_label_orientation': 1},
                 grid={'grid_line_color': None, 'grid_line_alpha': 1.0},
-                tooltips=[], qc=None, **kwargs):
+                tooltips=[], qc={}, **kwargs):
     """Make a scatter plot"""
     # x_axis_type, y_axis_type missed by inspect
     figmembers = [m[0] for m in inspect.getmembers(Figure)]
@@ -84,8 +84,7 @@ def scatterplot2(y, df, x="i", groups=[],
                  xaxis={'axis_label': "", 'major_label_orientation': np.pi/3},
                  yaxis={'axis_label': "", 'major_label_orientation': 1},
                  grid={'grid_line_color': None, 'grid_line_alpha': 1.0},
-                 circle={'', ''},
-                 tooltips=[], qc=None, **kwargs):
+                 circle={}, tooltips=[], qc=None, **kwargs):
     """Make a scatter plot
 
     Args:
@@ -123,13 +122,8 @@ def scatterplot2(y, df, x="i", groups=[],
     # Get figure
     fig = figure(x_range=x_range, **kwargs)
 
-    # # sort out arguments
-    # figmembers = [m[0] for m in inspect.getmembers(Figure)]
-    # circle_kwargs_keys = list(set(list(kwargs.keys())).difference(
-    #     set(figmembers)))
-    # circle_kwargs = {k: kwargs.pop(k) for k in circle_kwargs_keys}
     # Add qc cutoff if required
-    if qc is not None:
+    if qc:
         getattr(fig, qc.plot_type)(x=qc.x, y=qc.y, **qc.kwargs)
     # Add scatter points - check if list of strings, if present in
     # source we do several

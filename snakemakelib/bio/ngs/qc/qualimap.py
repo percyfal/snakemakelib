@@ -43,10 +43,13 @@ class Qualimap(Results):
                                  columns=COVERAGE_PER_CONTIG_COLUMNS,
                                  dtype=float)
         df_tmp["Sample"] = sample
-        df_tmp['chrlen_percent'] = 100 * df_tmp['chrlen'] /\
-            sum(df_tmp['chrlen'])
-        df_tmp['mapped_bases_percent'] = 100 * df_tmp['mapped_bases'] /\
-            sum(df_tmp['mapped_bases'])
+        try:
+            df_tmp['chrlen_percent'] = 100 * df_tmp['chrlen'] /\
+                sum(df_tmp['chrlen'])
+            df_tmp['mapped_bases_percent'] = 100 * df_tmp['mapped_bases'] /\
+                sum(df_tmp['mapped_bases'])
+        except:
+            smllogger.warn("coverage_per_contig: failed to normalize data")
         try:
             if first:
                 self['coverage_per_contig'] = df_tmp

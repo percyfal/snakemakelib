@@ -22,21 +22,16 @@
     {% if picard is defined %}
       {% if picard['InsertMetrics'] is defined %}
 	{% for key, val in picard['InsertMetrics'].items() %}
-	  {# {{ val['fig']['metrics']['script'] | indent(8) }} #}
-	  {# {{ val['fig']['hist']['script'] | indent(8) }} #}
 	  {{ val['fig']['script'] | indent(8) }}
 	{% endfor %}
       {% endif %}
       {% if picard['AlignMetrics'] is defined %}
 	{% for key, val in picard['AlignMetrics'].items() %}
- 	  {# {{ val['fig']['metrics']['script'] | indent(8) }} #}
 	  {{ val['fig']['script'] | indent(8) }}
 	{% endfor %}
       {% endif %}
       {% if picard['DuplicationMetrics'] is defined %}
 	{% for key, val in picard['DuplicationMetrics'].items() %}
-	  {# {{ val['fig']['metrics']['script'] | indent(8) }} #}
-	  {# {{ val['fig']['hist']['script'] | indent(8) }} #}
 	  {{ val['fig']['script'] | indent(8) }}
 	{% endfor %}
       {% endif %}

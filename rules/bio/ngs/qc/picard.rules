@@ -57,7 +57,9 @@ config_default = {
             'output' : [],
             'inputfun' : _find_merge_inputs,
         },
-        'qcrules' : ['picard_collect_insert_size_metrics', 'picard_collect_alignment_summary_metrics', 'picard_mark_duplicates'],
+        'qcrules' : ['picard_collect_insert_size_metrics',
+                     'picard_collect_alignment_summary_metrics',
+                     'picard_mark_duplicates'],
     },
 }
 

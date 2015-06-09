@@ -93,8 +93,11 @@ class AlignMetrics(Metrics):
     def __init__(self, *args, **kwargs):
         super(AlignMetrics, self).__init__(*args, **kwargs)
         self.plots = [{'x': 'Sample', 'y': 'PCT_PF_READS_ALIGNED',
+                       'plot_width': 400, 'plot_height': 400,
                        'groups': 'CATEGORY', 'y_range': [0, 100],
                        'title': 'Percent PF_READS aligned per sample',
+                       'title_text_font_size': "12pt",
+                       'circle': {'size': 10, 'alpha': 0.3},
                        'xaxis': {'axis_label': 'Sample',
                                  'major_label_orientation': np.pi/3,
                                  'axis_label_text_font_size': '10pt'},
@@ -107,7 +110,10 @@ class InsertMetrics(Metrics):
     def __init__(self, *args, **kwargs):
         super(InsertMetrics, self).__init__(*args, **kwargs)
         self.plots = [{'x': 'Sample', 'y': 'MEAN_INSERT_SIZE',
+                       'plot_width': 400, 'plot_height': 400,
                        'title': 'Mean insert size',
+                       'title_text_font_size': "12pt",
+                       'circle': {'size': 10, 'alpha': 0.3},
                        'xaxis': {'axis_label': 'Sample',
                                  'major_label_orientation': np.pi/3,
                                  'axis_label_text_font_size': '10pt'},
@@ -119,7 +125,10 @@ class InsertMetrics(Metrics):
 class InsertHist(HistMetrics):
     def __init__(self, *args, **kwargs):
         super(InsertHist, self).__init__(*args, **kwargs)
-        self.kw = {'groups': ["Sample"], 'title': "Insert size distribution",
+        self.kw = {'groups': ["Sample"],
+                   'plot_width': 400, 'plot_height': 400,
+                   'title': "Insert size distribution",
+                   'title_text_font_size': "12pt",
                    'xaxis': {'axis_label': 'Insert size',
                              'axis_label_text_font_size': '10pt'},
                    'yaxis': {'axis_label': 'Count',
@@ -131,7 +140,10 @@ class DuplicationMetrics(Metrics):
         super(DuplicationMetrics, self).__init__(*args, **kwargs)
         self.plots = [{'x': 'Sample', 'y': 'PERCENT_DUPLICATION',
                        'y_range': [0, 100],
+                       'plot_width': 400, 'plot_height': 400,
                        'title': 'Percent duplication per sample',
+                       'title_text_font_size': "12pt",
+                       'circle': {'size': 10, 'alpha': 0.3},
                        'xaxis': {'axis_label': 'Sample',
                                  'major_label_orientation': np.pi/3,
                                  'axis_label_text_font_size': '10pt'},
@@ -145,7 +157,10 @@ class DuplicationHist(HistMetrics):
     # q-what-is-meaning-of-the-histogram-produced-by-markduplicates
     def __init__(self, *args, **kwargs):
         super(DuplicationHist, self).__init__(*args, **kwargs)
-        self.kw = {'groups': ["Sample"], 'title': "Return of investment",
+        self.kw = {'groups': ["Sample"],
+                   'plot_width': 400, 'plot_height': 400,
+                   'title': "Return of investment",
+                   'title_text_font_size': "12pt",
                    'xaxis': {'axis_label': 'Coverage multiple',
                              'axis_label_text_font_size': '10pt'},
                    'yaxis': {'axis_label': 'Multiple of additional coverage',

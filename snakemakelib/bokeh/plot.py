@@ -84,8 +84,26 @@ def scatterplot2(y, df, x="i", groups=[],
                  xaxis={'axis_label': "", 'major_label_orientation': np.pi/3},
                  yaxis={'axis_label': "", 'major_label_orientation': 1},
                  grid={'grid_line_color': None, 'grid_line_alpha': 1.0},
+                 circle={'', ''},
                  tooltips=[], qc=None, **kwargs):
-    """Make a scatter plot"""
+    """Make a scatter plot
+
+    Args:
+      y (str): column name for y variable
+      df (py:class:`~pandas.DataFrame`): data frame
+      x (str): column name for x variable
+      groups (list): list of column names to group by
+      xaxis (dict): args passed to figure xaxis object
+      yaxis (dict): args passed to figure yaxis object
+      grid (dict): args passed to figure grid object
+      circle (dict): args passed to figure circle object
+      tooltips (list): tooltips to include
+      qc (bool): do qc
+      kwargs (dict): keyword arguments to pass to figure method
+
+    Returns:
+      fig (py:class:`bokeh.models.Figure`): Figure object
+    """
     # Update data frame
     df['i'] = list(range(1, len(df.index) + 1))
     # Catchall groupby group
@@ -105,11 +123,11 @@ def scatterplot2(y, df, x="i", groups=[],
     # Get figure
     fig = figure(x_range=x_range, **kwargs)
 
-    # sort out arguments
-    figmembers = [m[0] for m in inspect.getmembers(Figure)]
-    circle_kwargs_keys = list(set(list(kwargs.keys())).difference(
-        set(figmembers)))
-    circle_kwargs = {k: kwargs.pop(k) for k in circle_kwargs_keys}
+    # # sort out arguments
+    # figmembers = [m[0] for m in inspect.getmembers(Figure)]
+    # circle_kwargs_keys = list(set(list(kwargs.keys())).difference(
+    #     set(figmembers)))
+    # circle_kwargs = {k: kwargs.pop(k) for k in circle_kwargs_keys}
     # Add qc cutoff if required
     if qc is not None:
         getattr(fig, qc.plot_type)(x=qc.x, y=qc.y, **qc.kwargs)
@@ -117,14 +135,14 @@ def scatterplot2(y, df, x="i", groups=[],
     # source we do several
     if set(y) <= set(source.column_names):
         color = brewer["PiYG"][10]
-        if 'color' in circle_kwargs.keys():
-            color = circle_kwargs.pop('color')
+        if 'color' in circle.keys():
+            color = circle.pop('color')
         for (yy, c) in zip(y, color):
             fig.circle(x=x, y=yy, color=c, legend=yy,
-                       source=source, **circle_kwargs)
+                       source=source, **circle)
     else:
         fig.circle(x=x, y=y, source=source, color=colors,
-                   legend=groups, **circle_kwargs)
+                   legend=groups, **circle)
     for k in xaxis.keys():
         [setattr(attr, k, xaxis[k]) for attr in fig.xaxis]
     for k in yaxis.keys():
@@ -208,7 +226,7 @@ def make_dotplot(y, df, groups=[], both=False,
                  yaxis={'axis_label': "", 'major_label_orientation': 1},
                  grid={'grid_line_color': "gray", 'grid_line_alpha': 0.2},
                  circle={}, relative_to=None,
-                 tooltips=[], **kwargs):
+                 tooltips=[], sidelegend=False, **kwargs):
     """Make a (categorical) dotplot.
 
     Args:
@@ -222,6 +240,7 @@ def make_dotplot(y, df, groups=[], both=False,
       tooltips (list): tooltips to include
       relative_to (str): if set, calculate y values relative to parameter
       both (bool): if relative_to, return both plots
+      sidelegend (bool): place legend beside figure
       kwargs (dict): keyword arguments to pass to figure method
 
     Returns:
@@ -235,6 +254,8 @@ def make_dotplot(y, df, groups=[], both=False,
             color = circle.pop('color')
         fig = figure(x_range=x_range, y_range=y_range, **kwargs)
         for (yy, c) in zip(y, color):
+            if not sidelegend:
+                circle.update({'legend': yy})
             fig.circle(x="i", y=yy, color=c,
                        source=source, **circle)
         for k in xaxis.keys():
@@ -249,13 +270,18 @@ def make_dotplot(y, df, groups=[], both=False,
             h.tooltips = tt['tips']
         return fig, color
 
+    plist = []
     y_range = kwargs.pop('y_range')
     if groups:
         grouped = df.groupby(groups)
     else:
         grouped = {"all": df}
-    x_range = sorted(list(grouped.groups.keys()))
+    if len(groups) > 1:
+        x_range = ["_".join(x) for x in sorted(list(grouped.groups.keys()))]
+    else:
+        x_range = sorted(list(grouped.groups.keys()))
     p, color = _make_plot()
+    plist = [p]
     if relative_to is not None:
         df_tmp = df[y].T
         iloc = next((i for i in range(len(y)) if relative_to in y[i]))
@@ -265,19 +291,28 @@ def make_dotplot(y, df, groups=[], both=False,
         yaxis['axis_label'] = "Proportion of {} (%)".format(relative_to)
         circle.update({'x_range': p.x_range})
         prel, color = _make_plot()
+        plist.append(prel)
     # Make legend
-    df_leg = pd.DataFrame({'i': 1, 'y': list(range(len(color))), 'text': y})
-    source = ColumnDataSource(df_leg)
-    fig = figure(x_range=[0.5,2.5], y_range=[-.5, len(color)-.5], plot_width=kwargs.get('plot_width', 200),
-                 title="Legend", plot_height=kwargs.get('plot_height', 400),
-                 x_axis_type=None, y_axis_type=None)
-    fig.square(x=1, y='y', size=20, color=color, source=source)
-    fig.text(x=1.1, y='y', text='text', source=source)
-    fig.grid.grid_line_color = None
+    if sidelegend:
+        df_leg = pd.DataFrame({'i': 1,
+                               'y': list(range(min(len(y), len(color)))),
+                               'text': y})
+        source = ColumnDataSource(df_leg)
+        lgd = figure(x_range=[0.5, 2.5], y_range=[-.5, len(color)-.5],
+                     plot_width=kwargs.get('plot_width', 200),
+                     plot_height=kwargs.get('plot_height', 400),
+                     title="Legend",
+                     title_text_font_size=kwargs.get('title_text_font_size',
+                                                     12),
+                     x_axis_type=None, y_axis_type=None)
+        lgd.square(x=1, y='y', size=20, color=color, source=source)
+        lgd.text(x=1.1, y='y', text='text', source=source)
+        lgd.grid.grid_line_color = None
+        plist.append(lgd)
     if both:
-        return gridplot([[p, prel, fig]])
+        return gridplot([plist])
     else:
-        return gridplot([[p, fig]])
+        return gridplot([plist])
 
 
 def make_gridplot(y, df, x="i", text="None",

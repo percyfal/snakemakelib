@@ -11,6 +11,10 @@
     <li>Number of duplicated reads</li>
     <li>Number of uniquely mapped reads</li>
   </ol>
+
+  Note the meaning of duplicated reads and unique reads. Uniquely
+  mapping reads map to only one locus, but may very well be duplicated
+  if another read pair maps uniquely to the same locus.
   
   {% if qualimap['fig']['globals']['div'] is defined %}
     <figure>
@@ -23,8 +27,8 @@
   <h4>Coverage per contig</h4>
 
   The coverage per contig plots show the proportion of reads mapping
-  to a given chromosome versus the length of the chromosome expressed
-  as a proportion of the total genome length.
+  to a given contig versus the length of the contig expressed
+  as a proportion of the total contig length.
   
   {% if qualimap['fig']['coverage_per_contig']['div'] is defined %}
     <figure>

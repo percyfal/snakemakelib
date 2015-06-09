@@ -222,7 +222,8 @@ rule atacseq_report:
     input: cutadapt = os.path.join("{path}", "cutadapt.summary.csv") if atac_cfg['trimadaptor'] else [],
            picard = [("report/picard.sort.merge.dup{sfx}.metrics.csv".format(sfx=sfx), 
            "report/picard.sort.merge.dup{sfx}.hist.csv".format(sfx=sfx)) for sfx in [workflow._rules[x].params.suffix for x in picard_config['qcrules']]],
-           qualimap = [os.path.join("{path}", "{label}.globals.csv"), os.path.join("{path}", "{label}.coverage_per_contig.csv")],
+           qualimap = [os.path.join("{path}", "sample{}.qualimap.globals.csv".format(MERGE_TARGET_SUFFIX)),
+                       os.path.join("{path}", "sample{}.qualimap.coverage_per_contig.csv".format(MERGE_TARGET_SUFFIX))],
            rulegraph = "report/atacseq_all_rulegraph.png"
     output: html = os.path.join("{path}", "atacseq_summary.html")
     run:
@@ -231,7 +232,7 @@ rule atacseq_report:
         tp = env.get_template('workflow_atacseq_qc.html')
         if atac_cfg['trimadaptor']:
             d.update({'cutadapt' : make_cutadapt_summary_plot(input.cutadapt)})
-        d.update({'qualimap' : make_qualimap_plots(input.qualimap)})
+        d.update({'qualimap' : make_qualimap_plots(*input.qualimap)})
         d.update({'picard' : make_picard_summary_plots(input.picard)})
         d.update({'rulegraph' : {'uri' : data_uri(input.rulegraph), 'file' : input.rulegraph, 'fig' : input.rulegraph, 'target' : 'atacseq_all'}})
         with open(output.html, "w") as fh:

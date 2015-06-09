@@ -101,7 +101,7 @@ class HistMetrics(Metrics):
         gp = make_gridplot(df=self, ncol=self.ncol,
                            line={'line_width': 2},
                            share_x_range=True,
-                           share_y_range=True,
+                           share_y_range=False,
                            **kwargs)
         plist = [x for sublist in gp.children for x in sublist]
         return plist

@@ -2,15 +2,13 @@
 import os
 import jinja2
 import pandas as pd
-from bokeh.plotting import gridplot
-from snakemake.report import data_uri
 from snakemakelib.config import update_snakemake_config, sml_templates_path
 from snakemakelib.utils import SmlTemplateEnv
 from snakemakelib.stat import is_compressed, is_installed
 from snakemakelib.bokeh.publish import static_html
 from snakemakelib.bio.ngs.db import index, ref, annotation
 from snakemakelib.bio.ngs.targets import generic_target_generator
-from snakemakelib.bio.ngs.align.star import collect_star_alignment_results, make_star_alignment_plots
+from snakemakelib.bio.ngs.align.star import Star, make_star_alignment_plots
 
 include: '../../../comp/settings.rules'
 include: '../settings.rules'
@@ -137,14 +135,10 @@ rule star_summarize_alignment_runs:
     input: _star_find_result_files_fn
     output: csv = os.path.join("{path}", "star.{label}csv")
     run:
-        ngs_cfg = config['bio.ngs.settings']
         inputfiles = [x.replace(wildcards.label, "Log.final.out.").replace(".bam", "") for x in input]
-        try:
-            samples = [ngs_cfg['sampleorg'].run_id_re.parse(f)['SM'] for f in inputfiles]
-        except KeyError:
-            raise Exception("failed to parse sample name 'SM' from input list")
-        df = collect_star_alignment_results(inputfiles, samples)
-        df.to_csv(output.csv)
+        tgt_re = ngs_cfg['sampleorg'].run_id_re
+        star = Star(inputs=inputfiles, re=tgt_re)
+        star.save([output.csv])
 
 rule star_plot_aligmnent_summary:
     """Plot alignment data summary"""

@@ -1,10 +1,10 @@
-<h3>Cutadapt</h3>
-
+<!-- -*- jinja2 -*- -->
 {% if cutadapt is defined %}
+  <h3>Cutadapt</h3>
 
-<figure>
-	{{ cutadapt['fig']['div'] | indent(8) }}
-	<figcaption>Summary of cutadapt metrics. The plot shows the percentage of reads that have adapter sequence in either the 5' or 3' end. The plot is based on raw data in <a href="{{ cutadapt['uri'] }}" download="{{ cutadapt['file'] }}" draggable="true">{{ cutadapt['file'] }}</a></figcaption>
-</figure>
+  <figure>
+    {{ cutadapt['fig']['div'] | indent(8) }}
+    <figcaption>Summary of cutadapt metrics. The plot shows the percentage of reads that have adapter sequence in either the 5' or 3' end. The plot is based on raw data in <a href="{{ cutadapt['uri'] }}" download="{{ cutadapt['file'] }}" draggable="true">{{ cutadapt['file'] }}</a></figcaption>
+  </figure>
 
 {% endif %}

@@ -34,6 +34,8 @@ atac_config = {
         'merge_sam' : {
             'suffix' : '.sort.bam',
         },
+        'qcrules' : ['picard_collect_insert_size_metrics',
+                     'picard_mark_duplicates'],
     },
     'bio.ngs.enrichment.macs' : {
         'callpeak' : {

@@ -6,7 +6,8 @@ import numpy as np
 from bokeh.plotting import gridplot
 from snakemake.report import data_uri
 from snakemakelib.log import LoggerManager
-from snakemakelib.bokeh.plot import lineplot, scatterplot2
+from snakemakelib.bokeh.plot import make_scatterplot, make_gridplot
+from snakemakelib.bokeh.plot import make_lineplot
 
 smllogger = LoggerManager().getLogger(__name__)
 
@@ -63,16 +64,22 @@ class Metrics(pd.DataFrame):
         self._metadata = {'type': 'metrics'}
         self.plots = []
         self._label = str(type(self)).split(".")[-1].replace("'>", "")
+        self.ncol = 4
 
     @property
     def label(self):
         return self._label
 
     def plot_metrics(self, **kwargs):
+        """Plot metrics wrapper
+
+        Returns:
+          plist (list): list of bokeh plot objects
+        """
         plist = []
         for kw in self.plots:
             kwargs.update(kw)
-            fig = scatterplot2(df=self, **kwargs)
+            fig = make_scatterplot(df=self, **kwargs)
             plist.append(fig)
         return plist
 
@@ -82,11 +89,34 @@ class HistMetrics(Metrics):
         super(HistMetrics, self).__init__(*args, **kwargs)
         self._metadata = {'type': 'histogram'}
         self.kw = {}
+        self.plot_hist = self.lineplot_hist
 
-    def plot_hist(self, **kwargs):
+    def gridplot_hist(self, **kwargs):
+        """Gridplot hist wrapper
+
+        Returns:
+          plist (list): list of bokeh plot objects
+        """
         kwargs.update(self.kw)
-        fig = lineplot(self, **kwargs)
-        return fig
+        gp = make_gridplot(df=self, ncol=self.ncol,
+                           line={'line_width': 2},
+                           share_x_range=True,
+                           share_y_range=True,
+                           **kwargs)
+        plist = [x for sublist in gp.children for x in sublist]
+        return plist
+
+    def lineplot_hist(self, **kwargs):
+        """Lineplot hist wrapper
+
+        Returns:
+          plist (list): list of bokeh plot objects
+        """
+        kwargs.update(self.kw)
+        plist = [make_lineplot(df=self,
+                               line={'line_width': 2},
+                               **kwargs)]
+        return plist
 
 
 class AlignMetrics(Metrics):
@@ -126,6 +156,8 @@ class InsertHist(HistMetrics):
     def __init__(self, *args, **kwargs):
         super(InsertHist, self).__init__(*args, **kwargs)
         self.kw = {'groups': ["Sample"],
+                   'x': 'insert_size',
+                   'y': 'All_Reads.fr_count',
                    'plot_width': 400, 'plot_height': 400,
                    'title': "Insert size distribution",
                    'title_text_font_size': "12pt",
@@ -133,6 +165,7 @@ class InsertHist(HistMetrics):
                              'axis_label_text_font_size': '10pt'},
                    'yaxis': {'axis_label': 'Count',
                              'axis_label_text_font_size': '10pt'}}
+        self.plot_hist = self.gridplot_hist
 
 
 class DuplicationMetrics(Metrics):
@@ -158,6 +191,7 @@ class DuplicationHist(HistMetrics):
     def __init__(self, *args, **kwargs):
         super(DuplicationHist, self).__init__(*args, **kwargs)
         self.kw = {'groups': ["Sample"],
+                   'x': "BIN", 'y': "VALUE",
                    'plot_width': 400, 'plot_height': 400,
                    'title': "Return of investment",
                    'title_text_font_size': "12pt",
@@ -185,7 +219,7 @@ def _read_metrics(infile):
         return None
 
 
-def make_picard_summary_plots(inputfiles):
+def make_picard_summary_plots(inputfiles, ncol=4):
     d = {}
     TOOLS = "pan,box_zoom,wheel_zoom,box_select,lasso_select,reset,save,hover"
     for (metrics_file, hist_file) in zip(inputfiles[0::2], inputfiles[1::2]):
@@ -199,11 +233,12 @@ def make_picard_summary_plots(inputfiles):
             d[df_met.label][key]['uri'] = [data_uri(metrics_file)]
             d[df_met.label][key]['file'] = [metrics_file]
         if df_hist is not None:
-            p2 = [df_hist.plot_hist(tools=TOOLS)]
+            p2 = df_hist.plot_hist(tools=TOOLS)
             d[df_met.label][key]['uri'].append(data_uri(hist_file))
             d[df_met.label][key]['file'].append(hist_file)
         else:
             p2 = []
-        d[df_met.label][key]['fig'] = gridplot([p1 + p2])
-
+        plist = p1 + p2
+        gp = gridplot([plist[i:i+ncol] for i in range(0, len(plist), ncol)])
+        d[df_met.label][key]['fig'] = gp
     return d

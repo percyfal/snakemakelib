@@ -303,18 +303,16 @@ def make_dotplot(y, df, groups=[], both=False,
         lgd.text(x=1.1, y='y', text='text', source=source)
         lgd.grid.grid_line_color = None
         plist.append(lgd)
-    if both:
-        return gridplot([plist])
-    else:
-        return gridplot([plist])
+    return gridplot([plist])
 
 
-def make_gridplot(y, df, x="i", text="None",
-                  kwtext={'text_font_size': "6"}, groups=[],
+def make_gridplot(y, df, x="i",
+                  text={'text': None, 'text_font_size': "6"}, groups=[],
                   ncol=1, total_plot_width=1200,
                   xaxis={'axis_label': "", 'major_label_orientation': np.pi/3},
                   yaxis={'axis_label': "", 'major_label_orientation': 1},
                   grid={'grid_line_color': "gray", 'grid_line_alpha': 0.2},
+                  circle={}, line={},
                   share_x_range=False, share_y_range=False,
                   tooltips=[], qc=None, abline={}, **kwargs):
     """Make a gridplot.
@@ -323,8 +321,8 @@ def make_gridplot(y, df, x="i", text="None",
       y (str): column name for y variable
       df (py:class:`~pandas.DataFrame`): data frame
       x (str): column name for x variable
-      kwtext (dict): args passed to figure text object,
-                    with column name to use as text marker
+      text (dict): args passed to figure text object,
+                   with column name to use as text marker
       groups (list): list of column names to group by
       ncol(int): number of columns to group by
       total_plot_width (int): total plot width for a grid line
@@ -351,13 +349,17 @@ def make_gridplot(y, df, x="i", text="None",
     plist = []
     kwargs['plot_width'] = int(total_plot_width / ncol)
     kwargs['plot_height'] = int(total_plot_width / ncol)
+    title = [kwargs.pop('title')] if 'title' in kwargs else []
     for name, data in grouped:
         source = ColumnDataSource(data)
-        p = figure(title=name, **kwargs)
-        if text:
-            p.text(x=x, y=y, source=source, **kwtext)
+        p = figure(title=", ".join(title + [name]),
+                   **kwargs)
+        if text['text'] is not None:
+            p.text(x=x, y=y, source=source, **text)
+        elif line:
+            p.line(x=x, y=y, source=source, **line)
         else:
-            p.circle(x=x, y=y, source=source)
+            p.circle(x=x, y=y, source=source, **circle)
         if abline:
             x0 = abline.get('intercept', min(data[x]))
             x1 = max(data[x] * abline.get('pad', 1.1))
@@ -380,3 +382,122 @@ def make_gridplot(y, df, x="i", text="None",
         first = False
     gp = gridplot([plist[i:i+ncol] for i in range(0, len(plist), ncol)])
     return gp
+
+
+def make_scatterplot(y, df, x="i", groups=[],
+                     xaxis={'axis_label': "",
+                            'major_label_orientation': np.pi/3},
+                     yaxis={'axis_label': "",
+                            'major_label_orientation': 1},
+                     grid={'grid_line_color': None, 'grid_line_alpha': 1.0},
+                     circle={}, tooltips=[], qc=None, **kwargs):
+    """Make a scatter plot
+
+    Args:
+      y (str): column name for y variable
+      df (py:class:`~pandas.DataFrame`): data frame
+      x (str): column name for x variable
+      groups (list): list of column names to group by
+      xaxis (dict): args passed to figure xaxis object
+      yaxis (dict): args passed to figure yaxis object
+      grid (dict): args passed to figure grid object
+      circle (dict): args passed to figure circle object
+      tooltips (list): tooltips to include
+      qc (bool): do qc
+      kwargs (dict): keyword arguments to pass to figure method
+
+    Returns:
+      fig (py:class:`bokeh.models.Figure`): Figure object
+    """
+    # Update data frame
+    df['i'] = list(range(1, len(df.index) + 1))
+    # Catchall groupby group
+    df['all'] = "ALL"
+    # grouping
+    g = df.groupby(groups) if groups else df.groupby('all')
+    colors = list({k: v for (k, v) in
+                   zip(g.groups.keys(), brewer["PiYG"]
+                       [min(max(3, len(g.groups.keys())), 10)]
+                       * g.size()[0])}.values()) * g.size()[0]
+
+    source = ColumnDataSource(df)
+    # Fix ranges
+    x_range = list(df[x]) if df[x].dtype is np.dtype('object') else []
+    x = "i" if df[x].dtype is np.dtype('object') else x
+
+    # Get figure
+    fig = figure(x_range=x_range, **kwargs)
+
+    # Add qc cutoff if required
+    if qc:
+        getattr(fig, qc.plot_type)(x=qc.x, y=qc.y, **qc.kwargs)
+    # Add scatter points - check if list of strings, if present in
+    # source we do several
+    if set(y) <= set(source.column_names):
+        color = brewer["PiYG"][10]
+        if 'color' in circle.keys():
+            color = circle.pop('color')
+        for (yy, c) in zip(y, color):
+            fig.circle(x=x, y=yy, color=c, legend=yy,
+                       source=source, **circle)
+    else:
+        fig.circle(x=x, y=y, source=source, color=colors,
+                   legend=groups, **circle)
+    for k in xaxis.keys():
+        [setattr(attr, k, xaxis[k]) for attr in fig.xaxis]
+    for k in yaxis.keys():
+        [setattr(attr, k, yaxis[k]) for attr in fig.yaxis]
+    for k in grid.keys():
+        [setattr(attr, k, grid[k]) for attr in fig.grid]
+    # NB: currently assume it is a dictionary
+    for tt in tooltips:
+        h = fig.select(dict(type=tt['type']))
+        h.tooltips = tt['tips']
+    return fig
+
+
+def make_lineplot(df, x=None, y=None, groups=[],
+                  xaxis={'axis_label': "", 'major_label_orientation': np.pi/3},
+                  yaxis={'axis_label': "", 'major_label_orientation': 1},
+                  grid={'grid_line_color': None, 'grid_line_alpha': 1.0},
+                  line={}, tooltips=[], qc={}, **kwargs):
+    """Make a scatter plot
+
+    Args:
+      df (py:class:`~pandas.DataFrame`): data frame
+      x (str): column name for x variable
+      y (str): column name for y variable
+      groups (list): list of column names to group by
+      xaxis (dict): args passed to figure xaxis object
+      yaxis (dict): args passed to figure yaxis object
+      grid (dict): args passed to figure grid object
+      line (dict): args passed to figure line object
+      tooltips (list): tooltips to include
+      qc (dict): qc parameters
+      kwargs (dict): keyword arguments to pass to figure method
+
+    Returns:
+      fig (py:class:`bokeh.models.Figure`): Figure object
+    """
+    fig = figure(**kwargs)
+    g = df.groupby(groups)
+    colors = {k: v for (k, v) in
+              zip(g.groups.keys(), brewer["PiYG"]
+                  [min(max(3, len(g.groups.keys())), 10)] *
+                  math.ceil(len(g.groups.keys()) / 10))}
+    for i in g.groups.keys():
+        labels = g.get_group(i).columns
+        xname = labels[0]
+        # Here we currently assume second column is y; this is not
+        # always the case for insertion metrics
+        yname = labels[1]
+        x = getattr(g.get_group(i), xname)
+        y = getattr(g.get_group(i), yname)
+        fig.line(x, y, legend=i, color=colors[i], **line)
+    for k in xaxis.keys():
+        [setattr(attr, k, xaxis[k]) for attr in fig.xaxis]
+    for k in yaxis.keys():
+        [setattr(attr, k, yaxis[k]) for attr in fig.yaxis]
+    for k in grid.keys():
+        [setattr(attr, k, grid[k]) for attr in fig.grid]
+    return fig

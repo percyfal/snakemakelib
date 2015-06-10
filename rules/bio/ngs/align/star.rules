@@ -117,6 +117,7 @@ def _star_find_result_files_fn(wildcards):
         src_re = ngs_cfg['sampleorg'].run_id_re,
         target_suffix = "." + wildcards.label + 'bam',
         **ngs_cfg)
+    sources = [x.replace(wildcards.label, "Log.final.out.").replace(".bam", "") for x in sources]
     return sources
 
 # QC summaries
@@ -135,9 +136,8 @@ rule star_summarize_alignment_runs:
     input: _star_find_result_files_fn
     output: csv = os.path.join("{path}", "star.{label}csv")
     run:
-        inputfiles = [x.replace(wildcards.label, "Log.final.out.").replace(".bam", "") for x in input]
         tgt_re = ngs_cfg['sampleorg'].run_id_re
-        star = Star(inputs=inputfiles, re=tgt_re)
+        star = Star(inputs=input, re=tgt_re)
         star.save([output.csv])
 
 rule star_plot_aligmnent_summary:

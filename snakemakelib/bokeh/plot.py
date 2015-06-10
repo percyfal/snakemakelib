@@ -107,7 +107,7 @@ def scatterplot(x, y,
 def make_dotplot(y, df, groups=[], both=False,
                  xaxis={'axis_label': "", 'major_label_orientation': np.pi/3},
                  yaxis={'axis_label': "", 'major_label_orientation': 1},
-                 grid={'grid_line_color': "gray", 'grid_line_alpha': 0.2},
+                 grid={'grid_line_color': "gray", 'grid_line_alpha': 0.3},
                  circle={}, relative_to=None,
                  tooltips=[], sidelegend=False, **kwargs):
     """Make a (categorical) dotplot.
@@ -135,7 +135,7 @@ def make_dotplot(y, df, groups=[], both=False,
         color = brewer["PiYG"][min(max(3, len(y)), 10)]
         if 'color' in circle.keys():
             color = circle.pop('color')
-        fig = figure(x_range=x_range, y_range=y_range, **kwargs)
+        fig = figure(x_range=x_range, **kwargs)
         for (yy, c) in zip(y, color):
             if not sidelegend:
                 circle.update({'legend': yy})
@@ -154,7 +154,6 @@ def make_dotplot(y, df, groups=[], both=False,
         return fig, color
 
     plist = []
-    y_range = kwargs.pop('y_range')
     if groups:
         grouped = df.groupby(groups)
     else:
@@ -170,7 +169,7 @@ def make_dotplot(y, df, groups=[], both=False,
         iloc = next((i for i in range(len(y)) if relative_to in y[i]))
         df_tmp = (100.0 * df_tmp/df_tmp.iloc[iloc]).T
         df = df_tmp
-        y_range = [0, 110]
+        kwargs['y_range'] = [0, 110]
         yaxis['axis_label'] = "Proportion of {} (%)".format(relative_to)
         circle.update({'x_range': p.x_range})
         prel, color = _make_plot()

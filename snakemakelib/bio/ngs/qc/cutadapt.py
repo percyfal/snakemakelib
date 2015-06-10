@@ -72,7 +72,8 @@ def make_cutadapt_summary_plot(inputfile):
                               'major_label_orientation': 1,
                               'axis_label_text_font_size': '10pt'},
                        x_axis_type=None, y_axis_type="linear",
-                       circle={'size': 10, 'alpha': 0.3},
+                       circle={'size': 10, 'alpha': 0.5,
+                               'line_color': 'black'},
                        sidelegend=False,
                        y_range=[0, 105])
 

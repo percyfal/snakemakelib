@@ -9,7 +9,7 @@ from bokeh.plotting import gridplot
 from bokeh.palettes import brewer
 from snakemake.report import data_uri
 from snakemakelib.log import LoggerManager
-from snakemakelib.bokeh.plot import scatterplot, QCArgs
+from snakemakelib.bokeh.plot import make_scatterplot, QCArgs
 
 smllogger = LoggerManager().getLogger(__name__)
 
@@ -76,15 +76,13 @@ def make_rseqc_summary_plots(rd_file, gc_file, do_qc=True,
         df_gc.loc[:, "1":"100"].sum(axis=1)
     df = pd.concat([df, df_gc], axis=1)
 
-    colors = brewer["PiYG"][3]
-    colormap = {'False': colors[0], 'True': colors[2]}
     source = ColumnDataSource(df)
 
     # Default tools, plot_config and tooltips
-    TOOLS = "pan,box_zoom,box_select,lasso_select,reset,save,hover"
+    TOOLS = "pan,box_zoom,wheel_zoom,box_select,lasso_select,reset,save,hover"
     plot_config = dict(plot_width=300, plot_height=300,
                        tools=TOOLS, title_text_font_size='12pt',
-                       x_range=[0, len(samples)], y_range=[0, 105],
+                       y_range=[0, 105],
                        x_axis_type=None, y_axis_type="linear",
                        xaxis={'axis_label': "sample",
                               'major_label_orientation': np.pi/3,
@@ -94,31 +92,21 @@ def make_rseqc_summary_plots(rd_file, gc_file, do_qc=True,
                               'axis_label_text_font_size': '10pt'})
 
     # Exonmap plot
-    qc = QCArgs(x=[0, len(samples)],
-                y=[min_exonmap, min_exonmap],
-                line_dash=[2, 4]) if do_qc else None
-    c1 = list(map(
-        lambda x: colormap[str(x)],
-        df['ExonMap'] < min_exonmap)) if do_qc else colors[0]
-    p1 = scatterplot(x='i', y='ExonMap',
-                     source=source, color=c1, qc=qc,
-                     tooltips=[{'type': HoverTool, 'tips': [
-                         ('Sample', '@samples'), ('ExonMap', '@ExonMap'), ]}],
-                     title="Tags mapping to exons", **plot_config)
+    p1 = make_scatterplot(y='ExonMap', x='samples',
+                          source=source,
+                          tooltips=[{'type': HoverTool, 'tips': [
+                              ('Sample', '@samples'),
+                              ('ExonMap', '@ExonMap'), ]}],
+                          title="Tags mapping to exons", **plot_config)
     # Fraction reads mapping to the 10% right-most end
-    qc = QCArgs(x=[0, len(samples)],
-                y=[max_three_prime_map, max_three_prime_map],
-                line_dash=[2, 4]) if do_qc else None
-    c2 = list(map(
-        lambda x: colormap[str(x)],
-        df['three_prime_map'] > max_three_prime_map)) if do_qc else colors[0]
-    p2 = scatterplot(x='i', y='three_prime_map',
-                     color=c2, source=source,
-                     qc=qc, tooltips=[{
-                         'type': HoverTool, 'tips': [
-                             ('Sample', '@samples'),
-                             ('ExonMap', '@ExonMap'), ]}],
-                     title="Reads mapping to 3' end", **plot_config)
+    p2 = make_scatterplot(y='three_prime_map', x='samples',
+                          source=source,
+                          tooltips=[{
+                              'type': HoverTool, 'tips': [
+                                  ('Sample', '@samples'),
+                                  ('ThreePrimeMap', '@three_prime_map'), ]}],
+                          title="Reads mapping to 3' end", **plot_config)
+    p2.x_range = p1.x_range
 
     return {'fig': gridplot([[p1, p2]]),
             'uri': [data_uri(rd_file), data_uri(gc_file)],

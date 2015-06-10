@@ -83,6 +83,7 @@ def make_star_alignment_plots(inputfile=None, qc={}, ncol=3,
         TableColumn(field="PCT_of_reads_unmapped",
                     title="Unmapped reads (%)"),
     ]
+    colors = brewer["PiYG"][3]
     source = ColumnDataSource(df)
     # Generate the table
     table = DataTable(source=source, columns=columns,
@@ -102,7 +103,7 @@ def make_star_alignment_plots(inputfile=None, qc={}, ncol=3,
 
     # Number of input reads
     p1 = make_scatterplot(x="samples", y="Number_of_input_reads",
-                          df=df, title="Number of input reads",
+                          source=source, title="Number of input reads",
                           y_range=[1, max(df['Number_of_input_reads'])],
                           y_axis_type="log",
                           tooltips=[{'type': HoverTool, 'tips': tips}],
@@ -113,7 +114,8 @@ def make_star_alignment_plots(inputfile=None, qc={}, ncol=3,
             ('Pct_mapped', '@Uniquely_mapped_reads_PCT')]
     plot_config.update({'y_axis_type': 'linear'})
     plot_config['yaxis'].update({'axis_label': 'percent (%)'})
-    p2 = make_scatterplot(x='samples', y='Uniquely_mapped_reads_PCT', df=df,
+    p2 = make_scatterplot(x='samples', y='Uniquely_mapped_reads_PCT',
+                          source=source,
                           title="Uniquely mapping reads",
                           y_range=[0, 100],
                           tooltips=[{'type': HoverTool, 'tips': tips}],
@@ -122,7 +124,7 @@ def make_star_alignment_plots(inputfile=None, qc={}, ncol=3,
     # Mapping reads in general
     tips = [('Sample', '@samples'), ('Pct_unmapped', '@PCT_of_reads_unmapped')]
     p3 = make_scatterplot(x='samples', y='PCT_of_reads_unmapped',
-                          df=df, title="Unmapped reads",
+                          source=source, title="Unmapped reads",
                           y_range=[0, 100],
                           tooltips=[{'type': HoverTool, 'tips': tips}],
                           **plot_config)
@@ -131,9 +133,10 @@ def make_star_alignment_plots(inputfile=None, qc={}, ncol=3,
     plot_config['tools'] = TOOLS.replace("lasso_select,", "")
     plot_config['yaxis'].update({'axis_label': 'Rate per base'})
     p4 = make_scatterplot(x='samples', y=['Mismatch_rate_per_base__PCT',
-                                    'Insertion_rate_per_base',
-                                    'Deletion_rate_per_base'],
-                          circle={'color':["blue", "red", "green"]}, df=df,
+                                          'Insertion_rate_per_base',
+                                          'Deletion_rate_per_base'],
+                          circle={'color': colors, 'line_color': 'black'},
+                          source=source,
                           title="Mismatch and indel rates",
                           tooltips=[{'type': HoverTool,
                                      'tips': [('Sample', '@samples'),
@@ -150,7 +153,7 @@ def make_star_alignment_plots(inputfile=None, qc={}, ncol=3,
     # Plot sum
     plot_config['yaxis'].update({'axis_label': 'Mismatch/indel sum'})
     p5 = make_scatterplot(x='samples', y='mismatch_sum',
-                          df=df, title="Mismatch / indel sum",
+                          source=source, title="Mismatch / indel sum",
                           tooltips=[{
                               'type': HoverTool,
                               'tips': [('Sample', '@samples'),
@@ -167,6 +170,7 @@ def make_star_alignment_plots(inputfile=None, qc={}, ncol=3,
     gp = gridplot([plist[i:i + ncol] for i in range(
         0, len(plist), ncol)])
     retval['fig'] = gp
+    retval['table'] = table
     return retval
 
 

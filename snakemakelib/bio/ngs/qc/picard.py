@@ -7,7 +7,7 @@ from bokeh.plotting import gridplot
 from snakemake.report import data_uri
 from snakemakelib.log import LoggerManager
 from snakemakelib.bokeh.plot import make_scatterplot, make_gridplot
-from snakemakelib.bokeh.plot import make_lineplot
+from snakemakelib.bokeh.plot import make_lineplot, make_dotplot
 
 smllogger = LoggerManager().getLogger(__name__)
 
@@ -79,7 +79,7 @@ class Metrics(pd.DataFrame):
         plist = []
         for kw in self.plots:
             kwargs.update(kw)
-            fig = make_scatterplot(df=self, **kwargs)
+            fig = make_dotplot(df=self, **kwargs)
             plist.append(fig)
         return plist
 

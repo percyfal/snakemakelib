@@ -58,7 +58,8 @@ def make_cutadapt_summary_plot(inputfile):
         df_summary["Total read pairs processed"]
 
     TOOLS = "pan,wheel_zoom,box_zoom,box_select,reset,save,hover"
-    fig = make_dotplot(y=["read1_pct", "read2_pct"], df=df_summary,
+    fig = make_dotplot(x="sample",
+                       y=["read1_pct", "read2_pct"], df=df_summary,
                        groups=["sample", "run"],
                        tooltips=[{'type': HoverTool,
                                   'tips': [('Sample', '@sample'), ]}],
@@ -71,7 +72,7 @@ def make_cutadapt_summary_plot(inputfile):
                        yaxis={'axis_label': "percent reads",
                               'major_label_orientation': 1,
                               'axis_label_text_font_size': '10pt'},
-                       x_axis_type=None, y_axis_type="linear",
+                       y_axis_type="linear",
                        circle={'size': 10, 'alpha': 0.5,
                                'line_color': 'black'},
                        sidelegend=False,

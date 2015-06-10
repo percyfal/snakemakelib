@@ -86,14 +86,15 @@ def make_qualimap_plots(qmglobals=None, coverage_per_contig=None,
         df_all = pd.read_csv(qmglobals)
         df_all['number of unique reads'] = df_all['number of mapped reads']\
             - df_all['number of duplicated reads']
-        plot_config = {'y': ['number of reads',
+        plot_config = {'x': 'Sample',
+                       'y': ['number of reads',
                              'number of mapped reads',
                              'number of duplicated reads',
                              'number of unique reads'],
                        'df': df_all, 'groups': ['Sample'],
                        'y_range': [0, max(df_all['number of reads'])],
                        'xaxis': {'axis_label': "sample",
-                                 'major_label_orientation': np.pi/3,
+                                 'major_label_orientation': np.pi / 3,
                                  'axis_label_text_font_size': '10pt'},
                        'yaxis': {'axis_label': "count",
                                  'major_label_orientation': 1,
@@ -106,7 +107,9 @@ def make_qualimap_plots(qmglobals=None, coverage_per_contig=None,
                        'relative_to': "number of reads",
                        'plot_width': 400, 'plot_height': 400,
                        'both': True}
-        retval['fig']['globals'] = make_dotplot(**plot_config)
+        gp = make_dotplot(**plot_config)
+        retval['fig']['globals'] = gp
+
 
     # Coverage per contig
     if coverage_per_contig is not None:
@@ -122,5 +125,4 @@ def make_qualimap_plots(qmglobals=None, coverage_per_contig=None,
                            abline={'slope': 1, 'intercept': 0},
                            title_text_font_size="10", **kwargs)
         retval['fig']['coverage_per_contig'] = gp
-
     return retval

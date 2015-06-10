@@ -42,18 +42,20 @@ class QCArgs(object):
 def _data_fields(p):
     """data_fields - get the df,x,y fields used by GlyphRenderer"""
     df = None
+    x = []
+    y = []
     for r in p.renderers:
-        print(type(r))
         if isinstance(r, GlyphRenderer):
             spec = r.vm_serialize()
             df = spec['data_source'].to_df()
             spec = r.glyph.vm_serialize()
-            x = spec['x']['field']
-            y = spec['y']['field']
-            break
+            x.append(spec['x']['field'])
+            y.append(spec['y']['field'])
     if df is None:
         return (None, None, None)
-    return (df[[x, y]], x, y)
+    x = list(set(x))
+    y = list(set(y))
+    return (df[x + y], x, y)
 
 
 def _abline(p, slope=0, intercept=0, **kwargs):
@@ -61,7 +63,7 @@ def _abline(p, slope=0, intercept=0, **kwargs):
     (df, x, y) = _data_fields(p)
     x0 = 0
     y0 = intercept
-    x1 = max(df[x])
+    x1 = max(df[x[0]])
     y1 = (x1-x0) * slope + y0
     kwargs['color'] = kwargs.get('color', 'red')
     p.line(x=[x0, x1], y=[y0, y1], **kwargs)
@@ -88,43 +90,27 @@ def _sidelegend(y, color, **kwargs):
 def _prepare_data(df=None, source=None):
     """Prepare data for plotting.
 
-    Motivation: when grouping on several levels we need an extra index
-    to plot on, otherwise plots will be off one index. Also, we check
-    for existence of data frame and source, raising an error if none
-    are provided.
+    Check for existence of data frame and source, raising an error if
+    none are provided.
 
     Args:
       df (py:class:`~pd.DataFrame`): a pandas data frame
       source (py:class:`~bokeh.models.ColumnDataSource`): a bokeh column
         data source
-      groups (list): list of group names
 
     Returns:
       df, source: updated df and source
+
     """
     if source is None and df is None:
         raise TypeError(__name__ + """: both source and df None;
         you need to pass at least a data source or a data frame""")
 
-    def _add_i():
-        if '_i' in df.keys():
-            raise KeyError
-        if '_ALL' in df.keys():
-            raise KeyError
-        df['_i'] = list(range(1, len(df.index) + 1))
-        df['_ALL'] = "ALL"
-
     if source is not None:
         df = source.to_df()
-        # This is actually problematic; source should be immutable,
-        # otherwise linked brushing won't work; however we need the
-        # "_ALL" key for grouping. This points to the importance of
-        # preparing the data *outside* the plots and not having any
-        # defaults for x or groups
-        _add_i()
     elif source is None:
-        _add_i()
         source = ColumnDataSource(df)
+        print("Updating source: ", source.column_names)
     else:
         raise
     return df, source
@@ -136,13 +122,12 @@ def scatterplot(x, y,
                 yaxis={'axis_label': "", 'major_label_orientation': 1},
                 grid={'grid_line_color': None, 'grid_line_alpha': 1.0},
                 tooltips=[], qc={}, **kwargs):
-
     """Make a scatter plot"""
     # x_axis_type, y_axis_type missed by inspect
     figmembers = [m[0] for m in inspect.getmembers(Figure)]
     + ['x_axis_type', 'y_axis_type']
     circle_kwargs_keys = list(set(list(kwargs.keys())).difference(set(figmembers)))
-    circle_kwargs = {k: kwargs.pop(k) for k in circle_kwargs_keys}
+    #circle_kwargs = {k: kwargs.pop(k) for k in circle_kwargs_keys}
     # Get a reference to a figure
     fig = figure(**kwargs)
     # Add qc cutoff if required
@@ -172,7 +157,7 @@ def scatterplot(x, y,
     return (fig)
 
 
-def make_dotplot(y, x="_i", df=None, source=None, groups=[], both=False,
+def make_dotplot(x, y, df=None, source=None, groups=[], both=False,
                  xaxis={'axis_label': "", 'major_label_orientation': np.pi/3},
                  yaxis={'axis_label': "", 'major_label_orientation': 1},
                  grid={'grid_line_color': "gray", 'grid_line_alpha': 0.3},
@@ -223,14 +208,17 @@ def make_dotplot(y, x="_i", df=None, source=None, groups=[], both=False,
 
     plist = []
     df, source = _prepare_data(df, source)
-    grouped = df.groupby(groups) if groups else df.groupby('_ALL')
+    # NB: Currently multiple-level grouping does not work as I
+    # intented. This implementation would require modifying the source
+    # here
+    grouped = df.groupby(groups if groups else lambda x: True)
     if len(groups) > 1:
         kwargs['x_range'] = ["_".join(k)
                              for k in sorted(list(grouped.groups.keys()))]
     else:
-        kwargs['x_range'] = list(grouped.groups.keys())
-    # if not groups:
-    #     x = "_ALL"
+        kwargs['x_range'] = list(source.to_df()[x])
+    # Add this for now
+    kwargs['x_range'] = list(source.to_df()[x])
     if isinstance(y, str):
         y = [y]
     p, color = _make_plot()
@@ -240,7 +228,6 @@ def make_dotplot(y, x="_i", df=None, source=None, groups=[], both=False,
         source = ColumnDataSource(df)
         kwargs['y_range'] = [0, max(110, max(df[y].max()))]
         yaxis['axis_label'] = "Proportion of {} (%)".format(relative_to)
-        circle.update({'x_range': p.x_range})
         prel, color = _make_plot()
         prel.x_range = p.x_range
         plist.append(prel)
@@ -251,7 +238,7 @@ def make_dotplot(y, x="_i", df=None, source=None, groups=[], both=False,
     return gridplot([plist])
 
 
-def make_gridplot(y, df=None, source=None, x="_i",
+def make_gridplot(x, y, df=None, source=None,
                   text={'text': None, 'text_font_size': "6"}, groups=[],
                   ncol=1, total_plot_width=1200,
                   xaxis={'axis_label': "", 'major_label_orientation': np.pi/3},
@@ -263,10 +250,10 @@ def make_gridplot(y, df=None, source=None, x="_i",
     """Make a gridplot.
 
     Args:
+      x (str): column name for x variable
       y (str): column name for y variable
       df (py:class:`~pandas.DataFrame`): data frame
       source(py:class:`~bokeh.models.ColumnDataSource`): bokeh source table
-      x (str): column name for x variable
       text (dict): args passed to figure text object,
                    with column name to use as text marker
       groups (list): list of column names to group by
@@ -287,19 +274,18 @@ def make_gridplot(y, df=None, source=None, x="_i",
       gp (py:class:`bokeh.models.GridPlot`): GridPlot object
 
     """
-    (df, source) = _prepare_data(df, source)
+    df, source = _prepare_data(df, source)
     first = True
     plist = []
-    grouped = df.groupby(groups) if groups else df.groupby("_ALL")
-    # if not groups:
-    #     x = "_ALL"
+    grouped = df.groupby(groups if groups else lambda x: True)
     kwargs['plot_width'] = int(total_plot_width / ncol)
     kwargs['plot_height'] = int(total_plot_width / ncol)
     title = [kwargs.pop('title')] if 'title' in kwargs else []
     for name, data in grouped:
         # NB: sources cannot and should not be shared here!
         source = ColumnDataSource(data)
-        p = figure(title=", ".join(title + [name]),
+        p = figure(title=", ".join(title + [str(name)]),
+                   x_range=list(data[x]),  # FIXME: currently only works for factors
                    **kwargs)
         if text['text'] is not None:
             p.text(x=x, y=y, source=source, **text)
@@ -326,7 +312,7 @@ def make_gridplot(y, df=None, source=None, x="_i",
     return gp
 
 
-def make_scatterplot(y, df=None, source=None, x="_i", groups=[],
+def make_scatterplot(x, y, df=None, source=None, groups=[],
                      xaxis={'axis_label': "",
                             'major_label_orientation': np.pi/3},
                      yaxis={'axis_label': "",
@@ -337,10 +323,10 @@ def make_scatterplot(y, df=None, source=None, x="_i", groups=[],
     """Make a scatter plot
 
     Args:
+      x (str): column name for x variable
       y (str): column name for y variable
       df (py:class:`~pandas.DataFrame`): data frame
       source(py:class:`~bokeh.models.ColumnDataSource`): bokeh source table
-      x (str): column name for x variable
       groups (list): list of column names to group by
       xaxis (dict): args passed to figure xaxis object
       yaxis (dict): args passed to figure yaxis object
@@ -353,7 +339,7 @@ def make_scatterplot(y, df=None, source=None, x="_i", groups=[],
       fig (py:class:`bokeh.models.Figure`): Figure object
     """
     df, source = _prepare_data(df, source)
-    grouped = df.groupby(groups) if groups else df.groupby("_ALL")
+    grouped = df.groupby(groups if groups else lambda x: 0)
     colors = list({k: v for (k, v) in
                    zip(grouped.groups.keys(), brewer["PiYG"]
                        [min(max(3, len(grouped.groups.keys())), 10)]
@@ -376,7 +362,7 @@ def make_scatterplot(y, df=None, source=None, x="_i", groups=[],
                        source=source, **circle)
     else:
         fig.circle(x=x, y=y, source=source, color=colors,
-                   legend=groups, **circle)
+                   **circle)
     for k in xaxis.keys():
         [setattr(attr, k, xaxis[k]) for attr in fig.xaxis]
     for k in yaxis.keys():
@@ -390,7 +376,7 @@ def make_scatterplot(y, df=None, source=None, x="_i", groups=[],
     return fig
 
 
-def make_lineplot(df=None, source=None, x=None, y=None, groups=[],
+def make_lineplot(x, y, df=None, source=None, groups=[],
                   xaxis={'axis_label': "", 'major_label_orientation': np.pi/3},
                   yaxis={'axis_label': "", 'major_label_orientation': 1},
                   grid={'grid_line_color': None, 'grid_line_alpha': 1.0},
@@ -415,13 +401,20 @@ def make_lineplot(df=None, source=None, x=None, y=None, groups=[],
       fig (py:class:`bokeh.models.Figure`): Figure object
     """
     df, source = _prepare_data(df, source)
-    fig = figure(**kwargs)
-    grouped = df.groupby(groups)
-    colors = {k: v for (k, v) in
-              zip(grouped.groups.keys(), brewer["PiYG"]
+    fig = figure(x_range=list(source.to_df()[x]), **kwargs)
+
+    print(x)
+    print(df)
+    print (list(source.to_df()[x]))
+    grouped = df.groupby(groups if groups else lambda x: True)
+    for name, group in grouped:
+        print(name)
+    color_dict = {k: v for (k, v) in
+                  zip(grouped.groups.keys(), brewer["PiYG"]
                   [min(max(3, len(grouped.groups.keys())), 10)] *
                   math.ceil(len(grouped.groups.keys()) / 10))}
     for i in grouped.groups.keys():
+        print("Key: ", i, x, y)
         labels = grouped.get_group(i).columns
         xname = labels[0]
         # Here we currently assume second column is y; this is not
@@ -429,7 +422,7 @@ def make_lineplot(df=None, source=None, x=None, y=None, groups=[],
         yname = labels[1]
         x = getattr(grouped.get_group(i), xname)
         y = getattr(grouped.get_group(i), yname)
-        fig.line(x, y, legend=i, color=colors[i], **line)
+        fig.line(x, y, legend=i, color=color_dict[i], **line)
     for k in xaxis.keys():
         [setattr(attr, k, xaxis[k]) for attr in fig.xaxis]
     for k in yaxis.keys():

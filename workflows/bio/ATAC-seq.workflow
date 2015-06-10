@@ -34,8 +34,8 @@ atac_config = {
         'merge_sam' : {
             'suffix' : '.sort.bam',
         },
-        'qcrules' : ['picard_collect_insert_size_metrics',
-                     'picard_mark_duplicates'],
+        'qcrules' : [#'picard_collect_insert_size_metrics'],
+            'picard_mark_duplicates'],
     },
     'bio.ngs.enrichment.macs' : {
         'callpeak' : {
@@ -234,7 +234,7 @@ rule atacseq_report:
         tp = env.get_template('workflow_atacseq_qc.html')
         if atac_cfg['trimadaptor']:
             d.update({'cutadapt' : make_cutadapt_summary_plot(input.cutadapt)})
-        d.update({'qualimap' : make_qualimap_plots(*input.qualimap)})
+        #d.update({'qualimap' : make_qualimap_plots(*input.qualimap)})
         d.update({'picard' : make_picard_summary_plots(input.picard)})
         d.update({'rulegraph' : {'uri' : data_uri(input.rulegraph), 'file' : input.rulegraph, 'fig' : input.rulegraph, 'target' : 'atacseq_all'}})
         with open(output.html, "w") as fh:

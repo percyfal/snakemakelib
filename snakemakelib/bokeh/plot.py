@@ -4,6 +4,7 @@ import inspect
 import numpy as np
 import pandas as pd
 from bokeh.models import ColumnDataSource
+from bokeh.models.renderers import GlyphRenderer
 from bokeh.palettes import brewer
 from bokeh.plotting import figure, Figure, gridplot
 from snakemakelib.log import LoggerManager
@@ -36,6 +37,30 @@ class QCArgs(object):
     @property
     def kwargs(self):
         return self._kwargs
+
+
+def _data_fields(p):
+    """data_fields - get the df,x,y fields used by GlyphRenderer"""
+    for r in p.renderers:
+        if isinstance(r, GlyphRenderer):
+            spec = r.vm_serialize()
+            df = spec['data_source'].to_df()
+            spec = r.glyph.vm_serialize()
+            x = spec['x']['field']
+            y = spec['y']['field']
+            break
+    return (df[[x, y]], x, y)
+
+
+def _abline(p, slope=0, intercept=0, **kwargs):
+    """abline - add an abline to current plot"""
+    (df, x, y) = _data_fields(p)
+    x0 = 0
+    y0 = intercept
+    x1 = max(df[x])
+    y1 = (x1-x0) * slope + y0
+    kwargs['color'] = kwargs.get('color', 'red')
+    p.line(x=[x0, x1], y=[y0, y1], **kwargs)
 
 
 # Model specialized plotting functions on bokeh.plotting.figure for simplicity
@@ -102,7 +127,7 @@ def make_dotplot(y, df, groups=[], both=False,
       kwargs (dict): keyword arguments to pass to figure method
 
     Returns:
-      fig (py:class:`bokeh.models.Figure`): Figure object
+      fig (py:class:`bokeh.models.plots.GridPlot`): gridplot object
     """
     def _make_plot():
         df['i'] = list(range(1, len(df.index) + 1))
@@ -225,12 +250,13 @@ def make_gridplot(y, df, x="i",
         else:
             p.circle(x=x, y=y, source=source, **circle)
         if abline:
-            x0 = abline.get('intercept', min(data[x]))
-            x1 = max(data[x] * abline.get('pad', 1.1))
-            y0 = abline.get('intercept', x0)
-            y1 = ((x1-x0)*abline.get('slope', 1) + y0)
-            p.line(x=[x0, x1], y=[y0, y1],
-                   color=abline.get('color', 'red'))
+            _abline(p, **abline)
+            # x0 = abline.get('intercept', min(data[x]))
+            # x1 = max(data[x] * abline.get('pad', 1.1))
+            # y0 = abline.get('intercept', x0)
+            # y1 = ((x1-x0)*abline.get('slope', 1) + y0)
+            # p.line(x=[x0, x1], y=[y0, y1],
+            #        color=abline.get('color', 'red'))
         for k in xaxis.keys():
             [setattr(attr, k, xaxis[k]) for attr in p.xaxis]
         for k in yaxis.keys():
@@ -274,7 +300,7 @@ def make_scatterplot(y, df, x="i", groups=[],
       fig (py:class:`bokeh.models.Figure`): Figure object
     """
     # Update data frame
-    df['i'] = list(range(1, len(df.index) + 1))
+    # df['i'] = list(range(1, len(df.index) + 1))
     # Catchall groupby group
     df['all'] = "ALL"
     # grouping
@@ -287,7 +313,7 @@ def make_scatterplot(y, df, x="i", groups=[],
     source = ColumnDataSource(df)
     # Fix ranges
     x_range = list(df[x]) if df[x].dtype is np.dtype('object') else []
-    x = "i" if df[x].dtype is np.dtype('object') else x
+    #x = "i" if df[x].dtype is np.dtype('object') else x
 
     # Get figure
     fig = figure(x_range=x_range, **kwargs)

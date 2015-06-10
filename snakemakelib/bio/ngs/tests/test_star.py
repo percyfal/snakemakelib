@@ -2,8 +2,6 @@
 # pylint: disable=R0904, C0301, C0103
 import unittest
 import io
-import pandas as pd
-from unittest.mock import patch
 from snakemakelib.bio.ngs.align.star import Star
 
 

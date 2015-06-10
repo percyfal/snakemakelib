@@ -118,7 +118,7 @@ def make_qualimap_plots(qmglobals=None, coverage_per_contig=None,
                            yaxis={'axis_label': "Mapped bases of total (%)",
                                   'axis_label_text_font_size': "8"},
                            text={'text': 'chr', 'text_font_size': "2"},
-                           abline={'slope': 1, 'intercept': -1, 'pad': 1.5},
+                           abline={'slope': 1, 'intercept': 0},
                            title_text_font_size="10", **kwargs)
         retval['fig']['coverage_per_contig'] = gp
 

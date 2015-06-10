@@ -18,9 +18,10 @@
 
     {% if star is defined %}
       {{ star['fig']['script'] | indent(8) }}
-      {{ star['table']['script'] | indent(8) }}
+      {% if star['table'] is not none %}
+	{{ star['table']['script'] | indent(8) }}
+      {% endif %}
     {% endif %}
-
   </head>
   <body>
 

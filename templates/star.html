@@ -7,11 +7,12 @@
     <figcaption>STAR summary plots. The plots are based on raw data in <a href="{{ star['uri'] }}" download="{{ star['file'] }}" draggable="true">{{ star['file'] }}</a>
     </figcaption>
   </figure>
-  <figure>
-    {{ star['table']['div']|indent(8) }}
-    <figcaption>Table of all STAR alignment statistics. Source 
-      <a href="{{ star['uri'] }}" download="{{ star['file']}}" draggable="true">{{ star['file'] }}</a>
-    </figcaption>
-  </figure>
-
+  {% if star['table'] is not none %}
+    <figure>
+      {{ star['table']['div']|indent(8) }}
+      <figcaption>Table of all STAR alignment statistics. Source 
+	<a href="{{ star['uri'] }}" download="{{ star['file']}}" draggable="true">{{ star['file'] }}</a>
+      </figcaption>
+    </figure>
+  {% endif %}
 {% endif %}

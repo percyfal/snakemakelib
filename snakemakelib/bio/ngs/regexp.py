@@ -125,8 +125,8 @@ class RegexpDict(dict):
             pattern = pattern + REGEXP_SPACER_MATCH + suffix
         m = re.match(pattern, s)
         if m is None:
-            smllogger.warn("Unable to parse string {s} with regexp {re}".format(
-                s=s, re=self.re.pattern))
+            smllogger.warn("Unable to parse string {s} with regexp {re}"
+                           .format(s=s, re=self.re.pattern))
             return
         # Regular keys
         self.update({k: v for (k, v) in m.groupdict().items()

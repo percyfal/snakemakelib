@@ -2,10 +2,13 @@
 import re
 import pandas as pd
 import numpy as np
+from bokeh.plotting import figure
 from bokeh.models import HoverTool
 from snakemake.report import data_uri
 from snakemakelib.log import LoggerManager
-from snakemakelib.bokeh.plot import make_dotplot
+#from snakemakelib.bokeh.plot import make_dotplot
+from bokehutils.mgeom import mdotplot
+from bokehutils.axes import xaxis, yaxis
 
 smllogger = LoggerManager().getLogger(__name__)
 
@@ -47,10 +50,32 @@ def collect_cutadapt_qc_results(inputfiles, sampleruns):
     df[['count']] = df[['count']].astype(int)
     df_ret = df.pivot_table(
         columns=["statistic"], values=["count"], index=["sample", "run"])
+    df_ret.columns = df_ret.columns.droplevel()
+    df_ret["read1_pct"] = 100.0 * df_ret["Read 1 with adapter"] /\
+        df_ret["Total read pairs processed"]
+    df_ret["read2_pct"] = 100.0 * df_ret["Read 2 with adapter"] /\
+        df_ret["Total read pairs processed"]
+    
     return df_ret
 
-
 def make_cutadapt_summary_plot(inputfile):
+    df_summary = pd.read_csv(inputfile)
+    TOOLS = "pan,wheel_zoom,box_zoom,box_select,reset,save"
+    fig = figure(tools=TOOLS, width=400, height=400,
+                 x_range=list(set(df_summary["sample"])),
+                 y_range=[0, 105])
+    mdotplot(fig, x="sample", y=["read1_pct", "read2_pct"],
+             df=df_summary, title="Cutadapt metrics",
+             title_text_font_size='12pt', size=10, alpha=0.5)
+    xaxis(fig, axis_label="sample",
+          major_label_orientation=np.pi/3,
+          axis_label_text_font_size='10pt')
+    yaxis(fig, axis_label="percent reads",
+          major_label_orientation=1,
+          axis_label_text_font_size='10pt')
+    return {'fig': fig, 'uri': data_uri(inputfile), 'file': inputfile}
+
+def make_cutadapt_summary_plot_old(inputfile):
     df_summary = pd.read_csv(inputfile)
     df_summary["read1_pct"] = 100.0 * df_summary["Read 1 with adapter"] /\
         df_summary["Total read pairs processed"]
@@ -63,8 +88,6 @@ def make_cutadapt_summary_plot(inputfile):
                        tooltips=[{'type': HoverTool,
                                   'tips': [('Sample', '@sample'), ]}],
                        plot_width=400, plot_height=400, tools=TOOLS,
-                       title="Cutadapt metrics",
-                       title_text_font_size='12pt',
                        xaxis={'axis_label': "sample",
                               'major_label_orientation': np.pi/3,
                               'axis_label_text_font_size': '10pt'},

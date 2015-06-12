@@ -1,10 +1,15 @@
 # Copyright (C) 2015 by Per Unneberg
 import pandas as pd
 import numpy as np
+from bokeh.plotting import figure
+from bokehutils.geom import points
+from bokehutils.mgeom import mdotplot
+from bokehutils.facet import facet_grid
+from bokehutils.axes import xaxis, yaxis, main
 from snakemake.report import data_uri
 from snakemakelib.results import Results
-from snakemakelib.bokeh.plot import make_gridplot, make_dotplot
 from snakemakelib.log import LoggerManager
+
 
 smllogger = LoggerManager().getLogger(__name__)
 
@@ -71,10 +76,12 @@ class Qualimap(Results):
         if self['globals'] is not None:
             self['globals'] = self['globals'].pivot(
                 index='Sample', columns='name', values='value')
+            self['globals']['number of unique reads'] = self['globals']['number of mapped reads']\
+                                                        - self['globals']['number of duplicated reads']
 
 
-def make_qualimap_plots(qmglobals=None, coverage_per_contig=None,
-                        **kwargs):
+
+def make_qualimap_plots(qmglobals=None, coverage_per_contig=None):
     """Make qualimap summary plots"""
     retval = {'fig': {'coverage_per_contig': None, 'globals': None},
               'file': {'coverage_per_contig': coverage_per_contig,
@@ -84,42 +91,39 @@ def make_qualimap_plots(qmglobals=None, coverage_per_contig=None,
     # Globals
     if qmglobals is not None:
         df_all = pd.read_csv(qmglobals)
-        df_all['number of unique reads'] = df_all['number of mapped reads']\
-            - df_all['number of duplicated reads']
-        plot_config = {'y': ['number of reads',
-                             'number of mapped reads',
-                             'number of duplicated reads',
-                             'number of unique reads'],
-                       'df': df_all, 'groups': ['Sample'],
-                       'y_range': [0, max(df_all['number of reads'])],
-                       'xaxis': {'axis_label': "sample",
-                                 'major_label_orientation': np.pi/3,
-                                 'axis_label_text_font_size': '10pt'},
-                       'yaxis': {'axis_label': "count",
-                                 'major_label_orientation': 1,
-                                 'axis_label_text_font_size': '10pt'},
-                       'circle': {'size': 10, 'alpha': 0.5},
-                       'title': "Mapping summary",
-                       'title_text_font_size': "12pt",
-                       'sidelegend': True,
-                       'relative_to': "number of reads",
-                       'plot_width': 400, 'plot_height': 400,
-                       'both': True}
-        retval['fig']['globals'] = make_dotplot(**plot_config)
-
+        fig = figure(y_range=[0, max(df_all['number of reads'])],
+                     title="Mapping summary",
+                     title_text_font_size="12pt",
+                     plot_width=400, plot_height=400,
+                     x_range=list(set(df_all["Sample"])))
+        mdotplot(fig, x='Sample', size=10,
+                 df=df_all, alpha=0.5,
+                 y= ['number of reads',
+                     'number of mapped reads',
+                     'number of duplicated reads',
+                     'number of unique reads'])
+        xaxis(fig, axis_label="sample",
+              major_label_orientation=np.pi/3,
+              axis_label_text_font_size='10pt')
+        yaxis(fig, axis_label="count",
+              major_label_orientation=1,
+              axis_label_text_font_size='10pt')
+        retval['fig']['globals'] = fig
+        
     # Coverage per contig
     if coverage_per_contig is not None:
         df_all = pd.read_csv(coverage_per_contig, index_col=0)
-        gp = make_gridplot(x="chrlen_percent", y="mapped_bases_percent",
-                           df=df_all, groups=['Sample'], ncol=4,
-                           share_x_range=True, share_y_range=True,
-                           xaxis={'axis_label': "Chromosome length of total (%)",
-                                  'axis_label_text_font_size': "8"},
-                           yaxis={'axis_label': "Mapped bases of total (%)",
-                                  'axis_label_text_font_size': "8"},
-                           text={'text': 'chr', 'text_font_size': "2"},
-                           abline={'slope': 1, 'intercept': 0},
-                           title_text_font_size="10", **kwargs)
-        retval['fig']['coverage_per_contig'] = gp
+        fig = figure(width=300, height=300)
+        points(fig, x="chrlen_percent", y="mapped_bases_percent",
+               df=df_all, glyph="text", text="chr", text_font_size="6pt")
+        main(fig, title_text_font_size="8pt")
+        xaxis(fig, axis_label="Chromosome length of total (%)",
+              axis_label_text_font_size="8pt")
+        yaxis(fig, axis_label="Mapped bases of total (%)",
+              axis_label_text_font_size="8pt")
 
-    return retval
+        gp = facet_grid(fig, x="chrlen_percent", y="mapped_bases_percent",
+                        df=df_all, groups=["Sample"], width=300, height=300,
+                        share_x_range=True, share_y_range=True)
+        retval['fig']['coverage_per_contig'] = gp
+    return retval        

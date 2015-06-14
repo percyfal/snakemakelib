@@ -3,7 +3,11 @@ import os
 import re
 import pandas as pd
 import numpy as np
-from bokeh.plotting import gridplot
+from bokeh.plotting import figure
+from bokehutils.geom import points, dotplot
+from bokehutils.mgeom import mdotplot
+from bokehutils.facet import facet_grid
+from bokehutils.axes import xaxis, yaxis, main
 from snakemake.report import data_uri
 from snakemakelib.log import LoggerManager
 from snakemakelib.bokeh.plot import make_scatterplot, make_gridplot
@@ -78,8 +82,9 @@ class Metrics(pd.DataFrame):
         """
         plist = []
         for kw in self.plots:
-            kwargs.update(kw)
-            fig = make_scatterplot(df=self, **kwargs)
+            kwargs.update(kw['figure'])
+            fig = figure(**kwargs)
+            dotplot(fig, **kw['renderer'])
             plist.append(fig)
         return plist
 
@@ -122,67 +127,92 @@ class HistMetrics(Metrics):
 class AlignMetrics(Metrics):
     def __init__(self, *args, **kwargs):
         super(AlignMetrics, self).__init__(*args, **kwargs)
-        self.plots = [{'x': 'Sample', 'y': 'PCT_PF_READS_ALIGNED',
-                       'plot_width': 400, 'plot_height': 400,
-                       'groups': 'CATEGORY', 'y_range': [0, 100],
-                       'title': 'Percent PF_READS aligned per sample',
-                       'title_text_font_size': "12pt",
-                       'circle': {'size': 10, 'alpha': 0.3},
-                       'xaxis': {'axis_label': 'Sample',
-                                 'major_label_orientation': np.pi/3,
-                                 'axis_label_text_font_size': '10pt'},
-                       'yaxis': {'axis_label': 'Percentage reads',
-                                 'major_label_orientation': np.pi/3,
-                                 'axis_label_text_font_size': '10pt'}}]
+        self.plots = [{
+            'figure': {
+                'plot_width': 400, 'plot_height': 400,
+                'title': 'Percent PF_READS aligned per sample',
+                'y_range': [0, 100],
+                'title_text_font_size': "12pt",
+            },
+            'renderer': {'size': 10, 'alpha': 0.5,
+                         'x': 'Sample',
+                         'y': 'PCT_PF_READS_ALIGNED',
+                         #'groups': 'CATEGORY',
+            },
+            'xaxis': {'axis_label': 'Sample',
+                      'major_label_orientation': np.pi/3,
+                      'axis_label_text_font_size': '10pt'},
+            'yaxis': {'axis_label': 'Percentage reads',
+                      'major_label_orientation': np.pi/3,
+                      'axis_label_text_font_size': '10pt'}}]
 
 
 class InsertMetrics(Metrics):
     def __init__(self, *args, **kwargs):
         super(InsertMetrics, self).__init__(*args, **kwargs)
-        self.plots = [{'x': 'Sample', 'y': 'MEAN_INSERT_SIZE',
-                       'plot_width': 400, 'plot_height': 400,
-                       'title': 'Mean insert size',
-                       'title_text_font_size': "12pt",
-                       'circle': {'size': 10, 'alpha': 0.3},
-                       'xaxis': {'axis_label': 'Sample',
-                                 'major_label_orientation': np.pi/3,
-                                 'axis_label_text_font_size': '10pt'},
-                       'yaxis': {'axis_label': 'Mean insert size',
-                                 'major_label_orientation': np.pi/3,
-                                 'axis_label_text_font_size': '10pt'}}]
+        self.plots = [{
+            'figure': {
+                'plot_width': 400, 'plot_height': 400,
+                'title': 'Mean insert size',
+                'title_text_font_size': "12pt",
+            },
+            'renderer': {
+                'size': 10, 'alpha': 0.3,
+                'x': 'Sample', 'y': 'MEAN_INSERT_SIZE',
+            },
+            'xaxis': {'axis_label': 'Sample',
+                      'major_label_orientation': np.pi/3,
+                      'axis_label_text_font_size': '10pt'
+            },
+            'yaxis': {'axis_label': 'Mean insert size',
+                      'major_label_orientation': np.pi/3,
+                      'axis_label_text_font_size': '10pt'}}]
 
 
 class InsertHist(HistMetrics):
     def __init__(self, *args, **kwargs):
         super(InsertHist, self).__init__(*args, **kwargs)
-        self.kw = {'groups': ["Sample"],
-                   'x': 'insert_size',
-                   'y': 'All_Reads.fr_count',
-                   'plot_width': 400, 'plot_height': 400,
-                   'title': "Insert size distribution",
-                   'title_text_font_size': "12pt",
-                   'xaxis': {'axis_label': 'Insert size',
-                             'axis_label_text_font_size': '10pt'},
-                   'yaxis': {'axis_label': 'Count',
-                             'axis_label_text_font_size': '10pt'}}
+        self.kw = {
+            'figure': {
+                'plot_width': 400, 'plot_height': 400,
+                'title': "Insert size distribution",
+                'title_text_font_size': "12pt",
+            },
+            'facet': {
+                'groups': ["Sample"],
+            },
+            'renderer': {
+
+                'x': 'insert_size',
+                'y': 'All_Reads.fr_count',
+            },
+            'xaxis': {'axis_label': 'Insert size',
+                      'axis_label_text_font_size': '10pt'},
+            'yaxis': {'axis_label': 'Count',
+                      'axis_label_text_font_size': '10pt'}}
         self.plot_hist = self.gridplot_hist
 
 
 class DuplicationMetrics(Metrics):
     def __init__(self, *args, **kwargs):
         super(DuplicationMetrics, self).__init__(*args, **kwargs)
-        self.plots = [{'x': 'Sample', 'y': 'PERCENT_DUPLICATION',
-                       'y_range': [0, 100],
-                       'plot_width': 400, 'plot_height': 400,
-                       'title': 'Percent duplication per sample',
-                       'title_text_font_size': "12pt",
-                       'circle': {'size': 10, 'alpha': 0.3},
-                       'xaxis': {'axis_label': 'Sample',
-                                 'major_label_orientation': np.pi/3,
-                                 'axis_label_text_font_size': '10pt'},
-                       'yaxis': {'axis_label': 'Percent duplication',
-                                 'major_label_orientation': np.pi/3,
-                                 'axis_label_text_font_size': '10pt'}}]
+        self.plots = [{
+            'figure': {
+                'plot_width': 400, 'plot_height': 400,
+                'title': 'Percent duplication per sample',
+                'title_text_font_size': "12pt",
+                'y_range': [0, 100],
+            },
+            'renderer': {
+                'size': 10, 'alpha': 0.3,
+                'x': 'Sample', 'y': 'PERCENT_DUPLICATION',
+            },
+            'xaxis': {'axis_label': 'Sample',
+                      'major_label_orientation': np.pi/3,
+                      'axis_label_text_font_size': '10pt'},
+            'yaxis': {'axis_label': 'Percent duplication',
+                      'major_label_orientation': np.pi/3,
+                      'axis_label_text_font_size': '10pt'}}]
 
 
 class DuplicationHist(HistMetrics):
@@ -190,15 +220,20 @@ class DuplicationHist(HistMetrics):
     # q-what-is-meaning-of-the-histogram-produced-by-markduplicates
     def __init__(self, *args, **kwargs):
         super(DuplicationHist, self).__init__(*args, **kwargs)
-        self.kw = {'groups': ["Sample"],
-                   'x': "BIN", 'y': "VALUE",
-                   'plot_width': 400, 'plot_height': 400,
-                   'title': "Return of investment",
-                   'title_text_font_size': "12pt",
-                   'xaxis': {'axis_label': 'Coverage multiple',
-                             'axis_label_text_font_size': '10pt'},
-                   'yaxis': {'axis_label': 'Multiple of additional coverage',
-                             'axis_label_text_font_size': '10pt'}}
+        self.kw = {
+            'figure': {
+                'plot_width': 400, 'plot_height': 400,
+                'title': "Return of investment",
+                'title_text_font_size': "12pt",
+            },
+            'renderer': {
+                'groups': ["Sample"],
+                'x': "BIN", 'y': "VALUE",
+            },
+            'xaxis': {'axis_label': 'Coverage multiple',
+                      'axis_label_text_font_size': '10pt'},
+            'yaxis': {'axis_label': 'Multiple of additional coverage',
+                      'axis_label_text_font_size': '10pt'}}
 
 
 def _read_metrics(infile):

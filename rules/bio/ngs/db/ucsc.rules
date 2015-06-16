@@ -11,12 +11,25 @@ include: "../settings.rules"
 config_default = {
     'bio.ngs.db.ucsc' : { 
         'ref' : config['bio.ngs.settings']['db']['ref'],
+        #'build' : config['bio.ngs.settings']['db']['build'],
         'index' : "",
         'home' : "",
         'urldownload' : 'http://hgdownload.cse.ucsc.edu/goldenPath/',
         'gtfToGenePred' : {
             'cmd' : 'gtfToGenePred',
             'options' : '-genePredExt -ignoreGroupsWithoutExons',
+        },
+        'bedGraphToBigWig' : {
+            'cmd' : 'bedGraphToBigWig',
+            'options' : '',
+        },
+        'fetchChromSizes' : {
+            'cmd' : 'fetchChromSizes',
+            'options' : 'hg19',
+        },
+        'wigToBigWig' : {
+            'cmd' : 'wigToBigWig',
+            'options' : '-clip',
         },
     },
 }
@@ -136,3 +149,40 @@ rule ucsc_genepred_to_refFlat:
     input: genepred = "{prefix}.genePred"
     output: refflat = "{prefix}.refFlat"
     shell: "awk '{{printf(\"%s\\t%s\\n\", $1, $0)}}'  {input.genepred} > {output.refflat}"
+
+rule ucsc_chrom_sizes:
+    """Generate chromosome sizes.
+
+    Chrom sizes file is of format: <chromosome name> <size in bases>
+
+    Uses fetchChromSizes
+    """
+    params: cmd = ucsc_cfg["fetchChromSizes"]["cmd"],
+            options = ucsc_cfg["fetchChromSizes"]["options"]
+    output: sizes = "chrom.sizes"
+    shell: "{params.cmd} {params.options} > {output.sizes}"
+
+rule ucsc_wig_to_bigWig:
+    """Convert wig file to bigWig.
+
+    Run wigToBigWig to convert wig file to bigWig.
+    """
+    params: cmd = ucsc_cfg['wigToBigWig']['cmd'],
+            options = ucsc_cfg['wigToBigWig']['options']
+    log: "{prefix}.wig.log"
+    input: wig = "{prefix}.wig",
+           sizes = "chrom.sizes"
+    output: bigwig = "{prefix}.wig.bw"
+    shell: "{params.cmd} {params.options} {input.wig} {input.sizes} {output.bigwig} 2> {log}"
+
+rule ucsc_bedgraph_to_bigWig:
+    """Convert bedGraph file to bigWig.
+
+    Run begGraphToBigWig to convert bedGraph file to bigWig.
+    """
+    params: cmd = ucsc_cfg['bedGraphToBigWig']['cmd'],
+            options = ucsc_cfg['bedGraphToBigWig']['options']
+    input: wig = "{prefix}.bdg",
+           sizes = "chrom.sizes"
+    output: bigwig = "{prefix}.bdg.bw"
+    shell: "{params.cmd} {params.options} {input.wig} {input.sizes} {output.bigwig}"

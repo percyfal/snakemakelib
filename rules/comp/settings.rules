@@ -30,7 +30,7 @@ export VENV_PYTHON_2="~/.virtualenvs/python2/bin/activate"
 
 # VENV_PYTHON_2 should point to the activate script of the virtualenv
 if os.getenv("VENV_PYTHON_2"):
-    python2="source {venv}".format(venv=os.getenv("VENV_PYTHON_2"))
+    python2="source {venv} && ".format(venv=os.getenv("VENV_PYTHON_2"))
 
 # Most programs are usually found in $PATH
 config_default = {

@@ -2,7 +2,7 @@
 import pandas as pd
 import numpy as np
 from bokeh.plotting import figure
-from bokehutils.geom import points
+from bokehutils.geom import points, abline
 from bokehutils.mgeom import mdotplot
 from bokehutils.facet import facet_grid
 from bokehutils.axes import xaxis, yaxis, main
@@ -115,7 +115,7 @@ def make_qualimap_plots(qmglobals=None, coverage_per_contig=None):
         df_all = pd.read_csv(coverage_per_contig, index_col=0)
         fig = figure(width=300, height=300)
         points(fig, x="chrlen_percent", y="mapped_bases_percent",
-               df=df_all, glyph="text", text="chr", text_font_size="6pt")
+               df=df_all, glyph="text", text="chr", text_font_size="8pt")
         main(fig, title_text_font_size="8pt")
         xaxis(fig, axis_label="Chromosome length of total (%)",
               axis_label_text_font_size="8pt")
@@ -124,6 +124,9 @@ def make_qualimap_plots(qmglobals=None, coverage_per_contig=None):
 
         gp = facet_grid(fig, x="chrlen_percent", y="mapped_bases_percent",
                         df=df_all, groups=["Sample"], width=300, height=300,
-                        share_x_range=True, share_y_range=True)
+                        share_x_range=True, share_y_range=True,
+                        title_text_font_size="12pt")
+        for fig in [item for sublist in gp.children for item in sublist]:
+            abline(fig, x="chrlen_percent", y="mapped_bases_percent", df=df_all, slope=1)
         retval['fig']['coverage_per_contig'] = gp
     return retval        

@@ -3,15 +3,12 @@ import os
 import re
 import pandas as pd
 import numpy as np
-from bokeh.plotting import figure
-from bokehutils.geom import points, dotplot
-from bokehutils.mgeom import mdotplot
+from bokeh.plotting import figure, gridplot
+from bokehutils.geom import dotplot, lines
 from bokehutils.facet import facet_grid
-from bokehutils.axes import xaxis, yaxis, main
+from bokehutils.axes import xaxis, yaxis
 from snakemake.report import data_uri
 from snakemakelib.log import LoggerManager
-from snakemakelib.bokeh.plot import make_scatterplot, make_gridplot
-from snakemakelib.bokeh.plot import make_lineplot
 
 smllogger = LoggerManager().getLogger(__name__)
 
@@ -84,7 +81,9 @@ class Metrics(pd.DataFrame):
         for kw in self.plots:
             kwargs.update(kw['figure'])
             fig = figure(**kwargs)
-            dotplot(fig, **kw['renderer'])
+            dotplot(fig, df=self, **kw['renderer'])
+            xaxis(fig, **kw['xaxis'])
+            yaxis(fig, **kw['yaxis'])
             plist.append(fig)
         return plist
 
@@ -94,34 +93,34 @@ class HistMetrics(Metrics):
         super(HistMetrics, self).__init__(*args, **kwargs)
         self._metadata = {'type': 'histogram'}
         self.kw = {}
-        self.plot_hist = self.lineplot_hist
+        self.plot_hist = self.lines_hist
 
-    def gridplot_hist(self, **kwargs):
-        """Gridplot hist wrapper
+    def facet_grid_hist(self, **kwargs):
+        """facet_grid hist wrapper.
 
         Returns:
           plist (list): list of bokeh plot objects
         """
         kwargs.update(self.kw)
-        gp = make_gridplot(df=self, ncol=self.ncol,
-                           line={'line_width': 2},
-                           share_x_range=True,
-                           share_y_range=False,
-                           **kwargs)
+        f = figure(**kwargs['figure'])
+        lines(f, df=self, **kwargs['renderer'])
+        gp = facet_grid(f, df=self, ncol=self.ncol,
+                        **kwargs['facet'])
         plist = [x for sublist in gp.children for x in sublist]
         return plist
 
-    def lineplot_hist(self, **kwargs):
-        """Lineplot hist wrapper
+    def lines_hist(self, **kwargs):
+        """lines hist wrapper.
+
+        Plot lines in one plot, with legend.
 
         Returns:
           plist (list): list of bokeh plot objects
         """
         kwargs.update(self.kw)
-        plist = [make_lineplot(df=self,
-                               line={'line_width': 2},
-                               **kwargs)]
-        return plist
+        f = figure(**kwargs['figure'])
+        lines(f, df=self, **kwargs['renderer'])
+        return [f]
 
 
 class AlignMetrics(Metrics):
@@ -132,7 +131,7 @@ class AlignMetrics(Metrics):
                 'plot_width': 400, 'plot_height': 400,
                 'title': 'Percent PF_READS aligned per sample',
                 'y_range': [0, 100],
-                'title_text_font_size': "12pt",
+                'title_text_font_size': "10pt",
             },
             'renderer': {'size': 10, 'alpha': 0.5,
                          'x': 'Sample',
@@ -154,7 +153,8 @@ class InsertMetrics(Metrics):
             'figure': {
                 'plot_width': 400, 'plot_height': 400,
                 'title': 'Mean insert size',
-                'title_text_font_size': "12pt",
+                'title_text_font_size': "10pt",
+                'x_range': list(self.Sample),
             },
             'renderer': {
                 'size': 10, 'alpha': 0.3,
@@ -168,7 +168,6 @@ class InsertMetrics(Metrics):
                       'major_label_orientation': np.pi/3,
                       'axis_label_text_font_size': '10pt'}}]
 
-
 class InsertHist(HistMetrics):
     def __init__(self, *args, **kwargs):
         super(InsertHist, self).__init__(*args, **kwargs)
@@ -176,13 +175,17 @@ class InsertHist(HistMetrics):
             'figure': {
                 'plot_width': 400, 'plot_height': 400,
                 'title': "Insert size distribution",
-                'title_text_font_size': "12pt",
+                'title_text_font_size': "10pt",
             },
             'facet': {
                 'groups': ["Sample"],
+                'width': 300, 'height': 300,
+                'share_x_range': True,
+                'x': 'insert_size',
+                'y': 'All_Reads.fr_count',
+                'title_text_font_size': "12pt",
             },
             'renderer': {
-
                 'x': 'insert_size',
                 'y': 'All_Reads.fr_count',
             },
@@ -190,7 +193,7 @@ class InsertHist(HistMetrics):
                       'axis_label_text_font_size': '10pt'},
             'yaxis': {'axis_label': 'Count',
                       'axis_label_text_font_size': '10pt'}}
-        self.plot_hist = self.gridplot_hist
+        self.plot_hist = self.facet_grid_hist
 
 
 class DuplicationMetrics(Metrics):
@@ -200,8 +203,9 @@ class DuplicationMetrics(Metrics):
             'figure': {
                 'plot_width': 400, 'plot_height': 400,
                 'title': 'Percent duplication per sample',
-                'title_text_font_size': "12pt",
+                'title_text_font_size': "10pt",
                 'y_range': [0, 100],
+                'x_range': list(self.Sample),
             },
             'renderer': {
                 'size': 10, 'alpha': 0.3,
@@ -224,11 +228,14 @@ class DuplicationHist(HistMetrics):
             'figure': {
                 'plot_width': 400, 'plot_height': 400,
                 'title': "Return of investment",
-                'title_text_font_size': "12pt",
+                'title_text_font_size': "10pt",
             },
             'renderer': {
                 'groups': ["Sample"],
                 'x': "BIN", 'y': "VALUE",
+                'legend': 'Sample',
+                'color': 'blue',
+                'line_width': 2,
             },
             'xaxis': {'axis_label': 'Coverage multiple',
                       'axis_label_text_font_size': '10pt'},
@@ -256,7 +263,7 @@ def _read_metrics(infile):
 
 def make_picard_summary_plots(inputfiles, ncol=4):
     d = {}
-    TOOLS = "pan,box_zoom,wheel_zoom,box_select,lasso_select,reset,save,hover"
+    TOOLS = "pan,box_zoom,wheel_zoom,box_select,lasso_select,resize,reset,save,hover"
     for (metrics_file, hist_file) in zip(inputfiles[0::2], inputfiles[1::2]):
         df_met = _read_metrics(metrics_file)
         df_hist = _read_metrics(hist_file)

@@ -16,7 +16,7 @@ ngs_cfg = config['bio.ngs.settings']
 config_default = {
     'bio.ngs.enrichment.dfilter' : {
         'ref' : ngs_cfg['db']['ref'],
-        'options' : "-lpval=2 -ks=50 -bs=100",
+        'options' : "-lpval=2 -ks=50 -bs=100 -wig",
         'cmd' : 'run_dfilter.sh',
     },
 }
@@ -36,5 +36,6 @@ rule dfilter_run_dfilter_bam:
     params: options = dfilt_cfg['options'],
             cmd = dfilt_cfg['cmd']
     input: chipfile = "{prefix}.bam"
-    output: outfile = "{prefix}.dfilt.bed"
-    shell: "{params.cmd} {params.options} -f=bam -d={input.chipfile} -o={output.outfile}"
+    output: bed = "{prefix}.dfilt.bed",
+            wig = "{prefix}.dfilt.bed.wig" if "-wig" in dfilt_cfg['options'] else []
+    shell: "{params.cmd} {params.options} -f=bam -d={input.chipfile} -o={output.bed}"

@@ -39,7 +39,7 @@ atac_config = {
     },
     'bio.ngs.enrichment.macs' : {
         'callpeak' : {
-            'options' : '-g hs --nomodel --shift 37 --extsize 73 -q 0.01',
+            'options' : '-g hs --nomodel --shift 37 --extsize 73 -q 0.01 -B',
         },
     },
 }
@@ -175,6 +175,11 @@ INSERT_METRICS_TARGETS = generic_target_generator(
 
 REPORT_TARGETS = ["report/atacseq_all_rulegraph.png", "report/atacseq_summary.html"]
 
+BIGWIG_TARGETS = [x.replace(".bed", ".bed.wig.bw") for x in DFILTER_TARGETS] +\
+                 [x.replace("_peaks.xls", "_treat_pileup.bdg.bw") for x in MACS2_TARGETS] +\
+                 [x.replace("_peaks.xls", "_control_lambda.bdg.bw") for x in MACS2_TARGETS] +\
+                 [x + ".bdg.bw" for x in ZINBA_TARGETS]
+
 # Rules
 rule atacseq_all:
     """Run ATAC-seq pipeline"""
@@ -191,6 +196,10 @@ rule atacseq_merge:
 rule atacseq_metrics:
     """Run ATAC-seq alignment and corresponding metrics only"""
     input: DUP_METRICS_TARGETS + ALIGN_METRICS_TARGETS + INSERT_METRICS_TARGETS
+
+rule atacseq_bigwig:
+    """Convert peak-calling bed output to bigwig"""
+    input: BIGWIG_TARGETS
 
 rule atacseq_correct_coordinates:
     """From Buenrostro paper: 

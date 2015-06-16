@@ -11,12 +11,25 @@ include: "../settings.rules"
 config_default = {
     'bio.ngs.db.ucsc' : { 
         'ref' : config['bio.ngs.settings']['db']['ref'],
+        #'build' : config['bio.ngs.settings']['db']['build'],
         'index' : "",
         'home' : "",
         'urldownload' : 'http://hgdownload.cse.ucsc.edu/goldenPath/',
         'gtfToGenePred' : {
             'cmd' : 'gtfToGenePred',
             'options' : '-genePredExt -ignoreGroupsWithoutExons',
+        },
+        'bedGraphToBigWig' : {
+            'cmd' : 'bedGraphToBigWig',
+            'options' : '',
+        },
+        'fetchChromSizes' : {
+            'cmd' : 'fetchChromSizes',
+            'options' : 'hg19',
+        },
+        'wigToBigWig' : {
+            'cmd' : 'wigToBigWig',
+            'options' : '-clip',
         },
     },
 }
@@ -137,32 +150,39 @@ rule ucsc_genepred_to_refFlat:
     output: refflat = "{prefix}.refFlat"
     shell: "awk '{{printf(\"%s\\t%s\\n\", $1, $0)}}'  {input.genepred} > {output.refflat}"
 
-rule ucsc_chrom_sizes_from_dict:
-    """Convert dict file to chrom sizes file.
+rule ucsc_chrom_sizes:
+    """Generate chromosome sizes.
 
     Chrom sizes file is of format: <chromosome name> <size in bases>
 
-    NB: should use fetchChromSizes
+    Uses fetchChromSizes
     """
-    input: "{prefix}.dict"
-    output: "{prefix}.sizes"
-    shell: "cat {input} | grep SN | sed -e s/SN://g | sed -e s/LN://g | awk '{{printf(\"%s\t%s%s\", $2, $3, RS)}}' > {output}"
+    params: cmd = ucsc_cfg["fetchChromSizes"]["cmd"],
+            options = ucsc_cfg["fetchChromSizes"]["options"]
+    output: sizes = "chrom.sizes"
+    shell: "{params.cmd} {params.options} > {output.sizes}"
 
-    
-rule ucsc_bed_to_bigWig_pipe:
-    """Convert bed file to bigWig via pipes.
+rule ucsc_wig_to_bigWig:
+    """Convert wig file to bigWig.
 
-    Conversion is done following these steps (see
-    https://groups.google.com/forum/#!topic/bedtools-discuss/3CibmlqIdWA):
-
-    1. genomeCoverageBed: convert bed to bedGraph
-    2. bedGraphToBigWig: convert bedGraph to bigWig
-
+    Run wigToBigWig to convert wig file to bigWig.
     """
-    params: genomeCoverageBed = "genomeCoverageBed",
-            wigToBigWig = "wigToBigWig"
-    input: sizes = config['bio.ngs.settings']['db']['ref'].replace(".fa", ".sizes"),
-           bed = "{prefix}.bed"
-    output: bigwig = "{prefix}.bw"
-    shell: "{params.genomeCoverageBed} -i {input.bed} -g {input.sizes} -bg | {params.wigToBigWig} stdin {input.sizes} {output.bigwig}"
-    # <(fetchChromSizes hg19) 
+    params: cmd = ucsc_cfg['wigToBigWig']['cmd'],
+            options = ucsc_cfg['wigToBigWig']['options']
+    log: "{prefix}.wig.log"
+    input: wig = "{prefix}.wig",
+           sizes = "chrom.sizes"
+    output: bigwig = "{prefix}.wig.bw"
+    shell: "{params.cmd} {params.options} {input.wig} {input.sizes} {output.bigwig} 2> {log}"
+
+rule ucsc_bedgraph_to_bigWig:
+    """Convert bedGraph file to bigWig.
+
+    Run begGraphToBigWig to convert bedGraph file to bigWig.
+    """
+    params: cmd = ucsc_cfg['bedGraphToBigWig']['cmd'],
+            options = ucsc_cfg['bedGraphToBigWig']['options']
+    input: wig = "{prefix}.bdg",
+           sizes = "chrom.sizes"
+    output: bigwig = "{prefix}.bdg.bw"
+    shell: "{params.cmd} {params.options} {input.wig} {input.sizes} {output.bigwig}"

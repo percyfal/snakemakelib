@@ -33,10 +33,9 @@ class Star(Results):
             d = {trim_header(x, underscore=True, percent=True): recast(y)
                  for (x, y) in zip(df_tmp["name"], df_tmp["value"])}
             if df is None:
-                df = pd.DataFrame(d, index=[s])
+                df = pd.DataFrame(data=d, index=pd.Index([s], name="Sample"))
             else:
-                df = df.append(pd.DataFrame(d, index=[s]))
-        df['samples'] = list(df.index)
+                df = df.append(pd.DataFrame(data=d, index=pd.Index([s], name="Sample")))
         df['mismatch_sum'] = df['Mismatch_rate_per_base__PCT'] +\
             df['Deletion_rate_per_base'] + df['Insertion_rate_per_base']
         df['PCT_of_reads_unmapped'] = df['PCT_of_reads_unmapped:_other'] +\

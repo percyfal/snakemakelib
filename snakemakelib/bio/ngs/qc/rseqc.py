@@ -28,19 +28,19 @@ def collect_rseqc_results(inputfiles, samples):
                                       for x in data[3:6]]))
             tmp = pd.read_table(d1, engine="python", sep="[ ]+", header=None)
             tmp.columns = ["Group", "Tag_count"]
-            tmp["Total_bases"] = "NA"
-            tmp["Tags/Kb"] = "NA"
+            tmp["Total_bases"] = None
+            tmp["Tags/Kb"] = None
             d2 = io.StringIO("".join(data[7:17]))
             df_rd_tmp = pd.read_table(d2, engine="python", sep="[ ]+")
             df_rd_tmp = df_rd_tmp.append(tmp)
-            df_rd_tmp["sample"] = s
+            df_rd_tmp["Sample"] = s
         except:
             smllogger.warn("pandas reading table {f} failed".format(f=infile))
         try:
             infile = os.path.join(os.path.dirname(f),
                                   "geneBody_coverage.geneBodyCoverage.txt")
             df_gc_tmp = pd.read_table(infile, engine="python", sep="\t")
-            df_gc_tmp.index = [s]
+            df_gc_tmp["Sample"] = s
         except:
             smllogger.warn("pandas reading table {f} failed".format(f=infile))
         try:
@@ -53,7 +53,14 @@ def collect_rseqc_results(inputfiles, samples):
                 df_gc = df_gc.append(df_gc_tmp)
         except:
             smllogger.warn("failed to append data")
-    return {'rd': df_rd, 'gc': df_gc}
+    df_rd = df_rd.set_index(["Group", "Sample"])
+    df_gc = df_gc.set_index("Sample")
+    df_rd = df_rd.astype(float)
+    ExonMap = (df_rd.loc['CDS_Exons'] + df_rd.loc["3'UTR_Exons"] + df_rd.loc["5'UTR_Exons"]) / df_rd.loc['Total_Assigned_Tags']
+    ExonMap["Group"] = "ExonMap"
+    ExonMap = ExonMap.reset_index().set_index(["Group", "Sample"])
+    df_rd = df_rd.append(ExonMap)
+    return {'rd': df_rd.sortlevel(1), 'gc': df_gc}
 
 
 def make_rseqc_summary_plots(rd_file, gc_file, do_qc=True,

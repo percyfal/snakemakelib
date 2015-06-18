@@ -24,9 +24,10 @@ def scrnaseq_qc_plots(rseqc_read_distribution=None, rseqc_gene_coverage=None,
     df_rseqc_rd.columns = ["_".join(x) if isinstance(x, tuple) else x for x in df_rseqc_rd.columns]
     df_rseqc_gc = pd.read_csv(rseqc_gene_coverage, index_col="Sample")
     df_all = df_star.join(df_rseqc_rd)
+    df_all = df_all.join(df_rseqc_gc['three_prime_map'])
     source = ColumnDataSource(df_all)
     columns = [
-        TableColumn(field="samples", title="Sample"),
+        TableColumn(field="Sample", title="Sample"),
         TableColumn(field="Number_of_input_reads",
                     title="Number of input reads"),
         TableColumn(field="Uniquely_mapped_reads_PCT",
@@ -49,7 +50,6 @@ def scrnaseq_qc_plots(rseqc_read_distribution=None, rseqc_gene_coverage=None,
                'major_label_orientation': np.pi/3}
     kwyaxis = {'axis_label_text_font_size': '10pt',
                'major_label_orientation': np.pi/3}
-    output_file("tabort.html")
 
     # Input reads
     p1 = figure(title="Number of input reads",
@@ -133,6 +133,17 @@ def scrnaseq_qc_plots(rseqc_read_distribution=None, rseqc_gene_coverage=None,
     tooltips(p6, HoverTool, [('Sample', '@Sample'),
                              ('ExonMap', '@Tag_count_ExonMap'), ])
 
+    # Fraction reads mapping to 10% right-most end
+    p7 = figure(title="Reads mapping to 3' end",
+                x_range=p1.x_range,
+                tools=TOOLS,
+                **kwfig)
+    dotplot(p7, "Sample", "three_prime_map", source=source)
+    xaxis(p7, **kwxaxis)
+    yaxis(p7, axis_label="Percent", **kwyaxis)
+    tooltips(p7, HoverTool, [('Sample', '@Sample'),
+                             ("3' map", '@three_prime_map'), ])
 
-    show(gridplot([[p1, p2, p3], [p4, p5, p6]]))
-             
+
+    return {'fig': gridplot([[p1, p2, p3], [p4, p5, p6], [p7, None, None]]),
+            'table': table}

@@ -13,6 +13,7 @@ class TestQualimap(unittest.TestCase):
                      'number of windows = 10\n',
                      'number of reads = 10,000,000\n',
                      'number of mapped reads = 9,900,000 (99.00%)\n',
+                     'number of duplicated reads = 400,000\n\n',
                      '>>>>>>> Insert size\n',
                      '>>>>>>> Coverage per contig\n',
                      '\n',
@@ -30,7 +31,7 @@ class TestQualimap(unittest.TestCase):
     def test_qualimap_globals(self, mock_load_lines):
         mock_load_lines.return_value = self.data
         qm = Qualimap([('foo', 'bar')])
-        self.assertListEqual(sorted([10.0, 10000000.0, 9900000.0]),
+        self.assertListEqual(sorted([10.0, 400000.0, 9500000.0, 10000000.0, 9900000.0]),
                              sorted(list(qm['globals'].loc['bar'])))
 
     @patch('pandas.DataFrame')
@@ -41,4 +42,4 @@ class TestQualimap(unittest.TestCase):
         Qualimap([('foo', 'bar')])
         (args, kw) = mock_df.call_args
         self.assertListEqual([x.strip("\n").split("\t")
-                              for x in self.data[7:]], args[0])
+                              for x in self.data[8:]], args[0])

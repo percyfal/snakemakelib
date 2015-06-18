@@ -165,19 +165,18 @@ rule scrnaseq_qc:
            globalconf = os.path.join("{path}", "smlconf_global.yaml")
     output: html = os.path.join("{path}", "scrnaseq_summary.html")
     run:
-        d = {}
-        scrnaseq_qc_plots(input.rseqc_read_distribution,
-                          input.rseqc_gene_coverage,
-                          input.starcsv)
+        d = {'align': scrnaseq_qc_plots(input.rseqc_read_distribution,
+                                        input.rseqc_gene_coverage,
+                                        input.starcsv)}
         # d.update({'rseqc' : make_rseqc_summary_plots(input.rseqc_read_distribution, input.rseqc_gene_coverage)})
         # d.update({'star'  : make_star_alignment_plots(input.starcsv)})
-        # d.update({'rulegraph' : {'uri' : data_uri(input.rulegraph), 'file' : input.rulegraph, 'fig' : input.rulegraph, 'target' : 'scrnaseq_all'}})
-        # d.update({'rsem' : {'file': [input.rsemgenes, input.rsemisoforms]}})
+        d.update({'rulegraph' : {'uri' : data_uri(input.rulegraph), 'file' : input.rulegraph, 'fig' : input.rulegraph, 'target' : 'scrnaseq_all'}})
+        d.update({'rsem' : {'file': [input.rsemgenes, input.rsemisoforms]}})
 
-        # d.update({'version' : config['_version'], 'config' : {'uri' : data_uri(input.globalconf), 'file' : input.globalconf}})
-        # tp = SmlTemplateEnv.get_template('workflow_scrnaseq_qc.html')
-        # with open(output.html, "w") as fh:
-        #     fh.write(static_html(tp, **d))
+        d.update({'version' : config['_version'], 'config' : {'uri' : data_uri(input.globalconf), 'file' : input.globalconf}})
+        tp = SmlTemplateEnv.get_template('workflow_scrnaseq_qc.html')
+        with open(output.html, "w") as fh:
+            fh.write(static_html(tp, **d))
 
 rule scrnaseq_pca:
     input: csv = os.path.join("{path}", "rsem.merge.tx.{type}.csv")

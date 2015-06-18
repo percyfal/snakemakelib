@@ -77,5 +77,4 @@ rule cutadapt_qc_summary:
         except KeyError:
             raise Exception("failed to parse sample name 'SM' from input list")
         df = collect_cutadapt_qc_results(input, list(zip(samples, runs)))
-        df.columns = df.columns.droplevel()
         df.to_csv(output.summary)

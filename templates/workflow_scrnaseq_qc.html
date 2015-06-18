@@ -22,6 +22,11 @@
 	{{ star['table']['script'] | indent(8) }}
       {% endif %}
     {% endif %}
+    {% if align is defined %}
+      {{ align['fig']['script'] | indent(8) }}
+      {{ align['table']['script'] | indent(8) }}
+    {% endif %}
+
   </head>
   <body>
 
@@ -32,7 +37,7 @@
     <ol>
       <li>Alignment with star</li>
       <li>Quality control with RSeQC</li>
-      <li>Quantification with RSEM</li>
+      <li>Quantification with RSEM and/or rpkmforgenes.py</li>
     </ol>
 
     {% include 'snakemake.html' ignore missing %}
@@ -45,11 +50,11 @@
 
     <h3>Alignment</h3>
 
-    {% include 'star.html' ignore missing %}
-
     <h2>Sample-level QC metrics</h2>
 
-    {% include 'rseqc.html' ignore missing %}
+    <h3>Alignment</h3>
+    
+    {% include 'workflow_scrnaseq_qc_align.html' ignore missing %}
     
   </body>
 </html>

@@ -5,6 +5,7 @@ from snakemakelib.io import set_output
 from snakemakelib.utils import SmlTemplateEnv
 from snakemakelib.config import update_snakemake_config
 from snakemakelib.bio.ngs.targets import generic_target_generator
+from snakemakelib.workflow.scrnaseq import scrnaseq_qc_plots
 
 def _merge_suffix(aligner, quantification=[]):
     align_cfg = config['bio.ngs.align.' + aligner]
@@ -164,9 +165,11 @@ rule scrnaseq_qc:
            globalconf = os.path.join("{path}", "smlconf_global.yaml")
     output: html = os.path.join("{path}", "scrnaseq_summary.html")
     run:
-        d = {}
-        d.update({'rseqc' : make_rseqc_summary_plots(input.rseqc_read_distribution, input.rseqc_gene_coverage)})
-        d.update({'star'  : make_star_alignment_plots(input.starcsv)})
+        d = {'align': scrnaseq_qc_plots(input.rseqc_read_distribution,
+                                        input.rseqc_gene_coverage,
+                                        input.starcsv)}
+        # d.update({'rseqc' : make_rseqc_summary_plots(input.rseqc_read_distribution, input.rseqc_gene_coverage)})
+        # d.update({'star'  : make_star_alignment_plots(input.starcsv)})
         d.update({'rulegraph' : {'uri' : data_uri(input.rulegraph), 'file' : input.rulegraph, 'fig' : input.rulegraph, 'target' : 'scrnaseq_all'}})
         d.update({'rsem' : {'file': [input.rsemgenes, input.rsemisoforms]}})
 

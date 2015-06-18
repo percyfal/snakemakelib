@@ -45,4 +45,4 @@ class TestStar(unittest.TestCase):
     def test_collect_results(self):
         st = Star([(self.f, 'bar')])
         self.assertEqual(st['align'].shape[0], 1)
-        self.assertEqual(st['align'].shape[1], 27)
+        self.assertEqual(st['align'].shape[1], 29)

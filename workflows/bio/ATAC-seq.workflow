@@ -245,7 +245,8 @@ rule atacseq_report:
             d.update({'cutadapt' : make_cutadapt_summary_plot(input.cutadapt)})
         d.update({'qualimap' : make_qualimap_plots(*input.qualimap)})
         d.update({'picard' : make_picard_summary_plots(input.picard)})
-        d.update({'rulegraph' : {'uri' : data_uri(input.rulegraph), 'file' : input.rulegraph, 'fig' : input.rulegraph, 'target' : 'atacseq_all'}})
+        d.update({'rulegraph' : {'uri' : data_uri(input.rulegraph), 'file' : input.rulegraph, 'fig' : input.rulegraph,
+                                 'target' : 'atacseq_all'}})
         with open(output.html, "w") as fh:
             fh.write(static_html(tp, **d))
 

@@ -12,7 +12,7 @@ versioneer.parentdir_prefix = 'snakemakelib-' # dirname like 'myproject-1.2.0'
 
 try:
     with open("requirements.txt", "r") as fh:
-        install_requires = [x.strip() for x in fh.readlines()]
+        install_requires = [x.strip() for x in fh.readlines() if not x.startswith("-e")]
 except IOError:
     install_requires = []
     
@@ -39,4 +39,7 @@ setup(
             'examples/*',
             'templates/*',
     ]},
+    dependency_links = [
+        'https://github.com/percyfal/bokehutils.git#egg=bokehutils',
+    ],
 )

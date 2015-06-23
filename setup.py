@@ -39,4 +39,7 @@ setup(
             'examples/*',
             'templates/*',
     ]},
+    dependency_links = [
+        "git+ssh://git@github.com/percyfal/bokehutils.git#egg=bokehutils-0.1.1",
+    ],
 )

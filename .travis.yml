@@ -8,7 +8,7 @@ python:
   - 3.4
 install:
   - pip install --upgrade pip
-  - pip install --process-dependency-links -r requirements.txt
+  - pip install -r requirements.txt
   - pip install coveralls
   - python setup.py develop
 script:

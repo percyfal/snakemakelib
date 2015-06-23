@@ -1,5 +1,6 @@
 # -*- snakemake -*-
 import os
+from bokehutils.publish import static_html
 from snakemake.workflow import workflow
 from snakemakelib.io import set_output
 from snakemakelib.utils import SmlTemplateEnv
@@ -168,8 +169,6 @@ rule scrnaseq_qc:
         d = {'align': scrnaseq_qc_plots(input.rseqc_read_distribution,
                                         input.rseqc_gene_coverage,
                                         input.starcsv)}
-        # d.update({'rseqc' : make_rseqc_summary_plots(input.rseqc_read_distribution, input.rseqc_gene_coverage)})
-        # d.update({'star'  : make_star_alignment_plots(input.starcsv)})
         d.update({'rulegraph' : {'uri' : data_uri(input.rulegraph), 'file' : input.rulegraph, 'fig' : input.rulegraph, 'target' : 'scrnaseq_all'}})
         d.update({'rsem' : {'file': [input.rsemgenes, input.rsemisoforms]}})
 

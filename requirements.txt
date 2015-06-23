@@ -9,6 +9,6 @@ pandas
 jinja2
 mock
 pysam
-bokehutils
+bokehutils==0.1.1
 # scikit-learn
 # statsmodels

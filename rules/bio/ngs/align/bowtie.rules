@@ -37,17 +37,19 @@ config_default = {
 
 config = update_snakemake_config(config, config_default)
 
+bowtie = 'bowtie2' if config['bio.ngs.align.bowtie']['version2'] else 'bowtie'
+
 # Update index
 config['bio.ngs.align.bowtie']['index'] = index(
     ref = config['bio.ngs.align.bowtie']['ref'],
     index = config['bio.ngs.align.bowtie']['index'],
-    application = 'bowtie',
+    application = bowtie,
     build = config['bio.ngs.settings']['db']['build'])
 
 bwt_cfg = config['bio.ngs.align.bowtie']
 samtools_cfg = config['bio.ngs.tools.samtools']
 
-bowtie = 'bowtie2' if bwt_cfg['version2'] else 'bowtie'
+
 ext = bwt_cfg['build']['ext_v2'] if bwt_cfg['version2'] else bwt_cfg['build']['ext_v2']
 
 if bwt_cfg[bowtie]['home']:

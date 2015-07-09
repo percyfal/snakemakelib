@@ -24,8 +24,9 @@ def _merge_suffix():
 atac_config = {
     'workflows.bio.atac_seq' : {
         'aligner' : 'bowtie',
-        'peakcallers' : ['zinba', 'dfilter', 'macs2'],
+        'peakcallers' : ['dfilter', 'macs2'],
         'trimadaptor' : True,
+        'bamfilter' : True,
     },
     'settings' : {
         'temp_rules' : [],
@@ -34,18 +35,26 @@ atac_config = {
         'merge_sam' : {
             'suffix' : '.sort.bam',
         },
+        'qcrules' : ['picard_collect_insert_size_metrics',
+                     'picard_mark_duplicates'],
     },
     'bio.ngs.enrichment.macs' : {
         'callpeak' : {
-            'options' : '-g hs --nomodel --shift 37 --extsize 73 -q 0.01',
+            'options' : '-g hs --nomodel --nolambda --keep-dup all --call-summits -B',
+        },
+    },
+    'bio.ngs.tools.bamtools' : {
+        'filter' : {
+            'options' : {'mapQuality': ">=30",
+                         'isProperPair': 'true'},
         },
     },
 }
 aligner_config = {
     'bio.ngs.align.bowtie' : {
-        'version2' : False,
+        'version2' : True,
         'bowtie' : {
-            'options' : '-X 2000 -m1 --chunkmbs 1000',
+            'options' : '-X 2000',
         },
     },
     'bio.ngs.align.bwa' : {
@@ -77,16 +86,18 @@ include: os.path.join(p, "bio/ngs/align", aligner + ".rules")
 include: os.path.join(p, "bio/ngs/align", "blat.rules")
 include: os.path.join(p, "bio/ngs/qc", "picard.rules")
 include: os.path.join(p, "bio/ngs/qc", "sequenceprocessing.rules")
+include: os.path.join(p, "bio/ngs/qc", "qualimap.rules")
 include: os.path.join(p, "bio/ngs/chromatin", "danpos.rules")
-if 'zinba' in config['workflows.bio.atac_seq']['peakcallers']:
-    include: os.path.join(p, "bio/ngs/enrichment", "zinba.rules")
 if 'dfilter' in config['workflows.bio.atac_seq']['peakcallers']:
     include: os.path.join(p, "bio/ngs/enrichment", "dfilter.rules")
 if 'macs2' in config['workflows.bio.atac_seq']['peakcallers']:
     include: os.path.join(p, "bio/ngs/enrichment", "macs.rules")
 if atac_cfg['trimadaptor']:
     include: os.path.join(p, "bio/ngs/qc", "cutadapt.rules")
+if atac_cfg['bamfilter']:
+    include: os.path.join(p, "bio/ngs/tools", "bamtools.rules")
 
+    
 ruleorder: picard_merge_sam > picard_sort_bam 
 ruleorder: picard_sort_bam > picard_add_or_replace_read_groups
 ruleorder: picard_add_or_replace_read_groups > picard_mark_duplicates
@@ -122,16 +133,9 @@ MERGE_TARGETS = generic_target_generator(
     target_suffix = MERGE_TARGET_SUFFIX, 
     **ngs_cfg)
 
-ZINBA_TARGET_SUFFIX = ".sort.merge.offset.zinba.peaks"
-ZINBA_TARGETS = []
-if 'zinba' in atac_cfg['peakcallers']:
-    ZINBA_TARGETS = generic_target_generator(
-        tgt_re = ngs_cfg['sampleorg'].sample_re, 
-        src_re = ngs_cfg['sampleorg'].raw_run_re, 
-        target_suffix = ZINBA_TARGET_SUFFIX, 
-        **ngs_cfg) 
+PREFIX = ".sort.merge.filter" if atac_cfg['bamfilter'] else ".sort.merge"
 
-DFILTER_TARGET_SUFFIX = ".sort.merge.offset.dfilt.bed"
+DFILTER_TARGET_SUFFIX = PREFIX + ".offset.dfilt.bed"
 DFILTER_TARGETS = []
 if 'dfilter' in atac_cfg['peakcallers']:
     DFILTER_TARGETS = generic_target_generator(
@@ -140,7 +144,7 @@ if 'dfilter' in atac_cfg['peakcallers']:
         target_suffix = DFILTER_TARGET_SUFFIX, 
         **ngs_cfg) 
 
-MACS2_TARGET_SUFFIX = ".sort.merge.offset_peaks.xls"
+MACS2_TARGET_SUFFIX = PREFIX + ".offset_peaks.xls"
 MACS2_TARGETS = []
 if 'macs2' in atac_cfg['peakcallers']:
     MACS2_TARGETS = generic_target_generator(
@@ -149,21 +153,21 @@ if 'macs2' in atac_cfg['peakcallers']:
         target_suffix = MACS2_TARGET_SUFFIX,  
         **ngs_cfg) 
 
-DUP_METRICS_SUFFIX=".sort.merge.dup.dup_metrics"
+DUP_METRICS_SUFFIX = ".sort.merge.dup.dup_metrics"
 DUP_METRICS_TARGETS = generic_target_generator(
     tgt_re = ngs_cfg['sampleorg'].sample_re, 
     target_suffix =  DUP_METRICS_SUFFIX, 
     src_re = ngs_cfg['sampleorg'].raw_run_re, 
     **ngs_cfg)
 
-ALIGN_METRICS_SUFFIX=".sort.merge.dup.align_metrics"
+ALIGN_METRICS_SUFFIX = ".sort.merge.dup.align_metrics"
 ALIGN_METRICS_TARGETS = generic_target_generator(
     tgt_re = ngs_cfg['sampleorg'].sample_re, 
     target_suffix =  ALIGN_METRICS_SUFFIX, 
     src_re = ngs_cfg['sampleorg'].raw_run_re, 
     **ngs_cfg)
 
-INSERT_METRICS_SUFFIX=".sort.merge.dup.insert_metrics"
+INSERT_METRICS_SUFFIX = ".sort.merge.dup.insert_metrics"
 INSERT_METRICS_TARGETS = generic_target_generator(
     tgt_re = ngs_cfg['sampleorg'].sample_re, 
     target_suffix =  INSERT_METRICS_SUFFIX, 
@@ -172,10 +176,15 @@ INSERT_METRICS_TARGETS = generic_target_generator(
 
 REPORT_TARGETS = ["report/atacseq_all_rulegraph.png", "report/atacseq_summary.html"]
 
+BIGWIG_TARGETS = [x.replace(".bed", ".bed.wig.bw") for x in DFILTER_TARGETS] +\
+                 [x.replace("_peaks.xls", "_treat_pileup.bdg.bw") for x in MACS2_TARGETS] +\
+                 [x.replace("_peaks.xls", "_control_lambda.bdg.bw") for x in MACS2_TARGETS]
+
+
 # Rules
 rule atacseq_all:
     """Run ATAC-seq pipeline"""
-    input: DFILTER_TARGETS + ZINBA_TARGETS + MACS2_TARGETS + DUP_METRICS_TARGETS + ALIGN_METRICS_TARGETS + INSERT_METRICS_TARGETS + REPORT_TARGETS
+    input: DFILTER_TARGETS + MACS2_TARGETS + DUP_METRICS_TARGETS + ALIGN_METRICS_TARGETS + INSERT_METRICS_TARGETS + REPORT_TARGETS
 
 rule atacseq_align:
     """Run ATAC-seq alignment"""
@@ -188,6 +197,10 @@ rule atacseq_merge:
 rule atacseq_metrics:
     """Run ATAC-seq alignment and corresponding metrics only"""
     input: DUP_METRICS_TARGETS + ALIGN_METRICS_TARGETS + INSERT_METRICS_TARGETS
+
+rule atacseq_bigwig:
+    """Convert peak-calling bed output to bigwig"""
+    input: BIGWIG_TARGETS
 
 rule atacseq_correct_coordinates:
     """From Buenrostro paper: 
@@ -221,6 +234,8 @@ rule atacseq_report:
     input: cutadapt = os.path.join("{path}", "cutadapt.summary.csv") if atac_cfg['trimadaptor'] else [],
            picard = [("report/picard.sort.merge.dup{sfx}.metrics.csv".format(sfx=sfx), 
            "report/picard.sort.merge.dup{sfx}.hist.csv".format(sfx=sfx)) for sfx in [workflow._rules[x].params.suffix for x in picard_config['qcrules']]],
+           qualimap = [os.path.join("{path}", "sample{}.qualimap.globals.csv".format(MERGE_TARGET_SUFFIX)),
+                       os.path.join("{path}", "sample{}.qualimap.coverage_per_contig.csv".format(MERGE_TARGET_SUFFIX))],
            rulegraph = "report/atacseq_all_rulegraph.png"
     output: html = os.path.join("{path}", "atacseq_summary.html")
     run:
@@ -229,8 +244,10 @@ rule atacseq_report:
         tp = env.get_template('workflow_atacseq_qc.html')
         if atac_cfg['trimadaptor']:
             d.update({'cutadapt' : make_cutadapt_summary_plot(input.cutadapt)})
+        d.update({'qualimap' : make_qualimap_plots(*input.qualimap)})
         d.update({'picard' : make_picard_summary_plots(input.picard)})
-        d.update({'rulegraph' : {'uri' : data_uri(input.rulegraph), 'file' : input.rulegraph, 'fig' : input.rulegraph, 'target' : 'atacseq_all'}})
+        d.update({'rulegraph' : {'uri' : data_uri(input.rulegraph), 'file' : input.rulegraph, 'fig' : input.rulegraph,
+                                 'target' : 'atacseq_all'}})
         with open(output.html, "w") as fh:
             fh.write(static_html(tp, **d))
 

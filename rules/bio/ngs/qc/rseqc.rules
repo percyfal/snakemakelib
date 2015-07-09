@@ -4,7 +4,7 @@ import pandas as pd
 from snakemake.report import data_uri
 from snakemakelib.stat import is_installed
 from snakemakelib.config import update_snakemake_config
-from snakemakelib.bio.ngs.qc.rseqc import collect_rseqc_results, make_rseqc_summary_plots
+from snakemakelib.bio.ngs.qc.rseqc import collect_rseqc_results
 
 include: '../settings.rules'
 include: '../tools/conversion.rules'
@@ -178,20 +178,10 @@ rule rseqc_qc_8_summary:
             samples = [ngs_cfg['sampleorg'].sample_re.parse(f)['SM'] for f in input]
         except KeyError:
             raise Exception("failed to parse sample name 'SM' from input list")
+
         d = collect_rseqc_results(input, samples)
         if not d['rd'] is None:
             d['rd'].to_csv(output.read_distribution)
         if not d['gc'] is None:
             d['gc'].to_csv(output.gene_coverage)
 
-
-rule rseqc_plot_qc_8_summary:
-    """Plot rseqc_qc_8 summary data"""
-    input: read_distribution = os.path.join("{path}", "read_distribution_summary_{label}.csv"),
-           gene_coverage = os.path.join("{path}", "gene_coverage_summary_{label}.csv")
-    output: rseqc_summary = os.path.join("{path}", "rseqc_qc_8_summary_{label}.html")
-    run:
-        d = make_rseqc_summary_plots(input.read_distribution, input.gene_coverage)
-        tp = jinja2.Template(open(os.path.join(sml_templates_path(), 'bio_ngs_qc_rseqc_summary.html')).read())
-        with open(output.rseqc_summary, "w") as fh:
-            fh.write(static_html(tp, **{'rseqc_plots' : d['plots'], 'uri' : uri}))

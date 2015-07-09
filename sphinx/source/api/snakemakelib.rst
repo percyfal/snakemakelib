@@ -6,9 +6,11 @@ Subpackages
 
 .. toctree::
 
+    snakemakelib.bio
     snakemakelib.bokeh
     snakemakelib.ext
     snakemakelib.report
+    snakemakelib.tests
 
 Submodules
 ----------
@@ -17,6 +19,14 @@ snakemakelib.config module
 --------------------------
 
 .. automodule:: snakemakelib.config
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+snakemakelib.exceptions module
+------------------------------
+
+.. automodule:: snakemakelib.exceptions
     :members:
     :undoc-members:
     :show-inheritance:
@@ -33,6 +43,14 @@ snakemakelib.log module
 -----------------------
 
 .. automodule:: snakemakelib.log
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+snakemakelib.results module
+---------------------------
+
+.. automodule:: snakemakelib.results
     :members:
     :undoc-members:
     :show-inheritance:

@@ -12,17 +12,22 @@ REGEXP_DOT_MATCH = r"(?:[\.\w\/]+)?\/"
 # Match generic spacer sequence of >=0 characters
 REGEXP_SPACER_MATCH = r"(?:.*)"
 
+
 class MissingRequiredKeyException(Exception):
     """Exception if required key is missing"""
+
 
 class FormatException(Exception):
     """Exception for malformatted entry"""
 
+
 class UnimplementedException(Exception):
     """Exception for unimplemeted method"""
 
+
 class DisallowedKeyException(Exception):
     """Exception for disallowed key"""
+
 
 class RegexpDict(dict):
     _required_keys = []
@@ -32,32 +37,40 @@ class RegexpDict(dict):
     def __init__(self, regexp=None, concat="_", *args, **kwargs):
         super(RegexpDict, self).__init__()
         # Set key values if in kwargs
-        self.update({k:v  for k,v in kwargs.items() if k in self._group_keys})
+        self.update({k: v for k, v in kwargs.items() if k in self._group_keys})
         self._concat = concat
         self._init_regexp(regexp)
         self._init_format()
-        
+
     def _init_regexp(self, regexp):
         self._regexp = re.compile(regexp)
         # Group keys according to prefix, e.g. PU=[PU1, PU2, PU3], and
         # SM = [SM]
-        keymap = sorted([(re.sub("[0-9]+$", "", k), k)  if re.search("[0-9]+$", k) else (k, k) for k in list(self.re.groupindex.keys())])
-        self._keymap = {k:[y[1] for y in list(v)] for (k,v) in groupby(keymap, lambda x: x[0])}
+        keymap = sorted([(re.sub("[0-9]+$", "", k), k)
+                         if re.search("[0-9]+$", k) else (k, k)
+                         for k in list(self.re.groupindex.keys())])
+        self._keymap = {k: [y[1] for y in list(v)]
+                        for (k, v) in groupby(keymap, lambda x: x[0])}
         self._validate_keys()
 
     @property
     def re(self):
         return self._regexp
-        
+
     @property
     def pattern(self):
         return self.re.pattern
 
     @property
     def basename_pattern(self):
-        """Return the basename pattern, replacing ?P= expressions with the corresponding group expression"""
-        invmap = {v:k for k,v in self.re.groupindex.items()}
-        remap = {k:"" for k,v in self.re.groupindex.items()}
+        """Return the basename pattern
+
+        Return the basename pattern, replacing ?P=
+        expressions with the corresponding group expression
+
+        """
+        invmap = {v: k for k, v in self.re.groupindex.items()}
+        remap = {k: "" for k, v in self.re.groupindex.items()}
         i = 1
         for m in re.finditer(r"\(?P<[A-Za-z0-9]+>([^\)]+)\)", self.pattern):
             remap[invmap[i]] = m.group(1)
@@ -71,8 +84,9 @@ class RegexpDict(dict):
 
     @property
     def allowed_keys(self):
-        return list(set(self._required_keys + self._group_keys + self._extra_keys))
-    
+        return list(set(self._required_keys + self._group_keys
+                        + self._extra_keys))
+
     def _init_format(self):
         """Initialize formatting string. Find groups defined by (?P<GROUP>) as
         well as constant expressions and concatenate"""
@@ -88,7 +102,6 @@ class RegexpDict(dict):
         self._fmt = re.sub("_{sep}_".format(sep=os.sep), os.sep, ("_".join(fmtlist)))
 
 
-
     def _validate_keys(self):
         """Validate keys. Importantly, make sure keys with indices, i.e. keys
         KEY1, KEY2, etc, stripped of indices are in the allowed keys.
@@ -96,7 +109,7 @@ class RegexpDict(dict):
         """
         seen_required = False
         for key, group in self._keymap.items():
-            if not key in self.allowed_keys:
+            if key not in self.allowed_keys:
                 raise DisallowedKeyException("key {key} not in allowed key set {allowed}".format(key=key, allowed=self.allowed_keys))
             if key in self._required_keys:
                 seen_required = True
@@ -112,20 +125,28 @@ class RegexpDict(dict):
             pattern = pattern + REGEXP_SPACER_MATCH + suffix
         m = re.match(pattern, s)
         if m is None:
-            smllogger.debug("Unable to parse string {s} with regexp {re}".format(s=os.path.basename(s), re=self.re.pattern))
+            smllogger.warn("Unable to parse string {s} with regexp {re}"
+                           .format(s=s, re=self.re.pattern))
             return
         # Regular keys
-        self.update({k:v for (k,v) in m.groupdict().items() if k not in self._extra_keys})
+        self.update({k: v for (k, v) in m.groupdict().items()
+                     if k not in self._extra_keys})
         self._process_indexed_keys(m)
         self._post_process_keys(m)
 
     def _process_indexed_keys(self, m):
-        """Process indexed keys to unindexed version, e.g. collect PU1, PU2 to PU."""
+        """Process indexed keys.
+
+        Process indexed keys to unindexed version,
+        e.g. collect PU1, PU2 to PU.
+
+        """
         # Add indexed keys
         for key, group in self._keymap.items():
             if key in self._extra_keys:
                 continue
-            self.update({key: self._concat.join(m.group(mkey) for mkey in group)})
+            self.update({key: self._concat.join(m.group(mkey)
+                                                for mkey in group)})
 
     def _post_process_keys(self, m):
         pass
@@ -147,6 +168,7 @@ class RegexpDict(dict):
     def __repr__(self):
         return str(type(self))
 
+
 class SampleRegexp(RegexpDict):
     _required_keys = ['SM']
     _group_keys = ['PU']
@@ -157,6 +179,7 @@ class SampleRegexp(RegexpDict):
 
     def _post_process_keys(self, m):
         self['PATH'] = os.path.dirname(m.string)
+
 
 class RunRegexp(RegexpDict):
     _group_keys = ['SM', 'PU', 'DT']
@@ -204,11 +227,16 @@ class RunRegexp(RegexpDict):
 
 # SM Sample. Use pool name where a pool is being sequenced.
 
+
 class ReadGroup(RunRegexp):
     """Adds formatting function for generating read group option string"""
-    _group_keys = ['ID', 'CN', 'DS', 'DT', 'FO', 'KS', 'LB', 'PG', 'PI', 'PL', 'PU', 'SM']
+    _group_keys = ['ID', 'CN', 'DS', 'DT', 'FO', 'KS',
+                   'LB', 'PG', 'PI', 'PL', 'PU', 'SM']
     _extra_keys = ['PATH']
-    _group_dict =  {'ID' : 'identifier', 'CN' : 'center', 'DS' : 'description', 'DT' : 'date', 'FO' : 'floworder', 'KS' : 'keysequence', 'LB' : 'library', 'PG' : 'program', 'PI' : 'insertsize', 'PL': 'platform', 'PU' : 'platform-unit', 'SM' : 'sample'}
+    _group_dict = {'ID': 'identifier', 'CN': 'center', 'DS': 'description',
+                   'DT': 'date', 'FO': 'floworder', 'KS': 'keysequence',
+                   'LB': 'library', 'PG': 'program', 'PI': 'insertsize',
+                   'PL': 'platform', 'PU': 'platform-unit', 'SM': 'sample'}
 
     def __init__(self, regexp=None, opt_prefix="--", *args, **kwargs):
         super(ReadGroup, self).__init__(regexp, *args, **kwargs)
@@ -216,8 +244,8 @@ class ReadGroup(RunRegexp):
 
     def _post_process_keys(self, m):
         self['PATH'] = os.path.dirname(m.string)
-        if not 'ID' in self.keys() or not self.get('ID', ""):
-            inv_map = {v:k for (k,v) in list(self.re.groupindex.items())}
+        if 'ID' not in self.keys() or not self.get('ID', ""):
+            # inv_map = {v: k for (k, v) in list(self.re.groupindex.items())}
             self['ID'] = os.path.basename(self.fmt.format(**self))
 
     def _fmt_string(self, k):
@@ -225,9 +253,12 @@ class ReadGroup(RunRegexp):
         if k == 'DT':
             return isoformat(self[k])
         return self[k]
-        
+
     def __str__(self):
         """Return a generic program string"""
-        return " ".join(["{dash}{key} {value}".format(dash=self._opt_prefix, key=self._group_dict[k], value=self._fmt_string(k)) for k in sorted(list(self.keys())) if not self[k] is None and k in self._group_keys])
-
-    
+        return " ".join([
+            "{dash}{key} {value}".format(dash=self._opt_prefix,
+                                         key=self._group_dict[k],
+                                         value=self._fmt_string(k))
+            for k in sorted(list(self.keys())) if not self[k] is None
+            and k in self._group_keys])

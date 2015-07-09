@@ -262,3 +262,15 @@ rule zinba_run_zinba:
             FDR={FDR},
             interaction={interaction},
         )""".format(**d))
+
+rule zinba_bed_to_bedGraph:
+    """Generate bedgraph from bed output
+
+    Hacky rule that simply omits the last column for unrefined peaks
+    bed output.
+
+    """
+    input: bed = "{prefix}.bed"
+    output: bdg = temporary("{prefix}.bdg")
+    shell: "cat {input.bed} | awk '{{print $1, $2, $3, $5}}' > {output.bdg}"
+    

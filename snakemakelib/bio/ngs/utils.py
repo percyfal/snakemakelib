@@ -3,14 +3,18 @@ import re
 import os
 from snakemakelib.bio.ngs.regexp import RegexpDict
 
-def find_files(regexp, path = os.curdir, search=False, limit={}):
+
+def find_files(regexp, path=os.curdir, search=False, limit=None):
     """Find files in path that comply with a regular expression.
 
     Args:
-      regexp: regular expression object of class <RegexpDict> or string
-      path:   path to search
-      search: use re.search instead of re.match for pattern matching
-      limit: dictionary where keys correspond to regular expression grouping labels and values are lists that limit the returned pattern
+      regexp (RegexpDict | str): regular expression object of class
+                               <RegexpDict> or <str>
+      path (str):   path to search
+      search (bool): use re.search instead of re.match for pattern matching
+      limit (dict): dictionary where keys correspond to regular expression
+             grouping labels and values are lists that limit the
+             returned pattern
 
     Returns:
       flist: list of file names, prepended with root path
@@ -45,7 +49,7 @@ def dict_to_R(d, as_string=True):
       A string representing an option string of the dictionary in R
     """
     outlist = []
-    for (k,v) in d.items():
+    for (k, v) in d.items():
         if isinstance(v, list):
             if isinstance(v[0], int):
                 outlist.append("{k} = c(".format(k=k) + ",".join("{vv}".format(vv=vv) for vv in v) + ")")
@@ -77,7 +81,7 @@ def dict_to_Rdict(d, as_string=True):
       A dictionare where values comply with R
     """
     dout = {}
-    for (k,v) in d.items():
+    for (k, v) in d.items():
         if isinstance(v, list):
             if isinstance(v[0], int):
                 dout[k] = "c(" + ",".join("{vv}".format(vv=vv) for vv in v) + ")"

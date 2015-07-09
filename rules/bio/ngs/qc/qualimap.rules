@@ -1,0 +1,88 @@
+# -*- snakemake -*-
+# Qualimap: http://qualimap.bioinfo.cipf.es/
+#
+import os
+import shutil
+from snakemakelib.utils import set_cmd
+from snakemakelib.bio.ngs.targets import generic_target_generator
+from snakemakelib.bio.ngs.qc.qualimap import Qualimap, make_qualimap_plots
+from snakemakelib.utils import SmlTemplateEnv
+from bokeh.plotting import output_file, show
+
+__module__ = 'bio.ngs.qc.qualimap'
+
+include: '../settings.rules'
+
+ngs_cfg = config['bio.ngs.settings']
+
+
+config_default = {
+    'bio.ngs.qc.qualimap' : {
+        'home' : os.getenv("QUALIMAP_HOME", os.curdir),
+        'cmd' : 'qualimap',
+        'threads' : ngs_cfg['threads'],
+        'java_mem' : ngs_cfg['java']['java_mem'],
+        'bamqc' : {
+            'options' : [],
+        },
+    },
+}
+
+
+config = update_snakemake_config(config, config_default)
+qm_cfg = config['bio.ngs.qc.qualimap']
+qm_cfg['cmd'] = set_cmd(qm_cfg['home'], qm_cfg['cmd'], __module__)
+
+
+rule qualimap_bamqc:
+    """Qualimap: run bamqc on bam file"""
+    params: cmd = qm_cfg['cmd'],
+            options = " ".join(qm_cfg['bamqc']['options'] +
+                               [" --java-mem-size={java_mem}".format(**qm_cfg)])
+    input: bam = "{prefix}.bam"
+    output: html = os.path.join("{prefix}.bam.qualimap", "qualimapReport.html"),
+            genome = os.path.join("{prefix}.bam.qualimap", "genome_results.txt"),
+            outdir = "{prefix}.bam.qualimap"
+    threads: qm_cfg['threads']
+    shell: "unset DISPLAY; {params.cmd} bamqc -bam {input.bam} -nt {threads} {params.options} -outdir {output.outdir}"
+
+
+def _qualimap_find_result_files_fn(wildcards):
+    tmp = wildcards.label.lstrip("sample").lstrip("run")
+    ngs_cfg = config['bio.ngs.settings']
+    tgt_re = ngs_cfg['sampleorg'].run_id_re
+    if wildcards.label.startswith("sample"):
+        tgt_re = ngs_cfg['sampleorg'].sample_re
+    sources = generic_target_generator(
+        tgt_re = tgt_re,
+        src_re = ngs_cfg['sampleorg'].run_id_re,
+        target_suffix = os.path.join(tmp, 'genome_results.txt'),
+        **ngs_cfg)
+    return sources
+
+
+rule qualimap_collect_results:
+    """Qualimap: collect results"""
+    input: _qualimap_find_result_files_fn
+    output: coverage_per_contig = os.path.join("{path}", "{label}.coverage_per_contig.csv"),
+            qmglobals = os.path.join("{path}", "{label}.globals.csv")
+    run:
+        tgt_re = ngs_cfg['sampleorg'].run_id_re
+        if wildcards.label.startswith('sample'):
+            tgt_re = ngs_cfg['sampleorg'].sample_re
+        qm = Qualimap(inputs=input, re=tgt_re)
+        qm.save(sorted([output.qmglobals, output.coverage_per_contig]))
+
+
+rule qualimap_plot_summary:
+    """Qualimap: plot summary results"""
+    input: qmglobals = os.path.join("{path}", "{label}.globals.csv"),
+           coverage_per_contig = os.path.join("{path}", "{label}.coverage_per_contig.csv")
+    output: qualimap_summary = os.path.join("{path}", "{label}.summary.html")
+    run:
+        d = {}
+        d.update({'qualimap' : make_qualimap_plots(*input)})
+        tp = SmlTemplateEnv.get_template('qualimap.html')
+        with open(output.qualimap_summary, "w") as fh:
+            fh.write(static_html(tp, **d))
+

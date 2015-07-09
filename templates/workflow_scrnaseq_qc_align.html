@@ -1,0 +1,17 @@
+<!-- -*- jinja2 -*- -->
+{% if align is defined %}
+  <h3>Alignment summary</h3>
+    
+  <figure>
+    {{ align['fig']['div']|indent(8) }}
+    <figcaption>Alignment summary plots. 
+    </figcaption>
+  </figure>
+  {% if align['table'] is not none %}
+    <figure>
+      {{ align['table']['div']|indent(8) }}
+      <figcaption>Table of all alignment statistics. 
+      </figcaption>
+    </figure>
+  {% endif %}
+{% endif %}

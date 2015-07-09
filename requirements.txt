@@ -9,6 +9,6 @@ pandas
 jinja2
 mock
 pysam
-bokeh
+-e git+https://github.com/percyfal/bokehutils.git#egg=bokehutils
 # scikit-learn
 # statsmodels

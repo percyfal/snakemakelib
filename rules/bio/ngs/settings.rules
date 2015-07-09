@@ -84,7 +84,7 @@ config_default = {
             'build_config' : None,
         },
         'java' : {
-            'java_mem' : "6g",
+            'java_mem' : "8g",
             'java_tmpdir' : "/tmp",
         },
         'sequence_capture' : {

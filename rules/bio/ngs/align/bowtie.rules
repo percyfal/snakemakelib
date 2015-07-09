@@ -37,17 +37,19 @@ config_default = {
 
 config = update_snakemake_config(config, config_default)
 
+bowtie = 'bowtie2' if config['bio.ngs.align.bowtie']['version2'] else 'bowtie'
+
 # Update index
 config['bio.ngs.align.bowtie']['index'] = index(
     ref = config['bio.ngs.align.bowtie']['ref'],
     index = config['bio.ngs.align.bowtie']['index'],
-    application = 'bowtie',
+    application = bowtie,
     build = config['bio.ngs.settings']['db']['build'])
 
 bwt_cfg = config['bio.ngs.align.bowtie']
 samtools_cfg = config['bio.ngs.tools.samtools']
 
-bowtie = 'bowtie2' if bwt_cfg['version2'] else 'bowtie'
+
 ext = bwt_cfg['build']['ext_v2'] if bwt_cfg['version2'] else bwt_cfg['build']['ext_v2']
 
 if bwt_cfg[bowtie]['home']:
@@ -59,6 +61,7 @@ rule bowtie_align:
     """Bowtie paired end alignment"""
     params: cmd = bwt_cfg[bowtie]['cmd'],
             options = bwt_cfg['bowtie']['options'],
+            samopt = ("" if bwt_cfg['version2'] else "-S"),
             indexopt = ("-x" if bwt_cfg['version2'] else ""),
             index = bwt_cfg['index']
     input: read1 = "{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],\
@@ -73,9 +76,9 @@ rule bowtie_align:
         # alternative; process substitution. See
         # http://arstechnica.com/civis/viewtopic.php?f=16&t=1180805.
         if is_compressed(input.read1):
-            shell("{cmd} -S -p {threads} {options} {indexopt} {index} -1 <(gunzip -c {read1}) -2 <(gunzip -c {read2}) 2> {log} | {samtools} view -bS - > {bam}".format(cmd=params.cmd, threads=threads, options=params.options, indexopt=params.indexopt, index=params.index, read1=input.read1, read2=input.read2, bam=output.bam, samtools=samtools_cfg['cmd'], log=log))
+            shell("{cmd} {samopt} -p {threads} {options} {indexopt} {index} -1 <(gunzip -c {read1}) -2 <(gunzip -c {read2}) 2> {log} | {samtools} view -bS - > {bam}".format(cmd=params.cmd, samopt=params.samopt, threads=threads, options=params.options, indexopt=params.indexopt, index=params.index, read1=input.read1, read2=input.read2, bam=output.bam, samtools=samtools_cfg['cmd'], log=log))
         else:
-            shell("{cmd} -S -p {threads} {options} {indexopt} {index} -1 {read1} -2 {read2} 2> {log} | {samtools} view -bS - > {bam}".format(cmd=params.cmd, threads=threads, options=params.options, indexopt=params.indexopt, index=params.index, read1=input.read1, read2=input.read2, bam=output.bam, samtools=samtools_cfg['cmd'], log=log))
+            shell("{cmd} {samopt} -p {threads} {options} {indexopt} {index} -1 {read1} -2 {read2} 2> {log} | {samtools} view -bS - > {bam}".format(cmd=params.cmd, samopt=params.samopt, threads=threads, options=params.options, indexopt=params.indexopt, index=params.index, read1=input.read1, read2=input.read2, bam=output.bam, samtools=samtools_cfg['cmd'], log=log))
 
 rule bowtie_build:
     """Bowtie build index"""

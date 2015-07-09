@@ -36,7 +36,17 @@
 	{% endfor %}
       {% endif %}
     {% endif %}
-    
+
+    <!-- qualimap -->
+    {% if qualimap is defined %}
+      {% if qualimap['fig']['globals']['script'] is defined %}
+	{{ qualimap['fig']['globals']['script'] | indent(8) }}
+      {% endif %}
+      {% if qualimap['fig']['coverage_per_contig']['script'] is defined %}
+	{{ qualimap['fig']['coverage_per_contig']['script'] | indent(8) }}
+      {% endif %}
+    {% endif %}
+
   </head>
   <body>
     
@@ -48,7 +58,7 @@
       <li>Adapter trimming (if <it>config</it> set)</li>
       <li>Alignment with bowtie</li>
       <li>Peak calling with any of MACS2, zinba, and dfilter</li>
-      <li>QC metrics with picard</li>
+      <li>QC metrics with picard and qualimap</li>
     </ol>
     
     {% include 'workflow.html' ignore missing %}
@@ -56,28 +66,44 @@
     <h1>ATAC-seq QC summary report</h1>
     
     <h2>Run-level QC metrics</h2>
-    
+
     {% include 'cutadapt.html' ignore missing %}
     
     <h2>Sample-level QC metrics</h2>
-    <h3>Picard metrics</h3>
-    
+
+    <!-- Qualimap -->
+    {% if qualimap is defined %}
+      {% include 'qualimap.html' ignore missing %}
+    {% endif %}
+
+    <h4>Comments</h4>
     Things to look out for:
     <ol>
-      <li>
-	Insertion size histograms should show periodical behaviour
-	reflecting integer values of nucleosomes (periodicity approx
-	200 bp = nucleosome size 147 bp + two times Tn5 binding = 2 *
-	38 bp). In addition, DNA helical length (10 bp) should also be
-	seen
-      </li>
-	
-      <li>
-	Duplication metrics can be high, reflecting the fact that
-	there are only limited number of accessible cleavage sites
-      </li>
+      <li>Unusually high mapping rates to any particular chromosome.</li>
+      <li>Proportion mapping reads</li>
     </ol>
-    {% include 'picard.html' ignore missing %}
     
+    <!-- Picard -->
+    {% if picard is defined %}
+
+      {% include 'picard.html' ignore missing %}
+
+      <h4>Comments</h4>
+      Things to look out for:
+      <ol>
+	<li>
+	  Insertion size histograms should show periodical behaviour
+	  reflecting integer values of nucleosomes (periodicity approx
+	  200 bp = nucleosome size 147 bp + two times Tn5 binding = 2 *
+	  38 bp). In addition, DNA helical length (10 bp) should also be
+	  seen
+	</li>
+	
+	<li>
+	  Duplication metrics can be high, reflecting the fact that
+	  there are only limited number of accessible cleavage sites
+	</li>
+      </ol>
+      {% endif %}
   </body>
 </html>

@@ -4,10 +4,9 @@ import shutil
 import glob
 import jinja2
 from snakemake.report import data_uri
-from snakemakelib.bokeh.publish import static_html
 from snakemakelib.config import sml_path, sml_templates_path
 from snakemakelib.bio.ngs.targets import generic_target_generator
-from snakemakelib.bio.ngs.qc.picard import collect_picard_qc_results, make_picard_summary_plots
+from snakemakelib.bio.ngs.qc.picard import collect_picard_qc_results
 
 def _find_merge_inputs(wildcards):
     ngs_cfg = config['bio.ngs.settings']
@@ -57,7 +56,9 @@ config_default = {
             'output' : [],
             'inputfun' : _find_merge_inputs,
         },
-        'qcrules' : ['picard_collect_insert_size_metrics', 'picard_collect_alignment_summary_metrics', 'picard_mark_duplicates'],
+        'qcrules' : ['picard_collect_insert_size_metrics',
+                     'picard_collect_alignment_summary_metrics',
+                     'picard_mark_duplicates'],
     },
 }
 
@@ -255,17 +256,3 @@ rule picard_qc_summary:
         else:
             with open(output.hist, "w") as fh:
                 fh.write("{ext} metrics has no histogram data".format(ext=os.path.splitext(input[0])[1]))
-
-
-rule picard_plot_qc_summary:
-    """Plot picard summary data"""
-    input: [("{{prefix}}{sfx}.metrics.csv".format(sfx=sfx), "{{prefix}}{sfx}.hist.csv".format(sfx=sfx)) for sfx in [workflow._rules[x].params.suffix for x in picard_config['qcrules']]]
-    output: picard_summary = "{prefix}.html"
-    run:
-        uri = {k : {"uri" : data_uri(k), "file" : k} for k in input}
-        d = make_picard_summary_plots(input)
-        d.update({'uri' : uri})
-        tp = jinja2.Template(open(os.path.join(sml_templates_path(), 'bio_ngs_qc_picard_summary.html')).read())
-        with open(output.picard_summary, "w") as fh:
-            fh.write(static_html(tp, **d))
-

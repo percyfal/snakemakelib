@@ -240,7 +240,7 @@ rule atacseq_report:
     output: html = os.path.join("{path}", "atacseq_summary.html")
     run:
         d = {}
-        env = Environment(loader = PackageLoader("snakemakelib", "../templates"))
+        env = Environment(loader = PackageLoader("snakemakelib", "_templates"))
         tp = env.get_template('workflow_atacseq_qc.html')
         if atac_cfg['trimadaptor']:
             d.update({'cutadapt' : make_cutadapt_summary_plot(input.cutadapt)})

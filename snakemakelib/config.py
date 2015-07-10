@@ -131,13 +131,13 @@ def sml_path():
     return os.path.dirname(__file__)
 
 def sml_base_path():
-    return os.path.dirname(os.path.dirname(__file__))
+    return os.path.dirname(__file__)
 
 def sml_rules_path():
-    return os.path.join(os.path.dirname(os.path.dirname(__file__)), "rules")
+    return os.path.join(os.path.dirname(__file__), "rules")
 
 def sml_templates_path():
-    return os.path.join(os.path.dirname(os.path.dirname(__file__)), "templates")
+    return os.path.join(os.path.dirname(__file__), "_templates")
 
 
 ##############################

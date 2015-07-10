@@ -1,14 +1,6 @@
-biopython
-pyyaml
-matplotlib>=1.3.1
-snakemake>=3.1
-texttable
-sphinx>=1.3
-nose
-pandas
-jinja2
-mock
-pysam
--e git+https://github.com/percyfal/bokehutils.git#egg=bokehutils
-# scikit-learn
-# statsmodels
+# Reference: https://caremad.io/blog/setup-vs-requirement/
+--index-url https://pypi.python.org/simple/
+
+git+https://github.com/percyfal/bokehutils.git@master#egg=bokehutils
+-e .
+

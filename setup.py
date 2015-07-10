@@ -1,45 +1,105 @@
 # Copyright (c) 2014 Per Unneberg
-from setuptools import setup, find_packages
+# Modelled on bokeh setup script
+# --------------------------------------------------
+# Imports
+# --------------------------------------------------
+# stdlib
 import os
-import glob
+from setuptools import setup
+from os.path import realpath, dirname, relpath, join
+
+# Extensions
 import versioneer
+
+# --------------------------------------------------
+# globals and constants
+# --------------------------------------------------
+
+ROOT = dirname(realpath(__file__))
+
+# --------------------------------------------------
+# Local utilities
+# --------------------------------------------------
 
 versioneer.VCS = 'git'
 versioneer.versionfile_source = 'snakemakelib/_version.py'
 versioneer.versionfile_build = 'snakemakelib/_version.py'
-versioneer.tag_prefix = '' # tags are like 1.2.0
-versioneer.parentdir_prefix = 'snakemakelib-' # dirname like 'myproject-1.2.0'
+versioneer.tag_prefix = ''  # tags are like 1.2.0
+versioneer.parentdir_prefix = 'snakemakelib-'  # dirname like 'myproject-1.2.0'
 
-try:
-    with open("requirements.txt", "r") as fh:
-        install_requires = [x.strip() for x in fh.readlines() if not x.startswith("-e")]
-except IOError:
-    install_requires = []
-    
+# --------------------------------------------------
+# classes and functions
+# --------------------------------------------------
+
+package_data = []
+
+
+def package_path(path, filters=()):
+    if not os.path.exists(path):
+        raise RuntimeError("packaging non-existent path: %s" % path)
+    elif os.path.isfile(path):
+        package_data.append(relpath(path, 'snakemakelib'))
+    else:
+        for path, dirs, files in os.walk(path):
+            path = relpath(path, 'snakemakelib')
+            for f in files:
+                if not filters or f.endswith(filters):
+                    package_data.append(join(path, f))
+
+rule_suffixes = ('.rules')
+workflow_suffixes = ('.workflow')
+                    
+package_path(join(ROOT, 'snakemakelib', '_templates'))
+package_path(join(ROOT, 'snakemakelib', 'rules'), rule_suffixes)
+package_path(join(ROOT, 'snakemakelib', 'workflows'), workflow_suffixes)
+scripts = []
+
+REQUIRES = [
+    'biopython>=1.64',
+    'pyyaml>=3.11',
+    'matplotlib>=1.4.0',
+    'snakemake>=3.3',
+    'texttable>=0.8.2',
+    'sphinx>=1.3',
+    'nose>=1.3.4',
+    'pandas>=0.16.0',
+    'Jinja2>=2.7',
+    'mock>=1.0.1',
+    'pysam>=0.8.3',
+    'bokehutils>=0.1.2'
+]
+
+# Adding github to setup:
+# http://mike.zwobble.org/2013/05/adding-git-or-hg-or-svn-dependencies-in-setup-py/
+DEPENDENCY_LINKS = [
+    'https://github.com/percyfal/bokehutils/tarball/master#egg=bokehutils-0.1.2'
+    ]
+
+_version = versioneer.get_version()
+_cmdclass = versioneer.get_cmdclass()
+
 setup(
-    name = "snakemakelib",
-    version=versioneer.get_version(),
-    cmdclass=versioneer.get_cmdclass(),
-    author = "Per Unneberg",
-    author_email = "per.unneberg@scilifelab.se",
-    description = "Snakemake rule library with additional utilities",
-    license = "MIT",
-    url = "http://github.com/percyfal/snakemakelib",
-    scripts = glob.glob('scripts/*.py'),
-    install_requires = install_requires,
-    test_suite = 'nose.collector',
-    packages=find_packages(exclude=['ez_setup', 'test*']),
-    namespace_packages = [
+    name="snakemakelib",
+    version=_version,
+    cmdclass=_cmdclass,
+    author="Per Unneberg",
+    author_email="per.unneberg@scilifelab.se",
+    description="Snakemake rule library with additional utilities",
+    license="MIT",
+    url="http://github.com/percyfal/snakemakelib",
+    scripts=scripts,
+    packages=[
         'snakemakelib',
+        'snakemakelib.report',
+        'snakemakelib.bio',
+        'snakemakelib.bio.ngs',
+        'snakemakelib.bio.ngs.align',
+        'snakemakelib.bio.ngs.methylseq',
+        'snakemakelib.bio.ngs.qc',
+        'snakemakelib.bio.ngs.rnaseq',
+        'snakemakelib.bio.ngs.tools',
     ],
-    package_data = {
-        'snakemakelib':[
-            'data/*',
-            'rules/*',
-            'examples/*',
-            'templates/*',
-    ]},
-    dependency_links = [
-        'https://github.com/percyfal/bokehutils.git#egg=bokehutils',
-    ],
+    package_data={'snakemakelib': package_data},
+    install_requires=REQUIRES,
+    dependency_links=DEPENDENCY_LINKS,
 )

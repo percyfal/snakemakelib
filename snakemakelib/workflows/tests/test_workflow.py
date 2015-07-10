@@ -13,7 +13,7 @@ from nose.plugins.attrib import attr
 logger = logging.getLogger(__name__)
 
 BASEPATH = os.path.dirname(__file__)
-ROOTPATH = os.path.join(BASEPATH, os.pardir, os.pardir)
+ROOTPATH = os.path.join(BASEPATH, os.pardir, os.pardir, os.pardir)
 
 snakefile = """# -*- snakemake -*-
 import os
@@ -82,7 +82,7 @@ def setUp():
     # Create Snakefile in test directory
     with open("Snakefile", "w") as fh:
         fh.write(snakefile.format(workdir=os.path.join(ROOTPATH, 'data', 'projects', 'J.Doe_00_01'),
-                                  variation=os.path.join(ROOTPATH, 'workflows', 'bio', 'variation.workflow'),
+                                  variation=os.path.join(ROOTPATH, 'snakemakelib', 'workflows', 'bio', 'variation.workflow'),
                                   ref=os.path.join(ROOTPATH,  'data', 'genomes', 'Hsapiens', 'hg19', 'seq', 'chr11.fa'),
                                   dbsnp=os.path.join(ROOTPATH,  'data', 'genomes', 'Hsapiens', 'hg19', 'variation', 'dbsnp132_chr11.vcf'),
                                   bwaref=os.path.join(ROOTPATH,  'data', 'genomes', 'Hsapiens', 'hg19', 'bwa', 'chr11.fa'),

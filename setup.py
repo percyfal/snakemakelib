@@ -58,6 +58,10 @@ REQUIRES = [
     'pysam>=0.8.3',
     'bokehutils==0.1.2',
 ]
+# https://pythonhosted.org/setuptools/setuptools.html
+SETUP_REQUIRES = [
+    'bokehutils==0.1.2',
+]    
 
 # Adding github to setup:
 # http://mike.zwobble.org/2013/05/adding-git-or-hg-or-svn-dependencies-in-setup-py/
@@ -96,6 +100,7 @@ setup(
         'snakemakelib.workflows.tests',
     ],
     package_data={'snakemakelib': package_data},
+    setup_requires=SETUP_REQUIRES,
     install_requires=REQUIRES,
     dependency_links=DEPENDENCY_LINKS,
 )

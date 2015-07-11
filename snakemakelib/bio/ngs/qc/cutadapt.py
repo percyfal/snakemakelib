@@ -62,10 +62,10 @@ def make_cutadapt_summary_plot(inputfile):
     TOOLS = "pan,wheel_zoom,box_zoom,box_select,reset,save"
     fig = figure(tools=TOOLS, width=400, height=400,
                  x_range=list(set(df_summary["sample"])),
-                 y_range=[0, 105])
+                 y_range=[0, 105], title="Cutadapt metrics",
+                 title_text_font_size='12pt')
     mdotplot(fig, x="sample", y=["read1_pct", "read2_pct"],
-             df=df_summary, title="Cutadapt metrics",
-             title_text_font_size='12pt', size=10, alpha=0.5)
+             df=df_summary, size=10, alpha=0.5)
     xaxis(fig, axis_label="sample",
           major_label_orientation=np.pi/3,
           axis_label_text_font_size='10pt')

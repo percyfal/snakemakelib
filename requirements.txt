@@ -1,6 +1,6 @@
 # Reference: https://caremad.io/blog/setup-vs-requirement/
 --index-url https://pypi.python.org/simple/
 
-.
-git+https://github.com/percyfal/bokehutils.git@master#egg=bokehutils
+-e .
+-e git+https://github.com/percyfal/bokehutils.git@master#egg=bokehutils
 

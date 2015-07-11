@@ -90,7 +90,7 @@ and invoke (standing in the cloned repo)
 
 .. code-block:: shell
 
-    pip3 install -r requirements.txt --user .
+    pip3 install -r requirements.txt --user
 
 Running the tests
 -----------------

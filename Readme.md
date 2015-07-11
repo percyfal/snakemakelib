@@ -55,7 +55,7 @@ workaround, you can manually clone the repo
 
 and invoke (standing in the cloned repo)
 
-	pip3 install -r requirements.txt --user .
+	pip3 install -r requirements.txt --user
 
 ## Quickstart ##
 

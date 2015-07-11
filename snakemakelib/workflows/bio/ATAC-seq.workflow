@@ -2,6 +2,7 @@
 import os
 import pysam
 from jinja2 import Environment, PackageLoader
+from bokehutils.publish import static_html
 from snakemake.report import data_uri
 from snakemakelib.io import set_output
 from snakemakelib.config import update_snakemake_config

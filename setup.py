@@ -18,16 +18,6 @@ import versioneer
 ROOT = dirname(realpath(__file__))
 
 # --------------------------------------------------
-# Local utilities
-# --------------------------------------------------
-
-versioneer.VCS = 'git'
-versioneer.versionfile_source = 'snakemakelib/_version.py'
-versioneer.versionfile_build = 'snakemakelib/_version.py'
-versioneer.tag_prefix = ''  # tags are like 1.2.0
-versioneer.parentdir_prefix = 'snakemakelib-'  # dirname like 'myproject-1.2.0'
-
-# --------------------------------------------------
 # classes and functions
 # --------------------------------------------------
 
@@ -91,13 +81,19 @@ setup(
     packages=[
         'snakemakelib',
         'snakemakelib.report',
+        'snakemakelib.report.tests',
         'snakemakelib.bio',
         'snakemakelib.bio.ngs',
         'snakemakelib.bio.ngs.align',
         'snakemakelib.bio.ngs.methylseq',
         'snakemakelib.bio.ngs.qc',
         'snakemakelib.bio.ngs.rnaseq',
+        'snakemakelib.bio.ngs.rnaseq.tests',
+        'snakemakelib.bio.ngs.tests',
         'snakemakelib.bio.ngs.tools',
+        'snakemakelib.bio.ngs.tools.tests',
+        'snakemakelib.bio.tests',
+        'snakemakelib.workflows.tests',
     ],
     package_data={'snakemakelib': package_data},
     install_requires=REQUIRES,

@@ -62,8 +62,8 @@ python2 = config['comp.settings']['python2']['activate_cmd']
 macs = 'macs2' if macs_cfg['version2'] else 'macs'
 
 
-rule macs_callpeak_treatment_only_bam:
-    """MACS callpeak on sample with no control."""
+rule macs_callpeak_treatment_only_bam_pe:
+    """MACS callpeak on sample with no control, paired end."""
     params: cmd = macs_cfg[macs]['cmd'],
             options = macs_cfg['callpeak']['options']
     input: bam = "{prefix}.bam"
@@ -72,4 +72,4 @@ rule macs_callpeak_treatment_only_bam:
             summits = "{prefix}_summits.bed",
             narrowPeak = "{prefix}_peaks.narrowPeak",
     log: "{prefix}." + macs + ".log"
-    shell: python2 + " {params.cmd} callpeak {params.options} -n {wildcards.prefix} -t {input.bam} -f BAM &> {log}"
+    shell: python2 + " {params.cmd} callpeak {params.options} -n {wildcards.prefix} -t {input.bam} -f BAMPE &> {log}"

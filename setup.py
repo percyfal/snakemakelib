@@ -56,6 +56,7 @@ REQUIRES = [
     'Jinja2>=2.7',
     'mock>=1.0.1',
     'pysam>=0.8.3',
+    'bokehutils==0.1.2',
 ]
 
 # Adding github to setup:

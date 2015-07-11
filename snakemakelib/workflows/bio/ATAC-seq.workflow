@@ -2,9 +2,13 @@
 import os
 import pysam
 from jinja2 import Environment, PackageLoader
+from snakemake.report import data_uri
 from snakemakelib.io import set_output
 from snakemakelib.config import update_snakemake_config
 from snakemakelib.bio.ngs.targets import generic_target_generator
+from snakemakelib.bio.ngs.qc.cutadapt import make_cutadapt_summary_plot
+from snakemakelib.bio.ngs.qc.qualimap import make_qualimap_plots
+from snakemakelib.bio.ngs.qc.picard import make_picard_summary_plots
 
 ##############################
 # Functions

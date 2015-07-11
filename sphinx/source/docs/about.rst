@@ -35,7 +35,7 @@ Installation
 Requirements
 ------------
 
--  Snakemake version >= 3.2 that supports the global ``config``
+-  Snakemake version >= 3.3 that supports the global ``config``
    variable.
 -  Python version >= 3.3. This may require setting up a virtual
    environment for python3+.
@@ -46,18 +46,51 @@ rules you wish to make use of.
 Installation instructions
 -------------------------
 
-Clone the repository https://github.com/percyfal/snakemakelib to an
-appropriate location:
+snakemakelib is still not on PyPI but you can still install from
+github using pip in several ways. I recommend using the `user
+installation scheme
+<https://docs.python.org/3.4/install/index.html#inst-alt-install-user>`_
+by making use of the *--user* flag. You need to set the environment
+variable `PYTHONUSERBASE
+<https://docs.python.org/3.4/using/cmdline.html#envvar-PYTHONUSERBASE>`_
+to e.g. *$HOME/lib/python*. Then, with this setting, set `PYTHONPATH
+<https://docs.python.org/3.4/using/cmdline.html#envvar-PYTHONPATH>`_
+to *$HOME/lib/python/lib/python3.4/site-packages* to access the
+package. The examples below show the user installation scheme.
+
+Alternatively, install the package into a `virtual environment
+<http://docs.python-guide.org/en/latest/dev/virtualenvs/>`_.
+
+Installing directly from github
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+You can install as an `editable install
+<https://pip.pypa.io/en/latest/reference/pip_install.html#editable-installs>`_
+by invoking
 
 .. code-block:: shell
 
-    git clone https://github.com/percyfal/snakemakelib /path/to/snakemakelib
+    pip3 install git+https://github.com/percyfal/snakemakelib.git@master#egg=snakemakelib --user
 
-Then either
 
--  add the path to your Snakefile, or
--  run ``python setup.py install`` (``python setup.py develop`` for
-   development installation)
+Cloning and installing
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The previous command currently fails to install `bokehutils
+<https://github.com/percyfal/bokehutils>`_ (see `issue 16
+<https://github.com/percyfal/snakemakelib/issues/16>`_). As a
+workaround, you can manually clone the repo
+
+.. code-block:: shell
+
+    git clone git@github.com:percyfal/snakemakelib.git
+
+and invoke (standing in the cloned repo)
+
+.. code-block:: shell
+
+    pip3 install -r requirements.txt --user .
 
 Running the tests
 -----------------

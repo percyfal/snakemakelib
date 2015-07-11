@@ -47,15 +47,15 @@ scripts = []
 REQUIRES = [
     'biopython>=1.64',
     'pyyaml>=3.11',
-    'matplotlib>=1.4.0',
     'snakemake>=3.3',
     'texttable>=0.8.2',
     'sphinx>=1.3',
     'nose>=1.3.4',
     'pandas>=0.16.0',
-    'Jinja2>=2.7',
     'mock>=1.0.1',
     'pysam>=0.8.3',
+    'matplotlib>=1.4.0',
+    'bokeh>=0.9.1',
     'bokehutils==0.1.3',
 ]
 # https://pythonhosted.org/setuptools/setuptools.html

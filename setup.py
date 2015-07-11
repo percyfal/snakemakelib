@@ -99,6 +99,7 @@ setup(
         'snakemakelib.tests',
         'snakemakelib.workflows.tests',
     ],
+    test_suite='nose.collector',
     package_data={'snakemakelib': package_data},
     setup_requires=SETUP_REQUIRES,
     install_requires=REQUIRES,

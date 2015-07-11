@@ -10,7 +10,6 @@ install:
   - pip install --upgrade pip
   - pip install -r requirements.txt
   - pip install coveralls
-  - python setup.py develop
 script:
   coverage run --source=snakemakelib setup.py test
 branches:

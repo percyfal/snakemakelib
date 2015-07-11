@@ -54,9 +54,9 @@ REQUIRES = [
     'pandas>=0.16.0',
     'mock>=1.0.1',
     'pysam>=0.8.3',
-    'matplotlib>=1.4.0',
     'bokeh>=0.9.1',
     'bokehutils==0.1.3',
+    'matplotlib>=1.4.0',
 ]
 # https://pythonhosted.org/setuptools/setuptools.html
 SETUP_REQUIRES = [
@@ -67,7 +67,7 @@ SETUP_REQUIRES = [
 # http://mike.zwobble.org/2013/05/adding-git-or-hg-or-svn-dependencies-in-setup-py/
 DEPENDENCY_LINKS = [
     'https://github.com/percyfal/bokehutils/tarball/master#egg=bokehutils-0.1.3'
-    ]
+]
 
 _version = versioneer.get_version()
 _cmdclass = versioneer.get_cmdclass()

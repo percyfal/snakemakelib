@@ -91,7 +91,7 @@ setup(
         'snakemakelib.bio.ngs.tests',
         'snakemakelib.bio.ngs.tools',
         'snakemakelib.bio.ngs.tools.tests',
-        'snakemakelib.bio.tests',
+        'snakemakelib.tests',
         'snakemakelib.workflows.tests',
     ],
     package_data={'snakemakelib': package_data},

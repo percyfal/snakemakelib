@@ -1,0 +1,9 @@
+# -*- snakemake -*-
+
+include: 'bwa.rules'
+
+rule bwa_link_ref:
+    """bwa link reference file to bwa index directory"""
+    input: ref = bwa_cfg['ref']
+    output: indexref = bwa_cfg['index']
+    shell: "if [ ! -e {output.indexref} ]; then ln -s {input.ref} {output.indexref}; fi"

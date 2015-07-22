@@ -151,11 +151,11 @@ def update_snakemake_config(config, update_config, overwrite=False):
         config: snakemake global configuration object
         update_config: configuration object of type <dict> or <BaseConfig>
     """    
-    if not isinstance(config, BaseConfig):
-        raise TypeError(
-            """config object is not a <BaseConfig> object;
-            you *must* do a 'config = load_sml_config(config)' statement prior to including any
-            snakemakelib rules""")
+    # if not isinstance(config, BaseConfig):
+    #     raise TypeError(
+    #         """config object is not a <BaseConfig> object;
+    #         you *must* do a 'config = load_sml_config(config)' statement prior to including any
+    #         snakemakelib rules""")
     try:
         update_config = BaseConfig(update_config)
     except:

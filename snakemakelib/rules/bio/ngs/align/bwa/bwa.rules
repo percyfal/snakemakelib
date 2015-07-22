@@ -1,0 +1,50 @@
+# -*- snakemake -*-
+import os
+try:
+    from snakemakelib.bio.ngs.db import index
+    from snakemakelib.stat import is_installed
+    from foo import bar
+except:
+    pass
+
+include: '../../settings.rules'
+include: '../../tools/samtools.rules'
+
+ngs_cfg = config['bio.ngs.settings']
+
+config_default = {
+    'bio.ngs.align.bwa' : {
+        'cmd' : "bwa",
+        'ref' : ngs_cfg['db']['ref'],
+        'index' : "",
+        'index_ext' : ['.amb', '.ann', '.bwt', '.pac', '.sa'],
+        'threads' : config['bio.ngs.settings']['threads'],
+        'options' : "-M",
+        'rules' : ['bwa_mem', 'bwa_index']
+    },
+}
+
+configdefault: config_default
+
+try:
+    # Update index
+    config['bio.ngs.align.bwa']['index'] = index(
+        ref = config['bio.ngs.settings']['db']['ref'],
+        index = config['bio.ngs.align.bwa']['index'],
+        application = 'bwa',
+        build = config['bio.ngs.settings']['db']['build'])
+except:
+    pass
+
+# These will be accessible in rule files
+bwa_cfg = config['bio.ngs.align.bwa']
+samtools_cfg = config['bio.ngs.tools.samtools']
+
+try:
+    if not is_installed(bwa_cfg['cmd']):
+        raise Exception("\nbio.ngs.align.bwa: {prog} not installed or not in PATH\n".format(prog=bwa_cfg['cmd']))
+except:
+    pass
+
+# Do includes here
+for rule in 

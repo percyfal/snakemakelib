@@ -30,5 +30,7 @@ config_default = {
     },
 }
 
-config = update_snakemake_config(config, config_default)
+configdefault: config_default
+
+# config = update_snakemake_config(config, config_default)
 config['_version'] = get_versions()

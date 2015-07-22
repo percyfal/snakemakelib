@@ -16,7 +16,8 @@ config_default = {
     },
 }
 
-config = update_snakemake_config(config, config_default)
+# config = update_snakemake_config(config, config_default)
+configdefault: config_default
 
 samtools_cfg = config['bio.ngs.tools.samtools']
 

@@ -36,7 +36,7 @@ def get_config():
     cfg = VersioneerConfig()
     cfg.VCS = "git"
     cfg.style = ""
-    cfg.tag_prefix = "# tags are like 1.2.0"
+    cfg.tag_prefix = ""
     cfg.parentdir_prefix = "snakemakelib-  # dirname like 'myproject-1.2.0'"
     cfg.versionfile_source = "snakemakelib/_version.py"
     cfg.verbose = False

@@ -9,6 +9,7 @@ import shutil
 import subprocess
 from nose.tools import raises
 from nose.plugins.attrib import attr
+import pytest
 
 logger = logging.getLogger(__name__)
 
@@ -102,6 +103,7 @@ def setUp():
     if not os.path.exists(os.path.join(genomedir, 'chr11.fa.fai')):
         subprocess.check_call(['samtools', 'faidx', os.path.join(genomedir, 'chr11.fa')])
 
+@pytest.mark.slow
 @attr('slow')
 class TestVariationWorkflow(unittest.TestCase):
     def test_variation_workflow(self):

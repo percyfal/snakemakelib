@@ -20,13 +20,11 @@ snakefile = """# -*- snakemake -*-
 import os
 import sys
 import re
-from snakemakelib.config import update_snakemake_config, load_sml_config
+from snakemakelib.config import update_config
 from snakemakelib.utils import rreplace
 from snakemakelib.bio.ngs.targets import generic_target_generator
 
 workdir: '{workdir}'
-
-config = load_sml_config(config)
 
 local_config = {{
     'bio.ngs.settings' : {{
@@ -62,7 +60,7 @@ local_config = {{
     }},
 }}
 
-config = update_snakemake_config(config, local_config)
+config = update_config(config, local_config)
 
 include: '{variation}'
 
@@ -117,9 +115,8 @@ class TestVariationWorkflow(unittest.TestCase):
         subprocess.check_call(['snakemake', '-F'] + outputs)
         subprocess.check_call(['snakemake', '-F', 'variation_metrics'])
 
-class TestBwaAlign(unittest.TestCase):
-    def test_bwa_align(self):
-        """Test bwa alignment"""
-        bwaout = 'P001_101/120924_AC003CCCXX/1_120924_AC003CCCXX_P001_101.bam'
-        subprocess.check_call(['snakemake', '-F', bwaout])
-        subprocess.check_call(['rm', '-f', os.path.join(ROOTPATH,  'data', 'projects', 'J.Doe_00_01', 'P001_101/120924_AC003CCCXX/1_120924_AC003CCCXX_P001_101.bam')])
+def test_bwa_align():
+    """Test bwa alignment"""
+    bwaout = 'P001_101/120924_AC003CCCXX/1_120924_AC003CCCXX_P001_101.bam'
+    subprocess.check_call(['snakemake', '-F', bwaout])
+    subprocess.check_call(['rm', '-f', os.path.join(ROOTPATH,  'data', 'projects', 'J.Doe_00_01', 'P001_101/120924_AC003CCCXX/1_120924_AC003CCCXX_P001_101.bam')])

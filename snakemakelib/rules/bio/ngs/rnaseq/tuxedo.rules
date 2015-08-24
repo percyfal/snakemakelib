@@ -1,6 +1,6 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.config import update_snakemake_config
+from snakemakelib.config import update_config
 from snakemakelib.bio.ngs.db import index
 from snakemakelib.bio.ngs.rnaseq.tuxedo import TuxedoReadGroup
 
@@ -38,7 +38,7 @@ config_default = {
     },
 }
 
-config = update_snakemake_config(config, config_default)
+config = update_config(config_default, config)
 bowtie = 'bowtie2' if config['bio.ngs.rnaseq.tuxedo']['version2'] else 'bowtie'
 
 # Update index

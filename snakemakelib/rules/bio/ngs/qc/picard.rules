@@ -62,7 +62,7 @@ config_default = {
     },
 }
 
-config = update_snakemake_config(config, config_default)
+config = update_config(config_default, config)
 
 picard_config = config['bio.ngs.qc.picard']
 
@@ -72,7 +72,7 @@ config_default['bio.ngs.qc.picard']['cmd'] = " ".join(["java -Xmx" + picard_conf
                                                        "-Djava.io.tmpdir=" + picard_config['java_tmpdir'], 
                                                        "-jar", os.path.join(picard_config['home'], "picard.jar ")])
 
-config = update_snakemake_config(config, config_default)
+config = update_config(config_default, config)
 
 # Use picard config to increase readibility
 sml_config = config

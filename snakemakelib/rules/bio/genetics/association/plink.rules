@@ -1,6 +1,6 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.config import update_snakemake_config
+from snakemakelib.config import update_config
 
 include: '../../ngs/settings.rules'
 
@@ -14,11 +14,11 @@ config_default = {
     },
 }
 
-config = update_snakemake_config(config, config_default)
+config = update_config(config_default, config)
 
 config_default['bio.genetics.association.plink']['plink']['options'] = config['bio.genetics.association.plink']['plink']['common_options']
 
-config = update_snakemake_config(config, config_default)
+config = update_config(config_default, config)
 
 plink_config = config['bio.genetics.association.plink']
 

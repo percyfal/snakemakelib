@@ -2,7 +2,7 @@
 import os
 from mako.template import Template
 from snakemake.utils import report, R
-from snakemakelib.config import update_snakemake_config, sml_rules_path
+from snakemakelib.config import update_config, sml_rules_path
 from snakemakelib.report.gatk import gatk_eval_report_plots_R
 
 include: '../settings.rules'
@@ -16,7 +16,7 @@ config_default = {
     },
 }
 	      
-config = update_snakemake_config(config, config_default)
+config = update_config(config_default, config)
 
 report_cfg = config['bio.ngs.reports.settings']
 

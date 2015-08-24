@@ -1,6 +1,6 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.config import update_snakemake_config, sml_rules_path
+from snakemakelib.config import update_config, sml_rules_path
 from snakemakelib.bio.ngs.targets import generic_target_generator
 
 
@@ -20,7 +20,7 @@ variation_config = {
     },
 }
 
-config = update_snakemake_config(config, variation_config)
+config = update_config(config, variation_config)
 
 include: os.path.join(sml_rules_path(), 'settings.rules')
 include: os.path.join(sml_rules_path(), 'utils.rules')

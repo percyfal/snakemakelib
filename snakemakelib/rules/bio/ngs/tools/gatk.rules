@@ -1,7 +1,7 @@
 # -*- snakemake -*-
 import os
 import glob
-from snakemakelib.config import update_snakemake_config
+from snakemakelib.config import update_config
 
 # TODO: move to module file
 def gatk_read_backed_phasing_find_input(wildcards):
@@ -16,7 +16,7 @@ include: '../qc/picard.rules'
 
 GATK_JAR_PROGRAM = "GenomeAnalysisTK.jar"
 
-# FIXME: update_snakemake_config is run *three* separate times due to the fact
+# FIXME: update_config is run *three* separate times due to the fact
 # that many rules depend on defaults in the same section. Could this
 # be done more economically?
 config_default = { 
@@ -35,7 +35,7 @@ config_default = {
     },
 }
 
-config = update_snakemake_config(config, config_default)
+config = update_config(config_default, config)
 
 # Set these rules after updating config as they depend on internal values and then redo update config 
 config_default['bio.ngs.tools.gatk']['jar'] = os.path.join(config['bio.ngs.tools.gatk']['home'], GATK_JAR_PROGRAM)
@@ -140,7 +140,7 @@ config_default['bio.ngs.tools.gatk']['unified_genotyper'] = {
                           ])
 }
 
-config = update_snakemake_config(config, config_default)
+config = update_config(config_default, config)
 
 # And yes, we need to do it yet again due to dependency on config['bio.ngs.tools.gatk']['jar']
 config_default['bio.ngs.tools.gatk']['cmd'] = "java -Xmx" + config['bio.ngs.tools.gatk']['java_mem'] + " -Djava.io.tmpdir=" + config['bio.ngs.tools.gatk']['java_tmpdir'] +  " -jar " + config['bio.ngs.tools.gatk']['jar']
@@ -154,7 +154,7 @@ config_default['bio.ngs.tools.gatk']['base_recalibrator'] = {
     ])
 }
 
-config = update_snakemake_config(config, config_default)
+config = update_config(config_default, config)
 gatk_config = config['bio.ngs.tools.gatk']
 
 ##################################################

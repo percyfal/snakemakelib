@@ -4,7 +4,7 @@ import os
 import re
 from snakemakelib.utils import safe_makedir
 from snakemakelib.bio.ngs.db import index, annotation
-from snakemakelib.config import update_snakemake_config
+from snakemakelib.config import update_config
 
 include: "../settings.rules"
 
@@ -14,7 +14,7 @@ config_default = {
       },
 }
 
-config = update_snakemake_config(config, config_default)
+config = update_config(config_default, config)
 
 cbl_cfg = config['bio.ngs.db.cloudbiolinux']
 

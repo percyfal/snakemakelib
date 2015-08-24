@@ -5,7 +5,7 @@ from jinja2 import Environment, PackageLoader
 from bokehutils.publish import static_html
 from snakemake.report import data_uri
 from snakemakelib.io import set_output
-from snakemakelib.config import update_snakemake_config
+from snakemakelib.config import update_config
 from snakemakelib.bio.ngs.targets import generic_target_generator
 from snakemakelib.bio.ngs.qc.cutadapt import make_cutadapt_summary_plot
 from snakemakelib.bio.ngs.qc.qualimap import make_qualimap_plots
@@ -74,8 +74,8 @@ if atac_config['workflows.bio.atac_seq']['trimadaptor']:
 aligner = atac_config['workflows.bio.atac_seq']['aligner']
 key = 'bio.ngs.align.' + aligner
 
-config = update_snakemake_config(config, atac_config)
-config = update_snakemake_config(config, {key :  aligner_config[key]})
+config = update_config(config, atac_config)
+config = update_config(config, {key :  aligner_config[key]})
 ngs_cfg = config['bio.ngs.settings']
 main_cfg = config['settings']
 atac_cfg = config['workflows.bio.atac_seq']

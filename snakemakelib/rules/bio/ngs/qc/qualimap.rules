@@ -29,7 +29,7 @@ config_default = {
 }
 
 
-config = update_snakemake_config(config, config_default)
+config = update_config(config_default, config)
 qm_cfg = config['bio.ngs.qc.qualimap']
 qm_cfg['cmd'] = set_cmd(qm_cfg['home'], qm_cfg['cmd'], __module__)
 

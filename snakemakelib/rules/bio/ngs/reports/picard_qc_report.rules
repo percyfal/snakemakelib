@@ -5,7 +5,7 @@ import glob
 import math
 from mako.template import Template
 from snakemake.utils import report, R
-from snakemakelib.config import update_snakemake_config, sml_rules_path
+from snakemakelib.config import update_config, sml_rules_path
 from snakemakelib.report.picard import qc_plots
 
 # Templates
@@ -41,7 +41,7 @@ config_default = {
     },
 }
 
-config = update_snakemake_config(config, config_default)
+config = update_config(config_default, config)
 
 report_cfg = config['bio.ngs.reports.settings']
 picard_report_cfg = config['bio.ngs.reports.picard_qc_report']

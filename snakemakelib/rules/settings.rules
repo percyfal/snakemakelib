@@ -5,7 +5,7 @@ settings for all rules.
 """
 import os
 from snakemakelib._version import get_versions
-from snakemakelib.config import update_snakemake_config
+from snakemakelib.config import update_config
 
 
 TEMP_FILETYPES_DEFAULT = ['.bam', '.gz', '.zip', '.bigWig', '.wig', '.bed', '.sra',
@@ -30,5 +30,5 @@ config_default = {
     },
 }
 
-config = update_snakemake_config(config, config_default)
+config = update_config(config_default, config)
 config['_version'] = get_versions()

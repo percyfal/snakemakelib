@@ -1,6 +1,6 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.config import update_snakemake_config
+from snakemakelib.config import update_config
 
 include: '../settings.rules'
 
@@ -21,19 +21,19 @@ config_default = {
     },
 }
 
-config = update_snakemake_config(config, config_default)
+config = update_config(config_default, config)
 
 rnaseqc_conf = config['bio.ngs.rnaseq.rnaseqc']
 
 config_default['bio.ngs.rnaseq.rnaseqc']['jar'] = os.path.join(rnaseqc_conf['home'], RNASEQC_JAR_PROGRAM)
 
-config = update_snakemake_config(config, config_default)
+config = update_config(config_default, config)
 
 rnaseqc_conf = config['bio.ngs.rnaseq.rnaseqc']
 
 config_default['bio.ngs.rnaseq.rnaseqc']['cmd'] = "java -Xmx" + rnaseqc_conf['java_mem'] + " -Djava.io.tmpdir=" + rnaseqc_conf['java_tmpdir'] +  " -jar " + rnaseqc_conf['jar']
 
-config = update_snakemake_config(config, config_default)
+config = update_config(config_default, config)
 
 rnaseqc_conf = config['bio.ngs.rnaseq.rnaseqc']
 

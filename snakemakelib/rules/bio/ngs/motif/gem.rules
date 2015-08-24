@@ -6,7 +6,7 @@
 # http://www.psrg.csail.mit.edu/gem/
 #
 import os
-from snakemakelib.config import update_snakemake_config
+from snakemakelib.config import update_config
 
 include: '../settings.rules'
 
@@ -23,20 +23,20 @@ config_default = {
     },
 }
 
-config = update_snakemake_config(config, config_default)
+config = update_config(config_default, config)
 
 gem_cfg = config['bio.ngs.motif.gem']
 
 config_default['bio.ngs.motif.gem']['read_distribution'] = os.path.join(gem_cfg['home'], 'Read_Distribution_default.txt')
 config_default['bio.ngs.motif.gem']['jar'] = os.path.join(gem_cfg['home'], GEM_JAR_PROGRAM)
 
-config = update_snakemake_config(config, config_default)
+config = update_config(config_default, config)
 
 gem_cfg = config['bio.ngs.motif.gem']
 
 config_default['bio.ngs.motif.gem']['cmd'] = "java -Xmx" + gem_cfg['java_mem'] + " -Djava.io.tmpdir=" + gem_cfg['java_tmpdir'] +  " -jar " + gem_cfg['jar']
 
-config = update_snakemake_config(config, config_default)
+config = update_config(config_default, config)
 
 gem_cfg = config['bio.ngs.motif.gem']
 

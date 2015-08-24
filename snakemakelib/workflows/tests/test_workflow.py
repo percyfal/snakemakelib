@@ -75,6 +75,7 @@ path = cfg.get('path') if not cfg.get('path') is None else os.curdir
 @unittest.skipIf(shutil.which('bwa') is None, "No executable bwa found; skipping")
 @unittest.skipIf(shutil.which('samtools') is None, "No executable samtools found; skipping")
 
+@pytest.fixture(autouse=True)
 def setUp():
     logger.info("Setting up text fixtures for {}".format(__name__))
     

@@ -1,16 +1,16 @@
 # Copyright (C) 2014 by Per Unneberg
 # pylint: disable=R0904
 import os
-import re
 import unittest
 import logging
-import texttable as tt
 from collections import OrderedDict, Counter
 from nose.tools import raises
 from snakemakelib.report.picard import PicardMetrics, PicardHistMetrics, AlignMetrics, InsertMetrics, HsMetrics, DuplicationMetrics, _read_picard_metrics, combine_metrics, DataFrame, _make_unique
+import pytest
 
 logger = logging.getLogger(__name__)
 
+@pytest.fixture(autouse=True)
 def setUp():
     """Set up test fixtures for metrics test"""
 
@@ -50,7 +50,7 @@ def setUp():
     Ddf = DataFrame(*dupmet)
     Ddfh = DataFrame(*duphist)
     Hdf = DataFrame(*hsmet)
-
+    
 class TestDataFrame(unittest.TestCase):
     """Test DataFrame object"""
     def test_dataframe_init(self):

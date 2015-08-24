@@ -2,11 +2,15 @@
 #
 import os
 import re
-from snakemakelib.utils import safe_makedir
-from snakemakelib.bio.ngs.db import index
-from snakemakelib.config import update_snakemake_config
+
+try:
+    from snakemakelib.bio.ngs.db import index
+except:
+    pass
 
 include: "../settings.rules"
+
+DEFAULT_RULES = ['ucsc_wigToBigWig', 'ucsc_bedGraphToBigWig']
 
 config_default = {
     'bio.ngs.db.ucsc' : { 
@@ -14,175 +18,29 @@ config_default = {
         #'build' : config['bio.ngs.settings']['db']['build'],
         'index' : "",
         'home' : "",
+        'rules': DEFAULT_RULES,
         'urldownload' : 'http://hgdownload.cse.ucsc.edu/goldenPath/',
-        'gtfToGenePred' : {
-            'cmd' : 'gtfToGenePred',
-            'options' : '-genePredExt -ignoreGroupsWithoutExons',
-        },
-        'bedGraphToBigWig' : {
-            'cmd' : 'bedGraphToBigWig',
-            'options' : '',
-        },
-        'fetchChromSizes' : {
-            'cmd' : 'fetchChromSizes',
-            'options' : 'hg19',
-        },
-        'wigToBigWig' : {
-            'cmd' : 'wigToBigWig',
-            'options' : '-clip',
-        },
     },
 }
 
-config = update_snakemake_config(config, config_default)
+configdefault: config_default
 
-config['bio.ngs.db.ucsc']['index'] = index(
-    ref = config['bio.ngs.db.ucsc']['ref'],
-    index = config['bio.ngs.db.ucsc']['index'],
-    build = config['bio.ngs.settings']['db']['build'],
-    application = "ucsc",
-)
+try:
+    config['bio.ngs.db.ucsc']['index'] = index(
+        ref = config['bio.ngs.db.ucsc']['ref'],
+        index = config['bio.ngs.db.ucsc']['index'],
+        build = config['bio.ngs.settings']['db']['build'],
+        application = "ucsc",
+    )
+except:
+    pass
 
-ucsc_cfg = config['bio.ngs.db.ucsc']
+for rule in config['bio.ngs.db.ucsc']['rules']:
+    include: os.path.join("ucsc", rule + ".rule")
 
-if ucsc_cfg['home']:
-    os.environ["PATH"] += os.pathsep + ucsc_cfg['home']
-for (section, cfg) in ucsc_cfg.items():
+if config['bio.ngs.db.ucsc']['home']:
+    os.environ["PATH"] += os.pathsep + config['bio.ngs.db.ucsc']['home']
+for (section, cfg) in config['bio.ngs.db.ucsc'].items():
     if isinstance(cfg, dict):
         if cfg.get('cmd', "") and not is_installed(cfg.get('cmd', "")):
             raise Exception("\nbio.ngs.db.ucsc: {prog} not installed or not in PATH\n".format(prog=cfg.get('cmd')))
-
-
-rule ucsc_pseudo:
-    """Pseudo rule; eliminates circular rule dependency of autosome.fa -> fa -> autosome.fa"""
-    output: ref = protected(ucsc_cfg['ref'])
-
-rule ucsc_link:
-    """Link reference to ucsc directory"""
-    input: ref = ucsc_cfg['ref']
-    output: reflink = temp(ucsc_cfg['index'])
-    run:
-        safe_makedir(os.path.dirname(output.reflink))
-        tgt = os.path.join(os.path.dirname(output.reflink), os.path.basename(input.ref))
-        if not os.path.exists(tgt):
-            os.symlink(input.ref, tgt)
-
-rule ucsc_write_chromosome:
-    """Generate chromosome-specific fasta file from reference."""
-
-    input: ref = ucsc_cfg['ref']
-    output: chrfa = os.path.join("{path}", "chr{chr}.fa")
-    run:
-        from Bio import SeqIO
-        seqs = SeqIO.parse(open(input.ref), format='fasta')
-        for seq in seqs:
-            name = output.chrfa
-            if seq.id == wildcards.chr or seq.id == "chr" + wildcards.chr:
-                smllogger.info("Generating chromosome file {}".format(name))
-                SeqIO.write(seq, open(name, 'w'), format='fasta')
-                break
-
-rule ucsc_download_2bit:
-    """Download 2bit file from ucsc"""
-    params: urlinput = os.path.join(ucsc_cfg['urldownload'], "{build}", "bigZips", "{build}.2bit")
-    output: os.path.join("{path}", "{build}", "ucsc", "{build}.2bit")
-    shell: "mkdir -p `dirname {output}` && wget {params.urlinput} -O {output}"
-
-rule ucsc_autosome_reference:
-    """Make an autosome reference from original build file.
-
-    Assume chromosome names are prefixed chr.
-    """
-    input: ref = "{prefix}.fa"
-    output: ref = "{prefix}.autosome.fa"
-    run:
-        from Bio import SeqIO
-        seqs = SeqIO.parse(open(input.ref), format='fasta')
-        r = re.compile(r"chr[0-9MTXY]+$")
-        with open(output.ref, "w") as fh:
-            for seq in seqs:
-                if r.match(seq.id):
-                    smllogger.info("Writing chromosome {}".format(seq.id))
-                    SeqIO.write(seq, fh, format='fasta')
-
-rule ucsc_no_alt_analysis_set_reference:
-    """Make a reference from original build file excluding patches and
-    haplotypes. 
-
-    Assume chromosome names are prefixed chr and includes chromosomes
-    with labels 'Un' and 'random'.
-
-    The output name is modelled on UCSC names in
-    organism/build/seqs_for_alignment_pipelines, genbank.
-
-    """
-    input: ref = "{prefix}.fa"
-    output: ref = "{prefix}.no_alt_analysis_set.fa"
-    run:
-        from Bio import SeqIO
-        seqs = SeqIO.parse(open(input.ref), format='fasta')
-        r = re.compile(r"(chr[0-9MTXY]+$|chrUn_[0-9a-zA-Z]+$|chr[0-9MTXY]+_[a-zA-Z0-9]+_random$")
-        with open(output.ref, "w") as fh:
-            for seq in seqs:
-                if r.match(seq.id):
-                    smllogger.info("Writing chromosome {}".format(seq.id))
-                    SeqIO.write(seq, fh, format='fasta')
-
-ruleorder: ucsc_pseudo > ucsc_link > ucsc_no_alt_analysis_set_reference > ucsc_autosome_reference > ucsc_write_chromosome
-
-rule ucsc_gtf_to_genepred:
-    """Run gtfToGenePred"""
-    params: cmd = os.path.join(ucsc_cfg['home'], ucsc_cfg['gtfToGenePred']['cmd']),
-            options = ucsc_cfg['gtfToGenePred']['options']
-    input: gtf = "{prefix}.gtf"
-    output: genepred = "{prefix}.genePred"
-    shell: "{params.cmd} {params.options} {input.gtf} {output.genepred}"
-
-rule ucsc_genepred_to_refFlat:
-    """Convert genepred to refFlat.
-
-    See
-    https://github.com/chapmanb/cloudbiolinux/blob/master/utils/prepare_tx_gff.py#L355;
-    we need to add extra column at start.
-
-    """
-    input: genepred = "{prefix}.genePred"
-    output: refflat = "{prefix}.refFlat"
-    shell: "awk '{{printf(\"%s\\t%s\\n\", $1, $0)}}'  {input.genepred} > {output.refflat}"
-
-rule ucsc_chrom_sizes:
-    """Generate chromosome sizes.
-
-    Chrom sizes file is of format: <chromosome name> <size in bases>
-
-    Uses fetchChromSizes
-    """
-    params: cmd = ucsc_cfg["fetchChromSizes"]["cmd"],
-            options = ucsc_cfg["fetchChromSizes"]["options"]
-    output: sizes = "chrom.sizes"
-    shell: "{params.cmd} {params.options} > {output.sizes}"
-
-rule ucsc_wig_to_bigWig:
-    """Convert wig file to bigWig.
-
-    Run wigToBigWig to convert wig file to bigWig.
-    """
-    params: cmd = ucsc_cfg['wigToBigWig']['cmd'],
-            options = ucsc_cfg['wigToBigWig']['options']
-    log: "{prefix}.wig.log"
-    input: wig = "{prefix}.wig",
-           sizes = "chrom.sizes"
-    output: bigwig = "{prefix}.wig.bw"
-    shell: "{params.cmd} {params.options} {input.wig} {input.sizes} {output.bigwig} 2> {log}"
-
-rule ucsc_bedgraph_to_bigWig:
-    """Convert bedGraph file to bigWig.
-
-    Run begGraphToBigWig to convert bedGraph file to bigWig.
-    """
-    params: cmd = ucsc_cfg['bedGraphToBigWig']['cmd'],
-            options = ucsc_cfg['bedGraphToBigWig']['options']
-    input: wig = "{prefix}.bdg",
-           sizes = "chrom.sizes"
-    output: bigwig = "{prefix}.bdg.bw"
-    shell: "{params.cmd} {params.options} {input.wig} {input.sizes} {output.bigwig}"

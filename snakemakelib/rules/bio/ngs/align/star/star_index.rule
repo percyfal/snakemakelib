@@ -1,0 +1,47 @@
+# -*- snakemake -*-
+try:
+    from snakemakelib.bio.ngs.db import annotation
+except:
+    pass
+
+config_default = {
+    'bio.ngs.align.star' : {
+        'star_index' : {
+            'threads' : config['bio.ngs.settings']['threads'],
+            'options' : "--genomeSAindexNbases 14",
+            'sjdbGTFfile' : config['bio.ngs.settings']['annotation']['transcript_annot_gtf'],
+            'sjdbOverhang' : 99,
+            'SAname' : "SA",
+        },
+    },
+}
+
+configdefault: config_default
+
+# Update annotation
+config['bio.ngs.align.star']['star_index']['sjdbGTFfile'] = \
+    annotation(annotation=config['bio.ngs.align.star']['star_index']['sjdbGTFfile'],\
+               db_cfg=config['bio.ngs.settings']['db'])
+
+rule star_index:
+    """Generate STAR genome index. By default will generate index in a
+    directory '../rnaseq/star' relative to the directory of the reference
+    sequence.
+
+    Remember: for small genomes the parameter --genomeSAindexNbases
+    must be adjusted; it is calculated as min(14, log2(GenomeLength)/2 - 1)
+
+    """
+    params: cmd = config['bio.ngs.align.star']['cmd'],
+            options = " ".join([\
+                                config['bio.ngs.align.star']['star_index']['options'],\
+                                "--sjdbGTFfile {}".format(config['bio.ngs.align.star']['star_index']['sjdbGTFfile']) if config['bio.ngs.align.star']['star_index']['sjdbGTFfile'] else "",\
+                                "--sjdbOverhang {}".format(config['bio.ngs.align.star']['star_index']['sjdbOverhang']) if config['bio.ngs.align.star']['star_index']['sjdbGTFfile'] else ""\
+                                ]),
+            genomedir = os.path.dirname(config['bio.ngs.align.star']['index'])
+    input: ref = [config['bio.ngs.align.star']['ref']] + [ref(x, config['bio.ngs.settings']['db']) for x in config['bio.ngs.align.star']['extra_ref']],
+           gtf = config['bio.ngs.align.star']['star_index']['sjdbGTFfile'] if config['bio.ngs.align.star']['star_index']['sjdbGTFfile'] else ""
+    output: Genome = config['bio.ngs.align.star']['index'], SA=os.path.join(os.path.dirname(config['bio.ngs.align.star']['index']), "SA")
+    log: config['bio.ngs.align.star']['index'] + ".log"
+    threads: config['bio.ngs.align.star']['star_index']['threads']
+    shell: "{params.cmd} --runThreadN {threads} --runMode genomeGenerate --genomeDir {params.genomedir} --genomeFastaFiles {input.ref} {params.options} > {log}"

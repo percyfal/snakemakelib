@@ -1,6 +1,5 @@
 # -*- snakemake -*-
-
-include: 'bwa.rules'
+include: '../../tools/samtools/samtools.rules'
 
 config_default = {
     'bio.ngs.align.bwa': {
@@ -14,15 +13,13 @@ configdefault: config_default
 
 rule bwa_mem:
     """Run bwa mem"""
-    params: options = bwa_cfg['mem']['options'],
-            cmd = bwa_cfg['cmd'],
-            index = bwa_cfg['index']
-    input: read1 = "{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],
-           read2 = "{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['fastq_suffix'],
-           index = expand("{index}{ext}", index=bwa_cfg['index'], ext=bwa_cfg['index_ext'])
+    params: options = config['bio.ngs.align.bwa']['mem']['options'],
+            cmd = config['bio.ngs.align.bwa']['cmd'],
+            index = config['bio.ngs.align.bwa']['index']
+    input: read1 = "{prefix}" + config['bio.ngs.settings']['read1_label'] + config['bio.ngs.settings']['fastq_suffix'],
+           read2 = "{prefix}" + config['bio.ngs.settings']['read2_label'] + config['bio.ngs.settings']['fastq_suffix'],
+           index = expand("{index}{ext}", index=config['bio.ngs.align.bwa']['index'], ext=config['bio.ngs.align.bwa']['index_ext'])
     output: bam = "{prefix}.bam"
     log: log = "{prefix}.log"
-    threads: bwa_cfg['threads']
-    shell: "{params.cmd} mem -t {threads} {params.options} {params.index} {input.read1} {input.read2} | " + samtools_cfg['cmd'] + " view -Sb - > {output.bam}"
-
-ruleorder: bwa_mem > samtools_sam2bam
+    threads: config['bio.ngs.align.bwa']['threads']
+    shell: "{params.cmd} mem -t {threads} {params.options} {params.index} {input.read1} {input.read2} | " + config['bio.ngs.tools.samtools']['cmd'] + " view -Sb - > {output.bam}"

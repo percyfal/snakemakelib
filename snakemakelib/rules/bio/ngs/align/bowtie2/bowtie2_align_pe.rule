@@ -1,0 +1,38 @@
+# -*- snakemake -*-
+try:
+    from snakemakelib.stat import is_compressed
+except:
+    pass
+
+config_default = {
+    'bio.ngs.align.bowtie2' : {
+        'align' : {
+            'threads' : config['bio.ngs.settings']['threads'],
+            'options' : '--chunkmbs 200',
+        },
+    },
+}
+
+configdefault: config_default
+
+rule bowtie2_align_pe:
+    """Bowtie paired end alignment"""
+    params: cmd = config['bio.ngs.align.bowtie2']['cmd'],
+            options = config['bio.ngs.align.bowtie2']['align']['options'],
+            index = config['bio.ngs.align.bowtie2']['index']
+    input: read1 = "{prefix}" + config['bio.ngs.settings']['read1_label'] + config['bio.ngs.settings']['fastq_suffix'],\
+           read2 = "{prefix}" + config['bio.ngs.settings']['read2_label'] + config['bio.ngs.settings']['fastq_suffix'],
+           index = expand("{index}{ext}", index=config['bio.ngs.align.bowtie2']['index'], ext=config['bio.ngs.align.bowtie2']['build_ext'])
+    output: bam = "{prefix}.bam"
+    benchmark: "{prefix}.json"
+    threads: config['bio.ngs.align.bowtie2']['align']['threads']
+    log: "{prefix}.bwt2.log"
+    run:
+        # For some reason, I can't get fifos to work. There is an
+        # alternative; process substitution. See
+        # http://arstechnica.com/civis/viewtopic.php?f=16&t=1180805.
+        if is_compressed(input.read1):
+            shell("{cmd} -p {threads} {options} -x {index} -1 <(gunzip -c {read1}) -2 <(gunzip -c {read2}) 2> {log} | {samtools} view -bS - > {bam}".format(cmd=params.cmd, threads=threads, options=params.options, index=params.index, read1=input.read1, read2=input.read2, bam=output.bam, samtools=samtools_cfg['cmd'], log=log))
+        else:
+            shell("{cmd} -p {threads} {options} -x {index} -1 {read1} -2 {read2} 2> {log} | {samtools} view -bS - > {bam}".format(cmd=params.cmd,  threads=threads, options=params.options, index=params.index, read1=input.read1, read2=input.read2, bam=output.bam, samtools=samtools_cfg['cmd'], log=log))
+

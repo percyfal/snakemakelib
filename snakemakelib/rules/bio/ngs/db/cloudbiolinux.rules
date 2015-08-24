@@ -2,55 +2,19 @@
 #
 import os
 import re
-from snakemakelib.utils import safe_makedir
-from snakemakelib.bio.ngs.db import index, annotation
-from snakemakelib.config import update_snakemake_config
 
 include: "../settings.rules"
+
+DEFAULT_RULES = ['cloudbiolinux_update_annotation_gtf']
 
 config_default = {
     'bio.ngs.db.cloudbiolinux' : { 
         'ref' : config['bio.ngs.settings']['db']['ref'],
+        'rules': DEFAULT_RULES,
       },
 }
 
-config = update_snakemake_config(config, config_default)
+configdefault: config_default
 
-cbl_cfg = config['bio.ngs.db.cloudbiolinux']
-
-# rule cloudbiolinux_pseudo_annotation_gtf:
-#     output: protected(annotation(gtf = 'ref-transcripts.gtf', db_cfg = config['bio.ngs.settings']['db']))
-
-rule cloudbiolinux_update_annotation_gtf:
-    input: gtf = annotation(annotation='ref-transcripts.gtf',\
-                            db_cfg=config['bio.ngs.settings']['db'], ignore_extra_ref=True),
-           ref = [ref(x, config['bio.ngs.settings']['db']) for x in config['bio.ngs.settings']['db']['extra_ref']]
-    output: gtf = protected(annotation(annotation="ref-transcripts-" + "-".join([os.path.splitext(os.path.basename(x))[0] for x in config['bio.ngs.settings']['db']['extra_ref']]) + ".gtf",\
-                                       db_cfg=config['bio.ngs.settings']['db']))
-    run:
-        with open(output.gtf, "w") as out:
-            with open (input.gtf, "r") as fh:
-                for line in fh.readlines():
-                    out.write(line)
-            for f in input.ref:
-                from Bio import SeqIO
-                # Use genbank if present - it should be
-                gb = re.sub("(.fa$|.fasta$)", ".gb", f)
-                if os.path.exists(gb):
-                    seqs = SeqIO.parse(open(gb), format = "gb")
-                else:
-                    continue
-                for seq in seqs:
-                    features = [sf.type for sf in seq.features]
-                    d = {
-                        'name' : seq.name,
-                        'feature' : seq.features[0].type,
-                        'start' : seq.features[0].location.start,
-                        'end' : seq.features[0].location.end,
-                        'score' : 0,
-                        'strand' : '+',
-                        'frame' : 0,
-                        'gene_id' : seq.name,
-                        'transcript_id' : seq.name,
-                    }
-                    out.write('{name}\tsnakemakelib\t{feature}\t{start}\t{end}\t{score}\t{strand}\t{frame}\tgene_id "{gene_id}"; transcript_id "{transcript_id}"\n'.format(**d))
+for rule in config['bio.ngs.db.cloudbiolinux']['rules']:
+    include: os.path.join("cloudbiolinux", rule + ".rule")

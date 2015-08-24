@@ -1,6 +1,5 @@
 # -*- snakemake -*- 
 import os
-from snakemakelib.config import update_snakemake_config
 
 """
 Main settings for snakemakelib.comp. Defines top-level configuration
@@ -55,4 +54,4 @@ config_default = {
     },
 }
 
-config = update_snakemake_config(config, config_default)
+configdefault: config_default

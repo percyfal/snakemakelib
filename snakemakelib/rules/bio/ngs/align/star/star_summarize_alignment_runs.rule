@@ -1,0 +1,33 @@
+# -*- snakemake -*-
+try:
+    from snakemakelib.bio.ngs.align.star import Star
+except:
+    pass
+
+def _star_find_result_files_fn(wildcards):
+    sources = generic_target_generator(
+        tgt_re = config['bio.ngs.settings']['sampleorg'].run_id_re,
+        src_re = config['bio.ngs.settings']['sampleorg'].run_id_re,
+        target_suffix = "." + wildcards.label + 'bam',
+        **config['bio.ngs.settings'])
+    sources = [x.replace(wildcards.label, "Log.final.out.").replace(".bam", "") for x in sources]
+    return sources
+
+rule star_summarize_alignment_runs:
+    """Summarize alignment data for alignment(s) based on runs.
+
+    FIXME: The indexing should be done by run; currently results are
+    indexed by sample, which is ok as long as there is only one run
+    per sample.
+
+    Important: in order to catch {label}, as a minimum, this needs to
+    be set to 'Aligned.out.'; the minimum target is therefore
+    star.Aligned.out.csv
+
+    """
+    input: _star_find_result_files_fn
+    output: csv = os.path.join("{path}", "star.{label}csv")
+    run:
+        tgt_re = config['bio.ngs.settings']['sampleorg'].run_id_re
+        star = Star(inputs=input, re=tgt_re)
+        star.save([output.csv])

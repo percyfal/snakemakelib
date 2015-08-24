@@ -1,0 +1,54 @@
+# -*- snakemake -*-
+import pysam
+import json
+import numpy as np
+try:
+    from snakemakelib.utils import utc_time
+except:
+    pass
+
+config_default = {
+    'bio.ngs.chromatin.danpos' : {
+    },
+}
+
+configdefault: config_default
+
+rule danpos_bin_reads_by_nucleosome:
+    """Split reads into bins base on the parameter 'bins'"""
+    input: bam="{prefix}.bam"
+    output: bed=["{{prefix}}.{nucleosome}.bed".format(nucleosome=x) for x in range(len(config['bio.ngs.chromatin.danpos']['bins']))]
+    log: json="{prefix}.danposbin.json"
+    run:
+        samfile = pysam.AlignmentFile(input.bam, "rb")
+        outfh = [open(f, "w") for f in output.bed]
+        bins = np.array([x for item in config['bio.ngs.chromatin.danpos']['bins'] for x in item])
+        d = {'count': {k:0 for k in ['NA'] + list(range(len(config['bio.ngs.chromatin.danpos']['bins'])))},
+             'rule': 'bio.ngs.chromatin.danpos.danpos_bin_reads_by_nucleosome', 
+             'date': utc_time()}
+        for s in samfile:
+            inds = np.digitize([s.tlen], bins)
+            if (inds[0] % 2 == 0):
+                d['count']['NA'] += 1
+                continue
+            i = (int((inds[0] - 1) / 2))
+            if (i>0):
+                rl = int(s.tlen/i)
+                for j in range(i):
+                    outfh[i].write("{ref}\t{start}\t{end}\t{name}\t{score}\t{strand}\n".format(
+                        ref=samfile.references[s.rname], 
+                        start=s.pos + j * rl,
+                        end=s.pos + (j + 1) * rl,
+                        name="danpos", score=0, strand='-' if s.is_reverse else '+'
+                    ))
+            else:
+                outfh[i].write("{ref}\t{start}\t{end}\t{name}\t{score}\t{strand}\n".format(
+                    ref=samfile.references[s.rname], start=s.pos, end=s.pos + s.tlen,
+                    name="danpos", score=0, strand='-' if s.is_reverse else '+'
+                ))
+            d['count'][i] += 1
+        for fh in outfh:
+            fh.close()
+        with open(log.json, "w") as fh:
+            fh.write(json.dumps(d))
+

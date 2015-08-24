@@ -3,24 +3,11 @@
 Configuration module
 """
 import os
-import sys
 import yaml
 from snakemakelib.log import LoggerManager
 
 smllogger = LoggerManager().getLogger(__name__)
 
-class DeprecatedException(Exception):
-    pass
-
-def init_sml_config(cfg):
-    raise DeprecatedException("init_sml_config is deprecated; snakemakelib now makes use of snakemakes internal configuration variable. See https://github.com/percyfal/snakemakelib/wiki for more information")
-
-def get_sml_config(section=None):
-    raise DeprecatedException("get_sml_config is deprecated; snakemakelib now makes use of snakemakes internal configuration variable. See https://github.com/percyfal/snakemakelib/wiki for more information")
-
-# TODO: rename default    
-def update_sml_config(config_default):
-    raise DeprecatedException("update_sml_config is deprecated; snakemakelib now makes use of snakemakes internal configuration variable. See https://github.com/percyfal/snakemakelib/wiki for more information")
 
 class BaseConfig(dict):
     def __init__(self, *args, **kwargs):
@@ -216,3 +203,30 @@ def _update_snakemake_config(config, update_config, overwrite=False):
         else:
             config[section] = _update_snakemake_config(config[section], dict(update_config)[section], overwrite)
     return config
+
+
+def update_config(d, u, overwrite_config=dict()):
+    """Recursively update dictionary d with u.
+
+    See
+    http://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth
+    for details.
+
+    Args:
+      d (dict): dictionary to update
+      u (dict): dictionary whose items will overwrite those in d
+      overwrite_config (dict): configuration passed via command line; keys in this dictionary will not be overwritten
+
+    Returns:
+      dict: updated dictionary
+
+    """
+    for (key, value) in u.items():
+        if (isinstance(value, Mapping)):
+            d[key]= update_config(d.get(key, {}), value, overwrite_config.get(key, {}))
+        else:
+            if not key in overwrite_config:
+                d[key] = u[key]
+            if isinstance(d[key], str):
+                d[key] = os.path.expandvars(d[key])
+    return d

@@ -50,13 +50,15 @@ REQUIRES = [
     'snakemake>=3.3',
     'texttable>=0.8.2',
     'sphinx>=1.3',
-    'nose>=1.3.4',
+    #'nose>=1.3.4',
     'pandas>=0.16.0',
     'mock>=1.0.1',
     'pysam>=0.8.3',
     #'bokeh>=0.9.1',
     #'bokehutils==0.1.3',
     'matplotlib>=1.4.0',
+    'pytest',
+    'pytest-cov>=1.8.1',
 ]
 # https://pythonhosted.org/setuptools/setuptools.html
 SETUP_REQUIRES = [

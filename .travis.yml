@@ -10,12 +10,15 @@ install:
   - pip install --upgrade pip
   - pip install -r requirements.txt
   - pip install coveralls
+  - py.test --genscript=runtests.py
 script:
-  - py.test
+  - python setup.py test
+  - py.test --cov-report= --cov=snakemakelib .
+  
 branches:
   only:
     - master
     - develop
     - feature/travis-pytest
 after_success:
-  - coveralls
+  coveralls

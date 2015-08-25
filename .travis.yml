@@ -19,6 +19,5 @@ branches:
   only:
     - master
     - develop
-    - feature/travis-pytest
 after_success:
   coveralls

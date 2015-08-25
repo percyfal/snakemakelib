@@ -10,8 +10,11 @@ install:
   - pip install --upgrade pip
   - pip install -r requirements.txt
   - pip install coveralls
+  - py.test --genscript=runtests.py
+
 script:
-  coverage run --source=snakemakelib setup.py test
+  - py.test --cov-report= --cov=snakemakelib .
+  
 branches:
   only:
     - master

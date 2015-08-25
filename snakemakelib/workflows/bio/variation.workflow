@@ -20,7 +20,7 @@ variation_config = {
     },
 }
 
-config = update_config(config, variation_config)
+config = update_config(variation_config, config)
 
 include: os.path.join(sml_rules_path(), 'settings.rules')
 include: os.path.join(sml_rules_path(), 'utils.rules')
@@ -194,6 +194,7 @@ rule variation_combine_variants:
     input: "{prefix}.snp.filtSNP.vcf", "{prefix}.indel.filtINDEL.vcf"
     output: "{prefix}.bp_variants.vcf"
     run:
+        print (params.options)
         inputstr = " ".join(["-V {}".format(x) for x in input])
         shell("{cmd} {ips} -o {out} {opt}".format(cmd=params.cmd,
                                                   ips=inputstr,

@@ -21,9 +21,7 @@ def sml_rules_path():
 def sml_templates_path():
     return os.path.join(os.path.dirname(__file__), "_templates")
 
-
-
-def update_config(d, u, overwrite_config=None):
+def update_config(d, u):
     """Recursively update dictionary d with u.
 
     See
@@ -33,20 +31,16 @@ def update_config(d, u, overwrite_config=None):
     Args:
       d (dict): dictionary to update
       u (dict): dictionary whose items will overwrite those in d
-      overwrite_config (dict): configuration passed via command line; keys in this dictionary will not be overwritten
 
     Returns:
       dict: updated dictionary
 
     """
-    if overwrite_config is None:
-        overwrite_config = dict()
     for (key, value) in u.items():
         if (isinstance(value, Mapping)):
-            d[key]= update_config(d.get(key, {}), value, overwrite_config.get(key, {}))
+            d[key]= update_config(d.get(key, {}), value)
         else:
-            if not key in overwrite_config:
-                d[key] = u[key]
+            d[key] = u[key]
             if isinstance(d[key], str):
                 d[key] = os.path.expandvars(d[key])
     return d

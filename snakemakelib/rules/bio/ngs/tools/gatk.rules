@@ -37,17 +37,19 @@ config_default = {
 
 config = update_config(config_default, config)
 
-# Set these rules after updating config as they depend on internal values and then redo update config 
-config_default['bio.ngs.tools.gatk']['jar'] = os.path.join(config['bio.ngs.tools.gatk']['home'], GATK_JAR_PROGRAM)
-config_default['bio.ngs.tools.gatk']['known_sites'] = config['bio.ngs.tools.gatk']['dbsnp']
+config_default2 = {'bio.ngs.tools.gatk': {}}
 
-config_default['bio.ngs.tools.gatk']['variant_JEXL_filtration'] = {
+# Set these rules after updating config as they depend on internal values and then redo update config 
+config_default2['bio.ngs.tools.gatk']['jar'] = os.path.join(config['bio.ngs.tools.gatk']['home'], GATK_JAR_PROGRAM)
+config_default2['bio.ngs.tools.gatk']['known_sites'] = config['bio.ngs.tools.gatk']['dbsnp']
+
+config_default2['bio.ngs.tools.gatk']['variant_JEXL_filtration'] = {
     'cmd' : 'VariantFiltration',
     'ref' : config['bio.ngs.tools.gatk']['ref'],
     'expressions' : [],
 }
 
-config_default['bio.ngs.tools.gatk']['variant_snp_JEXL_filtration'] = {
+config_default2['bio.ngs.tools.gatk']['variant_snp_JEXL_filtration'] = {
     'cmd' : 'VariantFiltration',
     'ref' : config['bio.ngs.tools.gatk']['ref'],
     'expressions' : ["QD < 2.0", "MQ < 40.0", "FS > 60.0",
@@ -55,38 +57,38 @@ config_default['bio.ngs.tools.gatk']['variant_snp_JEXL_filtration'] = {
                      "ReadPosRankSum < -8.0"]
 }
 
-config_default['bio.ngs.tools.gatk']['variant_indel_JEXL_filtration'] = {
+config_default2['bio.ngs.tools.gatk']['variant_indel_JEXL_filtration'] = {
     'cmd' : 'VariantFiltration',
     'ref' : config['bio.ngs.tools.gatk']['ref'],
     'expressions' : ["QD < 2.0", "ReadPosRankSum < -20.0", "FS > 200.0"]
 }
 
-config_default['bio.ngs.tools.gatk']['combine_variants'] = {
+config_default2['bio.ngs.tools.gatk']['combine_variants'] = {
     'cmd' : 'CombineVariants',
     'ref' : config['bio.ngs.tools.gatk']['ref'],
     'options' : "",
 }
 
-config_default['bio.ngs.tools.gatk']['read_backed_phasing'] = {
+config_default2['bio.ngs.tools.gatk']['read_backed_phasing'] = {
     'cmd' : 'ReadBackedPhasing',
     'ref' : config['bio.ngs.tools.gatk']['ref'],
     'options' : "",
     'inputfun' : gatk_read_backed_phasing_find_input,
 }
 
-config_default['bio.ngs.tools.gatk']['clip_reads'] = {
+config_default2['bio.ngs.tools.gatk']['clip_reads'] = {
     'cmd' : 'ClipReads',
     'options' : "",
 }
 
-config_default['bio.ngs.tools.gatk']['variant_eval'] = {
+config_default2['bio.ngs.tools.gatk']['variant_eval'] = {
     'cmd' : 'VariantEval',
     'ref' : config['bio.ngs.tools.gatk']['ref'],
     'options' : " ".join(["-ST Filter -l INFO --doNotUseAllStandardModules --evalModule CompOverlap --evalModule CountVariants --evalModule TiTvVariantEvaluator --evalModule ValidationReport",
                           ]),
 }
 
-config_default['bio.ngs.tools.gatk']['select_variants'] = {
+config_default2['bio.ngs.tools.gatk']['select_variants'] = {
     'cmd' : 'SelectVariants',
     'ref' : config['bio.ngs.tools.gatk']['ref'],
     'options' : " ".join(["--selectTypeToInclude SNP",
@@ -97,13 +99,13 @@ config_default['bio.ngs.tools.gatk']['select_variants'] = {
                           "--selectTypeToInclude", "NO_VARIATION"])
 }
 
-config_default['bio.ngs.tools.gatk']['select_snp_variants'] = {
+config_default2['bio.ngs.tools.gatk']['select_snp_variants'] = {
     'cmd' : 'SelectVariants',
     'ref' : config['bio.ngs.tools.gatk']['ref'],
     'options' : "--selectTypeToInclude SNP",
 }
 
-config_default['bio.ngs.tools.gatk']['select_indel_variants'] = {
+config_default2['bio.ngs.tools.gatk']['select_indel_variants'] = {
     'cmd' : 'SelectVariants',
     'ref' : config['bio.ngs.tools.gatk']['ref'],
     'options' : " ".join(["--selectTypeToInclude", "INDEL",
@@ -113,25 +115,25 @@ config_default['bio.ngs.tools.gatk']['select_indel_variants'] = {
                           "--selectTypeToInclude", "NO_VARIATION"])
 }
 
-config_default['bio.ngs.tools.gatk']['indel_realigner'] = {
+config_default2['bio.ngs.tools.gatk']['indel_realigner'] = {
     'cmd' : 'IndelRealigner',
     'ref' : config['bio.ngs.tools.gatk']['ref'],
     'options' : " ".join(["-L {target}".format(target=config['bio.ngs.tools.gatk']['target_regions']) if not config['bio.ngs.tools.gatk']['target_regions'] == "" else ""])
 }
 
-config_default['bio.ngs.tools.gatk']['print_reads'] = {
+config_default2['bio.ngs.tools.gatk']['print_reads'] = {
     'cmd' : 'PrintReads',
     'ref' : config['bio.ngs.tools.gatk']['ref'],
     'options' : ""
 }
 
-config_default['bio.ngs.tools.gatk']['realigner_target_creator'] = {
+config_default2['bio.ngs.tools.gatk']['realigner_target_creator'] = {
     'cmd' : 'RealignerTargetCreator',
     'ref' : config['bio.ngs.tools.gatk']['ref'],
     'options' : "",
 }
 
-config_default['bio.ngs.tools.gatk']['unified_genotyper'] = {
+config_default2['bio.ngs.tools.gatk']['unified_genotyper'] = {
     'cmd' : 'UnifiedGenotyper',
     'ref' : config['bio.ngs.tools.gatk']['ref'],
     'options' : " ".join(["-stand_call_conf 30.0 -stand_emit_conf 10.0  --downsample_to_coverage 200 --output_mode EMIT_VARIANTS_ONLY -glm BOTH",
@@ -140,12 +142,13 @@ config_default['bio.ngs.tools.gatk']['unified_genotyper'] = {
                           ])
 }
 
-config = update_config(config_default, config)
+config = update_config(config_default2, config)
 
 # And yes, we need to do it yet again due to dependency on config['bio.ngs.tools.gatk']['jar']
-config_default['bio.ngs.tools.gatk']['cmd'] = "java -Xmx" + config['bio.ngs.tools.gatk']['java_mem'] + " -Djava.io.tmpdir=" + config['bio.ngs.tools.gatk']['java_tmpdir'] +  " -jar " + config['bio.ngs.tools.gatk']['jar']
+config_default3 = {'bio.ngs.tools.gatk': {}}
+config_default3['bio.ngs.tools.gatk']['cmd'] = "java -Xmx" + config['bio.ngs.tools.gatk']['java_mem'] + " -Djava.io.tmpdir=" + config['bio.ngs.tools.gatk']['java_tmpdir'] +  " -jar " + config['bio.ngs.tools.gatk']['jar']
 
-config_default['bio.ngs.tools.gatk']['base_recalibrator'] = {
+config_default3['bio.ngs.tools.gatk']['base_recalibrator'] = {
     'cmd' : 'BaseRecalibrator',
     'ref' : config['bio.ngs.tools.gatk']['ref'],
     'options' : " ".join([
@@ -154,7 +157,7 @@ config_default['bio.ngs.tools.gatk']['base_recalibrator'] = {
     ])
 }
 
-config = update_config(config_default, config)
+config = update_config(config_default3, config)
 gatk_config = config['bio.ngs.tools.gatk']
 
 ##################################################

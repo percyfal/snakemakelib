@@ -41,13 +41,25 @@ config_default = {
 
 config = update_config(config_default, config)
 
-config_default['bio.ngs.qc.sequenceprocessing']['trimmomatic']['jar'] = os.path.join(config['bio.ngs.qc.sequenceprocessing']['trimmomatic']['home'], TRIMMOMATIC_JAR_PROGRAM)
+config_default2 = {
+    'bio.ngs.qc.sequenceprocessing' : {
+        'trimmomatic' : {
+            'jar' : os.path.join(config['bio.ngs.qc.sequenceprocessing']['trimmomatic']['home'], TRIMMOMATIC_JAR_PROGRAM),
+        },
+    },
+}
 
-config = update_config(config_default, config)
+config = update_config(config_default2, config)
 
-config_default['bio.ngs.qc.sequenceprocessing']['trimmomatic']['cmd']  = "java -Xmx" + config['bio.ngs.qc.sequenceprocessing']['trimmomatic']['java_mem'] + " -Djava.io.tmpdir=" + config['bio.ngs.qc.sequenceprocessing']['trimmomatic']['java_tmpdir'] +  " -jar " + config['bio.ngs.qc.sequenceprocessing']['trimmomatic']['jar']
+config_default3 = {
+    'bio.ngs.qc.sequenceprocessing' : {
+        'trimmomatic' : {
+            'cmd' : "java -Xmx" + config['bio.ngs.qc.sequenceprocessing']['trimmomatic']['java_mem'] + " -Djava.io.tmpdir=" + config['bio.ngs.qc.sequenceprocessing']['trimmomatic']['java_tmpdir'] +  " -jar " + config['bio.ngs.qc.sequenceprocessing']['trimmomatic']['jar'],
+        },
+    },
+}
 
-config = update_config(config_default, config)
+config = update_config(config_default3, config)
 
 sp_cfg = config['bio.ngs.qc.sequenceprocessing']
 ngs_cfg = config['bio.ngs.settings']

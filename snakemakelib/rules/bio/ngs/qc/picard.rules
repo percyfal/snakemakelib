@@ -66,13 +66,16 @@ config = update_config(config_default, config)
 
 picard_config = config['bio.ngs.qc.picard']
 
-config_default['bio.ngs.qc.picard']['options'] = picard_config['common_options'] 
+config_default2 = {
+    'bio.ngs.qc.picard' : {
+        'options' : picard_config['common_options'],
+        'cmd' : " ".join(["java -Xmx" + picard_config['java_mem'],
+                          "-Djava.io.tmpdir=" + picard_config['java_tmpdir'], 
+                          "-jar", os.path.join(picard_config['home'], "picard.jar ")]),
+    },
+}
 
-config_default['bio.ngs.qc.picard']['cmd'] = " ".join(["java -Xmx" + picard_config['java_mem'],
-                                                       "-Djava.io.tmpdir=" + picard_config['java_tmpdir'], 
-                                                       "-jar", os.path.join(picard_config['home'], "picard.jar ")])
-
-config = update_config(config_default, config)
+config = update_config(config_default2, config)
 
 # Use picard config to increase readibility
 sml_config = config

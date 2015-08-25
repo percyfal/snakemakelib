@@ -16,9 +16,15 @@ config_default = {
 
 config = update_config(config_default, config)
 
-config_default['bio.genetics.association.plink']['plink']['options'] = config['bio.genetics.association.plink']['plink']['common_options']
+config_default2 = {
+    'bio.genetics.association.plink' : {
+        'plink' : {
+            'options' : config['bio.genetics.association.plink']['plink']['common_options']
+        },
+    },
+}
 
-config = update_config(config_default, config)
+config = update_config(config_default2, config)
 
 plink_config = config['bio.genetics.association.plink']
 

@@ -74,8 +74,8 @@ if atac_config['workflows.bio.atac_seq']['trimadaptor']:
 aligner = atac_config['workflows.bio.atac_seq']['aligner']
 key = 'bio.ngs.align.' + aligner
 
-config = update_config(config, atac_config)
-config = update_config(config, {key :  aligner_config[key]})
+config = update_config(atac_config, config)
+config = update_config({key :  aligner_config[key]}, config)
 ngs_cfg = config['bio.ngs.settings']
 main_cfg = config['settings']
 atac_cfg = config['workflows.bio.atac_seq']

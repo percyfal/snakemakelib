@@ -29,6 +29,6 @@ class TestSraTools(unittest.TestCase):
         mock_open.return_value = self.metadata
         cfg = register_metadata("foo/bar", config = {})
         args, kw = mock_update.call_args
-        self.assertDictEqual(args[1]['bio.ngs.tools.sratools']['_run2sample'], {'Run2S1': 'Sample1', 'Run1S2': 'Sample2', 'Run1S1': 'Sample1'})
-        self.assertEqual(args[1]['bio.ngs.tools.sratools']['_datadir'], 'foo')
+        self.assertDictEqual(args[0]['bio.ngs.tools.sratools']['_run2sample'], {'Run2S1': 'Sample1', 'Run1S2': 'Sample2', 'Run1S1': 'Sample1'})
+        self.assertEqual(args[0]['bio.ngs.tools.sratools']['_datadir'], 'foo')
         

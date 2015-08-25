@@ -101,8 +101,13 @@ config = update_config(config_default, config)
 
 config['bio.ngs.settings']['db']['ref'] = ref(config['bio.ngs.settings']['db']['ref'], 
                                               config['bio.ngs.settings']['db'])
-config_default['bio.ngs.settings']['filter_suffix'] = config['bio.ngs.settings']['read1_label'] + config['bio.ngs.settings']['fastq_suffix']
-config = update_config(config_default, config)
+config_default2 = {
+    'bio.ngs.settings' : {
+        'filter_suffix' :  config['bio.ngs.settings']['read1_label'] + config['bio.ngs.settings']['fastq_suffix'],
+    },
+}
+
+config = update_config(config_default2, config)
 
 ngs_conf = config['bio.ngs.settings']
 

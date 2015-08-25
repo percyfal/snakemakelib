@@ -27,16 +27,24 @@ config = update_config(config_default, config)
 
 gem_cfg = config['bio.ngs.motif.gem']
 
-config_default['bio.ngs.motif.gem']['read_distribution'] = os.path.join(gem_cfg['home'], 'Read_Distribution_default.txt')
-config_default['bio.ngs.motif.gem']['jar'] = os.path.join(gem_cfg['home'], GEM_JAR_PROGRAM)
+config_default2 = {
+    'bio.ngs.motif.gem' : {
+        'read_distribution': os.path.join(gem_cfg['home'], 'Read_Distribution_default.txt'),
+        'jar' : os.path.join(gem_cfg['home'], GEM_JAR_PROGRAM),
+    },
+}
 
-config = update_config(config_default, config)
+config = update_config(config_default2, config)
 
 gem_cfg = config['bio.ngs.motif.gem']
 
-config_default['bio.ngs.motif.gem']['cmd'] = "java -Xmx" + gem_cfg['java_mem'] + " -Djava.io.tmpdir=" + gem_cfg['java_tmpdir'] +  " -jar " + gem_cfg['jar']
+config_default3 = {
+    'bio.ngs.motif.gem' : {
+        'cmd' : "java -Xmx" + gem_cfg['java_mem'] + " -Djava.io.tmpdir=" + gem_cfg['java_tmpdir'] +  " -jar " + gem_cfg['jar'],
+    },
+}
 
-config = update_config(config_default, config)
+config = update_config(config_default3, config)
 
 gem_cfg = config['bio.ngs.motif.gem']
 

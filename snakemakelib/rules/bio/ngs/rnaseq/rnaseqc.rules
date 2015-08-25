@@ -25,15 +25,15 @@ config = update_config(config_default, config)
 
 rnaseqc_conf = config['bio.ngs.rnaseq.rnaseqc']
 
-config_default['bio.ngs.rnaseq.rnaseqc']['jar'] = os.path.join(rnaseqc_conf['home'], RNASEQC_JAR_PROGRAM)
-
-config = update_config(config_default, config)
+config = update_config({'bio.ngs.rnaseq.rnaseqc' : {'jar' : os.path.join(rnaseqc_conf['home'], RNASEQC_JAR_PROGRAM)}},
+                       config)
 
 rnaseqc_conf = config['bio.ngs.rnaseq.rnaseqc']
 
-config_default['bio.ngs.rnaseq.rnaseqc']['cmd'] = "java -Xmx" + rnaseqc_conf['java_mem'] + " -Djava.io.tmpdir=" + rnaseqc_conf['java_tmpdir'] +  " -jar " + rnaseqc_conf['jar']
+config_default['bio.ngs.rnaseq.rnaseqc']['cmd'] = 
 
-config = update_config(config_default, config)
+config = update_config({'bio.ngs.rnaseq.rnaseqc' : {'cmd' : "java -Xmx" + rnaseqc_conf['java_mem'] + " -Djava.io.tmpdir=" + rnaseqc_conf['java_tmpdir'] +  " -jar " + rnaseqc_conf['jar']}},
+                       config)
 
 rnaseqc_conf = config['bio.ngs.rnaseq.rnaseqc']
 

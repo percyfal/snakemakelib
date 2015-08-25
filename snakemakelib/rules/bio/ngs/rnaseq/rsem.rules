@@ -1,7 +1,7 @@
 # -*- snakemake -*-
 import os
 import pandas as pd
-from snakemakelib.config import update_snakemake_config
+from snakemakelib.config import update_config
 from snakemakelib.bio.ngs.db import index
 from snakemakelib.stat import is_installed
 from snakemakelib.bio.ngs.targets import generic_target_generator
@@ -30,7 +30,7 @@ config_default = {
     },
 }
 
-config = update_snakemake_config(config, config_default)
+config = update_config(config_default, config)
 
 # Update annotation
 config['bio.ngs.rnaseq.rsem']['annot_gtf'] = \

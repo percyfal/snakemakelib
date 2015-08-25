@@ -2,7 +2,7 @@
 import os
 from bokeh.plotting import show, output_file
 from snakemakelib.bio.ngs.targets import generic_target_generator
-from snakemakelib.config import update_snakemake_config
+from snakemakelib.config import update_config
 from snakemakelib.bio.ngs.qc.cutadapt import collect_cutadapt_qc_results, make_cutadapt_summary_plot
 
 include: '../settings.rules'
@@ -22,7 +22,7 @@ config_default = {
     },
 }
 
-config = update_snakemake_config(config, config_default)
+config = update_config(config_default, config)
 
 ca_cfg = config['bio.ngs.qc.cutadapt']
 

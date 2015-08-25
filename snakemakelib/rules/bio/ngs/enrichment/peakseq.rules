@@ -7,7 +7,7 @@
 # three binaries chr2hash, mergeOligoCounts, oligoFindPLFFile are in
 # PATH.
 import os
-from snakemakelib.config import update_snakemake_config
+from snakemakelib.config import update_config
 from snakemakelib.stat import is_installed
 from snakemakelib.bio.ngs.db import index, chromosomes
 from snakemakelib.log import LoggerManager
@@ -35,7 +35,7 @@ config_default = {
     },
 }
 
-config = update_snakemake_config(config, config_default)
+config = update_config(config_default, config)
 
 config['bio.ngs.enrichment.peakseq']['index'] = index(
     ref = config['bio.ngs.enrichment.peakseq']['ref'],

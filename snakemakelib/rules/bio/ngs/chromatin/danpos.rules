@@ -16,7 +16,7 @@ import os
 import json
 import pysam
 import numpy as np
-from snakemakelib.config import update_snakemake_config
+from snakemakelib.config import update_config
 from snakemakelib.utils import utc_time
 from snakemakelib.stat import is_installed
 
@@ -61,7 +61,7 @@ config_default = {
     },
 }
 
-config = update_snakemake_config(config, config_default)
+config = update_config(config_default, config)
 
 dp_cfg = config['bio.ngs.chromatin.danpos']
 python2 = config['comp.settings']['python2']['activate_cmd']

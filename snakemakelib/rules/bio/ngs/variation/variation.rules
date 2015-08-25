@@ -1,6 +1,6 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.config import update_snakemake_config
+from snakemakelib.config import update_config
 
 include: '../settings.rules'
 
@@ -41,11 +41,11 @@ config_default = {
     },
 }
 
-config = update_snakemake_config(config, config_default)
+config = update_config(config_default, config)
 
 var_cfg = config['bio.ngs.variation.variation']
 
-config_default = {
+config_default2 = {
     'bio.ngs.variation.variation' : {
         'annovar' : {
             'db' : os.path.join(var_cfg['annovar']['path'], "/humandb"),
@@ -60,11 +60,11 @@ config_default = {
     },
 }
 
-config = update_snakemake_config(config, config_default)
+config = update_config(config_default2, config)
 
 var_cfg = config['bio.ngs.variation.variation']
 
-config_default = {
+config_default3 = {
     'bio.ngs.variation.variation' : {
         'snpeff' : {
             'options' : "-c {config}".format(config=var_cfg['snpeff']['config']),
@@ -75,7 +75,7 @@ config_default = {
     },
 }
 
-config = update_snakemake_config(config, config_default)
+config = update_config(config_default3, config)
 
 cfg = config['bio.ngs.variation.variation']
 

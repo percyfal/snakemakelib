@@ -3,7 +3,7 @@ import os
 import yaml
 import sys
 import io
-from snakemakelib.config import sml_rules_path, BaseConfig
+from snakemakelib.config import sml_rules_path
 from snakemake.io import Wildcards, Namedlist
 
 include: './settings.rules'
@@ -12,8 +12,6 @@ rule conf_yaml:
     """Print global configuration to yaml output file"""
     output: yaml = os.path.join("{path}", "smlconf_global.yaml")
     run:
-        from yaml.representer import Representer
-        yaml.add_representer(BaseConfig, Representer.represent_dict)
         with open (output.yaml,"w") as fh:
             fh.write(yaml.dump(config, default_flow_style=False))
 

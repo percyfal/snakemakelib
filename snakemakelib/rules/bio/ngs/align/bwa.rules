@@ -1,6 +1,6 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.config import update_snakemake_config
+from snakemakelib.config import update_config
 from snakemakelib.bio.ngs.db import index
 from snakemakelib.stat import is_installed
 
@@ -16,18 +16,14 @@ config_default = {
         'index' : "",
         'index_ext' : ['.amb', '.ann', '.bwt', '.pac', '.sa'],
         'threads' : config['bio.ngs.settings']['threads'],
-        'options' : "-M",
+        'options' : "",
         'mem' :{
-            'options' : "",
+            'options' : "-M",
         },
     },
 }
 
-config = update_snakemake_config(config, config_default)
-
-config_default['bio.ngs.align.bwa']['mem']['options'] = config['bio.ngs.align.bwa']['options']
-
-config = update_snakemake_config(config, config_default)
+config = update_config(config_default, config)
 
 # Update index
 config['bio.ngs.align.bwa']['index'] = index(

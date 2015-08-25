@@ -11,8 +11,8 @@ install:
   - pip install -r requirements.txt
   - pip install coveralls
   - py.test --genscript=runtests.py
+
 script:
-  - python setup.py test
   - py.test --cov-report= --cov=snakemakelib .
   
 branches:

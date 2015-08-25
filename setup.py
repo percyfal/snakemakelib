@@ -71,7 +71,8 @@ DEPENDENCY_LINKS = [
     #'https://github.com/percyfal/bokehutils/tarball/master#egg=bokehutils-0.1.3'
 ]
 
-# pytest
+# Integrating pytest with setuptools: see
+# https://pytest.org/latest/goodpractises.html#integrating-with-distutils-python-setup-py-test
 from distutils.core import setup, Command
 # you can also import from setuptools
 

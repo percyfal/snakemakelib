@@ -11,10 +11,11 @@ install:
   - pip install -r requirements.txt
   - pip install coveralls
 script:
-  coverage run --source=snakemakelib setup.py test
+  - py.test
 branches:
   only:
     - master
     - develop
+    - feature/travis-pytest
 after_success:
-  coveralls
+  - coveralls

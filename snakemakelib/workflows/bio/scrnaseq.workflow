@@ -4,7 +4,7 @@ from bokehutils.publish import static_html
 from snakemake.workflow import workflow
 from snakemakelib.io import set_output
 from snakemakelib.utils import SmlTemplateEnv
-from snakemakelib.config import update_snakemake_config
+from snakemakelib.config import update_config
 from snakemakelib.bio.ngs.targets import generic_target_generator
 from snakemakelib.workflow.scrnaseq import scrnaseq_qc_plots
 
@@ -68,7 +68,7 @@ config_default = {
     },
 }
 
-config = update_snakemake_config(config, config_default)
+config = update_config(config_default, config)
 main_cfg = config['settings']
 ngs_cfg = config['bio.ngs.settings']
 aligner = ngs_cfg['aligner']

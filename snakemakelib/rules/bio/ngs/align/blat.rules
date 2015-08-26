@@ -1,11 +1,6 @@
 # -*- snakemake -*-
 import os
-
-try:
-    from snakemakelib.config import update_snakemake_config
-    from snakemakelib.bio.ngs.db import index
-except:
-    pass
+from snakemakelib.config import update_config
 
 DEFAULT_RULES = ['blat_faToTwoBit']
 
@@ -19,14 +14,18 @@ config_default = {
     },
 }
 
-configdefault: config_default
+config = update_config(config_default, config)
 
-# Update index
-config['bio.ngs.align.blat']['index'] = index(
-    ref = config['bio.ngs.align.blat']['ref'],
-    index = config['bio.ngs.align.blat']['index'],
-    application = 'blat',
-    build = config['bio.ngs.settings']['db']['build'])
+try:
+    from snakemakelib.bio.ngs.db import index
+    # Update index
+    config['bio.ngs.align.blat']['index'] = index(
+        ref = config['bio.ngs.align.blat']['ref'],
+        index = config['bio.ngs.align.blat']['index'],
+        application = 'blat',
+        build = config['bio.ngs.settings']['db']['build'])
+except:
+    pass
 
 for rule in config['bio.ngs.align.blat']['rules']:
     include: os.path.join("blat", rule + ".rule")

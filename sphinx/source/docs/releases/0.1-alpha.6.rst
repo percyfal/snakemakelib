@@ -1,0 +1,8 @@
+0.1-alpha.6 (Aug 2015)
+======================
+
+* tests now run by pytest (#20)
+* BaseConfig has been removed so config is plain dictionary (#19)
+* update_config is now the default configuration updating function
+  (#18). Consequently, the updates of config_default have been
+  modified throughout.

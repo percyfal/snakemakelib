@@ -9,6 +9,7 @@ import shutil
 import subprocess
 from nose.tools import raises
 from nose.plugins.attrib import attr
+import pytest
 
 logger = logging.getLogger(__name__)
 
@@ -19,13 +20,11 @@ snakefile = """# -*- snakemake -*-
 import os
 import sys
 import re
-from snakemakelib.config import update_snakemake_config, load_sml_config
+from snakemakelib.config import update_config
 from snakemakelib.utils import rreplace
 from snakemakelib.bio.ngs.targets import generic_target_generator
 
 workdir: '{workdir}'
-
-config = load_sml_config(config)
 
 local_config = {{
     'bio.ngs.settings' : {{
@@ -61,7 +60,7 @@ local_config = {{
     }},
 }}
 
-config = update_snakemake_config(config, local_config)
+config = update_config(config, local_config)
 
 include: '{variation}'
 
@@ -76,6 +75,7 @@ path = cfg.get('path') if not cfg.get('path') is None else os.curdir
 @unittest.skipIf(shutil.which('bwa') is None, "No executable bwa found; skipping")
 @unittest.skipIf(shutil.which('samtools') is None, "No executable samtools found; skipping")
 
+@pytest.fixture(autouse=True)
 def setUp():
     logger.info("Setting up text fixtures for {}".format(__name__))
     
@@ -102,6 +102,7 @@ def setUp():
     if not os.path.exists(os.path.join(genomedir, 'chr11.fa.fai')):
         subprocess.check_call(['samtools', 'faidx', os.path.join(genomedir, 'chr11.fa')])
 
+@pytest.mark.slow
 @attr('slow')
 class TestVariationWorkflow(unittest.TestCase):
     def test_variation_workflow(self):
@@ -115,9 +116,8 @@ class TestVariationWorkflow(unittest.TestCase):
         subprocess.check_call(['snakemake', '-F'] + outputs)
         subprocess.check_call(['snakemake', '-F', 'variation_metrics'])
 
-class TestBwaAlign(unittest.TestCase):
-    def test_bwa_align(self):
-        """Test bwa alignment"""
-        bwaout = 'P001_101/120924_AC003CCCXX/1_120924_AC003CCCXX_P001_101.bam'
-        subprocess.check_call(['snakemake', '-F', bwaout])
-        subprocess.check_call(['rm', '-f', os.path.join(ROOTPATH,  'data', 'projects', 'J.Doe_00_01', 'P001_101/120924_AC003CCCXX/1_120924_AC003CCCXX_P001_101.bam')])
+def test_bwa_align():
+    """Test bwa alignment"""
+    bwaout = 'P001_101/120924_AC003CCCXX/1_120924_AC003CCCXX_P001_101.bam'
+    subprocess.check_call(['snakemake', '-F', bwaout])
+    subprocess.check_call(['rm', '-f', os.path.join(ROOTPATH,  'data', 'projects', 'J.Doe_00_01', 'P001_101/120924_AC003CCCXX/1_120924_AC003CCCXX_P001_101.bam')])

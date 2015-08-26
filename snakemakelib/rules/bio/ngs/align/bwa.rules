@@ -1,11 +1,6 @@
 # -*- snakemake -*-
 import os
-
-try:
-    from snakemakelib.bio.ngs.db import index
-    from snakemakelib.stat import is_installed
-except:
-    pass
+from snakemakelib.config import update_config
 
 include: '../settings.rules'
 
@@ -23,10 +18,11 @@ config_default = {
     },
 }
 
-configdefault: config_default
+config = update_config(config_default, config)
 
 try:
     # Update index
+    from snakemakelib.bio.ngs.db import index
     config['bio.ngs.align.bwa']['index'] = index(
         ref = config['bio.ngs.settings']['db']['ref'],
         index = config['bio.ngs.align.bwa']['index'],
@@ -35,11 +31,7 @@ try:
 except:
     pass
 
-try:
-    if not is_installed(config['bio.ngs.align.bwa']['cmd']):
-        raise Exception("\nbio.ngs.align.bwa: {prog} not installed or not in PATH\n".format(prog=config['bio.ngs.align.bwa']['cmd']))
-except:
-    pass
-
 for rule in config['bio.ngs.align.bwa']['rules']:
     include: os.path.join("bwa", rule + ".rule")
+
+

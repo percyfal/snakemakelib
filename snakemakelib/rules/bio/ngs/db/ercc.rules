@@ -1,5 +1,6 @@
 # -*- snakemake -*-
 import os
+from snakemakelib.config import update_config
 
 include: "../settings.rules"
 
@@ -13,7 +14,7 @@ config_default = {
     },
 }
 
-configdefault: config_default
+config = update_config(config_default, config)
 
 for rule in config['bio.ngs.db.ercc']['rules']:
     include: os.path.join("ercc", rule + ".rule")

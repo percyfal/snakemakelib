@@ -50,13 +50,15 @@ REQUIRES = [
     'snakemake>=3.3',
     'texttable>=0.8.2',
     'sphinx>=1.3',
-    'nose>=1.3.4',
+    #'nose>=1.3.4',
     'pandas>=0.16.0',
     'mock>=1.0.1',
     'pysam>=0.8.3',
     #'bokeh>=0.9.1',
     #'bokehutils==0.1.3',
     'matplotlib>=1.4.0',
+    'pytest',
+    'pytest-cov>=1.8.1',
 ]
 # https://pythonhosted.org/setuptools/setuptools.html
 SETUP_REQUIRES = [
@@ -69,9 +71,28 @@ DEPENDENCY_LINKS = [
     #'https://github.com/percyfal/bokehutils/tarball/master#egg=bokehutils-0.1.3'
 ]
 
+# Integrating pytest with setuptools: see
+# https://pytest.org/latest/goodpractises.html#integrating-with-distutils-python-setup-py-test
+from distutils.core import setup, Command
+# you can also import from setuptools
+
+class PyTest(Command):
+    user_options = []
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        import subprocess
+        import sys
+        errno = subprocess.call([sys.executable, 'runtests.py'])
+        raise SystemExit(errno)
+
 _version = versioneer.get_version()
 _cmdclass = versioneer.get_cmdclass()
-
+_cmdclass.update({'test': PyTest})
 setup(
     name="snakemakelib",
     version=_version,

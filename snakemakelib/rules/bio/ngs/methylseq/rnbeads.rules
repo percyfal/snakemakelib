@@ -1,7 +1,7 @@
 # -*- snakemake -*-
 import os
 from snakemake.utils import R
-from snakemakelib.config import update_snakemake_config
+from snakemakelib.config import update_config
 from snakemakelib.bio.ngs.utils import dict_to_R
 
 include: '../../../utils.rules'
@@ -131,7 +131,7 @@ config_default = {
     },
 }		
 
-config = update_snakemake_config(config, config_default)
+config = update_config(config_default, config)
 
 rnbeads_cfg = config['bio.ngs.methylseq.rnbeads']
 ngs_cfg = config['bio.ngs.settings']

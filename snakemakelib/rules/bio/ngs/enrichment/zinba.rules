@@ -15,7 +15,7 @@
 import os
 from snakemake.utils import R
 from snakemakelib.bio.ngs.db import chromosomes, index
-from snakemakelib.config import update_snakemake_config
+from snakemakelib.config import update_config
 from snakemakelib.bio.ngs.utils import dict_to_Rdict
 
 include: "../settings.rules"
@@ -85,7 +85,7 @@ config_default = {
     },
 }
 
-config = update_snakemake_config(config, config_default)
+config = update_config(config_default, config)
 
 config['bio.ngs.enrichment.zinba']['zinba_common']['twoBit'] = index(
     ref = config['bio.ngs.settings']['db']['ref'],

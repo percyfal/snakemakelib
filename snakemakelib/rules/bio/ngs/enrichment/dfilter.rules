@@ -6,7 +6,7 @@
 #
 
 import os
-from snakemakelib.config import update_snakemake_config
+from snakemakelib.config import update_config
 from snakemakelib.stat import is_installed
 
 include: '../settings.rules'
@@ -21,7 +21,7 @@ config_default = {
     },
 }
 
-config = update_snakemake_config(config, config_default)
+config = update_config(config_default, config)
 
 dfilt_cfg = config['bio.ngs.enrichment.dfilter']
 

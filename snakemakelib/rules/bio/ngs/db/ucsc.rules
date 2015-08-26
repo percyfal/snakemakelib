@@ -1,12 +1,7 @@
 # -*- snakemake -*-
 #
 import os
-import re
-
-try:
-    from snakemakelib.bio.ngs.db import index
-except:
-    pass
+from snakemakelib.config import update_config
 
 include: "../settings.rules"
 
@@ -23,9 +18,10 @@ config_default = {
     },
 }
 
-configdefault: config_default
+config = update_config(config_default, config)
 
 try:
+    from snakemakelib.bio.ngs.db import index
     config['bio.ngs.db.ucsc']['index'] = index(
         ref = config['bio.ngs.db.ucsc']['ref'],
         index = config['bio.ngs.db.ucsc']['index'],
@@ -40,7 +36,3 @@ for rule in config['bio.ngs.db.ucsc']['rules']:
 
 if config['bio.ngs.db.ucsc']['home']:
     os.environ["PATH"] += os.pathsep + config['bio.ngs.db.ucsc']['home']
-for (section, cfg) in config['bio.ngs.db.ucsc'].items():
-    if isinstance(cfg, dict):
-        if cfg.get('cmd', "") and not is_installed(cfg.get('cmd', "")):
-            raise Exception("\nbio.ngs.db.ucsc: {prog} not installed or not in PATH\n".format(prog=cfg.get('cmd')))

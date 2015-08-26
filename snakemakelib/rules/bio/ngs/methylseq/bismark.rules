@@ -1,7 +1,7 @@
 # -*- snakemake -*-
 import os
 import re
-from snakemakelib.config import update_snakemake_config
+from snakemakelib.config import update_config
 from snakemakelib.bio.ngs.methylseq.bismark import report_label, align_suffix
 
 include: '../settings.rules'
@@ -42,7 +42,7 @@ config_default = {
     },
 }
 
-config = update_snakemake_config(config, config_default)
+config = update_config(config_default, config)
 
 cfg = config['bio.ngs.methylseq.bismark']
 ngs_cfg = config['bio.ngs.settings']

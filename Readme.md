@@ -25,8 +25,11 @@ for more information.
 snakemakelib is still not on PyPI but you can still install from
 github using pip in several ways. I recommend using the
 [user installation scheme](https://docs.python.org/3.4/install/index.html#inst-alt-install-user)
-by making use of the *--user* flag. You need to set the environment
-variable
+by making use of the *--user* flag.
+
+By default, user site-packages are placed in **~/.local**. If you
+choose to install in a different location, you need to set the
+environment variable
 [PYTHONUSERBASE](https://docs.python.org/3.4/using/cmdline.html#envvar-PYTHONUSERBASE)
 to e.g. *$HOME/lib/python*. Then, with this setting, set
 [PYTHONPATH](https://docs.python.org/3.4/using/cmdline.html#envvar-PYTHONPATH)
@@ -42,7 +45,7 @@ You can install as an
 [editable install](https://pip.pypa.io/en/latest/reference/pip_install.html#editable-installs)
 by invoking
 
-	pip3 install git+https://github.com/percyfal/snakemakelib.git@master#egg=snakemakelib --user
+	pip3 install -e git+https://github.com/percyfal/snakemakelib.git@master#egg=snakemakelib --user
 
 ### Cloning and installing ###
 
@@ -55,7 +58,7 @@ workaround, you can manually clone the repo
 
 and invoke (standing in the cloned repo)
 
-	pip3 install -r requirements.txt --user
+	pip3 install -r requirements.txt --user -e .
 
 ## Quickstart ##
 

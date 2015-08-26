@@ -13,11 +13,7 @@
 # comparison_count) ) x 8 bits.
 #
 import os
-
-try:
-    from snakemakelib.stat import is_installed
-except:
-    pass
+from snakemakelib.config import update_config
 
 include: "../settings.rules"
 
@@ -29,50 +25,19 @@ config_default = {
         'cmd': 'danpos.py',
         'home': os.getenv("DANPOS_HOME", ""),
         'rules': DEFAULT_RULES,
-        # 'dpeak' : {
-        #     'options' : "",
-        # },
-        # 'dregion' : {
-        #     'options' : "",
-        # },
-        # 'dtriple' : {
-        #     'options' : "",
-        # },
-        # 'profile' : {
-        #     'options' : "",
-        # },
-        # 'wig' : {
-        #     'options' : "",
-        # },
-        # 'wig2wiq' : {
-        #     'options' : "",
-        # },
-        # 'stat' : {
-        #     'options' : "",
-        # },
-        # 'selector' : {
-        #     'options' : "",
-        # },
-        # 'valuesAtRanks' : {
-        #     'options' : "",
-        # },
     },
 }
 
-configdefault: config_default
+config = update_config(config_default, config)
 
 dp_cfg = config['bio.ngs.chromatin.danpos']
 python2 = config['comp.settings']['python2']['activate_cmd']
 
-if dp_cfg['home']:
-    dp_cfg['cmd'] = os.path.join(dp_cfg['home'], os.path.basename(dp_cfg['cmd']))
-
-if not is_installed(os.path.join(dp_cfg.get('cmd', ""))):
-    raise Exception("""
-    bio.ngs.chromatin.danpos: {prog} not installed or not in PATH; 
-        either set environment variable DANPOS_HOME or 
-        bio.ngs.chromatin.danpos.home configuration setting
-""".format(prog=dp_cfg.get('cmd')))
+if config['bio.ngs.chromatin.danpos']['home']:
+    config['bio.ngs.chromatin.danpos']['cmd'] = os.path.join(
+        config['bio.ngs.chromatin.danpos']['home'],
+        os.path.basename(config['bio.ngs.chromatin.danpos']['cmd'])
+    )
 
 for rule in config['bio.ngs.chromatin.danpos']['rules']:
     include: os.path.join("danpos", rule + ".rule")

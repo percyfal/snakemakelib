@@ -1,7 +1,7 @@
 # -*- snakemake -*-
 #
 import os
-import re
+from snakemakelib.config import update_config
 
 include: "../settings.rules"
 
@@ -14,7 +14,7 @@ config_default = {
       },
 }
 
-configdefault: config_default
+config = update_config(config_default, config)
 
 for rule in config['bio.ngs.db.cloudbiolinux']['rules']:
     include: os.path.join("cloudbiolinux", rule + ".rule")

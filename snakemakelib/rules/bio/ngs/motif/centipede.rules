@@ -6,7 +6,7 @@
 # http://centipede.uchicago.edu/
 #
 import os
-from snakemakelib.config import update_snakemake_config
+from snakemakelib.config import update_config
 
 include: '../settings.rules'
 
@@ -18,7 +18,7 @@ config_default = {
     },
 }
 
-config = update_snakemake_config(config, config_default)
+config = update_config(config_default, config)
 
 cpd_cfg = config['bio.ngs.motif.centipede']
 

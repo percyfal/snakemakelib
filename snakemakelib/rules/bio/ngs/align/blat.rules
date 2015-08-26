@@ -1,10 +1,7 @@
 # -*- snakemake -*-
-import os
-from snakemakelib.config import update_config
+include: '../settings.rules'
 
 DEFAULT_RULES = ['blat_faToTwoBit']
-
-include: '../settings.rules'
 
 config_default = {
     'bio.ngs.align.blat' : {

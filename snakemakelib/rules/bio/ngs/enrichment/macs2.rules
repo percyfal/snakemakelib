@@ -1,0 +1,21 @@
+# -*- snakemake -*-
+#
+# Install with pip; use recent version of gcc (>=4.9)
+#
+include: "../settings.rules"
+
+DEFAULT_RULES = ['macs2_callpeak_treatment_only_bam_pe']
+
+config_default = {
+    'bio.ngs.enrichment.macs2' : {
+        'cmd' : 'macs2',
+        'rules' : DEFAULT_RULES,
+    },
+}
+
+config = update_config(config_default, config)
+
+python2 = config['comp.settings']['python2']['activate_cmd']
+
+for rule in config['bio.ngs.enrichment.macs2']['rules']:
+    include: os.path.join("macs2", rule + ".rule")

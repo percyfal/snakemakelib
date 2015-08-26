@@ -1,0 +1,47 @@
+# -*- snakemake -*-
+import os
+import re
+import csv
+
+try:
+    from snakemakelib.bio.ngs.db import ref
+    from snakemakelib.log import LoggerManager
+    smllogger = LoggerManager().getLogger('bio/ngs/db/ercc.rules')
+except:
+    import logging
+    smllogger = logging.getLogger('bio.ngs.db.ercc')
+
+config_default = {
+    'bio.ngs.db.ercc' : {
+        'ref' : 'ERCC_spikes.fa',
+        'retmax' : 100,
+    },
+}
+
+configdefault: config_default
+
+rule ercc_create_ref:
+    """Create ERCC reference file"""
+    input: txt = os.path.basename(config['bio.ngs.db.ercc']['source'])
+    output: gb = protected(re.sub("(.fa$|.fasta$)", ".gb", ref(config['bio.ngs.db.ercc']['ref'], config['bio.ngs.settings']['db']))),
+            fa = protected(ref(config['bio.ngs.db.ercc']['ref'], config['bio.ngs.settings']['db']))
+    run:
+        with open(input.txt, 'r') as fh:
+            reader = csv.DictReader(fh, delimiter='\t')
+            gb2ercc = {row['GenBank']:row['ERCC_ID'] for row in reader}
+            if config['settings']['email'] is None:
+                s = "bio.ngs.db.ercc: No email set; must tell NCBI mail address! Either set USER_EMAIL environment variable or configuration variable settings.email"
+                smllogger.warn(s)
+            else:
+                from Bio import Entrez, SeqIO
+                Entrez.email = config['settings']['email']
+                smllogger.info("connecting to Entrez; querying for genbank accessions")
+                handle = Entrez.efetch(db="nuccore", id=",".join(list(gb2ercc.keys())), rettype="gb", retmode="text")
+                records = SeqIO.parse(handle, "gb")
+                outrecords = []
+                for rec in records:
+                    rec.name = gb2ercc[rec.name]
+                    rec.id = rec.name
+                    outrecords.append(rec)
+                SeqIO.write(outrecords, output.gb, "gb")
+                SeqIO.write(outrecords, output.fa, "fasta")

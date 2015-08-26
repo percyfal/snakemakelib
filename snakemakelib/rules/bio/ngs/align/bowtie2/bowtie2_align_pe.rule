@@ -1,8 +1,5 @@
 # -*- snakemake -*-
-try:
-    from snakemakelib.stat import is_compressed
-except:
-    pass
+from snakemakelib.stat import is_compressed
 
 config_default = {
     'bio.ngs.align.bowtie2' : {
@@ -13,13 +10,13 @@ config_default = {
     },
 }
 
-configdefault: config_default
+config = update_config(config, config_default)
 
 rule bowtie2_align_pe:
     """Bowtie paired end alignment"""
     params: cmd = config['bio.ngs.align.bowtie2']['cmd'],
             options = config['bio.ngs.align.bowtie2']['align']['options'],
-            index = config['bio.ngs.align.bowtie2']['index']
+            index = str(config['bio.ngs.align.bowtie2']['index'])
     input: read1 = "{prefix}" + config['bio.ngs.settings']['read1_label'] + config['bio.ngs.settings']['fastq_suffix'],\
            read2 = "{prefix}" + config['bio.ngs.settings']['read2_label'] + config['bio.ngs.settings']['fastq_suffix'],
            index = expand("{index}{ext}", index=config['bio.ngs.align.bowtie2']['index'], ext=config['bio.ngs.align.bowtie2']['build_ext'])

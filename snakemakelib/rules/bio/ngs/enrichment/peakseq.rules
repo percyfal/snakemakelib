@@ -6,25 +6,17 @@
 # This program is configured in section mappability. Make sure the
 # three binaries chr2hash, mergeOligoCounts, oligoFindPLFFile are in
 # PATH.
-import os
-from snakemakelib.config import update_config
-from snakemakelib.stat import is_installed
-from snakemakelib.bio.ngs.db import index, chromosomes
-from snakemakelib.log import LoggerManager
-
-smllogger = LoggerManager().getLogger('bio/ngs/enrichment/peakseq.rules')
-
+from os.path import splitext, join, dirname, abspath
+from snakemakelib.bio.ngs.db import chromosomes
 include: "../settings.rules"
-
-ngs_cfg = config['bio.ngs.settings']
 
 config_default = {
     'bio.ngs.enrichment.peakseq' : {
         'index' : "",
-        'ref' : ngs_cfg['db']['ref'],
+        'ref' : config['bio.ngs.settings']['db']['ref'],
         'mappability' : {
             #'cmd' : 'compile.py',
-            'merlen' : str(ngs_cfg['read_length']),
+            'merlen' : str(config['bio.ngs.settings']['read_length']),
             'chr2hash' : 'chr2hash',
             'oligoFindPLFFile' : 'oligoFindPLFFile',
             'mergeOligoCounts' : 'mergeOligoCounts',
@@ -37,49 +29,56 @@ config_default = {
 
 config = update_config(config_default, config)
 
-config['bio.ngs.enrichment.peakseq']['index'] = index(
-    ref = config['bio.ngs.enrichment.peakseq']['ref'],
-    index = config['bio.ngs.enrichment.peakseq']['index'],
-    application = 'mappability',
-    build = config['bio.ngs.settings']['db']['build'])
+try:
+    from snakemakelib.bio.ngs.db import index
+    config['bio.ngs.enrichment.peakseq']['index'] = index(
+        ref = config['bio.ngs.enrichment.peakseq']['ref'],
+        index = config['bio.ngs.enrichment.peakseq']['index'],
+        application = 'mappability',
+        build = config['bio.ngs.settings']['db']['build'])
+except:
+    pass
 
-ps_cfg = config['bio.ngs.enrichment.peakseq']
 python2 = config['comp.settings']['python2']['activate_cmd']
-mapdir = os.path.abspath(os.path.join(os.path.dirname(ps_cfg['index']), ps_cfg['mappability']['merlen']))
+
+mapdir = abspath(join(
+    dirname(str(config['bio.ngs.enrichment.peakseq']['index'])),
+    config['bio.ngs.enrichment.peakseq']['mappability']['merlen'])
+)
 
 # This is a hassle. See https://www.biostars.org/p/14092/
 # The peakseq mappability command compile.py loops over all chromosomes, but
 # the commands could be run independently. Parallelize here.
 rule peakseq_mappability_chr2has:
     """Run chr2has"""
-    params: cmd = ps_cfg['mappability']['chr2hash']
+    params: cmd = config['bio.ngs.enrichment.peakseq']['mappability']['chr2hash']
     input: fa = "{prefix}.fa"
     output: HashOffsetTable=temp("{prefix}.fa.HashOffsetTable"), HashPosTable=temp("{prefix}.fa.HashPosTable")
     shell: "cd $(dirname {input.fa}) && {params.cmd} $(basename {input.fa})"
 
 rule peakseq_mappability_find:
     """Run oligoFindPLFFile"""
-    params: cmd = ps_cfg['mappability']['oligoFindPLFFile'],
-            merlen = ps_cfg['mappability']['merlen']
-    input: fa1 = os.path.join("{path}", "{chr1}.fa"), fa2 = os.path.join("{path}", "{chr2}.fa"), 
-           pos1 = os.path.join("{path}", "{chr1}.fa.HashPosTable"), pos2 = os.path.join("{path}", "{chr2}.fa.HashPosTable"),
-           off1 = os.path.join("{path}", "{chr1}.fa.HashOffsetTable"), off2 = os.path.join("{path}", "{chr2}.fa.HashOffsetTable")
-    output: out=temp(os.path.join("{path}", "{chr1}__{chr2}.plf_out"))
+    params: cmd = config['bio.ngs.enrichment.peakseq']['mappability']['oligoFindPLFFile'],
+            merlen = config['bio.ngs.enrichment.peakseq']['mappability']['merlen']
+    input: fa1 = join("{path}", "{chr1}.fa"), fa2 = join("{path}", "{chr2}.fa"), 
+           pos1 = join("{path}", "{chr1}.fa.HashPosTable"), pos2 = join("{path}", "{chr2}.fa.HashPosTable"),
+           off1 = join("{path}", "{chr1}.fa.HashOffsetTable"), off2 = join("{path}", "{chr2}.fa.HashOffsetTable")
+    output: out=temp(join("{path}", "{chr1}__{chr2}.plf_out"))
     shell: "cd {wildcards.path} && {params.cmd} {wildcards.chr1}.fa {wildcards.chr2}.fa {params.merlen} 0 0 1 1 > $(basename {output.out})"
 
 rule peakseq_mappability_merge:
     """Run mergeOligoCounts"""
-    params: cmd = ps_cfg['mappability']['mergeOligoCounts'],
-            merlen = ps_cfg['mappability']['merlen']
-    input: [os.path.join("{path}", ps_cfg['mappability']['merlen'], "{cref}__{{chr}}.plf_out".format(cref=x)) for x in chromosomes(ps_cfg['ref'])]
-    output: bout = os.path.join("{path}", ps_cfg['mappability']['merlen'], "{chr}b.out")
+    params: cmd = config['bio.ngs.enrichment.peakseq']['mappability']['mergeOligoCounts'],
+            merlen = config['bio.ngs.enrichment.peakseq']['mappability']['merlen']
+    input: [join("{path}", config['bio.ngs.enrichment.peakseq']['mappability']['merlen'], "{cref}__{{chr}}.plf_out".format(cref=x)) for x in chromosomes(config['bio.ngs.enrichment.peakseq']['ref'])]
+    output: bout = join("{path}", config['bio.ngs.enrichment.peakseq']['mappability']['merlen'], "{chr}b.out")
     run:
-        inputfiles = " ".join([os.path.basename(x) for x in input])
-        path = os.path.dirname(output.bout)
-        shell("cd {path} && {cmd} {inputfiles} > {bout}".format(path=path, bout=os.path.basename(output.bout), cmd=params.cmd, inputfiles=inputfiles))
+        inputfiles = " ".join([basename(x) for x in input])
+        path = dirname(output.bout)
+        shell("cd {path} && {cmd} {inputfiles} > {bout}".format(path=path, bout=basename(output.bout), cmd=params.cmd, inputfiles=inputfiles))
 
 rule peakseq_mappability:
     """Pseudo-rule: generate all mappability files by invoking the rules
     above
     """
-    input: [os.path.join(mapdir, "{chr}b.out".format(chr=x)) for x in chromosomes(ps_cfg['ref'])]
+    input: [join(mapdir, "{chr}b.out".format(chr=x)) for x in chromosomes(config['bio.ngs.enrichment.peakseq']['ref'])]

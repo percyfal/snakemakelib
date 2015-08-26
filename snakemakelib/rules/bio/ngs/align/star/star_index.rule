@@ -1,8 +1,4 @@
 # -*- snakemake -*-
-try:
-    from snakemakelib.bio.ngs.db import annotation
-except:
-    pass
 
 config_default = {
     'bio.ngs.align.star' : {
@@ -16,12 +12,16 @@ config_default = {
     },
 }
 
-configdefault: config_default
+config = update_config(config_default, config)
 
-# Update annotation
-config['bio.ngs.align.star']['star_index']['sjdbGTFfile'] = \
-    annotation(annotation=config['bio.ngs.align.star']['star_index']['sjdbGTFfile'],\
-               db_cfg=config['bio.ngs.settings']['db'])
+try:
+    from snakemakelib.bio.ngs.db import annotation
+    # Update annotation
+    config['bio.ngs.align.star']['star_index']['sjdbGTFfile'] = \
+                                                                annotation(annotation=config['bio.ngs.align.star']['star_index']['sjdbGTFfile'],\
+                                                                           db_cfg=config['bio.ngs.settings']['db'])
+except:
+    pass
 
 rule star_index:
     """Generate STAR genome index. By default will generate index in a

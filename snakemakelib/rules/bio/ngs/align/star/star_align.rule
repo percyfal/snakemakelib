@@ -1,5 +1,5 @@
 # -*- snakemake -*-
-import os
+from snakemakelib.stat import is_compressed
 
 config_default = { 
     'bio.ngs.align.star' : {
@@ -11,7 +11,7 @@ config_default = {
     },
 }
 
-configdefault: config_default
+config = update_config(config_default, config)
 
 def _star_suffix():
     if config['bio.ngs.align.star']['align']['outSAMtype'].find("Unsorted") > -1:

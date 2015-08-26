@@ -1,10 +1,8 @@
 # -*- snakemake -*-
-from snakemakelib.config import update_config
-
-DEFAULT_RULES = ['star_index', 'star_align', 'star_summarize_alignment_runs']
-
 include: '../../../comp/settings.rules'
 include: '../settings.rules'
+
+DEFAULT_RULES = ['star_index', 'star_align', 'star_summarize_alignment_runs']
 
 config_default = { 
     'bio.ngs.align.star' : {
@@ -22,14 +20,14 @@ config_default = {
 config = update_config(config_default, config)
 
 try:
-    # Update index
     from snakemakelib.bio.ngs.db import index, annotation
-
+    
     # Update annotation
     config['bio.ngs.align.star']['star_index']['sjdbGTFfile'] = \
         annotation(annotation=config['bio.ngs.align.star']['star_index']['sjdbGTFfile'],\
                    db_cfg=config['bio.ngs.settings']['db'])
-    
+
+    # Update index
     config['bio.ngs.align.star']['index'] = index(
         ref = config['bio.ngs.align.star']['ref'],
         index = config['bio.ngs.align.star']['index'],

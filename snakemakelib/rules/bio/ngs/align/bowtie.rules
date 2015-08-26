@@ -1,11 +1,9 @@
 # -*- snakemake -*-
-import os
-from snakemakelib.config import update_config
 from snakemakelib.stat import is_compressed
 from snakemakelib.bio.ngs.rnaseq.tuxedo import TuxedoReadGroup
 
 include: '../settings.rules'
-include: '../tools/samtools/samtools.rules'
+include: '../tools/samtools.rules'
 
 DEFAULT_RULES = ['bowtie_align_pe', 'bowtie_build']
 

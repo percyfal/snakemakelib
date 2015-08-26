@@ -8,7 +8,7 @@ config_default = {
     },
 }
 
-configdefault: config_default
+config = update_config(config_default, config)
 
 rule ucsc_bedgraph_to_bigWig:
     """Convert bedGraph file to bigWig.

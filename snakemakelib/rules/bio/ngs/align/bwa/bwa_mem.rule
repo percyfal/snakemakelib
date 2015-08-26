@@ -1,5 +1,5 @@
 # -*- snakemake -*-
-include: '../../tools/samtools/samtools.rules'
+include: '../../tools/samtools.rules'
 
 config_default = {
     'bio.ngs.align.bwa': {
@@ -9,7 +9,7 @@ config_default = {
     },
 }
 
-configdefault: config_default
+config = update_config(config_default, config)
 
 rule bwa_mem:
     """Run bwa mem"""

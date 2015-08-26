@@ -109,4 +109,6 @@ config_default2 = {
 
 config = update_config(config_default2, config)
 
-config = update_config({'bio.ngs.settings' : sample_organization[ngs_conf['sample_organization']]}, config)
+config = update_config({
+    'bio.ngs.settings' : sample_organization[config['bio.ngs.settings']['sample_organization']]},
+                       config)

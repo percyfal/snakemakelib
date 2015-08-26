@@ -1,15 +1,8 @@
 # -*- snakemake -*-
-import os
-
-try:
-    from snakemakelib.bio.ngs.db import index
-    from snakemakelib.bio.ngs.rnaseq.tuxedo import TuxedoReadGroup
-    from snakemakelib.stat import is_installed
-except:
-    pass
+from snakemakelib.bio.ngs.rnaseq.tuxedo import TuxedoReadGroup
 
 include: '../settings.rules'
-include: '../tools/samtools/samtools.rules'
+include: '../tools/samtools.rules'
 
 DEFAULT_RULES = ['bowtie2_align_pe', 'bowtie2_build']
 
@@ -24,21 +17,16 @@ config_default = {
     },
 }
 
-configdefault: config_default
+config = update_config(config_default, config)
 
 try:
     # Update index
+    from snakemakelib.bio.ngs.db import index
     config['bio.ngs.align.bowtie2']['index'] = index(
         ref = config['bio.ngs.align.bowtie2']['ref'],
         index = config['bio.ngs.align.bowtie2']['index'],
         application = 'bowtie2',
         build = config['bio.ngs.settings']['db']['build'])
-except:
-    pass
-
-try:
-    if not is_installed(config['bio.ngs.align.bowtie2']['cmd']):
-        raise Exception("\nbio.ngs.align.bowtie2: {prog} not installed or not in PATH\n".format(prog=config['bio.ngs.align.bowtie2']['cmd']))
 except:
     pass
 

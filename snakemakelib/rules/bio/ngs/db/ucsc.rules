@@ -1,8 +1,5 @@
 # -*- snakemake -*-
 #
-import os
-from snakemakelib.config import update_config
-
 include: "../settings.rules"
 
 DEFAULT_RULES = ['ucsc_wigToBigWig', 'ucsc_bedGraphToBigWig']
@@ -35,4 +32,4 @@ for rule in config['bio.ngs.db.ucsc']['rules']:
     include: os.path.join("ucsc", rule + ".rule")
 
 if config['bio.ngs.db.ucsc']['home']:
-    os.environ["PATH"] += os.pathsep + config['bio.ngs.db.ucsc']['home']
+    os.environ["PATH"] = os.environ['PATH'] + os.pathsep + config['bio.ngs.db.ucsc']['home']

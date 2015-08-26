@@ -1,5 +1,4 @@
 # -*- snakemake -*-
-
 config_default = {
     'bio.ngs.align.blat': {
         'faToTwoBit' : {
@@ -9,7 +8,7 @@ config_default = {
     },
 }
 
-configdefault: config_default
+config = update_config(config_default, config)
 
 rule blat_faToTwoBit:
     """Run blat faToTwoBit"""

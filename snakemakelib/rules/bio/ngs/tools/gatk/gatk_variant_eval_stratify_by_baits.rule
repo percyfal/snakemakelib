@@ -1,0 +1,22 @@
+# -*- snakemake -*-
+include: "gatk_variant_eval.rule"
+
+rule gatk_variant_eval_stratify_by_baits:
+    """Run GATK VariantEval on a region and stratify results by baits
+
+    The input should be a vcf on which select variants has been run to
+    select variants in a given region, typically a gene with exons and
+    introns. The stratification regions correspond to baits used
+    in a sequence capture.
+
+    """
+    params: cmd = config['bio.ngs.tools.gatk']['cmd'] + " -T " + config['bio.ngs.tools.gatk']['variant_eval']['cmd'],
+            options = " ".join(["-R", config['bio.ngs.tools.gatk']['variant_eval']['ref'],
+                                config['bio.ngs.tools.gatk']['variant_eval']['options'],
+                                "--dbsnp {known}".format(known=config['bio.ngs.tools.gatk']['known_sites'] if not config['bio.ngs.tools.gatk']['known_sites'] == "" else "")])
+    input: vcf="{prefix}.region_{region}.vcf", bed="{prefix}.region_{region}.baits.bed"
+    output: "{prefix}.region_{region}.eval_metrics"
+    shell: "{params.cmd} {params.options} --eval {input.vcf} -o {output} --stratIntervals {input.bed} -ST IntervalStratification"
+
+ruleorder: gatk_variant_eval_stratify_by_baits > gatk_variant_eval
+

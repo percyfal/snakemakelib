@@ -1,0 +1,23 @@
+# -*- snakemake -*-
+config_default = {
+    'bio.ngs.qc.picard' : {
+        'qcrules' : ['picard_collect_insert_size_metrics',
+                     'picard_collect_alignment_summary_metrics',
+                     'picard_mark_duplicates'],
+    },
+}
+
+config = update_config(config_default, config)
+
+for rule in config['bio.ngs.qc.picard']['qcrules']:
+    if not rule in workflow._rules:
+        include: rule + ".rule"
+
+rule picard_do_qc:
+    """Run picard metrics commands on a bam file"""
+    input: ["{{prefix}}{sfx}".format(sfx=workflow._rules[x].params.suffix) for x in config['bio.ngs.qc.picard']['qcrules']]
+    output: out="{prefix}.picardqc.txt"
+    run:
+        with open (output.out, "w") as fh:
+            fh.write("Completed rule 'picard_do_qc' using qcrules {qcrules}".format(qcrules=",".join(config['bio.ngs.qc.picard']['qcrules'])))
+

@@ -2,7 +2,6 @@
 import os
 import re
 import csv
-from snakemakelib.config import update_config
 from snakemakelib.utils import utc_time
 from snakemakelib.log import LoggerManager
 

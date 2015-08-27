@@ -1,0 +1,26 @@
+# -*- snakemake -*-
+config_default = {
+    'bio.ngs.qc.picard' : {
+        'calculate_hs_metrics' : {
+            'targets' : [],
+            'bait_regions' : config['bio.ngs.settings']['sequence_capture']['bait_regions'],
+            'target_regions' : config['bio.ngs.settings']['sequence_capture']['target_regions'],
+            'options' : config['bio.ngs.qc.picard']['options'],
+        },
+    },
+}
+
+config = update_config(config_default, config)
+
+
+rule picard_calculate_hs_metrics:
+    """Picard: calculate hybrid selection metrics"""
+    params: cmd = config['bio.ngs.qc.picard']['cmd'] + CALCULATE_HS_METRICS,
+            options = config['bio.ngs.qc.picard']['calculate_hs_metrics']['options'],
+            target_regions = config['bio.ngs.qc.picard']['calculate_hs_metrics']['target_regions'],
+            bait_regions = config['bio.ngs.qc.picard']['calculate_hs_metrics']['bait_regions'],
+            suffix = ".hs_metrics"
+    input: bam = "{prefix}.bam", bai = "{prefix}.bai", ref = config['bio.ngs.qc.picard']['ref']
+    output: metrics = "{prefix}.hs_metrics"
+    shell: "{params.cmd} {params.options} TI={params.target_regions} BI={params.bait_regions} I={input.bam} O={output.metrics} R={input.ref}"
+

@@ -1,0 +1,19 @@
+# -*- snakemake -*-
+# tag: obsolete
+#
+# semi-obsolete qc summary files; phase out as bokeh is integrated
+config_default = {
+    'bio.ngs.qc.picard' : {
+        'plotmetrics' : os.path.join(sml_path(), "scripts", "plotMetrics.R"),
+    },
+}
+
+config = update_config(config_default, config)
+
+rule picard_plot_metrics:
+    """Picard: plot metrics using custom R script """
+    params: cmd = config['bio.ngs.qc.picard']['plotmetrics']
+    input: "{prefix}_metrics.txt"
+    output: "{prefix}_metrics.pdf"
+    shell: "{params.cmd} {input} {output} {wildcards.prefix}"
+

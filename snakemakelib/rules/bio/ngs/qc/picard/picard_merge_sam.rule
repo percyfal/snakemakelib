@@ -1,0 +1,40 @@
+# -*- snakemake -*-
+import shutil
+
+def _find_merge_inputs(wildcards):
+    sources = generic_target_generator(tgt_re=config['bio.ngs.settings']['sampleorg'].run_id_re, target_suffix = config['bio.ngs.qc.picard']['merge_sam']['suffix'], **config['bio.ngs.settings'])
+    sources = [src for src in sources if os.path.dirname(src).startswith(wildcards.prefix)]
+    return sources
+
+config_default = {
+    'bio.ngs.qc.picard' : {
+        'merge_sam' : {
+            'suffix' : '.sort.bam', # source suffixes
+            'label' : "sort.merge", # target label
+            'options' : "CREATE_INDEX=true",
+            'output' : [],
+            'inputfun' : _find_merge_inputs,
+        },
+    },
+}
+
+config = update_config(config_default, config)
+
+rule picard_merge_sam:
+    """Picard: merge sam files.
+
+    NB: always outputs bam files!
+    """
+    params: cmd = config['bio.ngs.qc.picard']['cmd'] + MERGE_SAM_FILES,
+            options = " ".join([config['bio.ngs.qc.picard']['options'],
+                                config['bio.ngs.qc.picard']['merge_sam']['options']])
+    input: dict(config['bio.ngs.qc.picard']['merge_sam'])['inputfun']
+    output: merge="{path}" + os.sep + "{prefix}." + config['bio.ngs.qc.picard']['merge_sam']['label'] + ".bam"
+    run: 
+      if (len(input) > 1):
+          inputstr = " ".join(["INPUT={}".format(x) for x in input])
+          shell("{cmd} {ips} OUTPUT={out} {opt}".format(cmd=params.cmd, ips=inputstr, out=output.merge, opt=params.options))
+      else:
+          if os.path.exists(output.merge):
+              os.unlink(output.merge)
+          shutil.copy(input[0], output.merge)

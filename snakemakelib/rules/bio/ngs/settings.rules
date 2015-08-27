@@ -1,7 +1,7 @@
 # -*- snakemake -*-
 import os
 from collections import namedtuple
-from snakemakelib.config import update_config
+from snakemakelib.config import update_config, sml_path
 from snakemakelib.bio.ngs.regexp import RunRegexp, SampleRegexp
 from snakemakelib.bio.ngs.db import ref
 

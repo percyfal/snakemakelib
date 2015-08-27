@@ -1,0 +1,10 @@
+# -*- snakemake -*-
+rule picard_build_bam_index:
+    """Picard: build bam index from bam file"""
+    params: cmd = config['bio.ngs.qc.picard']['cmd'] +  BUILD_BAM_INDEX,
+            options = config['bio.ngs.qc.picard']['options']
+    input: "{prefix}.bam"
+    output: "{prefix}.bai"
+    shell: "{params.cmd} I={input} O={output} {params.options}"
+
+

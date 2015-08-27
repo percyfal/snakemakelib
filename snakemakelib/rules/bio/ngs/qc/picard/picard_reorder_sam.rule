@@ -1,0 +1,9 @@
+# -*- snakemake -*-
+rule picard_reorder_sam:
+    """Picard: reorder bam file"""
+    params: cmd = config['bio.ngs.qc.picard']['cmd'] + REORDER_SAM,
+            options = config['bio.ngs.qc.picard']['options']
+    input: "{prefix}.bam", config['bio.ngs.qc.picard']['ref']
+    output: "{prefix}.resorted.bam"
+    shell: "{params.cmd} I={input[0]} R={input[1]} O={output} {params.options}"
+

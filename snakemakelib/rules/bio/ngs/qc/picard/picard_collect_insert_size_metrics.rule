@@ -1,0 +1,21 @@
+# -*- snakemake -*-
+config_default = {
+    'bio.ngs.qc.picard' : {
+        'collect_insert_size_metrics' : {
+            'targets' : [],
+            'options' : config['bio.ngs.qc.picard']['options'],
+        },
+    },
+}
+
+config = update_config(config_default, config)
+
+rule picard_collect_insert_size_metrics:
+    """Picard: collect insertion size metrics"""
+    params: cmd = config['bio.ngs.qc.picard']['cmd'] + COLLECT_INSERT_SIZE_METRICS,
+            options = config['bio.ngs.qc.picard']['collect_insert_size_metrics']['options'],
+            suffix = ".insert_metrics"
+    input: bam = "{prefix}.bam", bai = "{prefix}.bai", ref = config['bio.ngs.qc.picard']['ref']
+    output: metrics = "{prefix}.insert_metrics"
+    shell: "{params.cmd} {params.options} H={wildcards.prefix}.hist I={input.bam} O={output.metrics} R={input.ref}"
+

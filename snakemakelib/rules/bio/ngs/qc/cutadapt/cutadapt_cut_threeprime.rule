@@ -1,0 +1,11 @@
+# -*- snakemake -*-
+rule cutadapt_cut_threeprime:
+    """Cutadapt: cut threeprime adapter"""
+    params: cmd = config['bio.ngs.qc.cutadapt']['cmd'],
+            options = config['bio.ngs.qc.cutadapt']['options'],
+            threeprime = config['bio.ngs.qc.cutadapt']['threeprime']
+    input: fastq = "{prefix}" +  config['bio.ngs.settings']['read1_label'] + config['bio.ngs.qc.cutadapt']['fastq_suffix']
+    output: trim = "{prefix}" + ".trimmed" + config['bio.ngs.settings']['read1_label'] + config['bio.ngs.qc.cutadapt']['fastq_suffix']
+    shell: "{params.cmd} {params.options} -a {params.threeprime} {input.fastq} -o {output.trim} > {wildcards.prefix}.cutadapt_metrics"
+
+

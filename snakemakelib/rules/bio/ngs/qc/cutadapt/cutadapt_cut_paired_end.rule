@@ -1,0 +1,24 @@
+# -*- snakemake -*-
+config_default = {
+    'bio.ngs.qc.cutadapt' : {
+        'paired_end' : {
+            'options' : "",
+        },
+    },
+}
+
+config = update_config(config_default, config)
+
+rule cutadapt_cut_paired_end:
+    """Cutadapt: cut paired end sequences"""
+    params: cmd = config['bio.ngs.qc.cutadapt']['cmd'],
+            options = config['bio.ngs.qc.cutadapt']['paired_end']['options'],
+            threeprime = config['bio.ngs.qc.cutadapt']['threeprime'],
+            fiveprime = config['bio.ngs.qc.cutadapt']['fiveprime']
+    input: read1 = "{prefix}" + config['bio.ngs.settings']['read1_label'] + config['bio.ngs.settings']['fastq_suffix'],
+           read2 = "{prefix}" + config['bio.ngs.settings']['read2_label'] + config['bio.ngs.settings']['fastq_suffix']
+    output: read1 = "{prefix}" + ".trimmed" + config['bio.ngs.settings']['read1_label']  + config['bio.ngs.settings']['fastq_suffix'],
+            read2 = "{prefix}" + ".trimmed" + config['bio.ngs.settings']['read2_label']  + config['bio.ngs.settings']['fastq_suffix'],
+            log = "{prefix}.cutadapt_metrics"
+    log: "{prefix}.cutadapt_metrics"
+    shell: "{params.cmd} {params.options} {input.read1} {input.read2} -b {params.fiveprime} -b {params.threeprime} -B {params.threeprime} -B {params.fiveprime} -o {output.read1} -p {output.read2} > {log}"

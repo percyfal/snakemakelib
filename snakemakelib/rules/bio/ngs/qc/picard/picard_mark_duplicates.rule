@@ -1,5 +1,4 @@
 # -*- snakemake -*-
-print("loading picard_mark_duplicates: ", __file__)
 config_default = {
     'bio.ngs.qc.picard' : {
         'mark_duplicates' : {

@@ -1,0 +1,21 @@
+# -*- snakemake -*-
+config_default = {
+    'bio.ngs.tools.gatk' : {
+        'print_reads' : {
+            'cmd' : 'PrintReads',
+            'ref' : config['bio.ngs.tools.gatk']['ref'],
+            'options' : ""
+        },
+    },
+}
+
+config = update_config(config_default, config)
+
+rule gatk_print_reads:
+    """Run GATK PrintReads"""
+    params: cmd = config['bio.ngs.tools.gatk']['cmd'] + " -T " + config['bio.ngs.tools.gatk']['print_reads']['cmd'],
+            options = " ".join(["-R", config['bio.ngs.tools.gatk']['print_reads']['ref'],
+            config['bio.ngs.tools.gatk']['print_reads']['options']])
+    input: "{prefix}.bam", "{prefix}.recal_data.grp"
+    output: "{prefix}.recal.bam", "{prefix}.recal.bai"
+    shell: "{params.cmd} {params.options} -I {input[0]} -BQSR {input[1]} -o {output[0]}"

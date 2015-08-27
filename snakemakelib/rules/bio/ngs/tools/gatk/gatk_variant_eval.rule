@@ -1,0 +1,24 @@
+# -*- snakemake -*-
+config_default = {
+    'bio.ngs.tools.gatk' : {
+        'variant_eval' : {
+            'cmd' : 'VariantEval',
+            'ref' : config['bio.ngs.tools.gatk']['ref'],
+            'options' : " ".join(["-ST Filter -l INFO --doNotUseAllStandardModules --evalModule CompOverlap --evalModule CountVariants --evalModule TiTvVariantEvaluator --evalModule ValidationReport",
+            ]),
+        },
+    },
+}
+
+config = update_config(config_default, config)
+
+rule gatk_variant_eval:
+    """Run GATK VariantEval"""
+    params: cmd = config['bio.ngs.tools.gatk']['cmd'] + " -T " + config['bio.ngs.tools.gatk']['variant_eval']['cmd'],
+            options = " ".join(["-R", config['bio.ngs.tools.gatk']['variant_eval']['ref'],
+                                config['bio.ngs.tools.gatk']['variant_eval']['options'],
+                                "--dbsnp {known}".format(known=config['bio.ngs.tools.gatk']['known_sites'] if not config['bio.ngs.tools.gatk']['known_sites'] == "" else "")])
+    input: "{prefix}.vcf"
+    output: "{prefix}.eval_metrics"
+    shell: "{params.cmd} {params.options} --eval {input} -o {output}"
+

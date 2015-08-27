@@ -1,0 +1,27 @@
+# -*- snakemake -*-
+config_default = {
+    'bio.ngs.tools.gatk' : {
+        'select_variants' : {
+            'cmd' : 'SelectVariants',
+            'ref' : config['bio.ngs.tools.gatk']['ref'],
+            'options' : " ".join(["--selectTypeToInclude SNP",
+                                  "--selectTypeToInclude", "INDEL",
+                                  "--selectTypeToInclude", "MIXED",
+                                  "--selectTypeToInclude", "MNP",
+                                  "--selectTypeToInclude", "SYMBOLIC",
+                                  "--selectTypeToInclude", "NO_VARIATION"])
+        },
+    },
+}
+
+config = update_config(config_default, config)
+
+rule gatk_select_variants:
+    """Run GATK SelectVariants to select variants"""
+    params: cmd = config['bio.ngs.tools.gatk']['cmd'] + " -T " + config['bio.ngs.tools.gatk']['select_variants']['cmd'],
+            options = " ".join(["-R", config['bio.ngs.tools.gatk']['select_variants']['ref'],
+                                config['bio.ngs.tools.gatk']['select_variants']['options']])
+    input: "{prefix}.vcf"
+    output: "{prefix}.all.vcf"
+    shell: "{params.cmd} {params.options} --variant {input} --out {output}"
+

@@ -1,0 +1,25 @@
+# -*- snakemake -*-
+config_default = {
+    'bio.ngs.tools.gatk' : {
+        'unified_genotyper' : {
+            'cmd' : 'UnifiedGenotyper',
+            'ref' : config['bio.ngs.tools.gatk']['ref'],
+            'options' : " ".join(["-stand_call_conf 30.0 -stand_emit_conf 10.0  --downsample_to_coverage 200 --output_mode EMIT_VARIANTS_ONLY -glm BOTH",
+                                  "--dbsnp {dbsnp}".format(dbsnp=config['bio.ngs.tools.gatk']['dbsnp']),
+                                  "-L {target}".format(target=config['bio.ngs.tools.gatk']['target_regions']) if not config['bio.ngs.tools.gatk']['target_regions'] == "" else "",
+            ])
+        },
+    },
+}
+
+config = update_config(config_default, config)
+
+rule gatk_unified_genotyper:
+    """Run GATK UnifiedGenotyper"""
+    params: cmd = config['bio.ngs.tools.gatk']['cmd'] + " -T " + config['bio.ngs.tools.gatk']['unified_genotyper']['cmd'],
+            options = " ".join(["-R", config['bio.ngs.tools.gatk']['unified_genotyper']['ref'], 
+            config['bio.ngs.tools.gatk']['unified_genotyper']['options']])
+    input: "{prefix}.bam"
+    output: "{prefix}.vcf"
+    shell: "{params.cmd} {params.options} -I {input} -o {output}"
+

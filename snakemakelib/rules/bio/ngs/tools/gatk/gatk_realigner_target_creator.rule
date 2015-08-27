@@ -1,0 +1,21 @@
+# -*- snakemake -*-
+config_default = {
+    'bio.ngs.tools.gatk' : {
+        'realigner_target_creator' : {
+            'cmd' : 'RealignerTargetCreator',
+            'ref' : config['bio.ngs.tools.gatk']['ref'],
+            'options' : "",
+            },
+    },
+}
+
+config = update_config(config_default, config)
+
+rule gatk_realigner_target_creator:
+    """Run GATK RealignerTargetCreator"""
+    params: cmd = config['bio.ngs.tools.gatk']['cmd'] + " -T " + config['bio.ngs.tools.gatk']['realigner_target_creator']['cmd'],
+            options = " ".join(["-R", config['bio.ngs.tools.gatk']['realigner_target_creator']['ref'],
+            config['bio.ngs.tools.gatk']['realigner_target_creator']['options']])
+    input: "{prefix}.bam", "{prefix}.bai"
+    output: "{prefix}.intervals"
+    shell: "{params.cmd} {params.options} -I {input[0]} -o {output}"

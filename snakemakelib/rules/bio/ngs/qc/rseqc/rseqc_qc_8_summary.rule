@@ -1,0 +1,35 @@
+# -*- snakemake -*-
+from snakemakelib.bio.ngs.qc.rseqc import collect_rseqc_results
+
+def _rseqc_find_rseqc_qc_8_result_files_fn(wildcards):
+    config['bio.ngs.settings'] = config['bio.ngs.settings']
+    sources = generic_target_generator(
+        tgt_re = config['bio.ngs.settings']['sampleorg'].sample_re,
+        src_re=config['bio.ngs.settings']['sampleorg'].run_id_re,
+        target_suffix = os.path.join("." + wildcards.label, "rseqc_qc_8.txt"),
+        **config['bio.ngs.settings'])
+    return sources
+
+
+rule rseqc_qc_8_summary:
+    """Summarize results from rseqc_qc_8 rule.
+    Important: in order to catch {label} a label must be set on the
+    rseqc output directory. Typically, this is something like
+    "_rseqc".
+    """
+    input: _rseqc_find_rseqc_qc_8_result_files_fn
+    output: read_distribution = os.path.join("{path}", "read_distribution_summary_{label}.csv"),
+            gene_coverage = os.path.join("{path}", "gene_coverage_summary_{label}.csv")
+    run:
+        config['bio.ngs.settings'] = config['bio.ngs.settings']
+        try:
+            samples = [config['bio.ngs.settings']['sampleorg'].sample_re.parse(f)['SM'] for f in input]
+        except KeyError:
+            raise Exception("failed to parse sample name 'SM' from input list")
+
+        d = collect_rseqc_results(input, samples)
+        if not d['rd'] is None:
+            d['rd'].to_csv(output.read_distribution)
+        if not d['gc'] is None:
+            d['gc'].to_csv(output.gene_coverage)
+

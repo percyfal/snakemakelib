@@ -1,0 +1,31 @@
+# -*- snakemake -*-
+config_default = {
+    'bio.ngs.qc.rseqc' : {
+        'geneBody_coverage' : {
+            'cmd' : os.path.join(config['bio.ngs.qc.rseqc']['home'], 'geneBody_coverage.py'),
+            'options' : '',
+        },
+    },
+}
+
+config = update_config(config_default, config)
+
+rule rseqc_geneBody_coverage:
+    """Run RSeQC geneBody_coverage.py. 
+
+    NB: Requries reference gene model in bed format (-r parameter).
+    Moreover, requires indexed bam, which in turn requires sorted bam
+    file. Currently it is not possible to check whether input file is
+    sorted; consequently we explicitly request sorted input which then
+    is removed once the command has finished. The dependent rule
+    should have temporary output, or the RNA-seq alignment should be
+    sorted.
+
+    Memory intensive; needs more resources.
+    """
+    params: cmd = os.path.join(config['bio.ngs.qc.rseqc']['home'], config['bio.ngs.qc.rseqc']['geneBody_coverage']['cmd']),
+            options = config['bio.ngs.qc.rseqc']['geneBody_coverage']['options'],
+    input: bam = "{prefix}.sort.bam", bai = "{prefix}.sort.bam.bai", refgene = config['bio.ngs.qc.rseqc']['refgene']
+    output: txt = "{prefix}_rseqc/geneBody_coverage.geneBodyCoverage.txt"
+    shell: python2 + " && {params.cmd} {params.options} -i {input.bam} -o $(dirname {output.txt})/geneBody_coverage -r {input.refgene} && rm -f {input.bam} {input.bai}"
+

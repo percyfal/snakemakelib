@@ -1,0 +1,13 @@
+# -*- snakemake -*-
+rule rpkmforgenes_from_bed:
+    """Run rpkmforgenes from bed input"""
+    params: cmd = config['bio.ngs.rnaseq.rpkmforgenes']['cmd'],
+            options = " ".join([
+            config['bio.ngs.rnaseq.rpkmforgenes']['options'],
+            "-a", config['bio.ngs.rnaseq.rpkmforgenes']['annotation'],
+            ])
+    input: unique = config['bio.ngs.rnaseq.rpkmforgenes']['unique'], bed = "{prefix}.bed" 
+    output: rpkmforgenes = "{prefix}.rpkmforgenes"
+    run:
+        print (input)
+

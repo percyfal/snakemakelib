@@ -1,50 +1,37 @@
 # -*- snakemake -*-
-import os
-from snakemakelib.config import update_config
-
 include: '../settings.rules'
-
-bio_cfg = config['bio.ngs.settings']
 
 RNASEQC_JAR_PROGRAM = "RNA-SeQC.jar"
 
 config_default = { 
     'bio.ngs.rnaseq.rnaseqc' : {
-        'java_mem' : bio_cfg['java']['java_mem'],
-        'java_tmpdir' : bio_cfg['java']['java_tmpdir'],
+        'java_mem' : config['bio.ngs.settings']['java']['java_mem'],
+        'java_tmpdir' : config['bio.ngs.settings']['java']['java_tmpdir'],
         'BWArRNA' : "",
         'run_bwarrna' : False,
         'home' : os.curdir,
         'options' : '-n 1000',
-        'transcript_annot_gtf' : bio_cfg['annotation']['transcript_annot_gtf'],
-        'ref' : bio_cfg['db']['ref'],
+        'transcript_annot_gtf' : config['bio.ngs.settings']['annotation']['transcript_annot_gtf'],
+        'ref' : config['bio.ngs.settings']['db']['ref'],
     },
 }
 
 config = update_config(config_default, config)
 
-rnaseqc_conf = config['bio.ngs.rnaseq.rnaseqc']
-
 config = update_config({'bio.ngs.rnaseq.rnaseqc' : {'jar' : os.path.join(rnaseqc_conf['home'], RNASEQC_JAR_PROGRAM)}},
                        config)
-
-rnaseqc_conf = config['bio.ngs.rnaseq.rnaseqc']
-
-config_default['bio.ngs.rnaseq.rnaseqc']['cmd'] = 
 
 config = update_config({'bio.ngs.rnaseq.rnaseqc' : {'cmd' : "java -Xmx" + rnaseqc_conf['java_mem'] + " -Djava.io.tmpdir=" + rnaseqc_conf['java_tmpdir'] +  " -jar " + rnaseqc_conf['jar']}},
                        config)
 
-rnaseqc_conf = config['bio.ngs.rnaseq.rnaseqc']
-
 # RNASEQC uses tophat alignments as input!
 rule rnaseqc_main:
     """Run RNA-SeQC on sample"""
-    params: cmd = rnaseqc_conf['cmd'],
-            options = " ".join([rnaseqc_conf['options'], 
-                      "-r", rnaseqc_conf['ref'], 
-                      "-t", rnaseqc_conf['transcript_annot_gtf'],
-                      " ".join(" -BWArRNA", rnaseqc_conf['BWArRNA']) if rnaseqc_conf['run_bwarrna'] else ""])
+    params: cmd = config['bio.ngs.rnaseq.rnaseqc']['cmd'],
+            options = " ".join([config['bio.ngs.rnaseq.rnaseqc']['options'], 
+                      "-r", config['bio.ngs.rnaseq.rnaseqc']['ref'], 
+                      "-t", config['bio.ngs.rnaseq.rnaseqc']['transcript_annot_gtf'],
+                      " ".join(" -BWArRNA", config['bio.ngs.rnaseq.rnaseqc']['BWArRNA']) if config['bio.ngs.rnaseq.rnaseqc']['run_bwarrna'] else ""])
     input: bam="{prefix}.bam", bai="{prefix}.bai"
     output: "{prefix}.rnaseqc"
     shell: "{params.cmd} {params.options} -o {output}.tmp -s \"sample|{input.bam}|rnaseqc\" && mv {output}.tmp {output}"

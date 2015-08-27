@@ -1,0 +1,24 @@
+# -*- snakemake -*-
+# rpkmforgenes.py -readcount -fulltranscript -mRNAnorm -rmnameoverlap -bothendsceil -n 15_115 -i unique.bam -p 1 -a refGene_140508_norandom_egfp.txt -u MULTo1.0/mm10_20-255/ -o test_refseq_rpkms.txt
+rule rpkmforgenes_from_bam:
+    """Run rpkmforgenes from bam input"""
+    params: cmd = config['bio.ngs.rnaseq.rpkmforgenes']['cmd'],
+            options = " ".join([
+            config['bio.ngs.rnaseq.rpkmforgenes']['options'],
+            ])
+    input: unique = [config['bio.ngs.rnaseq.rpkmforgenes']['unique']] if config['bio.ngs.rnaseq.rpkmforgenes']['unique'] else [], annotation = [config['bio.ngs.rnaseq.rpkmforgenes']['annotation']] if config['bio.ngs.rnaseq.rpkmforgenes']['annotation'] else [], bam = "{prefix}.bam"
+    output: rpkmforgenes = "{prefix}.rpkmforgenes"
+    log: "{prefix}.rpkmforgenes.log"
+    run:
+        d = dict(params)
+        d.update(dict(input))
+        d.update(dict(output))
+        clist = [python2, " && python {cmd} {options} -bamu -i {bam} -o {rpkmforgenes}".format(**d)]
+        if input.unique:
+            clist.append(" -u {unique}".format(**d))
+        if input.annotation:
+            clist.append(" -a {annotation}".format(**d))
+        clist.append(" &> {log}".format(log=log))
+        command = " ".join(clist)
+        shell(command)
+

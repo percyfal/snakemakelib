@@ -1,0 +1,28 @@
+# -*- snakemake -*-
+# See https://groups.google.com/forum/#!topic/rna-star/tvajn49WTYk for
+# setting up RSEM with STAR alignments
+config_default = {
+    'bio.ngs.rnaseq.rsem' : {
+        'prepare-reference' : {
+            'cmd' : 'rsem-prepare-reference',
+            'options' : "",
+            'reference_name' : "rsem",
+        },
+    },
+}
+
+config = update_config(config_default, config)
+ 
+rule rsem_prepare_reference:
+    """Prepare RSEM transcripts file"""
+    params: cmd = config['bio.ngs.rnaseq.rsem']['prepare-reference']['cmd'],
+            options = " ".join([config['bio.ngs.rnaseq.rsem']['prepare-reference']['options'],
+            "--gtf {annot}".format(annot=config['bio.ngs.rnaseq.rsem']['annot_gtf']) if config['bio.ngs.rnaseq.rsem']['annot_gtf'] else ""]),
+            ref = config['bio.ngs.rnaseq.rsem']['ref'],
+            index = config['bio.ngs.rnaseq.rsem']['index']
+    input: config['bio.ngs.rnaseq.rsem']['annot_gtf'] if config['bio.ngs.rnaseq.rsem']['annot_gtf'] else [], ref = config['bio.ngs.rnaseq.rsem']['ref'], 
+    output: config['bio.ngs.rnaseq.rsem']['index'] + config['bio.ngs.rnaseq.rsem']['ref_sfx']
+    log: config['bio.ngs.rnaseq.rsem']['index'] + config['bio.ngs.rnaseq.rsem']['ref_sfx'] + ".log"
+    shell: "{params.cmd} {params.options} {input.ref} {params.index} > {log}"
+
+

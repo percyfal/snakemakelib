@@ -33,3 +33,5 @@ except:
 if config['bio.ngs.rnaseq.rpkmforgenes']['annot_format'] != "gtf":
     include: '../db/ucsc.rules'
 
+for rule in config['bio.ngs.rnaseq.rpkmforgenes']['rules']:
+    include: os.path.join("rpkmforgenes", rule + ".rule")

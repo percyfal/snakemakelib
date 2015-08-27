@@ -36,7 +36,7 @@ def package_path(path, filters=()):
                 if not filters or f.endswith(filters):
                     package_data.append(join(path, f))
 
-rule_suffixes = ('.rules')
+rule_suffixes = ('.rules', '.rule')
 workflow_suffixes = ('.workflow')
                     
 package_path(join(ROOT, 'snakemakelib', '_templates'))
@@ -56,7 +56,7 @@ REQUIRES = [
     'pysam>=0.8.3',
     #'bokeh>=0.9.1',
     #'bokehutils==0.1.3',
-    #'matplotlib>=1.4.0',
+    'matplotlib>=1.4.0',
     'pytest',
     'pytest-cov>=1.8.1',
 ]

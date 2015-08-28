@@ -1,0 +1,7 @@
+# -*- snakemake -*-
+rule htslib_plot_vcfcheck:
+    """htslib: plot vcf check outut file"""
+    params: cmd=os.path.join(config['bio.ngs.variation.htslib']['home'], 'misc/plot-vcfcheck')
+    input: "{prefix}.chk"
+    output: "{prefix}-summary.pdf"
+    shell: "{params.cmd} {input} -p {wildcards.prefix}"

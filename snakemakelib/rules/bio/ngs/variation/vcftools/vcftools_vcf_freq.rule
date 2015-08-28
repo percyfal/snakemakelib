@@ -1,0 +1,8 @@
+# -*- snakemake -*-
+rule vcftools_vcf_freq:
+    """vcftools: calculate the variant frequencies in a vcf file"""
+    params: cmd=config['bio.ngs.variation.vcftools']['cmd'],
+            options=config['bio.ngs.variation.vcftools']['options']['main']
+    input: "{prefix}.vcf"
+    output: "{prefix}.frq"
+    shell: "{params.cmd} --freq {params.options} --vcf  {input} --out {wildcards.prefix}"

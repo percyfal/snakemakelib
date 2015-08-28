@@ -1,0 +1,19 @@
+# -*- snakemake -*-
+include: '../settings.rules'
+
+DEFAULT_RULES = ['annovar_table_annovar', 'annovar_convert2annovar']
+
+config_default = {
+    'bio.ngs.variation.htslib' : {
+        'home' : os.getenv("HTSLIB_HOME", os.curdir),
+    },
+}
+
+config = update_config(config_default, config)
+config = update_config(
+    {'bio.ngs.annotion.htslib':
+     {'cmd' : os.path.join(config['bio.ngs.variation.htslib']['home'], "vcf")}},
+    config)
+
+for rule in config['bio.ngs.variation.htslib']['rules']:
+    include: os.path.join("htslib", rule + ".rule")

@@ -1,0 +1,9 @@
+# -*- snakemake -*-
+rule vcftools_dump_stats:
+    """vcftools: dump statistics"""
+    params: cmd=os.path.join(config['bio.ngs.variation.vcftools']['path'], 'vcf-stats'),
+            options=config['bio.ngs.variation.vcftools']['options']['stats']
+    input: "{prefix}.vcf"
+    output: "{prefix}.stats.dump"
+    shell: "{params.cmd} {params.options} {input} -p {wildcards.prefix}.stats"
+

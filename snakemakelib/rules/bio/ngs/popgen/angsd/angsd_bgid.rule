@@ -1,0 +1,13 @@
+# -*- snakemake -*-
+config_default = {
+    'bio.ngs.popgen.angsd' : {
+        'bgid' : {
+	    'cmd' : os.path.join(config['bio.ngs.popgen.angsd']['home'], "misc/bgid"),
+            'dostat_options' : "-step {step} -win {window} -nChr {nchr}".format(step=config['bio.ngs.popgen.angsd']['options']['step'], window=config['bio.ngs.popgen.angsd']['options']['window'], nchr=config['bio.ngs.popgen.angsd']['options']['nchr']),           
+        },
+    },
+}
+
+config = update_config(config_default, config)
+
+

@@ -1,0 +1,10 @@
+# -*- snakemake -*-
+rule angsd_generate_sfs:
+    """Estimate the site frequency spectrum. Note that the implementation has changed for angsd versions > 0.5"""
+    params: cmd = config['bio.ngs.popgen.angsd']['cmd'],
+            options = config['bio.ngs.popgen.angsd']['options']['doSaf']
+    threads: config['bio.ngs.popgen.angsd']['options']['threads']
+    input: list = "{prefix}.list"
+    output: saf = "{prefix}.saf"
+    shell: "{params.cmd} {params.options} -bam {input.list} -out {output.saf} -P {threads}"
+

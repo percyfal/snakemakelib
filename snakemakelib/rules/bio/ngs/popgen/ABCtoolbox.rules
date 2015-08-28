@@ -1,0 +1,10 @@
+# -*- snakemake -*-
+include: '../settings.rules'
+
+config_default = {
+    'bio.ngs.popgen.ABCtoolbox' : {
+        'cmd' : 'ABCtoolbox',
+    },
+}
+
+config = update_config(config_default, config)

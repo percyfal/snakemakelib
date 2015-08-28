@@ -1,0 +1,21 @@
+# -*- snakemake -*-
+config_default = {
+    'bio.ngs.popgen.angsd' : {
+        'optimsfs' : {
+            'cmd' : os.path.join(config['bio.ngs.popgen.angsd']['home'], 'misc/optimSFS'),
+            'options' : "",
+        },
+    },
+}
+
+config = update_config(config_default, config)
+
+rule angsd_optimsfs:
+    """angsd: run optimsfs"""
+    params: cmd = config['bio.ngs.popgen.angsd']['optimsfs']['cmd'],
+            options = config['bio.ngs.popgen.angsd']['optimsfs']['options'],
+            nchr = config['bio.ngs.popgen.angsd']['options']['nchr']
+    threads: config['bio.ngs.popgen.angsd']['options']['threads']
+    input: sfs = "{prefix}.sfs"
+    output: ml = "{prefix}.sfs.ml"
+    shell: "{params.cmd} {params.options} -binput {input.sfs} -nChr {params.nchr} -outnames {output.ml}"

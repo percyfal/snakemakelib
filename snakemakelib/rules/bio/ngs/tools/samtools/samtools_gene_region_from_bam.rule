@@ -1,0 +1,8 @@
+# -*- snakemake -*-
+rule samtools_gene_region_from_bam:
+    """Extract gene region from bam file"""
+    params: cmd = config['bio.ngs.tools.samtools']['cmd'],
+            options = config['bio.ngs.tools.samtools']['options']
+    input: bam = "{prefix}.bam", bed = "{prefix}.region_{region}.{sfx}.bed"
+    output: temp("{prefix}.region_{region}.{sfx}.bam")
+    shell: "{params.cmd} view {params.options} -b -L {input.bed} {input.bam} > {output}"

@@ -1,0 +1,20 @@
+# -*- snakemake -*-
+config_default = {
+    'bio.ngs.popgen.angsd' : {
+        'calcstat' : {
+            'cmd' : os.path.join(config['bio.ngs.popgen.angsd']['home'],'/misc/calcStat'),
+        },
+    },
+}
+
+config = update_config(config_default, config)
+
+# rule angsd_calcstat:
+#     """angsd: run calcstat"""
+#     params: cmd = config['bio.ngs.popgen.angsd']['calcstat']['cmd'],
+#             options = config['bio.ngs.popgen.angsd']['calcstat']['options'],
+#             nchr = config['bio.ngs.popgen.angsd']['options']['nchr']
+#     threads: config['bio.ngs.popgen.angsd']['options']['threads']
+#     input: sfs = "{prefix}.sfs"
+#     output: ml = "{prefix}.sfs.ml"
+#     shell: "{params.cmd} {params.options} -binput {input.sfs} -nChr {params.nchr} -outnames {output.ml}"

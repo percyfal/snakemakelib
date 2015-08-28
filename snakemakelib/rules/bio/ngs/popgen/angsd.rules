@@ -1,9 +1,12 @@
 # -*- snakemake -*-
 include: '../settings.rules'
 
+DEFAULT_RULES = []
+
 config_default = { 
     'bio.ngs.popgen.angsd' : {
-        'path' : os.curdir,
+        'rules' : DEFAULT_RULES,
+        'home' : os.getenv("ANGSD_HOME", os.curdir),
         'chr_label' : "scaffold",
         'chr_extra' : "chrM",
         # I seem to have set a whole lot of specific options. Put them in subsection options for now
@@ -40,43 +43,44 @@ config_default = {
 
 config = update_config(config_default, config)
 
-cfg = config['bio.ngs.popgen.angsd']
-ngstools_cfg = config['bio.ngs.popgen.ngstools']
-
 # Second round
 config_default = {
     'bio.ngs.popgen.angsd' : {
-        'cmd' : os.path.join(cfg['path'], 'angsd'),
+        'cmd' : os.path.join(config['bio.ngs.popgen.angsd']['home'], 'angsd'),
         'options' : {
-            'chromosomes' : ["{chr_label}{chr}".format(chr_label=cfg['options']['chr_label'], chr=i) for i in range(cfg['options']['chr_enum_from'], cfg['options']['chr_enum_to'])],
-            'chr_enum' : range(cfg['options']['chr_enum_from'], cfg['options']['chr_enum_to']),
-            'doThetas' : "-realSFS 1 -GL {gl} -anc {anc} -doThetas 1 -nThreads {threads} -r {chr}".format(gl=cfg['options']['gl'], anc=cfg['options']['anc'], threads=cfg['options']['threads'], chr=cfg['options']['chr']),
-            'doCounts' : "-doCounts 1 -dumpCounts 2 -anc {anc}".format(anc=cfg['options']['anc']),
-            'doSaf' : "-doSaf {doSaf} -anc {anc} -GL {GL}".format(doSaf=cfg['options']['doSaf'], anc=cfg['options']['anc'], GL=cfg['options']['gl']),
+            'chromosomes' : ["{chr_label}{chr}".format(
+                chr_label=config['bio.ngs.popgen.angsd']['options']['chr_label'],
+                chr=i) for i in range(config['bio.ngs.popgen.angsd']['options']['chr_enum_from'], config['bio.ngs.popgen.angsd']['options']['chr_enum_to'])],
+            'chr_enum' : range(config['bio.ngs.popgen.angsd']['options']['chr_enum_from'], config['bio.ngs.popgen.angsd']['options']['chr_enum_to']),
+        },
+        'doCounts' : {
+            'options' : "-doCounts 1 -dumpCounts 2 -anc {anc}".format(
+                anc=config['bio.ngs.popgen.angsd']['options']['anc'])
+        },
+        'doSaf' : {
+            'options' : "-doSaf {doSaf} -anc {anc} -GL {GL}".format(
+                doSaf=config['bio.ngs.popgen.angsd']['options']['doSaf'],
+                anc=config['bio.ngs.popgen.angsd']['options']['anc'],
+                GL=config['bio.ngs.popgen.angsd']['options']['gl']),
+        },
+        'doThetas' : {
+            'options' : "-realSFS 1 -GL {gl} -anc {anc} -doThetas 1 -nThreads {threads} -r {chr}".format(
+                gl=config['bio.ngs.popgen.angsd']['options']['gl'],
+                anc=config['bio.ngs.popgen.angsd']['options']['anc'],
+                threads=config['bio.ngs.popgen.angsd']['options']['threads'],
+                chr=config['bio.ngs.popgen.angsd']['options']['chr']),
         },
         'domafs' : {
-            'options' :"-anc {anc} -doMajorMinor {majorminor} -doMaf {maf} -GL {gl} -nThreads {threads}".format(gl=cfg['options']['gl'], anc=cfg['options']['anc'], threads=cfg['options']['threads'], chr=cfg['options']['chr'], maf=cfg['options']['maf'], majorminor=cfg['options']['majorminor']),
-        },
-        'optimsfs' : {
-            'cmd' : os.path.join(cfg['path'], 'misc/optimSFS'),
-        },
-        'bgid' : {
-            'cmd' : os.path.join(cfg['path'], "misc/bgid"),
-            'dostat_options' : "-step {step} -win {window} -nChr {nchr}".format(step=cfg['options']['step'], window=cfg['options']['window'], nchr=cfg['options']['nchr']),           
-        }
-        'emoptim' : {
-            'cmd' : os.path.join(cfg['path'], '/misc/emOptim'),
-            'options' : "-maxIter {maxiter}".format(maxiter=cfg['options']['maxiter']),
-        },
-        'emoptim2' : {
-            'cmd' : os.path.join(cfg['path'],'/misc/emOptim2'),
-            'options' : "-maxIter {maxiter} -P {threads}".format(maxiter=cfg['options']['maxiter'], threads=cfg['options']['threads']),
-        },
-        'calcstat' : {
-            'cmd' : os.path.join(cfg['path'],'/misc/calcStat'),
+            'options' :"-anc {anc} -doMajorMinor {majorminor} -doMaf {maf} -GL {gl} -nThreads {threads}".format(
+                gl=config['bio.ngs.popgen.angsd']['options']['gl'],
+                anc=config['bio.ngs.popgen.angsd']['options']['anc'],
+                threads=config['bio.ngs.popgen.angsd']['options']['threads'],
+                chr=config['bio.ngs.popgen.angsd']['options']['chr'],
+                maf=config['bio.ngs.popgen.angsd']['options']['maf'],
+                majorminor=config['bio.ngs.popgen.angsd']['options']['majorminor']),
         },
         'realSFS' : {
-            'options' : "-realSFS 1 -GL {gl} -anc {anc} -nThreads {threads}".format(gl=cfg['options']['gl'], anc=cfg['options']['anc'], threads=cfg['options']['threads']),
+            'options' : "-realSFS 1 -GL {gl} -anc {anc} -nThreads {threads}".format(gl=config['bio.ngs.popgen.angsd']['options']['gl'], anc=config['bio.ngs.popgen.angsd']['options']['anc'], threads=config['bio.ngs.popgen.angsd']['options']['threads']),
         },
     },
 }
@@ -84,41 +88,10 @@ config_default = {
 
 config = update_config(config_default, config)
 
-cfg = config['bio.ngs.popgen.angsd']
-
-rule generate_sfs:
-    """Estimate the site frequency spectrum. Note that the implementation has changed for angsd versions > 0.5"""
-    params: cmd = cfg['cmd'],
-            options = cfg['options']['doSaf']
-    threads: cfg['options']['threads']
-    input: " {prefix}.list"
-    output: "{prefix}.saf"
-    shell: "{params.cmd} {params.options} -bam {input} -out {output} -P {threads}"
-
 # rule rule_2:
 # 	input: " {prefix}.sfs"
 # 	output: "{prefix}.sfs.em2.ml"
 # 	shell: "$(AWK) '{for (i=1; i<NF; i++) printf("%f ",exp($$i)); printf("%f", exp($$i))}' $@.exp > $@.tmp && mv $@.tmp $@"
-# rule rule_3:
-# 	input: " {prefix}.sfs"
-# 	output: "{prefix}.sfs.em.ml"
-# 	shell: "$(ANGSD_EMOPTIM) -binput $< -nChr $(ANGSD_OPTION_NCHR) $(ANGSD_EMOPTIM_OPTIONS) > $@.tmp && mv $@.tmp $@"
-# rule rule_4:
-# 	input: " {prefix}.sfs"
-# 	output: "{prefix}.sfs.ml"
-# 	shell: "$(ANGSD_OPTIMSFS) -binput $< -nChr $(ANGSD_OPTION_NCHR) -outnames $@.tmp && mv $@.tmp $@"
-# rule rule_5:
-# 	input: " {prefix}.sfs.em2.ml.ln"
-# 	output: "{prefix}.thetas.gz"
-# 	shell: "$(ANGSD) $(ANGSD_DOTHETAS_OPTIONS) -pest $(<:.ln=) -bam $*.list -out $*.tmp && mv $*.tmp.thetas.gz $@ && mv $*.tmp.arg $*.arg"
-# rule rule_6:
-# 	input: " {prefix}.sfs.em2.ml"
-# 	output: "{prefix}.thetas.gz"
-# 	shell: "$(ANGSD) $(ANGSD_DOTHETAS_OPTIONS) -pest $< -bam $*.list -out $*.tmp && mv $*.tmp.thetas.gz $@ && mv $*.tmp.arg $*.arg"
-# rule rule_7:
-# 	input: " {prefix}.sfs.em.ml"
-# 	output: "{prefix}.thetas.gz"
-# 	shell: "$(ANGSD) $(ANGSD_DOTHETAS_OPTIONS) -pest $< -bam $*.list -out $*.tmp && mv $*.tmp.thetas.gz $@ && mv $*.tmp.arg $*.arg"
 # rule rule_8:
 # 	input: " {prefix}.list"
 # 	output: "{prefix}.mafs.gz"
@@ -131,14 +104,6 @@ rule generate_sfs:
 # 	input: " {prefix}.list"
 # 	output: "{prefix}.mpileup"
 # 	shell: "$(ANGSD) $(ANGSD_DOCOUNTS_OPTIONS) -show 1 -bam $< -out $(@:.sfs=.mpileup).tmp && mv $(@:.mpileup=).tmp.mpileup $@"
-# rule rule_11:
-# 	input: " {prefix}.thetas.gz"
-# 	output: "{prefix}.thetas.gz.bin"
-# 	shell: "$(ANGSD_BGID) make_bed $<"
-# rule rule_12:
-# 	input: " {prefix}.thetas.gz {prefix}.thetas.gz.bin"
-# 	output: "{prefix}.thetas.gz.bgid_pestPG"
-# 	shell: "$(ANGSD_BGID) do_stat $< $(ANGSD_BGID_DOSTAT_OPTIONS) && mv $*.thetas.gz.pestPG $@"
 # rule rule_13:
 # 	input: " {prefix}.mafs.gz"
 # 	output: "{prefix}.bed"

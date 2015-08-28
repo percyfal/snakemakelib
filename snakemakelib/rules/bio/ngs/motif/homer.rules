@@ -4,25 +4,13 @@
 #
 # http://homer.salk.edu/homer/motif/
 #
-import os
-from snakemakelib.config import update_config
-
 include: '../settings.rules'
 
-ngs_cfg = config['bio.ngs.settings']
-
-GEM_JAR_PROGRAM = "gem.jar"
-
 config_default = {
-    'bio.ngs.motif.gem' : {
-        'home' : os.curdir,
-        'java_mem' : ngs_cfg['java']['java_mem'],
-        'java_tmpdir' : ngs_cfg['java']['java_tmpdir'],
+    'bio.ngs.motif.homer' : {
         'options' : '',
     },
 }
 
 config = update_config(config_default, config)
-
-gem_cfg = config['bio.ngs.motif.gem']
 

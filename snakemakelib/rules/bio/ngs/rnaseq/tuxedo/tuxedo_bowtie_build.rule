@@ -1,0 +1,9 @@
+# -*- snakemake -*-
+rule tuxedo_bowtie_build:
+    """Bowtie build index"""
+    params: ref = config['bio.ngs.rnaseq.tuxedo']['ref'],
+            cmd = 'bowtie-build'
+    input: "{prefix}" + ".fa"
+    output: expand("{{prefix}}{ext}", ext=config['bio.ngs.rnaseq.tuxedo']['build']['ext_v1'])
+    shell: "{params.cmd} {input} {wildcards.prefix}"
+

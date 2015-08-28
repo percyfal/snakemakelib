@@ -1,0 +1,34 @@
+# -*- snakemake -*-
+import os
+
+try:
+    from snakemakelib.stat import is_installed
+except:
+    pass
+
+include: '../../settings.rules'
+
+DEFAULT_RULES = ['samtools_index']
+
+config_default = { 
+    'bio.ngs.tools.samtools' : {
+        'ref' : config['bio.ngs.settings']['db']['ref'],
+        'cmd' : "samtools",
+        'threads' : config['bio.ngs.settings']['threads'],
+        'options' : "",
+	'rules' : DEFAULT_RULES,
+    },
+}
+
+configdefault: config_default
+
+samtools_cfg = config['bio.ngs.tools.samtools']
+
+try:
+    if not is_installed(samtools_cfg['cmd']):
+        raise Exception("\nbio.ngs.tools.samtools: {prog} not installed or not in PATH\n".format(prog=samtools_cfg['cmd']))
+except:
+    pass
+
+for rule in samtools_cfg['rules']:
+    include: rule + ".rule"

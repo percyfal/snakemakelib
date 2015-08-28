@@ -1,0 +1,16 @@
+# -*- snakemake -*-
+from snakemakelib.bio.ngs.qc.qualimap import Qualimap, make_qualimap_plots
+from snakemakelib.utils import SmlTemplateEnv
+
+rule qualimap_plot_summary:
+    """Qualimap: plot summary results"""
+    input: qmglobals = os.path.join("{path}", "{label}.globals.csv"),
+           coverage_per_contig = os.path.join("{path}", "{label}.coverage_per_contig.csv")
+    output: qualimap_summary = os.path.join("{path}", "{label}.summary.html")
+    run:
+        d = {}
+        d.update({'qualimap' : make_qualimap_plots(*input)})
+        tp = SmlTemplateEnv.get_template('qualimap.html')
+        with open(output.qualimap_summary, "w") as fh:
+            fh.write(static_html(tp, **d))
+

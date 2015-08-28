@@ -1,0 +1,12 @@
+# -*- snakemake -*-
+include: "../settings.rules"
+
+config_default = {
+    'bio.ngs.popgen.ngstools' : {
+        'block_size' : "",
+        'sites' : "",
+        'home' : os.getenv("NGSTOOLS_HOME", os.curdir),
+    },
+}
+
+config = update_config(config_default, config)

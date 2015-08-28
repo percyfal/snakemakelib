@@ -1,0 +1,25 @@
+# -*- snakemake -*-
+config_default = {
+    'bio.ngs.popgen.angsd' : {
+        'doThetas' : {
+            'options' : "-realSFS 1 -GL {gl} -anc {anc} -doThetas 1 -nThreads {threads} -r {chr}".format(
+                gl=config['bio.ngs.popgen.angsd']['options']['gl'],
+                anc=config['bio.ngs.popgen.angsd']['options']['anc'],
+                threads=config['bio.ngs.popgen.angsd']['options']['threads'],
+                chr=config['bio.ngs.popgen.angsd']['options']['chr']),
+        },
+    },
+}
+
+config = update_config(config_default, config)
+
+rule angsd_dothetas_emoptim:
+    """angsd: run dothetas"""
+    params: cmd = config['bio.ngs.popgen.angsd']['cmd'],
+            options = config['bio.ngs.popgen.angsd']['doThetas']['options']
+    threads: config['bio.ngs.popgen.angsd']['options']['threads']
+    input: emoptimml = "{prefix}.sfs.em.ml", list = "{prefix}.list"
+    output: thetas = "{prefix}.thetas.gz"
+    shell: "{params.cmd} {params.options} -pest {input.emoptimml} -bam {params.list} -out {output.thetas}"
+
+    

@@ -1,0 +1,30 @@
+# -*- snakemake -*-
+config_default = {
+    'bio.ngs.methylseq.bismark' : {
+        'report' : {
+            'cmd' : 'bismark2report',
+            'options' : "",
+            'inputfun' : "",
+        },
+    },
+}
+
+config = update_config(config_default, config)
+
+rule bismark_report:
+    """bismark: Run bismark report. 
+
+    This rule requires deduplication to be run in a previous step.
+    Currently this behaviour is hard-coded.
+
+    """
+    params: options = config['bio.ngs.methylseq.bismark']['report']['options'],
+            cmd = config['bio.ngs.methylseq.bismark']['report']['cmd']
+    input:  align_report = "{path}" + os.sep + "{prefix}" + ".deduplicated.bam" + report_label(config['bio.ngs.methylseq.bismark']) + ".txt",\
+            mbias_report = "{path}" + os.sep + "{prefix}" + ".deduplicated.M-bias.txt",\
+            splitting_report = "{path}" + os.sep + "{prefix}" + ".deduplicated.bam_splitting_report.txt",\
+            deduplication_report = "{path}" + os.sep + "{prefix}" + ".deduplication_report.txt"
+    output: "{path}" + os.sep + "{prefix}" + ".deduplicated.bam" + report_label(config['bio.ngs.methylseq.bismark']) + ".html"
+    shell: "{params.cmd} {params.options} --dir {wildcards.path} --alignment_report {input.align_report} --mbias {input.mbias_report} --splitting_report {input.splitting_report} --dedup_report {input.deduplication_report}"
+
+                

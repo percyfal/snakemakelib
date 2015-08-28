@@ -19,7 +19,7 @@ config_default = {
     },
 }
 
-configdefault: config_default
+config = update_config(config_default, config)
 
 rule danpos_dpos:
     """Run danpos dpos.

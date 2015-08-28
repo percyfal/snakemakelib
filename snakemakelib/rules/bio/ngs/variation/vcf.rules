@@ -1,7 +1,7 @@
 # -*- snakemake -*-
 include: '../settings.rules'
 
-DEFAULT_RULES = ['vcf_chk']
+DEFAULT_RULES = ['vcf_check']
 
 config_default = {
     'bio.ngs.variation.vcf' : {
@@ -12,7 +12,7 @@ config_default = {
 
 config = update_config(config_default, config)
 config = update_config(
-    {'bio.ngs.annotion.vcf':
+    {'bio.ngs.variation.vcf':
      {'cmd' : os.path.join(config['bio.ngs.variation.vcf']['home'], "vcf")}},
     config)
 

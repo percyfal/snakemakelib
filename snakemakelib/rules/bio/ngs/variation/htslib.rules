@@ -5,6 +5,7 @@ DEFAULT_RULES = ['htslib_plot_vcfcheck']
 
 config_default = {
     'bio.ngs.variation.htslib' : {
+        'rules' : DEFAULT_RULES,
         'home' : os.getenv("HTSLIB_HOME", os.curdir),
     },
 }

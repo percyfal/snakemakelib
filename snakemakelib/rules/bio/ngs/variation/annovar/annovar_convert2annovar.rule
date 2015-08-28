@@ -14,7 +14,7 @@ rule annovar_convert2annovar:
     """Convert data to annovar format"""
     params: cmd=os.path.join(config['bio.ngs.variation.annovar']['home'], 'convert2annovar.pl'),
             options=config['bio.ngs.variation.annovar']['convert2annovar']['options'],
-            vcf_format = config['bio.ngs.variation.annovar']['vcf_format']
+            vcf_format = config['bio.ngs.variation.annovar']['convert2annovar']['vcf_format']
     input: "{prefix}.vcf"
     output: "{prefix}.avinput"
     shell: "{params.cmd} {params.options} -format {params.vcf_format} {input} > {output}"

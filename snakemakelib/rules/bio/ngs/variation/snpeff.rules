@@ -5,6 +5,7 @@ DEFAULT_RULES = ['snpeff_annotate_variants']
 
 config_default = {
     'bio.ngs.variation.snpeff' : {
+        'rules' : DEFAULT_RULES,
         'home' : os.getenv("SNPEFF_HOME", os.curdir),
         'java_mem' : config['bio.ngs.settings']['java']['java_mem'],
         'java_tmpdir' : config['bio.ngs.settings']['java']['java_tmpdir'],

@@ -1,7 +1,7 @@
 # -*- snakemake -*-
 config_default = {
     'bio.ngs.variation.vcf' : {
-        'chk' : {
+        'check' : {
             'options' : "",
         },
     },
@@ -9,9 +9,9 @@ config_default = {
 
 config = update_config(config_default, config)
 
-rule vcf_chk:
+rule vcf_check:
     """vcf: Run vcf check on vcf file"""
     params: cmd=config['bio.ngs.variation.vcf']['cmd']
     input: "{prefix}.vcf"
-    output: "{prefix}.chk"
+    output: "{prefix}.check"
     shell: "{params.cmd} check {input} > {output}"

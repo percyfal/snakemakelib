@@ -21,7 +21,7 @@ config_default = {
 
 config = update_config(config_default, config)
 config = update_config(
-    {'bio.ngs.annotion.vcftools':
+    {'bio.ngs.variation.vcftools':
      {'cmd' : os.path.join(config['bio.ngs.variation.vcftools']['home'], "vcftools")}},
     config)
 

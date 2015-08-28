@@ -4,18 +4,11 @@
 #
 # Requires manual install
 #
-
-import os
-from snakemakelib.config import update_config
-from snakemakelib.stat import is_installed
-
 include: '../settings.rules'
-
-ngs_cfg = config['bio.ngs.settings']
 
 config_default = {
     'bio.ngs.enrichment.dfilter' : {
-        'ref' : ngs_cfg['db']['ref'],
+        'ref' : config['bio.ngs.settings']['db']['ref'],
         'options' : "-lpval=2 -ks=50 -bs=100 -wig",
         'cmd' : 'run_dfilter.sh',
     },
@@ -23,19 +16,13 @@ config_default = {
 
 config = update_config(config_default, config)
 
-dfilt_cfg = config['bio.ngs.enrichment.dfilter']
-
-if not is_installed(dfilt_cfg['cmd']):
-    raise Exception("\nbio.ngs.enrichment.dfilter: {prog} not installed or not in PATH\n".format(prog=dfilt_cfg['cmd']))
-else:
-    # Make sure PATH is updated
-    os.environ["PATH"] += os.pathsep + os.path.dirname(dfilt_cfg['cmd'])
+os.environ["PATH"] += os.pathsep + os.path.dirname(config['bio.ngs.enrichment.dfilter']['cmd'])
 
 rule dfilter_run_dfilter_bam:
     """Run run_dfilter command. Currently only works on one file."""
-    params: options = dfilt_cfg['options'],
-            cmd = dfilt_cfg['cmd']
+    params: options = config['bio.ngs.enrichment.dfilter']['options'],
+            cmd = config['bio.ngs.enrichment.dfilter']['cmd']
     input: chipfile = "{prefix}.bam"
     output: bed = "{prefix}.dfilt.bed",
-            wig = "{prefix}.dfilt.bed.wig" if "-wig" in dfilt_cfg['options'] else []
+            wig = "{prefix}.dfilt.bed.wig" if "-wig" in config['bio.ngs.enrichment.dfilter']['options'] else []
     shell: "{params.cmd} {params.options} -f=bam -d={input.chipfile} -o={output.bed}"

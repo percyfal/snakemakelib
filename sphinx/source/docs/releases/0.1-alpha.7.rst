@@ -1,0 +1,4 @@
+0.1-alpha.7 (Aug 2015)
+======================
+
+* most rules are now atomic (#12)

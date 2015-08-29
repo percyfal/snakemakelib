@@ -3,7 +3,3 @@
 
 -e .
 -e git+https://github.com/percyfal/bokehutils.git@0.1.4#egg=bokehutils
-<<<<<<< HEAD
-=======
-
->>>>>>> feature/atomic_rules

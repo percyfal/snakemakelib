@@ -1,0 +1,47 @@
+# -*- snakemake -*-
+# NB: ATAC-seq paper use option -d, which is obsolete in danpos v >=
+# 2. From danpos v1.0.1 we have
+#      -d , --distance       minimal distance between peaks, peaks closer than d
+#                        will be merged as on peak (default: 100)
+#
+# which is equivalent (?) to
+#  -jd , --distance      minimal center-to-center distance between positions,
+#                        positions closer than d will be merged as one single
+#                        position (default: 100)
+# in danpos v2.0.0 
+
+config_default = {
+    'bio.ngs.chromatin.danpos': {
+        'dpos':  {
+            'options' : "-p 1 -a 1 -jd 20 --clonalcut 0",
+            'threads' : 8, # seems to require substantial amounts of memory
+        },
+    },
+}
+
+config = update_config(config_default, config)
+
+rule danpos_dpos:
+    """Run danpos dpos.
+
+    NB: the interface has changed substantially from version 1 to
+    version two. In particular, it is difficult seeing the difference
+    between using the background parameter and the a:b path notation,
+    in which the latter indicates that b will be subtracted from a.
+    Currently the path syntax is used.
+
+    """
+    params: cmd=config['bio.ngs.chromatin.danpos']['cmd'],
+            options=config['bio.ngs.chromatin.danpos']['dpos']['options']
+    input: bg="{prefix}.0.bed", nuc=["{{prefix}}.{nucleosome}.bed".format(nucleosome=x) for x in range(1, len(config['bio.ngs.chromatin.danpos']['bins']))]
+    output: log=os.path.join("{prefix}", "danpos", "dpos.log")
+    threads: config['bio.ngs.chromatin.danpos']['dpos']['threads']
+    log: log=os.path.join("{prefix}", "danpos", "dpos.log")
+    run:
+        d = dict(params)
+        d.update({'path': ",".join("{sample}:{bg}".format(sample=s, bg=input.bg) for s in input.nuc),
+                  'outdir': os.path.join(wildcards.prefix, "danpos")})
+        clist = [python2, " && python {cmd} dpos {path} {options} -o {outdir}".format(**d)]
+        clist.append(" &> {log}".format(log=log))
+        command = " ".join(clist)
+        shell (command)

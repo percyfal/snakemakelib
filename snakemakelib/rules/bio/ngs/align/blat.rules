@@ -1,38 +1,28 @@
 # -*- snakemake -*-
-import os
-from snakemakelib.config import update_config
-from snakemakelib.bio.ngs.db import index
-
 include: '../settings.rules'
-include: '../tools/samtools.rules'
 
-ngs_cfg = config['bio.ngs.settings']
+DEFAULT_RULES = ['blat_faToTwoBit']
 
 config_default = {
     'bio.ngs.align.blat' : {
-        'ref' : ngs_cfg['db']['ref'],
-        'index' : "",
-        'faToTwoBit' : {
-            'cmd' : 'faToTwoBit',
-            'options' : "",
-        },
+        'ref': config['bio.ngs.settings']['db']['ref'],
+        'index': "",
+        'rules': DEFAULT_RULES,
     },
 }
 
 config = update_config(config_default, config)
 
-# Update index
-config['bio.ngs.align.blat']['index'] = index(
-    ref = config['bio.ngs.align.blat']['ref'],
-    index = config['bio.ngs.align.blat']['index'],
-    application = 'blat',
-    build = config['bio.ngs.settings']['db']['build'])
+try:
+    from snakemakelib.bio.ngs.db import index
+    # Update index
+    config['bio.ngs.align.blat']['index'] = index(
+        ref = config['bio.ngs.align.blat']['ref'],
+        index = config['bio.ngs.align.blat']['index'],
+        application = 'blat',
+        build = config['bio.ngs.settings']['db']['build'])
+except:
+    pass
 
-blat_cfg = config['bio.ngs.align.blat']
-
-rule blat_faToTwoBit:
-    params: cmd = blat_cfg['faToTwoBit']['cmd'],
-            options = blat_cfg['faToTwoBit']['options']
-    input: fa = "{prefix}.fa"
-    output: twobit = "{prefix}.2bit"
-    shell: "{params.cmd} {params.options} {input.fa} {output.twobit}"
+for rule in config['bio.ngs.align.blat']['rules']:
+    include: os.path.join("blat", rule + ".rule")

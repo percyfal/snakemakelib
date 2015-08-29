@@ -1,0 +1,37 @@
+# -*- snakemake -*-
+# See https://groups.google.com/forum/#!topic/rna-star/tvajn49WTYk for
+# setting up RSEM with STAR alignments
+# Take into account different aligners
+aligner = config['bio.ngs.settings']['aligner']
+align_section = 'bio.ngs.align.' + aligner
+align_include = os.path.join('../align', aligner + ".rules")
+
+include: align_include
+
+align_cfg = config[align_section]
+
+rule rsem_calculate_expression_bowtie:
+    """Run RSEM on bowtie output. Requires a fifo hack to work: see
+    http://atgcio.blogspot.se/2013/08/fifos-and-mapping-with-bowtie-using.html
+    """
+    params: cmd = config['bio.ngs.rnaseq.rsem']['calculate-expression']['cmd'],
+            options = config['bio.ngs.rnaseq.rsem']['calculate-expression']['options'],
+            index = config['bio.ngs.rnaseq.rsem']['index'] + config['bio.ngs.rnaseq.rsem']['ref_sfx']
+    input: read1 = "{prefix}" + config['bio.ngs.settings']['read1_label'] + config['bio.ngs.settings']['fastq_suffix'],\ 
+           read2 = "{prefix}" + config['bio.ngs.settings']['read2_label'] + config['bio.ngs.settings']['fastq_suffix'],\
+           index = config['bio.ngs.rnaseq.rsem']['index'] + config['bio.ngs.rnaseq.rsem']['ref_sfx'],
+           bowtie_index = expand(config['bio.ngs.rnaseq.rsem']['index'] + "{ext}", ext=align_cfg.get('build', {}).get('ext_v1', ""))
+    output: "{prefix}.rsem"
+    threads: config['bio.ngs.rnaseq.rsem']["threads"]
+    run: 
+      fifo1 = input.read1 + ".read1.fifo"
+      fifo2 = input.read2 + ".read2.fifo"
+      shell("rm -f " + fifo1)
+      shell("rm -f " + fifo2)
+      shell("mkfifo " + fifo1)
+      shell("mkfifo " + fifo2)
+      shell("zcat " + input.read1 + " > " + fifo1 + " &")
+      shell("zcat " + input.read2 + " > " + fifo2 + " &")
+      shell("{cmd} {options} -p {threads} --paired-end {fifo1} {fifo2} {index} {sample} &> {log}.tmp && mv {log}.tmp {log}.rsem".format(cmd=params.cmd, options=params.options, threads=threads, fifo1=fifo1, fifo2=fifo2, index=config['bio.ngs.rnaseq.rsem']['index'], sample=wildcards.prefix, log=wildcards.prefix))
+      shell("rm -f " + fifo1)
+      shell("rm -f " + fifo2)

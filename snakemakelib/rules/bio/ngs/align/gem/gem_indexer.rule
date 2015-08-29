@@ -1,0 +1,19 @@
+# -*- snakemake -*-
+config_default = {
+    'bio.ngs.align.gem' : {
+        'gem_indexer' : {
+            'options' : "-T 7",
+            'cmd' : os.path.join(config['bio.ngs.align.gem']['home'], 'gem-indexer'),
+        },
+    },
+}
+
+config = update_config(config_default, config)
+
+rule gem_indexer:
+    params: cmd = config['bio.ngs.align.gem']['gem_indexer']['cmd'],
+            options = config['bio.ngs.align.gem']['gem_indexer']['options']
+    input: fasta = "{prefix}.fasta"
+    output: gem = "{prefix}.gem"
+    log: log = "{prefix}.gem.log"
+    shell: "{params.cmd} {params.options} -i {input.fasta} -o {output.gem} > {log.log}"

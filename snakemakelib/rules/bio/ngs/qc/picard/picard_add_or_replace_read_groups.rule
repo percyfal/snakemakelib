@@ -1,0 +1,24 @@
+# -*- snakemake -*-
+config_default = {
+    'bio.ngs.qc.picard' : {
+        'add_or_replace_read_groups' : {
+            'options' : "sort_order=coordinate create_index=true",
+        },
+    },
+}
+
+config = update_config(config_default, config)
+
+rule picard_add_or_replace_read_groups:
+    """Picard: add or replace read groups. Currently tailored for Illumina read groups."""
+    params: cmd = config['bio.ngs.qc.picard']['cmd'] + ADD_OR_REPLACE_READ_GROUPS,
+            options = config['bio.ngs.qc.picard']['options'],
+            custom_options = config['bio.ngs.qc.picard']['add_or_replace_read_groups']['options'],
+            lib = "lib",
+            rgpl = "Illumina",
+            rgpu = "rgpu",
+            rgid = "rgid",
+            rgsm = "RGSM"
+    input: bam = "{prefix}.bam"
+    output: bam = "{prefix}.rg.bam", bai = "{prefix}.rg.bai"
+    shell: "{params.cmd} INPUT={input.bam} OUTPUT={output.bam} {params.custom_options} RGID={params.rgid} RGLB={params.lib} RGSM={params.rgsm} RGPL={params.rgpl} RGPU={params.rgpu}"

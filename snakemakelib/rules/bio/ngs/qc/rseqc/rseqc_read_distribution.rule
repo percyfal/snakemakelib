@@ -1,0 +1,24 @@
+# -*- snakemake -*-
+config_default = {
+    'bio.ngs.qc.rseqc' : {
+        'read_distribution' : {
+            'cmd' : os.path.join(config['bio.ngs.qc.rseqc']['home'], 'read_distribution.py'),
+            'options' : '',
+        },
+    },
+}
+
+config = update_config(config_default, config)
+
+rule rseqc_read_distribution:
+    """Run RSeQC read_distribution.py
+    
+    NB: Requries reference gene model in bed format. Also memory
+    intensive; needs more resources (approx 17GB).
+    """
+    params: cmd = os.path.join(config['bio.ngs.qc.rseqc']['home'], config['bio.ngs.qc.rseqc']['read_distribution']['cmd']),
+            options = config['bio.ngs.qc.rseqc']['read_distribution']['options'],
+    input: bam = "{prefix}.bam", refgene = config['bio.ngs.qc.rseqc']['refgene']
+    output: "{prefix}_rseqc/read_distribution.txt"
+    shell: python2 + " && {params.cmd} {params.options} -i {input.bam} -r {input.refgene} &> {output}"
+

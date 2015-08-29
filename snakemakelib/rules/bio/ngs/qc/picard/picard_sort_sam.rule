@@ -1,0 +1,18 @@
+# -*- snakemake -*-
+config_default = {
+    'bio.ngs.qc.picard' : {
+        'sort_sam_options' : "SORT_ORDER=coordinate",
+    },
+}
+
+config = update_config(config_default, config)
+
+rule picard_sort_sam:
+    """Picard: sort bam file"""
+    params: cmd = config['bio.ngs.qc.picard']['cmd'] + SORT_SAM,
+            options = config['bio.ngs.qc.picard']['options'],
+            sortsam_options = config['bio.ngs.qc.picard']['sort_sam_options']
+    input: "{prefix}.bam"
+    output: "{prefix}.sort.bam"
+    shell: "{params.cmd} I={input} O={output} {params.options} {params.sortsam_options}"
+

@@ -1,0 +1,9 @@
+# -*- snakemake -*-
+rule snpeff_annotate_variants:
+    """snpEff: annotate variants"""
+    params: cmd=config['bio.ngs.variation.snpeff']['cmd'],
+            options=config['bio.ngs.variation.snpeff']['options'],
+            genome_version=config['bio.ngs.variation.snpeff']['genome_version']
+    input: "{prefix}.vcf"
+    output: "{prefix}.annotated.{sfx}"
+    shell: "{params.cmd} {params.options} {params.genome_version} {input} -i vcf -o {wildcards.sfx} > {output}"

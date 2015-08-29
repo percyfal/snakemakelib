@@ -1,0 +1,17 @@
+# -*- snakemake -*-
+import os
+try:
+    from snakemakelib.utils import safe_makedir
+except:
+    pass
+
+rule ucsc_link:
+    """Link reference to ucsc directory"""
+    input: ref = config['bio.ngs.db.ucsc']['ref']
+    output: reflink = temp(config['bio.ngs.db.ucsc']['index'])
+    run:
+        safe_makedir(os.path.dirname(output.reflink))
+        tgt = os.path.join(os.path.dirname(output.reflink), os.path.basename(input.ref))
+        if not os.path.exists(tgt):
+            os.symlink(input.ref, tgt)
+

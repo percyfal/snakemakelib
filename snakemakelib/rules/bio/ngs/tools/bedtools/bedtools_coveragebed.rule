@@ -1,0 +1,22 @@
+# -*- snakemake -*-
+config_default = {
+    'bio.ngs.tools.bedtools' : {
+        'coveragebed' : {
+            'cmd' : 'coverageBed',
+        },
+    },
+}
+
+config = update_config(config_default, config)
+
+rule bedtools_coveragebed_bam:
+    """Calculate coverage for a bam file.
+
+    Input: {prefix}.bam; output: {prefix}.coverage
+    """
+    params: cmd = os.path.join(config['bio.ngs.tools.bedtools']['home'], config['bio.ngs.tools.bedtools']['coveragebed']['cmd']),
+            options=config['bio.ngs.tools.bedtools']['options'],
+            bfile = config['bio.ngs.tools.bedtools']['bfile']
+    input: "{prefix}.bam"
+    output: "{prefix}.coverage"
+    shell: "{params.cmd} {params.options} -abam {input} -b {params.bfile} > {output}"

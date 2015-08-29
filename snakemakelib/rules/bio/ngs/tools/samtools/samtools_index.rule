@@ -1,0 +1,18 @@
+# -*- snakemake -*-
+config_default = {
+    'bio.ngs.tools.samtools' : {
+        'index' : {
+            'options' : '',
+        },
+    },
+}
+
+config = update_config(config_default, config)
+
+rule samtools_index:
+    """Run samtools index"""
+    params: cmd = config['bio.ngs.tools.samtools']['cmd'],
+            options = config['bio.ngs.tools.samtools']['index']['options']
+    input: "{prefix}.bam"
+    output: "{prefix}.bam.bai"
+    shell: "{params.cmd} {params.options} index {input}"

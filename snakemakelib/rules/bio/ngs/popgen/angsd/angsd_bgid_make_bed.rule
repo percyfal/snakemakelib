@@ -1,0 +1,20 @@
+# -*- snakemake -*-
+config_default = {
+    'bio.ngs.popgen.angsd' : {
+        'bgid' : {
+	    'cmd' : os.path.join(config['bio.ngs.popgen.angsd']['home'], "misc/bgid"),
+            'make_bed' : {
+                'options' : "-step {step} -win {window} -nChr {nchr}".format(step=config['bio.ngs.popgen.angsd']['options']['step'], window=config['bio.ngs.popgen.angsd']['options']['window'], nchr=config['bio.ngs.popgen.angsd']['options']['nchr']),
+            },
+        },
+    },
+}
+
+config = update_config(config_default, config)
+
+rule angsd_bgid_make_bed:
+    params: cmd = config['bio.ngs.popgen.angsd']['bgid']['cmd'],
+            options = config['bio.ngs.popgen.angsd']['bgid']['make_bed']['options']
+    input: thetas_gz = "{prefix}.thetas.gz"
+    output: thetas_gz_bin="{prefix}.thetas.gz.bin"
+    shell: "{params.cmd} make_bed {input.thetas_gz} {params.options}"

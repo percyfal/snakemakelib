@@ -1,0 +1,18 @@
+# -*- snakemake -*-
+rule bismark_PE_align:
+    """bismark: Run bismark paired-end alignment.
+
+    NB: the threads option is treated differently here as the key
+    config['bio.ngs.methylseq.bismark']['bowtie2'] is undefined if tested for in the shell:
+    section.
+
+    """
+    params: options = config['bio.ngs.methylseq.bismark']['align']['options'] + " --bowtie2 -p {}".format(config['bio.ngs.methylseq.bismark']['align']['threads']) if config['bio.ngs.methylseq.bismark']['bowtie2'] else '',
+            cmd = config['bio.ngs.methylseq.bismark']['align']['cmd'],
+            ref = os.path.dirname(config['bio.ngs.methylseq.bismark']['ref']),
+            sfx = align_suffix(config['bio.ngs.methylseq.bismark'])
+    threads: config['bio.ngs.methylseq.bismark']['align']['threads']
+    input: read1="{prefix}" + config['bio.ngs.settings']['read1_label'] + config['bio.ngs.qc.trim_galore']['read1_suffix'] if config['bio.ngs.methylseq.bismark']['trim_galore'] else config['bio.ngs.settings']['read1_suffix'],\
+           read2="{prefix}" + config['bio.ngs.settings']['read2_label'] + config['bio.ngs.qc.trim_galore']['read2_suffix'] if config['bio.ngs.methylseq.bismark']['trim_galore'] else config['bio.ngs.settings']['read2_suffix']
+    output: alignout="{prefix}" + align_suffix(config['bio.ngs.methylseq.bismark']), report="{prefix}" + report_label(config['bio.ngs.methylseq.bismark']) + ".txt"
+    shell: "{params.cmd} {params.options} {params.ref} -1 {input.read1} -2 {input.read2} -o $(dirname {wildcards.prefix}) -B $(basename {wildcards.prefix})" + align_suffix(config['bio.ngs.methylseq.bismark'], basename=True)

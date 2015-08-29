@@ -1,0 +1,21 @@
+# -*- snakemake -*-
+config_default = {
+    'bio.ngs.qc.picard' : {
+        'collect_alignment_summary_metrics' : {
+            'targets' : [],
+            'options' : config['bio.ngs.qc.picard']['options'],
+        },
+    },
+}
+
+config = update_config(config_default, config)
+
+rule picard_collect_alignment_summary_metrics:
+    """Picard: collect alignment summary metrics"""
+    params: cmd = config['bio.ngs.qc.picard']['cmd'] + COLLECT_ALIGNMENT_SUMMARY_METRICS,
+            options = config['bio.ngs.qc.picard']['collect_alignment_summary_metrics']['options'],
+            suffix = ".align_metrics"
+    input: bam = "{prefix}.bam", bai = "{prefix}.bai", ref = config['bio.ngs.qc.picard']['ref']
+    output: metrics = "{prefix}.align_metrics"
+    shell: "{params.cmd} {params.options} I={input.bam} O={output.metrics} R={input.ref}"
+

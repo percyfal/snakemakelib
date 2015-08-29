@@ -1,35 +1,30 @@
 # -*- snakemake -*-
-import os
-from snakemakelib.config import update_config
-from snakemakelib.bio.ngs.db import index
 from snakemakelib.bio.ngs.rnaseq.tuxedo import TuxedoReadGroup
-
 include: '../settings.rules'
 include: '../tools/samtools.rules'
 
-ngs_cfg = config['bio.ngs.settings']
+DEFAULT_RULES = ['tuxedo_bowtie2_build',
+                 'tuxedo_bowtie_align',
+                 'tuxedo_bowtie_build',
+                 'tuxedo_cufflinks_from_bam',
+                 'tuxedo_cufflinks_from_tophat',
+                 'tuxedo_cufflinks_quant',
+                 'tuxedo_tophat']
+
 
 config_default = { 
     "bio.ngs.rnaseq.tuxedo" : {
-        'ref' : ngs_cfg['db']['ref'],
-        'rg_fn' : TuxedoReadGroup(ngs_cfg['sampleorg'].run_id_re.re.pattern).parse,
+        'rules' : DEFAULT_RULES,
+        'ref' : config['bio.ngs.settings']['db']['ref'],
+        'rg_fn' : TuxedoReadGroup(regexp=config['bio.ngs.settings']['sampleorg'].run_id_re.re.pattern).parse,
         'version2' : True, # Run version 2 by default
         'index' : "",
-        'tophat' : {
-            'options' : '',
-            'threads' : ngs_cfg['threads'],
-            'output_dir' : os.path.join(os.curdir, "tophat_out"),
-        },
         'cufflinks' : {
             'cmd' : 'cufflinks', 
             'options' : '',
-            'transcript_annot_gtf' : ngs_cfg['annotation']['transcript_annot_gtf'],
-            'annot_label' : ngs_cfg['db']['build'],
+            'transcript_annot_gtf' : config['bio.ngs.settings']['annotation']['transcript_annot_gtf'],
+            'annot_label' : config['bio.ngs.settings']['db']['build'],
             'output_dir' : os.curdir,
-        },
-        'bowtie' : {
-            'threads' : ngs_cfg['threads'],
-            'options' : '',
         },
         'build' : {
             'ext_v1' : [".1.ebwt", ".2.ebwt", ".3.ebwt", ".4.ebwt", ".rev.1.ebwt", ".rev.2.ebwt"],
@@ -41,89 +36,17 @@ config_default = {
 config = update_config(config_default, config)
 bowtie = 'bowtie2' if config['bio.ngs.rnaseq.tuxedo']['version2'] else 'bowtie'
 
-# Update index
-config['bio.ngs.rnaseq.tuxedo']['index'] = index(
-    ref = config['bio.ngs.rnaseq.tuxedo']['ref'],
-    index = config['bio.ngs.rnaseq.tuxedo']['index'],
-    application = bowtie,
-    build = config['bio.ngs.settings']['db']['build'])
+try:
+    # Update index
+    from snakemakelib.bio.ngs.db import index
+    config['bio.ngs.rnaseq.tuxedo']['index'] = index(
+        ref = config['bio.ngs.rnaseq.tuxedo']['ref'],
+        index = config['bio.ngs.rnaseq.tuxedo']['index'],
+        application = bowtie,
+        build = config['bio.ngs.settings']['db']['build'])
+except:
+    pass
 
-ngs_cfg = config['bio.ngs.settings']
-tux_cfg = config['bio.ngs.rnaseq.tuxedo']
-samtools_cfg = config['bio.ngs.tools.samtools']
-comp_cfg = config['comp.settings']
 
-rule tuxedo_bowtie_align:
-    """Bowtie paired end alignment"""
-    params: cmd = bowtie,
-            options = tux_cfg['bowtie']['options'],
-            index = ("-x " if tux_cfg['version2'] else "") + tux_cfg['index']
-    input: read1="{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],\
-           read2="{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['fastq_suffix']
-    output: "{prefix}.bam"
-    threads: tux_cfg['bowtie']['threads']
-    shell: "{params.cmd} -p {threads} {params.options} {params.index} -1 {input.read1} -2 {input.read2} | " + samtools_cfg['cmd'] + " view -Sb - > {output}.tmp && mv {output}.tmp {output}"
-
-rule tuxedo_bowtie_build:
-    """Bowtie build index"""
-    params: ref = tux_cfg['ref'],
-            cmd = 'bowtie-build'
-    input: "{prefix}" + ".fa"
-    output: expand("{{prefix}}{ext}", ext=tux_cfg['build']['ext_v1'])
-    shell: "{params.cmd} {input} {wildcards.prefix}"
-
-rule tuxedo_bowtie_build2:
-    """Bowtie build index"""
-    params: ref = tux_cfg['ref'],
-            cmd = 'bowtie2-build'
-    input: "{prefix}" + ".fa"
-    output: expand("{{prefix}}{ext}", ext=tux_cfg['build']['ext_v2'])
-    shell: "{params.cmd} {input} {wildcards.prefix}"
-
-rule tuxedo_tophat:
-    """Run tophat paired end alignment.
-    NB: requires python2 so need to activate a virtual environment or
-    the like to run.
-    """
-    params: cmd = 'tophat2' if tux_cfg['version2'] else 'tophat',
-            options = tux_cfg['tophat']['options'],
-            index = tux_cfg['index'],
-            outdir = tux_cfg['tophat']['output_dir'],
-            python2 = comp_cfg['python2']['activate_cmd']
-    input: read1 = "{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],\
-           read2 = "{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['fastq_suffix'],\
-           index = tux_cfg['index'] + ".1.bt2" if tux_cfg['version2'] else tux_cfg['index'] + ".1.ebwt"
-    output: tophatdir = "{prefix}.tophat2" if tux_cfg['version2'] else "{prefix}.tophat",
-            hits = os.path.join("{prefix}.tophat2" if tux_cfg['version2'] else "{prefix}.tophat", "accepted_hits.bam")
-    run: 
-        rg = dict(tux_cfg)['rg_fn'](os.path.basename(wildcards.prefix))
-        shell("{python2} && {cmd} {opt} {rg} -o {out}.tmp {index} {read1} {read2} 2> {out}.log && mv {out}.tmp/* {out} && mv {out}.log {out}".format(python2=params.python2, cmd=params.cmd, opt=params.options, rg=rg, out=output.tophatdir, prefix=wildcards.prefix, index=params.index, read1=input.read1, read2=input.read2))
-
-rule tuxedo_cufflinks_quant:
-    """Run cufflinks quantification"""
-    params: cmd = tux_cfg['cufflinks']['cmd'],
-            options = tux_cfg['cufflinks']['options'],
-            hits = os.path.join("{prefix}.tophat2" if tux_cfg['version2'] else "{prefix}.tophat", "accepted_hits.bam")
-    input: tophat = "{prefix}.tophat2" if tux_cfg['version2'] else "{prefix}.tophat",\
-           annot_gtf=tux_cfg['cufflinks']['transcript_annot_gtf']
-    output: "{prefix}.cufflinks_quant"
-    shell: "{params.cmd} {params.options} --GTF {input.annot_gtf} {params.hits} -o {output}.tmp &> {output}.log && mv {output}.tmp {output} && mv {output}.log {output}"
-
-rule tuxedo_cufflinks_from_tophat:
-    """Run cufflinks based on tophat output directory"""
-    params: cmd = tux_cfg['cufflinks']['cmd'],
-            options = tux_cfg['cufflinks']['options']
-    input: tophat = os.path.join("{prefix}.tophat2", "accepted_hits.bam") if tux_cfg['version2'] else os.path.join("{prefix}.tophat", "accepted_hits.bam")
-    output: "{prefix}.cufflinks"
-    shell: "{params.cmd} {params.options} {input.tophat} -o {output}.tmp &> {output}.log && mv {output}.tmp {output} && mv {output}.log {output}"
-
-# NB: usually {prefix}.bam is accepted_hits.bam from tophat
-rule tuxedo_cufflinks_from_bam:
-    """Run cufflinks on bam file"""
-    params: cmd = tux_cfg['cufflinks']['cmd'],
-            options = tux_cfg['cufflinks']['options']
-    input: bam="{prefix}.bam"
-    output: "{prefix}.cufflinks"
-    shell: "{params.cmd} {params.options} {input.bam} -o {output}.tmp &> {output}.log && mv {output}.tmp {output} && mv {output}.log {output}"
-
-ruleorder: tuxedo_cufflinks_from_tophat > tuxedo_cufflinks_from_bam
+for rule in config['bio.ngs.rnaseq.tuxedo']['rules']:
+    include: os.path.join("tuxedo", rule + ".rule")

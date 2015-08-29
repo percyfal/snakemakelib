@@ -1,0 +1,8 @@
+# -*- snakemake -*-
+rule picard_create_region_dict_awk:
+    """Picard: create interval list dict for region using awk"""
+    params: cmd = config['bio.ngs.qc.picard']['cmd'] + CREATE_SEQUENCE_DICTIONARY,
+            options = config['bio.ngs.qc.picard']['options']
+    input: bed="{prefix}.region_{gene}.bed", dict=config['bio.ngs.qc.picard']['ref'].replace(".fa", ".dict")
+    output: "{prefix}.region_{gene}.dict"
+    shell: config['comp.settings']['cat'] + " {input.dict} > {output}; " + config['comp.settings']['awk'] + " '{{printf(\"%s\\t%s\\t%s\\t%s\\t%s\\n\", $1,$2,$3,\"+\",$4); FS=\"\t\"}}' {input.bed} >> {output}"

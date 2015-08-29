@@ -1,0 +1,24 @@
+# -*- snakemake -*-
+config_default = {
+    'bio.ngs.tools.gatk' : {
+        'base_recalibrator' : {
+            'cmd' : 'BaseRecalibrator',
+            'ref' : config['bio.ngs.tools.gatk']['ref'],
+            'options' : " ".join([
+                "-L {target}".format(target=config['bio.ngs.tools.gatk']['target_regions']) if not config['bio.ngs.tools.gatk']['target_regions'] == "" else "",
+                "-knownSites {known}".format(known=config['bio.ngs.tools.gatk']['known_sites'] if not config['bio.ngs.tools.gatk']['known_sites'] == "" else ""),
+            ])
+        },
+    },
+}
+
+config = update_config(config_default, config)
+
+rule gatk_base_recalibrator:
+    """Run GATK BaseRecalibrator"""
+    params: cmd = config['bio.ngs.tools.gatk']['cmd'] + " -T " + config['bio.ngs.tools.gatk']['base_recalibrator']['cmd'],
+            options = " ".join(["-R", config['bio.ngs.tools.gatk']['base_recalibrator']['ref'],
+            config['bio.ngs.tools.gatk']['base_recalibrator']['options']])
+    input: bam = "{prefix}.bam", bai = "{prefix}.bai"
+    output: grp = "{prefix}.recal_data.grp"
+    shell: "{params.cmd} {params.options} -I {input.bam} -o {output.grp}"

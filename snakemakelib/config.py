@@ -3,6 +3,7 @@
 Configuration module
 """
 import os
+import yaml
 from snakemakelib.log import LoggerManager
 from collections import Mapping
 

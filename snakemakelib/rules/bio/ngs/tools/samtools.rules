@@ -1,8 +1,7 @@
 # -*- snakemake -*-
-import os
-from snakemakelib.config import update_config
-
 include: '../settings.rules'
+
+DEFAULT_RULES = ['samtools_index']
 
 config_default = { 
     'bio.ngs.tools.samtools' : {
@@ -13,36 +12,11 @@ config_default = {
         'index' : {
             'options' : '',
         },
+        'rules' : DEFAULT_RULES,
     },
 }
 
 config = update_config(config_default, config)
 
-samtools_cfg = config['bio.ngs.tools.samtools']
-
-rule samtools_sam2bam:
-    """Convert sam file to bam."""
-    params: cmd = samtools_cfg['cmd'],
-            options = samtools_cfg['options']
-    input: "{prefix}.sam"
-    output: "{prefix}.bam"
-    shell: "{params.cmd} view {params.options} -Sb {input} > {output}"
-
-rule samtools_gene_region_from_bam:
-    """Extract gene region from bam file"""
-    params: cmd = samtools_cfg['cmd'],
-            options = samtools_cfg['options']
-    input: bam = "{prefix}.bam", bed = "{prefix}.region_{region}.{sfx}.bed"
-    output: temp("{prefix}.region_{region}.{sfx}.bam")
-    shell: "{params.cmd} view {params.options} -b -L {input.bed} {input.bam} > {output}"
-
-ruleorder: samtools_gene_region_from_bam > samtools_sam2bam
-
-rule samtools_index:
-    """Run samtools index"""
-    params: cmd = samtools_cfg['cmd'],
-            options = samtools_cfg['index']['options']
-    input: "{prefix}.bam"
-    output: "{prefix}.bam.bai"
-    shell: "{params.cmd} {params.options} index {input}"
-
+for rule in config['bio.ngs.tools.samtools']['rules']:
+    include: os.path.join("samtools", rule + ".rule")

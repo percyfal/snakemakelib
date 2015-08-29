@@ -1,8 +1,5 @@
 # -*- snakemake -*-
 # Miscallaneous tools for conversion between file formats
-import os
-from snakemakelib.config import update_config
-
 include: '../settings.rules'
 
 config_default = { 

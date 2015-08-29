@@ -21,12 +21,10 @@ def _merge_tx_suffix(aligner, quantification=[]):
         return ".Aligned.toTranscriptome.out_unique.bam"
 
 def _find_transcript_bam(wildcards):
-    ngs_cfg = config['bio.ngs.settings']
-    picard_cfg = config['bio.ngs.qc.picard']
     sources = generic_target_generator(
-        tgt_re=ngs_cfg['sampleorg'].run_id_re,
-        target_suffix = _merge_tx_suffix(ngs_cfg['aligner'], ngs_cfg['rnaseq']['quantification']),
-        **ngs_cfg)
+        tgt_re=config['bio.ngs.settings']['sampleorg'].run_id_re,
+        target_suffix = _merge_tx_suffix(config['bio.ngs.settings']['aligner'], config['bio.ngs.settings']['rnaseq']['quantification']),
+        **config['bio.ngs.settings'])
     sources = [src for src in sources if os.path.dirname(src).startswith(wildcards.prefix)]
     return sources
 
@@ -36,11 +34,10 @@ def find_scrnaseq_merge_inputs(wildcards):
 
     NB: these are *not* the transcript-specific alignment files.
     """
-    ngs_cfg = config['bio.ngs.settings']
     sources = generic_target_generator(
-        tgt_re=ngs_cfg['sampleorg'].run_id_re, 
-        target_suffix = _merge_suffix(ngs_cfg['aligner'], ngs_cfg['rnaseq']['quantification']), 
-        **ngs_cfg)
+        tgt_re=config['bio.ngs.settings']['sampleorg'].run_id_re, 
+        target_suffix = _merge_suffix(config['bio.ngs.settings']['aligner'], config['bio.ngs.settings']['rnaseq']['quantification']), 
+        **config['bio.ngs.settings'])
     sources = [src for src in sources if os.path.dirname(src).startswith(wildcards.prefix)]
     return sources
 
@@ -69,10 +66,7 @@ config_default = {
 }
 
 config = update_config(config_default, config)
-main_cfg = config['settings']
-ngs_cfg = config['bio.ngs.settings']
-aligner = ngs_cfg['aligner']
-work_cfg = config['workflows.bio.scrnaseq']
+aligner = config['bio.ngs.settings']['aligner']
 
 # Include necessary snakemakelib rules
 p = os.path.join(os.pardir, os.pardir, 'rules')
@@ -95,45 +89,43 @@ if workflow._workdir is None:
 
 # Set temporary and protected outputs
 set_output(workflow,
-           temp_rules = main_cfg['temp_rules'] + main_cfg['temp_rules_default'],
-           temp_filetypes=main_cfg['temp_filetypes'] + main_cfg['temp_filetypes_default'],
-           protected_rules = main_cfg['protected_rules'] + main_cfg['protected_rules_default'],
-           protected_filetypes=main_cfg['protected_filetypes'] + main_cfg['protected_filetypes_default'])
+           temp_rules = config['settings']['temp_rules'] + config['settings']['temp_rules_default'],
+           temp_filetypes=config['settings']['temp_filetypes'] + config['settings']['temp_filetypes_default'],
+           protected_rules = config['settings']['protected_rules'] + config['settings']['protected_rules_default'],
+           protected_filetypes=config['settings']['protected_filetypes'] + config['settings']['protected_filetypes_default'])
 
 ##################################################
 # Target definitions
 ##################################################
 ALIGN_TARGETS = generic_target_generator(
-    tgt_re = ngs_cfg['sampleorg'].run_id_re,
-    src_re = ngs_cfg['sampleorg'].raw_run_re,
+    tgt_re = config['bio.ngs.settings']['sampleorg'].run_id_re,
+    src_re = config['bio.ngs.settings']['sampleorg'].raw_run_re,
     target_suffix = _merge_suffix(aligner),
-    **ngs_cfg)
+    **config['bio.ngs.settings'])
 
 RSEQC_TARGETS = generic_target_generator(
-    tgt_re = ngs_cfg['sampleorg'].sample_re,
+    tgt_re = config['bio.ngs.settings']['sampleorg'].sample_re,
     target_suffix = '.merge_rseqc/rseqc_qc_8.txt',
-    src_re = ngs_cfg['sampleorg'].raw_run_re,
-    **ngs_cfg)
+    src_re = config['bio.ngs.settings']['sampleorg'].raw_run_re,
+    **config['bio.ngs.settings'])
 
 RPKMFORGENES_TARGETS = []
-if 'rpkmforgenes' in work_cfg['quantification']:
+if 'rpkmforgenes' in config['workflows.bio.scrnaseq']['quantification']:
     RPKMFORGENES_TARGETS = generic_target_generator(
-        tgt_re = ngs_cfg['sampleorg'].sample_re,
+        tgt_re = config['bio.ngs.settings']['sampleorg'].sample_re,
         target_suffix = '.merge.rpkmforgenes',
-        src_re = ngs_cfg['sampleorg'].raw_run_re,
-        **ngs_cfg) 
+        src_re = config['bio.ngs.settings']['sampleorg'].raw_run_re,
+        **config['bio.ngs.settings']) 
 
 RSEM_TARGETS = []
-if 'rsem' in work_cfg['quantification']:
+if 'rsem' in config['workflows.bio.scrnaseq']['quantification']:
     RSEM_TARGETS = generic_target_generator(
-        tgt_re = ngs_cfg['sampleorg'].sample_re,
+        tgt_re = config['bio.ngs.settings']['sampleorg'].sample_re,
         target_suffix = '.merge.tx.isoforms.results',
-        src_re = ngs_cfg['sampleorg'].raw_run_re,
-        **ngs_cfg) + ['report/rsem.merge.tx.genes.csv', 'report/rsem.merge.tx.isoforms.csv']
+        src_re = config['bio.ngs.settings']['sampleorg'].raw_run_re,
+        **config['bio.ngs.settings']) + ['report/rsem.merge.tx.genes.csv', 'report/rsem.merge.tx.isoforms.csv']
 
 REPORT_TARGETS = ['report/star.Aligned.out.csv', 'report/star.Aligned.out.mapping_summary.html']
-
-picard_config = config["bio.ngs.qc.picard"]
 
 # Additional merge rule for transcript alignment files
 rule scrnaseq_picard_merge_sam_transcript:
@@ -141,9 +133,9 @@ rule scrnaseq_picard_merge_sam_transcript:
 
     NB: always outputs bam files!
     """
-    params: cmd = picard_config['cmd'] + "MergeSamFiles",
-            options = " ".join([picard_config['options'],
-                                picard_config['merge_sam']['options']])
+    params: cmd = config['bio.ngs.qc.picard']['cmd'] + "MergeSamFiles",
+            options = " ".join([config['bio.ngs.qc.picard']['options'],
+                                config['bio.ngs.qc.picard']['merge_sam']['options']])
     input: _find_transcript_bam
     output: merge="{path}" + os.sep + "{prefix}." + "merge.tx.bam"
     run: 

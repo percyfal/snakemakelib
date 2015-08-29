@@ -1,0 +1,7 @@
+# -*- snakemake -*-
+rule bwa_index:
+    """bwa index a reference"""
+    params: cmd = config['bio.ngs.align.bwa']['cmd']
+    input: indexref = config['bio.ngs.align.bwa']['index']
+    output: expand("{{prefix}}{{ext}}{bwaext}", bwaext=config['bio.ngs.align.bwa']['index_ext'])
+    shell: "{params.cmd} index {input.indexref} {wildcards.prefix}"

@@ -1,0 +1,28 @@
+# -*- snakemake -*-
+config_default = {
+    'bio.ngs.tools.bedtools' : {
+        'intersectbed' : {
+            'cmd' : 'intersectBed',
+            'options' : "",
+        },
+    },
+}
+
+config = update_config(config_default, config)
+
+rule bedtools_intersectbed_make_region_baits:
+    """Generate overlapping bed file for bait definition file"""
+    params: cmd = os.path.join(config['bio.ngs.tools.bedtools']['home'], config['bio.ngs.tools.bedtools']['intersectbed']['cmd']),
+            options = config['bio.ngs.tools.bedtools']['intersectbed']['options']
+    input: a="{prefix}.region_{gene}.bed", b=config['bio.ngs.tools.bedtools']['sequence_capture']['bait_regions']
+    output: "{prefix}.region_{gene}.baits.bed"
+    shell: "{params.cmd} -a {input.a} -b {input.b} > {output}"
+
+rule bedtools_intersectbed_make_region_targets:
+    """Generate overlapping bed file for target definition file"""
+    params: cmd = os.path.join(config['bio.ngs.tools.bedtools']['home'], config['bio.ngs.tools.bedtools']['intersectbed']['cmd']),
+            options = config['bio.ngs.tools.bedtools']['intersectbed']['options']
+    input: a="{prefix}.region_{gene}.bed", b=config['bio.ngs.tools.bedtools']['sequence_capture']['target_regions']
+    output: "{prefix}.region_{gene}.targets.bed"
+    shell: "{params.cmd} -a {input.a} -b {input.b} > {output}"
+

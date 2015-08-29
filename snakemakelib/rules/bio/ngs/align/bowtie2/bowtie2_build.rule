@@ -1,0 +1,8 @@
+# -*- snakemake -*-
+rule bowtie2_build:
+    """Bowtie build index"""
+    params: ref = config['bio.ngs.align.bowtie2']['ref'],
+            cmd = os.path.join(os.path.dirname(config['bio.ngs.align.bowtie2']['cmd']), 'bowtie2-build')
+    input: config['bio.ngs.align.bowtie2']['ref']
+    output: expand("{{prefix}}{ext}", ext=config['bio.ngs.align.bowtie2']['build_ext'])
+    shell: "{params.cmd} {input} {wildcards.prefix}"

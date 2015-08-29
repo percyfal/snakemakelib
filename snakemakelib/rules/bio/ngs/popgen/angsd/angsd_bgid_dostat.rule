@@ -1,0 +1,20 @@
+# -*- snakemake -*-
+config_default = {
+    'bio.ngs.popgen.angsd' : {
+        'bgid' : {
+	    'cmd' : os.path.join(config['bio.ngs.popgen.angsd']['home'], "misc/bgid"),
+            'dostat' : {
+                'options' : "-step {step} -win {window} -nChr {nchr}".format(step=config['bio.ngs.popgen.angsd']['options']['step'], window=config['bio.ngs.popgen.angsd']['options']['window'], nchr=config['bio.ngs.popgen.angsd']['options']['nchr']),
+            },
+        },
+    },
+}
+
+config = update_config(config_default, config)
+
+rule angsd_bgid_dostat:
+    params: cmd = config['bio.ngs.popgen.angsd']['bgid']['cmd'],
+            options = config['bio.ngs.popgen.angsd']['bgid']['dostat']['options']
+    input: thetas_gz = "{prefix}.thetas.gz", thetas_gz_bin="{prefix}.thetas.gz.bin"
+    output: pestPG = "{prefix}.thetas.gz.bgid_pestPG"
+    shell: "{params.cmd} do_stat {input.thetas_gz} {params.options}"

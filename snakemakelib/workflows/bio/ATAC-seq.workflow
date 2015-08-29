@@ -16,8 +16,7 @@ from snakemakelib.bio.ngs.qc.picard import make_picard_summary_plots
 ##############################
 def _merge_suffix():
     """Determine the merge suffix of the run files"""
-    atac_cfg = config['workflows.bio.atac_seq']
-    if atac_cfg['trimadaptor']:
+    if config['workflows.bio.atac_seq']['trimadaptor']:
         return ".trimmed.sort.bam"
     else:
         return ".sort.bam"
@@ -76,9 +75,6 @@ key = 'bio.ngs.align.' + aligner
 
 config = update_config(atac_config, config)
 config = update_config({key :  aligner_config[key]}, config)
-ngs_cfg = config['bio.ngs.settings']
-main_cfg = config['settings']
-atac_cfg = config['workflows.bio.atac_seq']
 
 ##############################
 # Include statements
@@ -90,34 +86,34 @@ include: os.path.join(p, "bio/ngs", "settings.rules")
 include: os.path.join(p, "bio/ngs/align", aligner + ".rules")
 include: os.path.join(p, "bio/ngs/align", "blat.rules")
 include: os.path.join(p, "bio/ngs/qc", "picard.rules")
-include: os.path.join(p, "bio/ngs/qc", "sequenceprocessing.rules")
+#include: os.path.join(p, "bio/ngs/qc", "sequenceprocessing.rules")
 include: os.path.join(p, "bio/ngs/qc", "qualimap.rules")
 include: os.path.join(p, "bio/ngs/chromatin", "danpos.rules")
 if 'dfilter' in config['workflows.bio.atac_seq']['peakcallers']:
     include: os.path.join(p, "bio/ngs/enrichment", "dfilter.rules")
 if 'macs2' in config['workflows.bio.atac_seq']['peakcallers']:
-    include: os.path.join(p, "bio/ngs/enrichment", "macs.rules")
-if atac_cfg['trimadaptor']:
+    include: os.path.join(p, "bio/ngs/enrichment", "macs2.rules")
+if config['workflows.bio.atac_seq']['trimadaptor']:
     include: os.path.join(p, "bio/ngs/qc", "cutadapt.rules")
-if atac_cfg['bamfilter']:
+if config['workflows.bio.atac_seq']['bamfilter']:
     include: os.path.join(p, "bio/ngs/tools", "bamtools.rules")
 
     
-ruleorder: picard_merge_sam > picard_sort_bam 
-ruleorder: picard_sort_bam > picard_add_or_replace_read_groups
+ruleorder: picard_merge_sam > picard_sort_sam 
+ruleorder: picard_sort_sam > picard_add_or_replace_read_groups
 ruleorder: picard_add_or_replace_read_groups > picard_mark_duplicates
 ruleorder: picard_mark_duplicates > atacseq_correct_coordinates
-ruleorder: atacseq_correct_coordinates > bowtie_align
-ruleorder: picard_sort_bam > bowtie_align
-ruleorder: picard_merge_sam > bowtie_align
-ruleorder: picard_mark_duplicates > bowtie_align
+ruleorder: atacseq_correct_coordinates > bowtie_align_pe
+ruleorder: picard_sort_sam > bowtie_align_pe
+ruleorder: picard_merge_sam > bowtie_align_pe
+ruleorder: picard_mark_duplicates > bowtie_align_pe
 
 # Set temporary and protected outputs
 set_output(workflow,
-           temp_rules = main_cfg['temp_rules'] + main_cfg['temp_rules_default'],
-           temp_filetypes=main_cfg['temp_filetypes'] + main_cfg['temp_filetypes_default'],
-           protected_rules = main_cfg['protected_rules'] + main_cfg['protected_rules_default'],
-           protected_filetypes=main_cfg['protected_filetypes'] + main_cfg['protected_filetypes_default'])
+           temp_rules = config['settings']['temp_rules'] + config['settings']['temp_rules_default'],
+           temp_filetypes=config['settings']['temp_filetypes'] + config['settings']['temp_filetypes_default'],
+           protected_rules = config['settings']['protected_rules'] + config['settings']['protected_rules_default'],
+           protected_filetypes=config['settings']['protected_filetypes'] + config['settings']['protected_filetypes_default'])
 
 if workflow._workdir is None:
     raise Exception("no workdir set, or set after include of 'ATAC-seq.workflow'; set workdir before include statement!")
@@ -126,58 +122,58 @@ if workflow._workdir is None:
 # Targets
 ##############################
 ALIGN_TARGETS = generic_target_generator(
-    tgt_re = ngs_cfg['sampleorg'].run_id_re, 
-    src_re = ngs_cfg['sampleorg'].raw_run_re, 
+    tgt_re = config['bio.ngs.settings']['sampleorg'].run_id_re, 
+    src_re = config['bio.ngs.settings']['sampleorg'].raw_run_re, 
     target_suffix = ALIGN_TARGET_SUFFIX, 
-    **ngs_cfg)
+    **config['bio.ngs.settings'])
 
 MERGE_TARGET_SUFFIX = ".sort.merge.bam"
 MERGE_TARGETS = generic_target_generator(
-    tgt_re = ngs_cfg['sampleorg'].sample_re, 
-    src_re = ngs_cfg['sampleorg'].raw_run_re, 
+    tgt_re = config['bio.ngs.settings']['sampleorg'].sample_re, 
+    src_re = config['bio.ngs.settings']['sampleorg'].raw_run_re, 
     target_suffix = MERGE_TARGET_SUFFIX, 
-    **ngs_cfg)
+    **config['bio.ngs.settings'])
 
-PREFIX = ".sort.merge.filter" if atac_cfg['bamfilter'] else ".sort.merge"
+PREFIX = ".sort.merge.filter" if config['workflows.bio.atac_seq']['bamfilter'] else ".sort.merge"
 
 DFILTER_TARGET_SUFFIX = PREFIX + ".offset.dfilt.bed"
 DFILTER_TARGETS = []
-if 'dfilter' in atac_cfg['peakcallers']:
+if 'dfilter' in config['workflows.bio.atac_seq']['peakcallers']:
     DFILTER_TARGETS = generic_target_generator(
-        tgt_re = ngs_cfg['sampleorg'].sample_re, 
-        src_re = ngs_cfg['sampleorg'].raw_run_re, 
+        tgt_re = config['bio.ngs.settings']['sampleorg'].sample_re, 
+        src_re = config['bio.ngs.settings']['sampleorg'].raw_run_re, 
         target_suffix = DFILTER_TARGET_SUFFIX, 
-        **ngs_cfg) 
+        **config['bio.ngs.settings']) 
 
 MACS2_TARGET_SUFFIX = PREFIX + ".offset_peaks.xls"
 MACS2_TARGETS = []
-if 'macs2' in atac_cfg['peakcallers']:
+if 'macs2' in config['workflows.bio.atac_seq']['peakcallers']:
     MACS2_TARGETS = generic_target_generator(
-        tgt_re = ngs_cfg['sampleorg'].sample_re, 
-        src_re = ngs_cfg['sampleorg'].raw_run_re, 
+        tgt_re = config['bio.ngs.settings']['sampleorg'].sample_re, 
+        src_re = config['bio.ngs.settings']['sampleorg'].raw_run_re, 
         target_suffix = MACS2_TARGET_SUFFIX,  
-        **ngs_cfg) 
+        **config['bio.ngs.settings']) 
 
 DUP_METRICS_SUFFIX = ".sort.merge.dup.dup_metrics"
 DUP_METRICS_TARGETS = generic_target_generator(
-    tgt_re = ngs_cfg['sampleorg'].sample_re, 
+    tgt_re = config['bio.ngs.settings']['sampleorg'].sample_re, 
     target_suffix =  DUP_METRICS_SUFFIX, 
-    src_re = ngs_cfg['sampleorg'].raw_run_re, 
-    **ngs_cfg)
+    src_re = config['bio.ngs.settings']['sampleorg'].raw_run_re, 
+    **config['bio.ngs.settings'])
 
 ALIGN_METRICS_SUFFIX = ".sort.merge.dup.align_metrics"
 ALIGN_METRICS_TARGETS = generic_target_generator(
-    tgt_re = ngs_cfg['sampleorg'].sample_re, 
+    tgt_re = config['bio.ngs.settings']['sampleorg'].sample_re, 
     target_suffix =  ALIGN_METRICS_SUFFIX, 
-    src_re = ngs_cfg['sampleorg'].raw_run_re, 
-    **ngs_cfg)
+    src_re = config['bio.ngs.settings']['sampleorg'].raw_run_re, 
+    **config['bio.ngs.settings'])
 
 INSERT_METRICS_SUFFIX = ".sort.merge.dup.insert_metrics"
 INSERT_METRICS_TARGETS = generic_target_generator(
-    tgt_re = ngs_cfg['sampleorg'].sample_re, 
+    tgt_re = config['bio.ngs.settings']['sampleorg'].sample_re, 
     target_suffix =  INSERT_METRICS_SUFFIX, 
-    src_re = ngs_cfg['sampleorg'].raw_run_re, 
-    **ngs_cfg)
+    src_re = config['bio.ngs.settings']['sampleorg'].raw_run_re, 
+    **config['bio.ngs.settings'])
 
 REPORT_TARGETS = ["report/atacseq_all_rulegraph.png", "report/atacseq_summary.html"]
 
@@ -236,9 +232,9 @@ rule atacseq_correct_coordinates:
 
 rule atacseq_report:
     """Write report"""
-    input: cutadapt = os.path.join("{path}", "cutadapt.summary.csv") if atac_cfg['trimadaptor'] else [],
+    input: cutadapt = os.path.join("{path}", "cutadapt.summary.csv") if config['workflows.bio.atac_seq']['trimadaptor'] else [],
            picard = [("report/picard.sort.merge.dup{sfx}.metrics.csv".format(sfx=sfx), 
-           "report/picard.sort.merge.dup{sfx}.hist.csv".format(sfx=sfx)) for sfx in [workflow._rules[x].params.suffix for x in picard_config['qcrules']]],
+           "report/picard.sort.merge.dup{sfx}.hist.csv".format(sfx=sfx)) for sfx in [workflow._rules[x].params.suffix for x in config['bio.ngs.qc.picard']['qcrules']]],
            qualimap = [os.path.join("{path}", "sample{}.qualimap.globals.csv".format(MERGE_TARGET_SUFFIX)),
                        os.path.join("{path}", "sample{}.qualimap.coverage_per_contig.csv".format(MERGE_TARGET_SUFFIX))],
            rulegraph = "report/atacseq_all_rulegraph.png"
@@ -247,7 +243,7 @@ rule atacseq_report:
         d = {}
         env = Environment(loader = PackageLoader("snakemakelib", "_templates"))
         tp = env.get_template('workflow_atacseq_qc.html')
-        if atac_cfg['trimadaptor']:
+        if config['workflows.bio.atac_seq']['trimadaptor']:
             d.update({'cutadapt' : make_cutadapt_summary_plot(input.cutadapt)})
         d.update({'qualimap' : make_qualimap_plots(*input.qualimap)})
         d.update({'picard' : make_picard_summary_plots(input.picard)})

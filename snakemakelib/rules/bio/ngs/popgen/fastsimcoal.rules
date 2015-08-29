@@ -1,0 +1,19 @@
+# -*- snakemake -*-
+include: '../settings.rules'
+
+config_default = {
+    'bio.ngs.popgen.fastsimcoal' : {
+        'cmd' : 'fsc252',
+        'options' : ["-n 1"],
+    },
+}
+
+config = update_config(config_default, config)
+
+rule fastsimcoal_run:
+    params: cmd = config['bio.ngs.popgen.fastsimcoal']['cmd'],
+            options = " ".join(config['bio.ngs.popgen.fastsimcoal']['options'])
+    input: parameter = "{prefix}.par"
+    output: arb = os.path.join("{prefix}", "{prefix}_1.arb"),
+            simparam = os.path.join("{prefix}", "{prefix}_1.simparam")
+    shell: "{params.cmd} -i {input.parameter} {params.options}"

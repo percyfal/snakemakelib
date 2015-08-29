@@ -1,0 +1,18 @@
+# -*- snakemake -*-
+config_default = {
+    'bio.ngs.align.gem' : {
+        'gem_mappability' : {
+            'options' : "-l 100 -T 7",
+            'cmd' : os.path.join(config['bio.ngs.align.gem']['home'], 'gem-mappability')
+        },
+    },
+}
+
+config = update_config(config_default, config)
+
+rule gem_mappability:
+    params: cmd = config['bio.ngs.align.gem']['gem_mappability']['cmd'],
+            options = config['bio.ngs.align.gem']['gem_mappability']['options']
+    input: gem = "{prefix}.gem"
+    output: mappability = "{prefix}.mappability"
+    shell: "{params.cmd} {params.options} -I {input.gem} -o {output.mappability}"

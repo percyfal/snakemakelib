@@ -1,0 +1,29 @@
+# -*- snakemake -*-
+
+def _qualimap_find_result_files_fn(wildcards):
+    tmp = wildcards.label.lstrip("sample").lstrip("run")
+    config['bio.ngs.settings'] = config['bio.ngs.settings']
+    tgt_re = config['bio.ngs.settings']['sampleorg'].run_id_re
+    if wildcards.label.startswith("sample"):
+        tgt_re = config['bio.ngs.settings']['sampleorg'].sample_re
+    sources = generic_target_generator(
+        tgt_re = tgt_re,
+        src_re = config['bio.ngs.settings']['sampleorg'].run_id_re,
+        target_suffix = os.path.join(tmp, 'genome_results.txt'),
+        **config['bio.ngs.settings'])
+    return sources
+
+
+rule qualimap_collect_results:
+    """Qualimap: collect results"""
+    input: _qualimap_find_result_files_fn
+    output: coverage_per_contig = os.path.join("{path}", "{label}.coverage_per_contig.csv"),
+            qmglobals = os.path.join("{path}", "{label}.globals.csv")
+    run:
+        tgt_re = config['bio.ngs.settings']['sampleorg'].run_id_re
+        if wildcards.label.startswith('sample'):
+            tgt_re = config['bio.ngs.settings']['sampleorg'].sample_re
+        qm = Qualimap(inputs=input, re=tgt_re)
+        qm.save(sorted([output.qmglobals, output.coverage_per_contig]))
+
+

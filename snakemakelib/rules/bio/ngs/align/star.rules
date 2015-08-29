@@ -1,140 +1,45 @@
 # -*- snakemake -*-
-import os
-import jinja2
-import pandas as pd
-from snakemakelib.config import update_config, sml_templates_path
-from snakemakelib.utils import SmlTemplateEnv
-from snakemakelib.stat import is_compressed, is_installed
-from snakemakelib.bio.ngs.db import index, ref, annotation
-from snakemakelib.bio.ngs.targets import generic_target_generator
-from snakemakelib.bio.ngs.align.star import Star
-
 include: '../../../comp/settings.rules'
 include: '../settings.rules'
-include: '../tools/samtools.rules'
+
+DEFAULT_RULES = ['star_index', 'star_align', 'star_summarize_alignment_runs']
 
 config_default = { 
     'bio.ngs.align.star' : {
         'cmd' : "STAR",
-        'ref' : ngs_conf['db']['ref'],
-        'extra_ref' : ngs_conf['db']['extra_ref'],
+        'ref' : config['bio.ngs.settings']['db']['ref'],
+        'extra_ref' : config['bio.ngs.settings']['db']['extra_ref'],
         'index' : "",
-        'star_index' : {
-            'threads' : config['bio.ngs.settings']['threads'],
-            'options' : "--genomeSAindexNbases 14",
-            'sjdbGTFfile' : config['bio.ngs.settings']['annotation']['transcript_annot_gtf'],
-            'sjdbOverhang' : 99,
+        'rules' : DEFAULT_RULES,
+        'star_index': {
             'genome' : "Genome",
-            'SAname' : "SA",
-        },
-        'align' : {
-            'threads' : config['bio.ngs.settings']['threads'],
-            'options' : "",
-            'outSAMtype' : "Unsorted",
         },
     },
 }
 
 config = update_config(config_default, config)
-# Update annotation
-config['bio.ngs.align.star']['star_index']['sjdbGTFfile'] = \
-    annotation(annotation=config['bio.ngs.align.star']['star_index']['sjdbGTFfile'],\
-               db_cfg=config['bio.ngs.settings']['db'])
 
-# Update index
-config['bio.ngs.align.star']['index'] = index(
-    ref = config['bio.ngs.align.star']['ref'],
-    index = config['bio.ngs.align.star']['index'],
-    application = 'star',
-    index_name = config['bio.ngs.align.star']['star_index']['genome'],
-    build = config['bio.ngs.settings']['db']['build'])
+try:
+    from snakemakelib.bio.ngs.db import index, annotation
+    
+    # Update annotation
+    config['bio.ngs.align.star']['star_index']['sjdbGTFfile'] = \
+        annotation(annotation=config['bio.ngs.align.star']['star_index']['sjdbGTFfile'],\
+                   db_cfg=config['bio.ngs.settings']['db'])
+
+    # Update index
+    config['bio.ngs.align.star']['index'] = index(
+        ref = config['bio.ngs.align.star']['ref'],
+        index = config['bio.ngs.align.star']['index'],
+        application = 'star',
+        index_name = config['bio.ngs.align.star']['star_index']['genome'],
+        build = config['bio.ngs.settings']['db']['build'])
+except:
+    pass
 
 if config['bio.ngs.align.star']['extra_ref']:
     include: '../db/ercc.rules'
     include: '../db/cloudbiolinux.rules'
 
-star_cfg = config['bio.ngs.align.star']
-
-if not is_installed(star_cfg['cmd']):
-    raise Exception("{prog} not installed or not in PATH; either add the path to $PATH or set the full executable path in configuration section bio.ngs.align.star.cmd".format(star_cfg['cmd']))
-
-def _star_suffix():
-    if star_cfg['align']['outSAMtype'].find("Unsorted") > -1:
-        return ".Aligned.out.bam"
-    elif star_cfg['align']['outSAMtype'].find("SortedByCoordinate") > -1:
-        return ".Aligned.sortedByCoord.out.bam"
-
-config['bio.ngs.align.star']['align']['suffix'] = _star_suffix()
-
-star_cfg = config['bio.ngs.align.star']
-ngs_cfg = config['bio.ngs.settings']
-comp_cfg = config['comp.settings']
-
-rule star_index:
-    """Generate STAR genome index. By default will generate index in a
-    directory '../rnaseq/star' relative to the directory of the reference
-    sequence.
-
-    Remember: for small genomes the parameter --genomeSAindexNbases
-    must be adjusted; it is calculated as min(14, log2(GenomeLength)/2 - 1)
-
-    """
-    params: cmd = star_cfg['cmd'],
-            options = " ".join([\
-                                star_cfg['star_index']['options'],\
-                                "--sjdbGTFfile {}".format(star_cfg['star_index']['sjdbGTFfile']) if star_cfg['star_index']['sjdbGTFfile'] else "",\
-                                "--sjdbOverhang {}".format(star_cfg['star_index']['sjdbOverhang']) if star_cfg['star_index']['sjdbGTFfile'] else ""\
-                                ]),
-            genomedir = os.path.dirname(star_cfg['index'])
-    input: ref = [star_cfg['ref']] + [ref(x, config['bio.ngs.settings']['db']) for x in star_cfg['extra_ref']],
-           gtf = star_cfg['star_index']['sjdbGTFfile'] if star_cfg['star_index']['sjdbGTFfile'] else ""
-    output: Genome = star_cfg['index'], SA=os.path.join(os.path.dirname(star_cfg['index']), "SA")
-    log: star_cfg['index'] + ".log"
-    threads: star_cfg['star_index']['threads']
-    shell: "{params.cmd} --runThreadN {threads} --runMode genomeGenerate --genomeDir {params.genomedir} --genomeFastaFiles {input.ref} {params.options} > {log}"
-
-rule star_align:
-    """Run STAR alignment"""
-    params: cmd = star_cfg['cmd'],
-            genomedir = os.path.dirname(star_cfg['index']),
-            options = " ".join([star_cfg['align']['options'],
-                                "--readFilesCommand {cmd}".format(cmd=comp_cfg['compression']['prog_map'][os.path.splitext(ngs_cfg['fastq_suffix'])[1]]) if is_compressed(ngs_cfg['fastq_suffix'], config['comp.settings']['compression']['re']) else "",
-                                "--outSAMtype BAM {}".format(star_cfg['align']['outSAMtype']),
-                                "--quantMode TranscriptomeSAM" if 'rsem' in ngs_cfg['rnaseq']['quantification'] else "",
-                                ])
-    input: read1 = "{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],
-           read2 = "{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['fastq_suffix'],
-           index = star_cfg['index']
-    output: (["{prefix}" + star_cfg['align']['suffix']] + ["{prefix}" + ".Aligned.toTranscriptome.out.bam"] if 'rsem' in ngs_cfg['rnaseq']['quantification'] else [])
-    threads: star_cfg['align']['threads']
-    shell: "{params.cmd} --runThreadN {threads} --genomeDir {params.genomedir} --readFilesIn {input.read1} {input.read2} {params.options} --outFileNamePrefix {wildcards.prefix}."
-
-def _star_find_result_files_fn(wildcards):
-    ngs_cfg = config['bio.ngs.settings']
-    sources = generic_target_generator(
-        tgt_re = ngs_cfg['sampleorg'].run_id_re,
-        src_re = ngs_cfg['sampleorg'].run_id_re,
-        target_suffix = "." + wildcards.label + 'bam',
-        **ngs_cfg)
-    sources = [x.replace(wildcards.label, "Log.final.out.").replace(".bam", "") for x in sources]
-    return sources
-
-# QC summaries
-# This is the information in summary_starlog.txt
-rule star_summarize_alignment_runs:
-    """Summarize alignment data for alignment(s) based on runs.
-
-    FIXME: The indexing should be done by run; currently results are
-    indexed by sample, which is ok as long as there is only one run
-    per sample.
-
-    Important: in order to catch {label}, as a minimum, this needs to
-    be set to 'Aligned.out.'; the minimum target is therefore star.Aligned.out.csv
-
-    """
-    input: _star_find_result_files_fn
-    output: csv = os.path.join("{path}", "star.{label}csv")
-    run:
-        tgt_re = ngs_cfg['sampleorg'].run_id_re
-        star = Star(inputs=input, re=tgt_re)
-        star.save([output.csv])
+for rule in config['bio.ngs.align.star']['rules']:
+    include: os.path.join("star", rule + ".rule")

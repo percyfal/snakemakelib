@@ -1,0 +1,9 @@
+# -*- snakemake -*-
+import os
+
+rule ucsc_download_2bit:
+    """Download 2bit file from ucsc"""
+    params: urlinput = os.path.join(config['bio.ngs.db.ucsc']['urldownload'], "{build}", "bigZips", "{build}.2bit")
+    output: os.path.join("{path}", "{build}", "ucsc", "{build}.2bit")
+    shell: "mkdir -p `dirname {output}` && wget {params.urlinput} -O {output}"
+

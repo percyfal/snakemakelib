@@ -1,0 +1,54 @@
+# -*- snakemake -*-
+include: "../../qc/picard.rules"
+
+rule bismark_merge_alignment_reports:
+    """bismark: Merge alignment reports from separate runs for a sample.
+
+    """
+    input: dict(config['bio.ngs.methylseq.bismark']['report'])['inputfun']
+    output: report="{path}" + os.sep + "{prefix}" + config['bio.ngs.qc.picard']['merge_sam']['label'] + "{suffix}" + ".bam" + report_label(config['bio.ngs.methylseq.bismark']) + ".txt"
+    run:
+        order = []
+        first = True
+        d = {}
+        for f in input:
+            with open(f) as fh:
+                for l in fh.readlines():
+                    if l.find(":"):
+                        c = l.strip().split(":")
+                        if first:
+                            order += [c[0]]
+                        if (len(c) >= 2):
+                            (k, v) = c[0], ":".join(c[1:])
+                            if not k in d:
+                                d[k] = []
+                            d[k] += [v.strip()]
+                        else:
+                            pass
+            first = False
+        def frac(a, b, d, fmt = "{:.1f}%", dsum=True):
+            denom = sum([int(x) for x in d[a]]) + sum([int(x) for x in d[b]]) if dsum else sum([int(x) for x in d[a]])
+            nom = sum([int(x) for x in d[a]])
+            return fmt.format(100.0 * nom / denom)
+        with open(output.report, 'w') as outfh:
+            for k in order:
+                if k in d:
+                    v = d[k]
+                    if re.search("%", d[k][0]):
+                        if k == "Mapping efficiency":
+                            v = frac("Sequence pairs analysed in total", "Number of paired-end alignments with a unique best hit", d, dsum=False)
+                        elif k == "C methylated in CpG context":
+                            v = frac("Total methylated C's in CpG context", "Total unmethylated C's in CpG context", d)
+                        elif k == "C methylated in CHG context":
+                            v = frac("Total methylated C's in CHG context", "Total unmethylated C's in CHG context", d)
+                        elif k == "C methylated in CHH context":
+                            v = frac("Total methylated C's in CHH context", "Total unmethylated C's in CHH context", d)
+                    elif re.search("\t", d[k][0]):
+                        v = "{}:\t{}\t{}".format(k, sum([int(x.split("\t")[0]) for x in d[k]]), d[k][0].split("\t")[1])
+                    elif re.match("[0-9]+", d[k][0]):
+                        v = sum([int(x) for x in d[k]])
+                    else:
+                        v = ",".join(d[k]) if d[k][0] != "" else ""
+                    outfh.write("{}:\t{}\n".format(k, v))
+                else:
+                    outfh.write(k + "\n")

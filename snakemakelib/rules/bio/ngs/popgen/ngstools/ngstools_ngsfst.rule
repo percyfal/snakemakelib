@@ -1,0 +1,10 @@
+# -*- snakemake -*-
+config_default = {
+    'bio.ngs.popgen.ngstools' : {
+        'ngsfst' : {
+            'cmd' : os.path.join(config['bio.ngs.popgen.ngstools']['home'], "ngsFST"),
+        },
+    },
+}
+
+config = update_config(config_default, config)

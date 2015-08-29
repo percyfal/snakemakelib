@@ -1,0 +1,6 @@
+# -*- snakemake -*-
+rule bwa_link_ref:
+    """bwa link reference file to bwa index directory"""
+    input: ref = config['bio.ngs.align.bwa']['ref']
+    output: indexref = config['bio.ngs.align.bwa']['index']
+    shell: "if [ ! -e {output.indexref} ]; then ln -s {input.ref} {output.indexref}; fi"

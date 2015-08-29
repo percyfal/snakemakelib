@@ -1,0 +1,19 @@
+# -*- snakemake -*-
+config_default = {
+    'bio.ngs.align.blat': {
+        'faToTwoBit' : {
+            'cmd' : 'faToTwoBit',
+            'options' : "",
+        },
+    },
+}
+
+config = update_config(config_default, config)
+
+rule blat_faToTwoBit:
+    """Run blat faToTwoBit"""
+    params: cmd = config['bio.ngs.align.blat']['faToTwoBit']['cmd'],
+            options = config['bio.ngs.align.blat']['faToTwoBit']['options']
+    input: fa = "{prefix}.fa"
+    output: twobit = "{prefix}.2bit"
+    shell: "{params.cmd} {params.options} {input.fa} {output.twobit}"

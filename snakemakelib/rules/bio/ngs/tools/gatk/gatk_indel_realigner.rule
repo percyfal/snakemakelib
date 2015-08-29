@@ -1,0 +1,23 @@
+# -*- snakemake -*-
+config_default = {
+    'bio.ngs.tools.gatk' : {
+        'indel_realigner' : {
+            'cmd' : 'IndelRealigner',
+            'ref' : config['bio.ngs.tools.gatk']['ref'],
+            'options' : " ".join(["-L {target}".format(target=config['bio.ngs.tools.gatk']['target_regions']) if not config['bio.ngs.tools.gatk']['target_regions'] == "" else ""])
+        },
+    },
+}
+
+config = update_config(config_default, config)
+
+rule gatk_indel_realigner:
+    """Run GATK IndelRealigner"""
+    params: cmd = config['bio.ngs.tools.gatk']['cmd'] + " -T " + config['bio.ngs.tools.gatk']['indel_realigner']['cmd'],
+            options = " ".join(["-R", config['bio.ngs.tools.gatk']['indel_realigner']['ref'],
+            config['bio.ngs.tools.gatk']['indel_realigner']['options']])
+    input: "{prefix}.bam", "{prefix}.intervals"
+    output: "{prefix}.realign.bam", "{prefix}.realign.bai"
+    shell: "{params.cmd} {params.options} -o {output[0]} --targetIntervals {input[1]} -I {input[0]}"
+
+ruleorder: gatk_indel_realigner > picard_build_bam_index

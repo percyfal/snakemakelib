@@ -1,0 +1,16 @@
+# -*- snakemake -*-
+import os
+
+rule ucsc_write_chromosome:
+    """Generate chromosome-specific fasta file from reference."""
+    input: ref = config['bio.ngs.db.ucsc']['ref']
+    output: chrfa = os.path.join("{path}", "chr{chr}.fa")
+    run:
+        from Bio import SeqIO
+        seqs = SeqIO.parse(open(input.ref), format='fasta')
+        for seq in seqs:
+            name = output.chrfa
+            if seq.id == wildcards.chr or seq.id == "chr" + wildcards.chr:
+                smllogger.info("Generating chromosome file {}".format(name))
+                SeqIO.write(seq, open(name, 'w'), format='fasta')
+                break

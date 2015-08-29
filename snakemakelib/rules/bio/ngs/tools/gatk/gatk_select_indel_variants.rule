@@ -1,0 +1,26 @@
+# -*- snakemake -*-
+config_default = {
+    'bio.ngs.tools.gatk' : {
+        'select_indel_variants' : {
+            'cmd' : 'SelectVariants',
+            'ref' : config['bio.ngs.tools.gatk']['ref'],
+            'options' : " ".join(["--selectTypeToInclude", "INDEL",
+                                  "--selectTypeToInclude", "MIXED",
+                                  "--selectTypeToInclude", "MNP",
+                                  "--selectTypeToInclude", "SYMBOLIC",
+                                  "--selectTypeToInclude", "NO_VARIATION"])
+        },
+    },
+}
+
+config = update_config(config_default, config)
+
+rule gatk_select_indel_variants:
+    """Run GATK SelectVariants to select INDELs"""
+    params: cmd = config['bio.ngs.tools.gatk']['cmd'] + " -T " + config['bio.ngs.tools.gatk']['select_indel_variants']['cmd'],
+            options = " ".join(["-R", config['bio.ngs.tools.gatk']['select_indel_variants']['ref'],
+                                config['bio.ngs.tools.gatk']['select_indel_variants']['options']])
+    input: "{prefix}.vcf"
+    output: "{prefix}.indel.vcf"
+    shell: "{params.cmd} {params.options} --variant {input} --out {output}"
+

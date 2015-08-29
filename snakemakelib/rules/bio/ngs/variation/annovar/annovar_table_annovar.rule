@@ -1,0 +1,21 @@
+# -*- snakemake -*-
+config_default = {
+    'bio.ngs.variation.annovar' : {
+        'table_annovar' : {
+            'options' : "--otherinfo",
+        },
+    },
+}
+
+config = update_config(config_default, config)
+
+rule annovar_table_annovar:
+    """annovar: run table_annovar. Currently only defined for hg19."""
+    params: cmd=os.path.join(config['bio.ngs.variation.annovar']['home'], 'table_annovar.pl'),
+            options=config['bio.ngs.variation.annovar']['table_annovar']['options'],
+            db=config['bio.ngs.variation.annovar']['db'],
+            buildver=config['bio.ngs.variation.annovar']['buildver']
+    input: "{prefix}.avinput"
+    output: "{prefix}.avinput.hg19_multianno.txt"
+    shell: "{params.cmd} {input} {params.db} {params.options} --buildver hg19"
+

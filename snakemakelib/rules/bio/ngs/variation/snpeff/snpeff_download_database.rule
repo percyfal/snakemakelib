@@ -1,0 +1,8 @@
+# -*- snakemake -*-
+rule snpeff_download_database:
+    """Download snpEff database. FIXME: fix output so that rule doesn't rerun everytime."""
+    params: home=config['bio.ngs.variation.snpeff']['home'],
+            cmd=config['bio.ngs.variation.snpeff']['cmd']
+    output: config['bio.ngs.variation.snpeff']['dblist']
+    shell: "cd {params.home} && {params.cmd} download {output}"
+

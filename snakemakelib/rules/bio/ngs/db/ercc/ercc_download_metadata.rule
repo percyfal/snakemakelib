@@ -1,0 +1,6 @@
+# -*- snakemake -*-
+rule ercc_download_metadata:
+    params: source = config['bio.ngs.db.ercc']['source']
+    output: temp('cms_095047.txt')
+    shell: "wget {params.source} -O {output}"
+

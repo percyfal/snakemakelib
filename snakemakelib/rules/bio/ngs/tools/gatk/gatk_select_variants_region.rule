@@ -1,0 +1,13 @@
+# -*- snakemake -*-
+include: "gatk_select_variants.rule"
+
+rule gatk_select_variants_region:
+    """Run GATK SelectVariants to select variants based on a region"""
+    params: cmd = config['bio.ngs.tools.gatk']['cmd'] + " -T " + config['bio.ngs.tools.gatk']['select_variants']['cmd'],
+            options = " ".join(["-R", config['bio.ngs.tools.gatk']['select_variants']['ref'],
+                                config['bio.ngs.tools.gatk']['select_variants']['options']])
+    input: vcf="{prefix}.vcf", bed="{prefix}.region_{region}.bed"
+    output: "{prefix}.region_{region}.vcf"
+    shell: "{params.cmd} {params.options} -L {input.bed} --variant {input.vcf} --out {output}"
+
+ruleorder: gatk_select_variants_region > gatk_unified_genotyper

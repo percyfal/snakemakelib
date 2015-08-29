@@ -1,0 +1,18 @@
+# -*- snakemake -*-
+config_default = {
+    'bio.ngs.variation.annovar' : {
+        'annotate_variation' : {
+            'options' : "",
+        },
+    },
+}
+
+config = update_config(config_default, config)
+
+rule annovar_annotate_variation:
+    params: cmd=os.path.join(config['bio.ngs.variation.annovar']['home'], 'annotate_variation.pl'),
+            buildver=config['bio.ngs.variation.annovar']['buildver'],
+            db = config['bio.ngs.variation.annovar']['db']
+    #output: os.path.join(config['bio.ngs.variation.annovar']['home'], config['bio.ngs.variation.annovar']['db'], "{db}")
+    output: "{db}"
+    shell: "{params.cmd} -buildver {params.buildver} -downdb {wildcards.db} {params.db}"

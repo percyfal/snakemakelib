@@ -1,0 +1,21 @@
+# -*- snakemake -*-
+import os
+
+config_default = {
+    'bio.ngs.db.ucsc' : {
+        'gtfToGenePred' : {
+            'cmd' : 'gtfToGenePred',
+            'options' : '-genePredExt -ignoreGroupsWithoutExons',
+        },
+    },
+}
+
+config = update_config(config_default, config)
+
+rule ucsc_gtf_to_genepred:
+    """Run gtfToGenePred"""
+    params: cmd = os.path.join(config['bio.ngs.db.ucsc']['home'], config['bio.ngs.db.ucsc']['gtfToGenePred']['cmd']),
+            options = config['bio.ngs.db.ucsc']['gtfToGenePred']['options']
+    input: gtf = "{prefix}.gtf"
+    output: genepred = "{prefix}.genePred"
+    shell: "{params.cmd} {params.options} {input.gtf} {output.genepred}"

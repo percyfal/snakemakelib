@@ -1,0 +1,20 @@
+# -*- snakemake -*-
+include: '../settings.rules'
+
+DEFAULT_RULES = ['annovar_table_annovar', 'annovar_convert2annovar']
+
+config_default = {
+    'bio.ngs.variation.annovar' : {
+        'rules' : DEFAULT_RULES,
+        'buildver' : config['bio.ngs.settings']['db']['ref'],
+        'dblist' : ["dgv", "genomicSuperDups", "gwascatalog", "tfbs", "wgEncodeRegTfbsClustered", "wgEncodeRegDnaseClustered", "phastConsElements46way"],
+        'dblist_webfrom_annovar' : ["1000g2012apr", "cosmic64", "esp6500si_all", "esp6500si_ea", "ljb_all", "snp137", "refGene", "avsift"],
+        'home' : os.getenv("ANNOVAR_HOME", os.curdir),
+    },
+}
+
+config = update_config(config_default, config)
+config = update_config({'bio.ngs.variation.annovar': {'db' : os.path.join(config['bio.ngs.variation.annovar']['home'], "/humandb")}}, config)
+
+for rule in config['bio.ngs.variation.annovar']['rules']:
+    include: os.path.join("annovar", rule + ".rule")

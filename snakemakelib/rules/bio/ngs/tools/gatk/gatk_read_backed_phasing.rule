@@ -1,0 +1,31 @@
+# -*- snakemake -*-
+import glob
+
+def gatk_read_backed_phasing_find_input(wildcards):
+    # This procedure requires that the file exist, which they don't when we start from scratch
+    bamfiles = sorted(glob.glob(os.path.join(os.path.dirname(wildcards.prefix), "*.bam")), reverse=True)
+    return ["{prefix}.vcf".format(prefix=wildcards.prefix), bamfiles[0], bamfiles[0].replace(".bam", ".bai")]
+
+config_default = {
+    'bio.ngs.tools.gatk' : {
+        'read_backed_phasing' : {
+            'cmd' : 'ReadBackedPhasing',
+            'ref' : config['bio.ngs.tools.gatk']['ref'],
+            'options' : "",
+            'inputfun' : gatk_read_backed_phasing_find_input,
+        },
+    },
+}
+
+config = update_config(config_default, config)
+
+rule gatk_read_backed_phasing:
+    """Run GATK ReadBackedPhasing"""
+    params: cmd = config['bio.ngs.tools.gatk']['cmd'] + " -T " + config['bio.ngs.tools.gatk']['read_backed_phasing']['cmd'],
+            options = " ".join(["-R", config['bio.ngs.tools.gatk']['read_backed_phasing']['ref'],
+                                config['bio.ngs.tools.gatk']['read_backed_phasing']['options']])
+    input: dict(config['bio.ngs.tools.gatk']['read_backed_phasing'])['inputfun']
+    output: "{prefix}.phased.vcf"
+    shell: "{params.cmd} {params.options} -I {input[1]} -o {output} --variant {input[0]}"
+
+

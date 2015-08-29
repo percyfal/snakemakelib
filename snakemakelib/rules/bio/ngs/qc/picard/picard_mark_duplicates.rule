@@ -1,0 +1,20 @@
+# -*- snakemake -*-
+config_default = {
+    'bio.ngs.qc.picard' : {
+        'mark_duplicates' : {
+            'targets' : [],
+            'options' : config['bio.ngs.qc.picard']['options'],
+        },
+    },
+}
+
+config = update_config(config_default, config)
+
+rule picard_mark_duplicates:
+    """Picard: mark duplicates"""
+    params: cmd = config['bio.ngs.qc.picard']['cmd'] + MARK_DUPLICATES,
+            options = config['bio.ngs.qc.picard']['mark_duplicates']['options'],
+            suffix = ".dup_metrics"
+    input: bam = "{prefix}.bam", bai = "{prefix}.bai"
+    output: bam = "{prefix}.dup.bam", metrics = "{prefix}.dup.dup_metrics"
+    shell: "{params.cmd} I={input.bam} O={output.bam} {params.options} M={output.metrics}"

@@ -1,0 +1,26 @@
+# -*- snakemake -*-
+import re
+
+rule ucsc_no_alt_analysis_set_reference:
+    """Make a reference from original build file excluding patches and
+    haplotypes. 
+
+    Assume chromosome names are prefixed chr and includes chromosomes
+    with labels 'Un' and 'random'.
+
+    The output name is modelled on UCSC names in
+    organism/build/seqs_for_alignment_pipelines, genbank.
+
+    """
+    input: ref = "{prefix}.fa"
+    output: ref = "{prefix}.no_alt_analysis_set.fa"
+    run:
+        from Bio import SeqIO
+        seqs = SeqIO.parse(open(input.ref), format='fasta')
+        r = re.compile(r"(chr[0-9MTXY]+$|chrUn_[0-9a-zA-Z]+$|chr[0-9MTXY]+_[a-zA-Z0-9]+_random$")
+        with open(output.ref, "w") as fh:
+            for seq in seqs:
+                if r.match(seq.id):
+                    smllogger.info("Writing chromosome {}".format(seq.id))
+                    SeqIO.write(seq, fh, format='fasta')
+

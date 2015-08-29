@@ -1,0 +1,19 @@
+# -*- snakemake -*-
+config_default = {
+    'bio.ngs.tools.bedtools' : {
+        'bamtobed' : {
+            'cmd' : 'bamToBed',
+            'options' : "",
+        },
+    },
+}
+
+config = update_config(config_default, config)
+
+rule bedtools_bamtobed:
+    """Convert a bam file to bed format"""
+    params: cmd = os.path.join(config['bio.ngs.tools.bedtools']['home'], config['bio.ngs.tools.bedtools']['bamtobed']['cmd']),
+            options = config['bio.ngs.tools.bedtools']['options']
+    input: "{prefix}.bam"
+    output: "{prefix}.bed"
+    shell: "{params.cmd} {params.options} -i {input} > {output}"

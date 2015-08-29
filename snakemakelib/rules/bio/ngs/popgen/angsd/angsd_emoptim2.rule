@@ -1,0 +1,21 @@
+# -*- snakemake -*-
+config_default = {
+    'bio.ngs.popgen.angsd' : {
+        'emoptim' : {
+            'cmd' : os.path.join(config['bio.ngs.popgen.angsd']['home'],'/misc/emOptim2'),
+            'options' : "-maxIter {maxiter} -P {threads}".format(maxiter=config['bio.ngs.popgen.angsd']['options']['maxiter'], threads=config['bio.ngs.popgen.angsd']['options']['threads']),
+        },
+    },
+}
+
+config = update_config(config_default, config)
+
+rule angsd_emoptim2:
+    """angsd: run emoptim2"""
+    params: cmd = config['bio.ngs.popgen.angsd']['emoptim2']['cmd'],
+            options = config['bio.ngs.popgen.angsd']['emoptim2']['options'],
+            nchr = config['bio.ngs.popgen.angsd']['options']['nchr']
+    threads: config['bio.ngs.popgen.angsd']['options']['threads']
+    input: sfs = "{prefix}.sfs"
+    output: ml = "{prefix}.sfs.em.ml"
+    shell: "{params.cmd} {params.options} -binput {input.sfs} -nChr {params.nchr} > {output.ml}"

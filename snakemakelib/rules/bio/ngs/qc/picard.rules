@@ -1,23 +1,25 @@
 # -*- snakemake -*-
-import os
-import shutil
-import glob
-import jinja2
-from snakemake.report import data_uri
-from snakemakelib.config import sml_path, sml_templates_path
-from snakemakelib.bio.ngs.targets import generic_target_generator
-from snakemakelib.bio.ngs.qc.picard import collect_picard_qc_results
-
-def _find_merge_inputs(wildcards):
-    ngs_cfg = config['bio.ngs.settings']
-    picard_cfg = config['bio.ngs.qc.picard']
-    sources = generic_target_generator(tgt_re=ngs_cfg['sampleorg'].run_id_re, target_suffix = picard_cfg['merge_sam']['suffix'], **ngs_cfg)
-    sources = [src for src in sources if os.path.dirname(src).startswith(wildcards.prefix)]
-    return sources
-
 include: '../settings.rules'
-# Include comp settings to gain access to awk and friends
 include: '../../../comp/settings.rules'
+
+DEFAULT_RULES = [
+    'picard_add_or_replace_read_groups',
+    'picard_build_bam_index',
+    'picard_calculate_hs_metrics',
+    'picard_calculate_hs_metrics_regions',
+    'picard_collect_alignment_summary_metrics',
+    'picard_collect_insert_size_metrics',
+    'picard_create_sequence_dictionary',
+    'picard_create_sequence_dictionary_awk',
+    'picard_create_sequence_dictionary_region_awk',
+    'picard_do_qc',
+    'picard_do_summary',
+    'picard_mark_duplicates',
+    'picard_merge_sam',
+    'picard_plot_metrics',
+    'picard_reorder_sam',
+    'picard_sort_sam',
+    ]
 
 # Jar program names
 BUILD_BAM_INDEX = "BuildBamIndex"
@@ -31,231 +33,32 @@ COLLECT_ALIGNMENT_SUMMARY_METRICS = "CollectAlignmentSummaryMetrics"
 CALCULATE_HS_METRICS = "CalculateHsMetrics"
 ADD_OR_REPLACE_READ_GROUPS = "AddOrReplaceReadGroups"
 
-ngs_cfg = config['bio.ngs.settings']
-
 config_default = { 
     'bio.ngs.qc.picard' : {
-        'add_or_replace_read_groups_options' : "sort_order=coordinate create_index=true",
-        'alignmetrics_targets' : [],
-        'bait_regions' : ngs_cfg['sequence_capture']['bait_regions'],
-        'common_options' : "VALIDATION_STRINGENCY=SILENT",
-        'dupmetrics_targets' : [],
+        'options' : "VALIDATION_STRINGENCY=SILENT",
+        'rules' : DEFAULT_RULES,
         'home' : os.getenv("PICARD_HOME", os.curdir),
-        'hsmetrics_targets' : [],
-        'insertmetrics_targets' : [],
-        'java_mem' : ngs_cfg['java']['java_mem'],
-        'java_tmpdir' : ngs_cfg['java']['java_tmpdir'],
-        'plotmetrics' : os.path.join(sml_path(), "scripts", "plotMetrics.R"),
-        'ref' : ngs_cfg['db']['ref'],
-        'sort_sam_options' : "SORT_ORDER=coordinate",
-        'target_regions' : ngs_cfg['sequence_capture']['target_regions'],
-        'merge_sam' : {
-            'suffix' : '.sort.bam', # source suffixes
-            'label' : "sort.merge", # target label
-            'options' : "CREATE_INDEX=true",
-            'output' : [],
-            'inputfun' : _find_merge_inputs,
-        },
-        'qcrules' : ['picard_collect_insert_size_metrics',
-                     'picard_collect_alignment_summary_metrics',
-                     'picard_mark_duplicates'],
+        'java_mem' : config['bio.ngs.settings']['java']['java_mem'],
+        'java_tmpdir' : config['bio.ngs.settings']['java']['java_tmpdir'],
+        'ref' : config['bio.ngs.settings']['db']['ref'],
     },
 }
 
 config = update_config(config_default, config)
 
-picard_config = config['bio.ngs.qc.picard']
-
 config_default2 = {
     'bio.ngs.qc.picard' : {
-        'options' : picard_config['common_options'],
-        'cmd' : " ".join(["java -Xmx" + picard_config['java_mem'],
-                          "-Djava.io.tmpdir=" + picard_config['java_tmpdir'], 
-                          "-jar", os.path.join(picard_config['home'], "picard.jar ")]),
+        'cmd' : " ".join(["java -Xmx" + config['bio.ngs.qc.picard']['java_mem'],
+                          "-Djava.io.tmpdir=" + config['bio.ngs.qc.picard']['java_tmpdir'], 
+                          "-jar", os.path.join(config['bio.ngs.qc.picard']['home'], "picard.jar ")]),
     },
 }
 
 config = update_config(config_default2, config)
 
-# Use picard config to increase readibility
-sml_config = config
-picard_config = config['bio.ngs.qc.picard']
-
-rule picard_build_bam_index:
-    """Picard: build bam index from bam file"""
-    params: cmd = picard_config['cmd'] +  BUILD_BAM_INDEX,
-            options = picard_config['options']
-    input: "{prefix}.bam"
-    output: "{prefix}.bai"
-    shell: "{params.cmd} I={input} O={output} {params.options}"
-
-rule picard_sort_bam:
-    """Picard: sort bam file"""
-    params: cmd = picard_config['cmd'] + SORT_SAM,
-            options = picard_config['options'],
-            sortsam_options = picard_config['sort_sam_options']
-    input: "{prefix}.bam"
-    output: "{prefix}.sort.bam"
-    shell: "{params.cmd} I={input} O={output} {params.options} {params.sortsam_options}"
-
-rule picard_reorder_bam:
-    """Picard: reorder bam file"""
-    params: cmd = picard_config['cmd'] + REORDER_SAM,
-            options = picard_config['options']
-    input: "{prefix}.bam", picard_config['ref']
-    output: "{prefix}.resorted.bam"
-    shell: "{params.cmd} I={input[0]} R={input[1]} O={output} {params.options}"
-
-rule picard_mark_duplicates:
-    """Picard: mark duplicates"""
-    params: cmd = picard_config['cmd'] + MARK_DUPLICATES,
-            options = picard_config['options'],
-            suffix = ".dup_metrics"
-    input: "{prefix}.bam", "{prefix}.bai"
-    output: bam = "{prefix}.dup.bam", metrics = "{prefix}.dup.dup_metrics"
-    shell: "{params.cmd} I={input[0]} O={output.bam} {params.options} M={output.metrics}"
-
-ruleorder: picard_mark_duplicates > picard_build_bam_index
-
-rule picard_create_dict:
-    """Picard: create interval list dict using awk"""
-    params: cmd = picard_config['cmd'] + CREATE_SEQUENCE_DICTIONARY,
-            options = picard_config['options']
-    input: fa="{prefix}.fa"
-    output: dict="{prefix}.dict"
-    shell: "{params.cmd} {params.options} R={input.fa} O={output.dict}"
-
-rule picard_create_dict_awk:
-    """Picard: create interval list dict using awk"""
-    params: cmd = picard_config['cmd'] + CREATE_SEQUENCE_DICTIONARY,
-            options = picard_config['options']
-    input: bed="{prefix}.bed", dict=picard_config['ref'].replace(".fa", ".dict")
-    output: "{prefix}.dict"
-    shell: sml_config['comp.settings']['cat'] + " {input.dict} > {output}; " + sml_config['comp.settings']['awk'] + " '{{printf(\"%s\\t%s\\t%s\\t%s\\t%s\\n\", $1,$2,$3,\"+\",$4); FS=\"\t\"}}' {input.bed} >> {output}"
-
-rule picard_create_region_dict_awk:
-    """Picard: create interval list dict for region using awk"""
-    params: cmd = picard_config['cmd'] + CREATE_SEQUENCE_DICTIONARY,
-            options = picard_config['options']
-    input: bed="{prefix}.region_{gene}.bed", dict=picard_config['ref'].replace(".fa", ".dict")
-    output: "{prefix}.region_{gene}.dict"
-    shell: sml_config['comp.settings']['cat'] + " {input.dict} > {output}; " + sml_config['comp.settings']['awk'] + " '{{printf(\"%s\\t%s\\t%s\\t%s\\t%s\\n\", $1,$2,$3,\"+\",$4); FS=\"\t\"}}' {input.bed} >> {output}"
-
-ruleorder: picard_create_region_dict_awk > picard_create_dict_awk
-
-rule picard_collect_insert_size_metrics:
-    """Picard: collect insertion size metrics"""
-    params: cmd = picard_config['cmd'] + COLLECT_INSERT_SIZE_METRICS,
-            options = picard_config['options'],
-            suffix = ".insert_metrics"
-    input: "{prefix}.bam", "{prefix}.bai", picard_config['ref']
-    output: "{prefix}.insert_metrics"
-    shell: "{params.cmd} {params.options} H={wildcards.prefix}.hist I={input[0]} O={output} R={input[2]}"
-
-rule picard_collect_alignment_summary_metrics:
-    """Picard: collect alignment summary metrics"""
-    params: cmd = picard_config['cmd'] + COLLECT_ALIGNMENT_SUMMARY_METRICS,
-            options = picard_config['options'],
-            suffix = ".align_metrics"
-    input: "{prefix}.bam", "{prefix}.bai", picard_config['ref']
-    output: "{prefix}.align_metrics"
-    shell: "{params.cmd} {params.options} I={input[0]} O={output[0]} R={input[2]}"
-
-rule picard_calculate_hs_metrics:
-    """Picard: calculate hybrid selection metrics"""
-    params: cmd = picard_config['cmd'] + CALCULATE_HS_METRICS,
-            options = picard_config['options'],
-            target_regions = picard_config['target_regions'],
-            bait_regions = picard_config['bait_regions'],
-            suffix = ".hs_metrics"
-    input: "{prefix}.bam", "{prefix}.bai", picard_config['ref']
-    output: "{prefix}.hs_metrics"
-    shell: "{params.cmd} {params.options} TI={params.target_regions} BI={params.bait_regions} I={input[0]} O={output} R={input[2]}"
-
-rule picard_calculate_region_hs_metrics:
-    """Picard: calculate hybrid selection metrics based on regions"""
-    params: cmd = picard_config['cmd'] + CALCULATE_HS_METRICS,
-            options = picard_config['options'],
-            suffix = ".hs_metrics"
-    input: bam = "{prefix}.region_{gene}.{sfx}.bam", targets="{prefix}.region_{gene}.targets.dict", baits="{prefix}.region_{gene}.baits.dict", ref=picard_config['ref']
-    output: "{prefix}.region_{gene}.{sfx}.hs_metrics"
-    shell: "{params.cmd} {params.options} TI={input.targets} BI={input.baits} I={input.bam} O={output} R={input.ref}"
-
-ruleorder: picard_calculate_region_hs_metrics > picard_calculate_hs_metrics
-
-rule picard_plot_metrics:
-    """Picard: plot metrics using custom R script """
-    params: cmd = picard_config['plotmetrics']
-    input: "{prefix}_metrics.txt"
-    output: "{prefix}_metrics.pdf"
-    shell: "{params.cmd} {input} {output} {wildcards.prefix}"
-
-rule picard_add_or_replace_read_groups:
-    """Picard: add or replace read groups. Currently tailored for Illumina read groups."""
-    params: cmd = picard_config['cmd'] + ADD_OR_REPLACE_READ_GROUPS,
-            options = picard_config['options'],
-            custom_options = picard_config['add_or_replace_read_groups_options'],
-            lib = "lib",
-            rgpl = "Illumina",
-            # rgpu = input.split(".")[0],
-            # rgid = input.split(".")[0],
-            # rgsm = input.split(".")[0]
-            rgpu = "rgpu",
-            rgid = "rgid",
-            rgsm = "RGSM"
-    input: "{prefix}.bam"
-    output: "{prefix}.rg.bam", "{prefix}.rg.bai"
-    shell: "{params.cmd} INPUT={input} OUTPUT={output[0]} {params.custom_options} RGID={params.rgid} RGLB={params.lib} RGSM={params.rgsm} RGPL={params.rgpl} RGPU={params.rgpu}"
-
-ruleorder: picard_add_or_replace_read_groups > picard_build_bam_index
-
-rule picard_merge_sam:
-    """Picard: merge sam files.
-
-    NB: always outputs bam files!
-    """
-    params: cmd = picard_config['cmd'] + MERGE_SAM_FILES,
-            options = " ".join([picard_config['options'],
-                                picard_config['merge_sam']['options']])
-    input: dict(picard_config['merge_sam'])['inputfun']
-    output: merge="{path}" + os.sep + "{prefix}." + picard_config['merge_sam']['label'] + ".bam"
-    run: 
-      if (len(input) > 1):
-          inputstr = " ".join(["INPUT={}".format(x) for x in input])
-          shell("{cmd} {ips} OUTPUT={out} {opt}".format(cmd=params.cmd, ips=inputstr, out=output.merge, opt=params.options))
-      else:
-          if os.path.exists(output.merge):
-              os.unlink(output.merge)
-          shutil.copy(input[0], output.merge)
-
-rule picard_do_qc:
-    """Run picard metrics commands on a bam file"""
-    input: ["{{prefix}}{sfx}".format(sfx=workflow._rules[x].params.suffix) for x in picard_config['qcrules']]
-    output: out="{prefix}.picardqc.txt"
-    run:
-        with open (output.out, "w") as fh:
-            fh.write("Completed rule 'picard_do_qc' using qcrules {qcrules}".format(qcrules=",".join(picard_config['qcrules'])))
-
-def _picard_find_picard_do_qc_result_files_fn(wildcards):
-    ngs_cfg = config['bio.ngs.settings']
-    sources = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].sample_re, src_re=ngs_cfg['sampleorg'].run_id_re, target_suffix = os.path.join("." + wildcards.label), **ngs_cfg)
-    return sources
-
-rule picard_qc_summary:
-    """Summarize results from picard_do_qc"""
-    input: _picard_find_picard_do_qc_result_files_fn
-    output: metrics = os.path.join("{path}", "picard.{label}.metrics.csv"), 
-            hist = os.path.join("{path}", "picard.{label}.hist.csv")
-    run:
-        try:
-            samples = [ngs_cfg['sampleorg'].sample_re.parse(f)['SM'] for f in input]
-        except KeyError:
-            raise Exception("failed to parse sample name 'SM' from input list")
-        (df_met, df_hist) = collect_picard_qc_results(input, samples)
-        if not df_met is None:
-            df_met.to_csv(output.metrics)
-        if not df_hist is None:
-            df_hist.to_csv(output.hist, index=False)
-        else:
-            with open(output.hist, "w") as fh:
-                fh.write("{ext} metrics has no histogram data".format(ext=os.path.splitext(input[0])[1]))
+# Needed by all
+if not 'picard_build_bam_index' in config['bio.ngs.qc.picard']['rules']:
+    include: "picard/picard_build_bam_index.rule"
+    
+for rule in config['bio.ngs.qc.picard']['rules']:
+    include: os.path.join("picard", rule + ".rule")

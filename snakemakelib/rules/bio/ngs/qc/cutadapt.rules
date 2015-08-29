@@ -1,80 +1,20 @@
 # -*- snakemake -*-
-import os
-from bokeh.plotting import show, output_file
-from snakemakelib.bio.ngs.targets import generic_target_generator
-from snakemakelib.config import update_config
-from snakemakelib.bio.ngs.qc.cutadapt import collect_cutadapt_qc_results, make_cutadapt_summary_plot
-
 include: '../settings.rules'
 
-ngs_cfg = config['bio.ngs.settings']
+DEFAULT_RULES = ['cutadapt_cut_paired_end']
 
 config_default = { 
     'bio.ngs.qc.cutadapt' : {
+        'rules' : DEFAULT_RULES,
         'cmd' : "cutadapt",
         'threeprime': "AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC",
         'fiveprime' : "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT",
         'options' : "",
-        'fastq_suffix' : ngs_cfg['fastq_suffix'],
-        'paired_end' : {
-            'options' : "",
-        },
+        'fastq_suffix' : config['bio.ngs.settings']['fastq_suffix'],
     },
 }
 
 config = update_config(config_default, config)
 
-ca_cfg = config['bio.ngs.qc.cutadapt']
-
-rule cutadapt_cut_threeprime:
-    """Cutadapt: cut threeprime adapter"""
-    params: cmd = ca_cfg['cmd'],
-            options = ca_cfg['options'],
-            threeprime = ca_cfg['threeprime']
-    input: fastq = "{prefix}" +  ngs_cfg['read1_label'] + ca_cfg['fastq_suffix']
-    output: trim = "{prefix}" + ".trimmed" + ngs_cfg['read1_label'] + ca_cfg['fastq_suffix']
-    shell: "{params.cmd} {params.options} -a {params.threeprime} {input.fastq} -o {output.trim} > {wildcards.prefix}.cutadapt_metrics"
-
-rule cutadapt_cut_fiveprime:
-    """Cutadapt: cut fiveprime adapter"""
-    params: cmd = ca_cfg['cmd'],
-            options = ca_cfg['options'],
-            fiveprime = ca_cfg['fiveprime']
-    input: fastq = "{prefix}" + ngs_cfg['read2_label'] + ca_cfg['fastq_suffix']
-    output: trim = "{prefix}" + ".trimmed" + ngs_cfg['read2_label'] + ca_cfg['fastq_suffix']
-    shell: "{params.cmd} {params.options} -a {params.fiveprime} {input.fastq} -o {output.trim} > {wildcards.prefix}.cutadapt_metrics"
-
-rule cutadapt_cut_paired_end:
-    """Cutadapt: cut paired end sequences"""
-    params: cmd = ca_cfg['cmd'],
-            options = ca_cfg['paired_end']['options'],
-            threeprime = ca_cfg['threeprime'],
-            fiveprime = ca_cfg['fiveprime']
-    input: read1 = "{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],
-           read2 = "{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['fastq_suffix']
-    output: read1 = "{prefix}" + ".trimmed" + ngs_cfg['read1_label']  + ngs_cfg['fastq_suffix'],
-            read2 = "{prefix}" + ".trimmed" + ngs_cfg['read2_label']  + ngs_cfg['fastq_suffix'],
-            log = "{prefix}.cutadapt_metrics"
-    log: "{prefix}.cutadapt_metrics"
-    shell: "{params.cmd} {params.options} {input.read1} {input.read2} -b {params.fiveprime} -b {params.threeprime} -B {params.threeprime} -B {params.fiveprime} -o {output.read1} -p {output.read2} > {log}"
-
-ruleorder: cutadapt_cut_paired_end > cutadapt_cut_threeprime
-ruleorder: cutadapt_cut_paired_end > cutadapt_cut_fiveprime
-
-def _cutadapt_find_result_files_fn(wildcards):
-    ngs_cfg = config['bio.ngs.settings']
-    sources = generic_target_generator(tgt_re = ngs_cfg['sampleorg'].run_id_re, src_re=ngs_cfg['sampleorg'].run_id_re, target_suffix = wildcards.label + "cutadapt_metrics", **ngs_cfg)
-    return sources
-
-rule cutadapt_qc_summary:
-    """Summarize results from cutadapt"""
-    input: _cutadapt_find_result_files_fn
-    output: summary = os.path.join("{path}", "cutadapt{label}summary.csv")
-    run:
-        try:
-            samples = [ngs_cfg['sampleorg'].run_id_re.parse(f)['SM'] for f in input]
-            runs = [ngs_cfg['sampleorg'].run_id_re.parse(f)['PU'] for f in input]
-        except KeyError:
-            raise Exception("failed to parse sample name 'SM' from input list")
-        df = collect_cutadapt_qc_results(input, list(zip(samples, runs)))
-        df.to_csv(output.summary)
+for rule in config['bio.ngs.qc.cutadapt']['rules']:
+    include: os.path.join("cutadapt", rule + ".rule")

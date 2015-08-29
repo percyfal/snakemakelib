@@ -11,19 +11,15 @@
 #
 # install.packages("zinba_2.02.03.tar.gz", repos=NULL)
 #
-
-import os
+from os.path import splitext, join, dirname
 from snakemake.utils import R
 from snakemakelib.bio.ngs.db import chromosomes, index
-from snakemakelib.config import update_config
 from snakemakelib.bio.ngs.utils import dict_to_Rdict
 
 include: "../settings.rules"
 include: "peakseq.rules"
 include: "../db/ucsc.rules"
 include: "../tools/bedtools.rules"
-
-ngs_cfg = config['bio.ngs.settings']
 
 # Options have been compiled by looking at functions zinba (zinba.R),
 # run.zinba (run_zinba.R) and generateAlignability (generateAlignability.R)
@@ -45,7 +41,7 @@ config_default = {
             'twoBit' : "", # path to genome build in .2bit format
             'basecountfile' : None, # path to basecount file if refinepeaks is 1
             'threshold': 0.05, # FDR threshhold, default is 0.05
-            'numProc' : ngs_cfg['threads'], # number of CPUs to use, must be less than max available (default 1)
+            'numProc' : config['bio.ngs.settings']['threads'], # number of CPUs to use, must be less than max available (default 1)
             'refinepeaks' : 1, # 1 for refinement (default), 0 otherwise
             'printFullOut' : 1, # 1 for printing full form of intermediate output, 0 otherwise
             'filetype' : 'bed', # either 'bed', 'bowtie', or 'tagAlign'
@@ -87,15 +83,15 @@ config_default = {
 
 config = update_config(config_default, config)
 
-config['bio.ngs.enrichment.zinba']['zinba_common']['twoBit'] = index(
-    ref = config['bio.ngs.settings']['db']['ref'],
-    index = config['bio.ngs.enrichment.zinba']['zinba_common']['twoBit'],
-    application = 'ucsc',
-    build = config['bio.ngs.settings']['db']['build'])
-
-zinba_cfg = config['bio.ngs.enrichment.zinba']
-ps_cfg = config['bio.ngs.enrichment.peakseq']
-mapdir = os.path.join(os.path.dirname(ps_cfg['index']), ps_cfg['mappability']['merlen'])
+try:
+    from snakemakelib.bio.ngs.db import index
+    config['bio.ngs.enrichment.zinba']['zinba_common']['twoBit'] = index(
+        ref = config['bio.ngs.settings']['db']['ref'],
+        index = config['bio.ngs.enrichment.zinba']['zinba_common']['twoBit'],
+        application = 'ucsc',
+        build = config['bio.ngs.settings']['db']['build'])
+except:
+    pass
 
 rule zinba_generate_alignability:
     """Generate alignability. Depends on mappability files from peakseq.
@@ -104,14 +100,14 @@ rule zinba_generate_alignability:
     otherwise this step segfaults...
 
     """
-    input: mappability = [os.path.join(mapdir, "{chr}b.out".format(chr=x)) for x in chromosomes(ps_cfg['ref'])],
-           twobit = os.path.splitext(zinba_cfg['zinba_common']['twoBit'])[0] + ".2bit"
-    output: out = "align_athresh" + str(zinba_cfg['generateAlignability']['athresh']) + "_extension" + str(zinba_cfg['zinba_common']['extension'])
-    threads: zinba_cfg['zinba_common']['numProc']
+    input: mappability = [join(mapdir, "{chr}b.out".format(chr=x)) for x in chromosomes(config['bio.ngs.enrichment.peakseq']['ref'])],
+           twobit = splitext(str(config['bio.ngs.enrichment.zinba']['zinba_common']['twoBit']))[0] + ".2bit"
+    output: out = "align_athresh" + str(config['bio.ngs.enrichment.zinba']['generateAlignability']['athresh']) + "_extension" + str(config['bio.ngs.enrichment.zinba']['zinba_common']['extension'])
+    threads: config['bio.ngs.enrichment.zinba']['zinba_common']['numProc']
     run:
-        d = zinba_cfg['generateAlignability']
-        d.update(zinba_cfg['zinba_common'])
-        d.update({'mapdir' : os.path.dirname(input.mappability[0]) + os.sep,
+        d = config['bio.ngs.enrichment.zinba']['generateAlignability']
+        d.update(config['bio.ngs.enrichment.zinba']['zinba_common'])
+        d.update({'mapdir' : dirname(input.mappability[0]) + os.sep,
                   'outdir' : output.out + os.sep,
                   'twobit' : input.twobit})
         R("""
@@ -132,10 +128,10 @@ rule zinba_basealigncount:
     accept bam input. bed seems to be the most reasonable compromise.
     """
     input: bed = "{prefix}.bed",
-           twobit = os.path.splitext(zinba_cfg['zinba_common']['twoBit'])[0] + ".2bit"
-    output: out = "{prefix}." + str(zinba_cfg['zinba_common']['extension']) + ".basecount"
+           twobit = splitext(str(config['bio.ngs.enrichment.zinba']['zinba_common']['twoBit']))[0] + ".2bit"
+    output: out = "{prefix}." + str(config['bio.ngs.enrichment.zinba']['zinba_common']['extension']) + ".basecount"
     run:
-        d = zinba_cfg['zinba_common']
+        d = config['bio.ngs.enrichment.zinba']['zinba_common']
         d.update({'twobit' : input.twobit,
                   'inputfile' : input.bed,
                   'outputfile' : output.out})
@@ -156,13 +152,13 @@ rule zinba_main_wrapper:
     input: bed = "{prefix}.bed",
            basealigncount = rules.zinba_basealigncount.output.out,
            alignability = rules.zinba_generate_alignability.output.out,
-           twobit = os.path.splitext(zinba_cfg['zinba_common']['twoBit'])[0] + ".2bit"
+           twobit = splitext(str(config['bio.ngs.enrichment.zinba']['zinba_common']['twoBit']))[0] + ".2bit"
     output: zinba_peaks = "{prefix}.zinba.peaks", zinba_peaks_bed = "{prefix}.zinba.peaks.bed",
             zinba_files = temp("{prefix}.zinba_files")
-    threads: zinba_cfg['zinba_common']['numProc']
+    threads: config['bio.ngs.enrichment.zinba']['zinba_common']['numProc']
     run:
-        d = zinba_cfg['zinba_common']
-        d.update(zinba_cfg['zinba'])
+        d = config['bio.ngs.enrichment.zinba']['zinba_common']
+        d.update(config['bio.ngs.enrichment.zinba']['zinba'])
         d.update({
             'seq' : input.bed,
             'basecountfile' : input.basealigncount,
@@ -170,7 +166,7 @@ rule zinba_main_wrapper:
             'interaction' : str(d['interaction']).upper(),
             'alignability' : input.alignability + os.sep,
             'twobit' : input.twobit,
-            'outfileprefix' : os.path.splitext(output.zinba_peaks)[0],
+            'outfileprefix' : splitext(output.zinba_peaks)[0],
             'FDR' : str(d['FDR']).upper(),
         })
         R("""
@@ -199,20 +195,20 @@ rule zinba_run_zinba:
     input: bed = "{prefix}.bed",
            basealigncount = rules.zinba_basealigncount.output.out,
            alignability = rules.zinba_generate_alignability.output.out,
-           twobit = os.path.splitext(zinba_cfg['zinba_common']['twoBit'])[0] + ".2bit"
+           twobit = splitext(str(config['bio.ngs.enrichment.zinba']['zinba_common']['twoBit']))[0] + ".2bit"
     output: zinba_peaks = "{prefix}.run_zinba.peaks", zinba_peaks_bed = "{prefix}.run_zinba.peaks.bed",
             zinba_files = temp("{prefix}.run_zinba_files")
-    threads: zinba_cfg['zinba_common']['numProc']
+    threads: config['bio.ngs.enrichment.zinba']['zinba_common']['numProc']
     run:
-        d = zinba_cfg['zinba_common']
-        d.update(zinba_cfg['run.zinba'])
+        d = config['bio.ngs.enrichment.zinba']['zinba_common']
+        d.update(config['bio.ngs.enrichment.zinba']['run.zinba'])
         d.update({
             'seq' : input.bed,
             'basecountfile' : input.basealigncount,
             'interaction' : str(d['interaction']).upper(),
             'alignability' : input.alignability + os.sep,
             'twoBit' : input.twobit,
-            'outfileprefix' : os.path.splitext(output.zinba_peaks)[0],
+            'outfileprefix' : splitext(output.zinba_peaks)[0],
         })
         # Update covariates according to zinba.R
         if not d['selectcovs']:

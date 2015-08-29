@@ -1,97 +1,37 @@
 # -*- snakemake -*-
-import os
-from snakemakelib.config import update_config
-from snakemakelib.bio.ngs.db import index
-from snakemakelib.stat import is_compressed, is_installed
+from snakemakelib.stat import is_compressed
 from snakemakelib.bio.ngs.rnaseq.tuxedo import TuxedoReadGroup
 
 include: '../settings.rules'
 include: '../tools/samtools.rules'
 
-ngs_cfg = config['bio.ngs.settings']
+DEFAULT_RULES = ['bowtie_align_pe', 'bowtie_build']
 
 config_default = {
     'bio.ngs.align.bowtie' : {
+        'build_ext': [".1.ebwt", ".2.ebwt", ".3.ebwt",
+                      ".4.ebwt", ".rev.1.ebwt", ".rev.2.ebwt"],
+        'cmd': 'bowtie',
         'index' : "",
-        'ref' : ngs_cfg['db']['ref'],
-        'rg_fn' : TuxedoReadGroup(regexp=ngs_cfg['sampleorg'].run_id_re.re.pattern).parse,
-        'version2' : True,
-        'bowtie' : {
-            'cmd' : 'bowtie',
-            'home' : "",
-            'threads' : ngs_cfg['threads'],
-            'options' : '--chunkmbs 200',
-        },
-        'bowtie2' : {
-            'cmd' : 'bowtie2',
-            'home' : "",
-            'threads' : ngs_cfg['threads'],
-            'options' : '--chunkmbs 200',
-        },
-        'build' : {
-            'ext_v1' : [".1.ebwt", ".2.ebwt", ".3.ebwt", ".4.ebwt", ".rev.1.ebwt", ".rev.2.ebwt"],
-            'ext_v2' : [".1.bt2", ".2.bt2", ".3.bt2", ".4.bt2", ".rev.1.bt2", ".rev.2.bt2"],
-        },
+        'ref' : config['bio.ngs.settings']['db']['ref'],
+        'rg_fn' : TuxedoReadGroup(
+            regexp=config['bio.ngs.settings']['sampleorg'].run_id_re.re.pattern).parse,
+        'rules': DEFAULT_RULES,
     },
 }
 
 config = update_config(config_default, config)
 
-bowtie = 'bowtie2' if config['bio.ngs.align.bowtie']['version2'] else 'bowtie'
+try:
+    # Update index
+    from snakemakelib.bio.ngs.db import index
+    config['bio.ngs.align.bowtie']['index'] = index(
+        ref = config['bio.ngs.align.bowtie']['ref'],
+        index = config['bio.ngs.align.bowtie']['index'],
+        application = 'bowtie',
+        build = config['bio.ngs.settings']['db']['build'])
+except:
+    pass
 
-# Update index
-config['bio.ngs.align.bowtie']['index'] = index(
-    ref = config['bio.ngs.align.bowtie']['ref'],
-    index = config['bio.ngs.align.bowtie']['index'],
-    application = bowtie,
-    build = config['bio.ngs.settings']['db']['build'])
-
-bwt_cfg = config['bio.ngs.align.bowtie']
-samtools_cfg = config['bio.ngs.tools.samtools']
-
-
-ext = bwt_cfg['build']['ext_v2'] if bwt_cfg['version2'] else bwt_cfg['build']['ext_v2']
-
-if bwt_cfg[bowtie]['home']:
-    os.environ["PATH"] += os.pathsep + bwt_cfg[bowtie]['home']
-if not is_installed(bwt_cfg[bowtie]['cmd']):
-    raise Exception("\nbio.ngs.align.bowtie: {prog} not installed or not in PATH\n".format(prog=bwt_cfg[bowtie]['cmd']))
-
-rule bowtie_align:
-    """Bowtie paired end alignment"""
-    params: cmd = bwt_cfg[bowtie]['cmd'],
-            options = bwt_cfg['bowtie']['options'],
-            samopt = ("" if bwt_cfg['version2'] else "-S"),
-            indexopt = ("-x" if bwt_cfg['version2'] else ""),
-            index = bwt_cfg['index']
-    input: read1 = "{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],\
-           read2 = "{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['fastq_suffix'],
-           index = expand("{index}{ext}", index=bwt_cfg['index'], ext=bwt_cfg['build']['ext_v2'] if bwt_cfg['version2'] else bwt_cfg['build']['ext_v1'])
-    output: bam = "{prefix}.bam"
-    benchmark: "{prefix}.json"
-    threads: bwt_cfg['bowtie']['threads']
-    log: "{prefix}.bwt.log"
-    run:
-        # For some reason, I can't get fifos to work. There is an
-        # alternative; process substitution. See
-        # http://arstechnica.com/civis/viewtopic.php?f=16&t=1180805.
-        if is_compressed(input.read1):
-            shell("{cmd} {samopt} -p {threads} {options} {indexopt} {index} -1 <(gunzip -c {read1}) -2 <(gunzip -c {read2}) 2> {log} | {samtools} view -bS - > {bam}".format(cmd=params.cmd, samopt=params.samopt, threads=threads, options=params.options, indexopt=params.indexopt, index=params.index, read1=input.read1, read2=input.read2, bam=output.bam, samtools=samtools_cfg['cmd'], log=log))
-        else:
-            shell("{cmd} {samopt} -p {threads} {options} {indexopt} {index} -1 {read1} -2 {read2} 2> {log} | {samtools} view -bS - > {bam}".format(cmd=params.cmd, samopt=params.samopt, threads=threads, options=params.options, indexopt=params.indexopt, index=params.index, read1=input.read1, read2=input.read2, bam=output.bam, samtools=samtools_cfg['cmd'], log=log))
-
-rule bowtie_build:
-    """Bowtie build index"""
-    params: ref = bwt_cfg['ref'],
-            cmd = os.path.join(os.path.dirname(bwt_cfg[bowtie]['cmd']), 'bowtie-build')
-    input: bwt_cfg['ref']
-    output: expand("{{prefix}}{ext}", ext=bwt_cfg['build']['ext_v1'])
-    shell: "{params.cmd} {input} {wildcards.prefix}"
-
-rule bowtie_build2:
-    """Bowtie build index"""
-    params: ref = bwt_cfg['ref'],
-            cmd = os.path.join(os.path.dirname(bwt_cfg[bowtie]['cmd']), 'bowtie2-build')
-    input: bwt_cfg['ref']
-    output: expand("{{prefix}}{ext}", ext=bwt_cfg['build']['ext_v2'])
-    shell: "{params.cmd} {input} {wildcards.prefix}"
+for rule in config['bio.ngs.align.bowtie']['rules']:
+    include: os.path.join("bowtie", rule + ".rule")

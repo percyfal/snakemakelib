@@ -1,0 +1,9 @@
+# -*- snakemake -*-
+rule picard_calculate_region_hs_metrics:
+    """Picard: calculate hybrid selection metrics based on regions"""
+    params: cmd = config['bio.ngs.qc.picard']['cmd'] + CALCULATE_HS_METRICS,
+            options = config['bio.ngs.qc.picard']['options']
+    input: bam = "{prefix}.region_{gene}.{sfx}.bam", targets="{prefix}.region_{gene}.targets.dict", baits="{prefix}.region_{gene}.baits.dict", ref=config['bio.ngs.qc.picard']['ref']
+    output: metrics = "{prefix}.region_{gene}.{sfx}.hs_metrics"
+    shell: "{params.cmd} {params.options} TI={input.targets} BI={input.baits} I={input.bam} O={output.metrics} R={input.ref}"
+

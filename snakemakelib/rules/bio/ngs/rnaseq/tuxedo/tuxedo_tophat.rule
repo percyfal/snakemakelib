@@ -1,0 +1,32 @@
+# -*- snakemake -*-
+config_default = {
+    'bio.ngs.rnaseq.tuxedo' : {
+        'tophat' : {
+            'options' : '',
+            'threads' : config['bio.ngs.settings']['threads'],
+            'output_dir' : os.path.join(os.curdir, "tophat_out"),
+        },
+    },
+}
+
+config = update_config(config_default, config)
+
+rule tuxedo_tophat:
+    """Run tophat paired end alignment.
+    NB: requires python2 so need to activate a virtual environment or
+    the like to run.
+    """
+    params: cmd = 'tophat2' if config['bio.ngs.rnaseq.tuxedo']['version2'] else 'tophat',
+            options = config['bio.ngs.rnaseq.tuxedo']['tophat']['options'],
+            index = str(config['bio.ngs.rnaseq.tuxedo']['index']),
+            outdir = config['bio.ngs.rnaseq.tuxedo']['tophat']['output_dir'],
+            python2 = config['comp.settings']['python2']['activate_cmd']
+    input: read1 = "{prefix}" + config['bio.ngs.settings']['read1_label'] + config['bio.ngs.settings']['fastq_suffix'],\
+           read2 = "{prefix}" + config['bio.ngs.settings']['read2_label'] + config['bio.ngs.settings']['fastq_suffix'],\
+           index = str(config['bio.ngs.rnaseq.tuxedo']['index']) + ".1.bt2" if config['bio.ngs.rnaseq.tuxedo']['version2'] else str(config['bio.ngs.rnaseq.tuxedo']['index']) + ".1.ebwt"
+    output: tophatdir = "{prefix}.tophat2" if config['bio.ngs.rnaseq.tuxedo']['version2'] else "{prefix}.tophat",
+            hits = os.path.join("{prefix}.tophat2" if config['bio.ngs.rnaseq.tuxedo']['version2'] else "{prefix}.tophat", "accepted_hits.bam")
+    run: 
+        rg = dict(config['bio.ngs.rnaseq.tuxedo'])['rg_fn'](os.path.basename(wildcards.prefix))
+        shell("{python2} && {cmd} {opt} {rg} -o {out}.tmp {index} {read1} {read2} 2> {out}.log && mv {out}.tmp/* {out} && mv {out}.log {out}".format(python2=params.python2, cmd=params.cmd, opt=params.options, rg=rg, out=output.tophatdir, prefix=wildcards.prefix, index=params.index, read1=input.read1, read2=input.read2))
+

@@ -1,0 +1,25 @@
+# -*- snakemake -*-
+config_default = {
+    'bio.ngs.db.ucsc' : { 
+        'wigToBigWig' : {
+            'cmd' : 'wigToBigWig',
+            'options' : '-clip',
+        },
+    },
+}
+
+config = update_config(config_default, config)
+
+rule ucsc_wig_to_bigWig:
+    """Convert wig file to bigWig.
+
+    Run wigToBigWig to convert wig file to bigWig.
+    """
+    params: cmd = config['bio.ngs.db.ucsc']['wigToBigWig']['cmd'],
+            options = config['bio.ngs.db.ucsc']['wigToBigWig']['options']
+    log: "{prefix}.wig.log"
+    input: wig = "{prefix}.wig",
+           sizes = "chrom.sizes"
+    output: bigwig = "{prefix}.wig.bw"
+    shell: "{params.cmd} {params.options} {input.wig} {input.sizes} {output.bigwig} 2> {log}"
+

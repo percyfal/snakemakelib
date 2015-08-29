@@ -1,0 +1,35 @@
+# -*- snakemake -*-
+include: '../settings.rules'
+
+DEFAULT_RULES = ['snpeff_annotate_variants']
+
+config_default = {
+    'bio.ngs.variation.snpeff' : {
+        'rules' : DEFAULT_RULES,
+        'home' : os.getenv("SNPEFF_HOME", os.curdir),
+        'java_mem' : config['bio.ngs.settings']['java']['java_mem'],
+        'java_tmpdir' : config['bio.ngs.settings']['java']['java_tmpdir'],
+        'dblist' : "hg19",
+        'genome_version' : config['bio.ngs.settings']['db']['build'],
+    },
+}
+
+config = update_config(config_default, config)
+
+config = update_config(
+    {'bio.ngs.variation.snpeff': {
+        'config' : os.path.join(config['bio.ngs.variation.snpeff']['home'], "snpEff.config"),
+        'jar' : os.path.join(config['bio.ngs.variation.snpeff']['home'], "snpEff.jar"),
+        }}, config)
+
+config = update_config(
+    {'bio.ngs.variation.snpeff': {
+        'options' : "-c {config}".format(config=config['bio.ngs.variation.snpeff']['config']),
+        'cmd' : "java -Xmx{java_mem} -Djava.io.tmpdir={java_tmpdir} -jar {jar}".format(java_mem=config['bio.ngs.variation.snpeff']['java_mem'],
+                                                                                       java_tmpdir=config['bio.ngs.variation.snpeff']['java_tmpdir'],
+                                                                                       jar=config['bio.ngs.variation.snpeff']['jar']),
+    }}, config)
+
+
+for rule in config['bio.ngs.variation.snpeff']['rules']:
+    include: os.path.join("snpeff", rule + ".rule")

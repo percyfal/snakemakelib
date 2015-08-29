@@ -1,27 +1,16 @@
 # -*- snakemake -*-
-import os
-import pandas as pd
-from snakemakelib.config import update_config
-from snakemakelib.bio.ngs.db import index
-from snakemakelib.stat import is_installed
-from snakemakelib.bio.ngs.targets import generic_target_generator
-
 include: '../settings.rules'
 
-ngs_cfg = config['bio.ngs.settings']
+DEFAULT_RULES = ['rsem_calculate_expression']
 
 config_default = { 
     'bio.ngs.rnaseq.rsem' : {
-        'annot_gtf' : ngs_cfg['annotation']['transcript_annot_gtf'],
-        'threads' : ngs_cfg['threads'],
-        'ref' : ngs_cfg['db']['ref'],
+        'rules' : DEFAULT_RULES,
+        'annot_gtf' : config['bio.ngs.settings']['annotation']['transcript_annot_gtf'],
+        'threads' : config['bio.ngs.settings']['threads'],
+        'ref' : config['bio.ngs.settings']['db']['ref'],
         'ref_sfx' : '.transcripts.fa',
         'index' : "",
-        'prepare-reference' : {
-            'cmd' : 'rsem-prepare-reference',
-            'options' : "",
-            'reference_name' : "rsem",
-        },
         'calculate-expression' : {
             'cmd' : 'rsem-calculate-expression',
             'options' : '--no-bam-output',
@@ -32,116 +21,20 @@ config_default = {
 
 config = update_config(config_default, config)
 
-# Update annotation
-config['bio.ngs.rnaseq.rsem']['annot_gtf'] = \
-    annotation(annotation=config['bio.ngs.rnaseq.rsem']['annot_gtf'],
-               db_cfg=config['bio.ngs.settings']['db'])
-# Update index
-config['bio.ngs.rnaseq.rsem']['index'] = index(
-    ref = config['bio.ngs.rnaseq.rsem']['ref'],
-    index = config['bio.ngs.rnaseq.rsem']['index'],
-    application = 'rsem',
-    build = config['bio.ngs.settings']['db']['build'])
+try:
+    from snakemakelib.bio.ngs.db import index, annotation
+    # Update annotation
+    config['bio.ngs.rnaseq.rsem']['annot_gtf'] = annotation(
+        annotation=config['bio.ngs.rnaseq.rsem']['annot_gtf'],
+        db_cfg=config['bio.ngs.settings']['db'])
+    # Update index
+    config['bio.ngs.rnaseq.rsem']['index'] = index(
+        ref = config['bio.ngs.rnaseq.rsem']['ref'],
+        index = config['bio.ngs.rnaseq.rsem']['index'],
+        application = 'rsem',
+        build = config['bio.ngs.settings']['db']['build'])
+except:
+    pass
 
-# Need bowtie1(!) path
-if config['bio.ngs.align.bowtie']['bowtie']['home']:
-    os.environ["PATH"] += os.pathsep + config['bio.ngs.align.bowtie']['bowtie']['home']
-
-aligner = config['bio.ngs.settings']['aligner']
-rsem_cfg = config['bio.ngs.rnaseq.rsem']
-
-for (section, cfg) in rsem_cfg.items():
-    if isinstance(cfg, dict):
-        if cfg.get('cmd', "") and not is_installed(cfg.get('cmd', "")):
-            raise Exception("\nbio.ngs.rnaseq.rsem: {prog} not installed or not in PATH\n".format(prog=cfg.get('cmd')))
-
-# Take into account different aligners
-align_section = 'bio.ngs.align.' + aligner
-align_include = os.path.join('../align', aligner + ".rules")
-
-include: align_include
-
-align_cfg = config[align_section]
-
-# See https://groups.google.com/forum/#!topic/rna-star/tvajn49WTYk for
-# setting up RSEM with STAR alignments
-rule rsem_prepare_reference:
-    """Prepare RSEM transcripts file"""
-    params: cmd = rsem_cfg['prepare-reference']['cmd'],
-            options = " ".join([rsem_cfg['prepare-reference']['options'],
-            "--gtf {annot}".format(annot=rsem_cfg['annot_gtf']) if rsem_cfg['annot_gtf'] else ""]),
-            ref = rsem_cfg['ref'],
-            index = rsem_cfg['index']
-    input: rsem_cfg['annot_gtf'] if rsem_cfg['annot_gtf'] else [], ref = rsem_cfg['ref'], 
-    output: rsem_cfg['index'] + rsem_cfg['ref_sfx']
-    log: rsem_cfg['index'] + rsem_cfg['ref_sfx'] + ".log"
-    shell: "{params.cmd} {params.options} {input.ref} {params.index} > {log}"
-
-rule rsem_calculate_expression_bowtie:
-    """Run RSEM on bowtie output. Requires a fifo hack to work: see
-    http://atgcio.blogspot.se/2013/08/fifos-and-mapping-with-bowtie-using.html
-    """
-    params: cmd = rsem_cfg['calculate-expression']['cmd'],
-            options = rsem_cfg['calculate-expression']['options'],
-            index = rsem_cfg['index'] + rsem_cfg['ref_sfx']
-    input: read1 = "{prefix}" + ngs_cfg['read1_label'] + ngs_cfg['fastq_suffix'],\ 
-           read2 = "{prefix}" + ngs_cfg['read2_label'] + ngs_cfg['fastq_suffix'],\
-           index = rsem_cfg['index'] + rsem_cfg['ref_sfx'],
-           bowtie_index = expand(rsem_cfg['index'] + "{ext}", ext=align_cfg.get('build', {}).get('ext_v1', ""))
-    output: "{prefix}.rsem"
-    threads: rsem_cfg["threads"]
-    run: 
-      fifo1 = input.read1 + ".read1.fifo"
-      fifo2 = input.read2 + ".read2.fifo"
-      shell("rm -f " + fifo1)
-      shell("rm -f " + fifo2)
-      shell("mkfifo " + fifo1)
-      shell("mkfifo " + fifo2)
-      shell("zcat " + input.read1 + " > " + fifo1 + " &")
-      shell("zcat " + input.read2 + " > " + fifo2 + " &")
-      shell("{cmd} {options} -p {threads} --paired-end {fifo1} {fifo2} {index} {sample} &> {log}.tmp && mv {log}.tmp {log}.rsem".format(cmd=params.cmd, options=params.options, threads=threads, fifo1=fifo1, fifo2=fifo2, index=rsem_cfg['index'], sample=wildcards.prefix, log=wildcards.prefix))
-      shell("rm -f " + fifo1)
-      shell("rm -f " + fifo2)
-
-rule rsem_calculate_expression:
-    """Calculate RSEM expression from bam"""
-    params: cmd = rsem_cfg['calculate-expression']['cmd'],
-            options = " ".join(["--bam",  "--paired-end",
-            rsem_cfg['calculate-expression']['options']]),
-            index = rsem_cfg['index']
-    input: index = rsem_cfg['index'] + rsem_cfg['ref_sfx'],
-           bam = "{prefix}.bam"
-    output: isoforms = "{prefix}.isoforms.results", genes = "{prefix}.genes.results"
-    threads: rsem_cfg["threads"]
-    shell: "{params.cmd} {params.options} -p {threads} {input.bam} {params.index} {wildcards.prefix}"
-
-def _rsem_find_result_files_fn(wildcards):
-    ngs_cfg = config['bio.ngs.settings']
-    sources = generic_target_generator(
-        tgt_re = ngs_cfg['sampleorg'].sample_re,
-        src_re=ngs_cfg['sampleorg'].run_id_re,
-        target_suffix = ".".join(["", wildcards.label, wildcards.type]) + '.results',
-        **ngs_cfg)
-    return sources
-
-rule rsem_summarize_expression_data:
-    """Summarize expression results"""
-    input: _rsem_find_result_files_fn
-    output: csv = os.path.join("{path}", "rsem.{label}.{type}.csv")
-    run:
-        first = True
-        for f in input:
-            try:
-                sample = ngs_cfg['sampleorg'].sample_re.parse(f)['SM']
-            except KeyError:
-                raise Exception("failed to parse sample name 'SM' from input file name")
-            tmp = pd.read_table(f)
-            df_tmp = pd.DataFrame({k:tmp[k] for k in ["expected_count", "TPM", "FPKM"]})
-            df_tmp.index = tmp["gene_id"]
-            if first:
-                df = df_tmp
-                first = False
-            else:
-                df = pd.concat([df, df_tmp])
-        df.to_csv(output.csv)
-    
+for rule in config['bio.ngs.rnaseq.rsem']['rules']:
+    include: os.path.join("rsem", rule + ".rule")

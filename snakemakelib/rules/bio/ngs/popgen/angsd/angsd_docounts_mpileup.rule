@@ -1,0 +1,11 @@
+# -*- snakemake -*-
+rule angsd_dothetas_emoptim:
+    """angsd: run dothetas"""
+    params: cmd = config['bio.ngs.popgen.angsd']['cmd'],
+            options = config['bio.ngs.popgen.angsd']['doThetas']['options']
+    threads: config['bio.ngs.popgen.angsd']['options']['threads']
+    input: emoptimml = "{prefix}.sfs.em.ml", list = "{prefix}.list"
+    output: thetas = "{prefix}.thetas.gz"
+    shell: "{params.cmd} {params.options} -pest {input.emoptimml} -bam {params.list} -out {output.thetas}"
+
+    

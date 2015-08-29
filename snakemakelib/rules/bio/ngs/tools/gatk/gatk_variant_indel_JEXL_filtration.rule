@@ -1,0 +1,27 @@
+# -*- snakemake -*-
+config_default = {
+    'bio.ngs.tools.gatk' : {
+        'variant_indel_JEXL_filtration' : {
+            'cmd' : 'VariantFiltration',
+            'ref' : config['bio.ngs.tools.gatk']['ref'],
+            'expressions' : ["QD < 2.0", "ReadPosRankSum < -20.0", "FS > 200.0"]
+        },
+    },
+}
+
+config = update_config(config_default, config)
+
+rule gatk_variant_indel_JEXL_filtration:
+    """Run GATK VariantFiltration
+
+    Perform hard filtering using JEXL expressions
+    """
+    params: cmd = config['bio.ngs.tools.gatk']['cmd'] + " -T " + config['bio.ngs.tools.gatk']['variant_indel_JEXL_filtration']['cmd'],
+            options = " ".join([
+                " ".join(["-R", config['bio.ngs.tools.gatk']['variant_indel_JEXL_filtration']['ref']]),
+                " ".join(["--filterName GATKStandard{e} --filterExpression '{exp}'".format(e=exp.split()[0], exp=exp) \
+                                for exp in config['bio.ngs.tools.gatk']['variant_indel_JEXL_filtration']['expressions']])
+                ])
+    input: "{prefix}.vcf"
+    output: "{prefix}.filteredINDEL.vcf"
+    shell: "{params.cmd} {params.options} --variant {input} --out {output}"

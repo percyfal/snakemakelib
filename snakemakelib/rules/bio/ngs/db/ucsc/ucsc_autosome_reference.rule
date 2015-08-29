@@ -1,0 +1,19 @@
+# -*- snakemake -*-
+
+rule ucsc_autosome_reference:
+    """Make an autosome reference from original build file.
+
+    Assume chromosome names are prefixed chr.
+    """
+    input: ref = "{prefix}.fa"
+    output: ref = "{prefix}.autosome.fa"
+    run:
+        from Bio import SeqIO
+        seqs = SeqIO.parse(open(input.ref), format='fasta')
+        r = re.compile(r"chr[0-9MTXY]+$")
+        with open(output.ref, "w") as fh:
+            for seq in seqs:
+                if r.match(seq.id):
+                    smllogger.info("Writing chromosome {}".format(seq.id))
+                    SeqIO.write(seq, fh, format='fasta')
+

@@ -1,0 +1,9 @@
+# -*- snakemake -*-
+rule samtools_sam2bam:
+    """Convert sam file to bam."""
+    params: cmd = config['bio.ngs.tools.samtools']['cmd'],
+            options = config['bio.ngs.tools.samtools']['options']
+    input: "{prefix}.sam"
+    output: "{prefix}.bam"
+    shell: "{params.cmd} view {params.options} -Sb {input} > {output}"
+

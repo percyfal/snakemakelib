@@ -31,5 +31,4 @@ config_default = {
 }
 
 config = update_config(config_default, config)
-
 config['_version'] = get_versions()

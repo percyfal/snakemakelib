@@ -50,7 +50,6 @@ REQUIRES = [
     'snakemake>=3.3',
     'texttable>=0.8.2',
     'sphinx>=1.3',
-    #'nose>=1.3.4',
     'pandas>=0.16.0',
     'mock>=1.0.1',
     'pysam>=0.8.3',
@@ -62,13 +61,13 @@ REQUIRES = [
 ]
 # https://pythonhosted.org/setuptools/setuptools.html
 SETUP_REQUIRES = [
-    #'bokehutils==0.1.3',
+    #'bokehutils==0.1.4',
 ]    
 
 # Adding github to setup:
 # http://mike.zwobble.org/2013/05/adding-git-or-hg-or-svn-dependencies-in-setup-py/
 DEPENDENCY_LINKS = [
-    #'https://github.com/percyfal/bokehutils/tarball/master#egg=bokehutils-0.1.3'
+    #'https://github.com/percyfal/bokehutils/tarball/master@0.1.4#egg=bokehutils'
 ]
 
 # Integrating pytest with setuptools: see
@@ -120,7 +119,6 @@ setup(
         'snakemakelib.tests',
         'snakemakelib.workflows.tests',
     ],
-    test_suite='nose.collector',
     package_data={'snakemakelib': package_data},
     setup_requires=SETUP_REQUIRES,
     install_requires=REQUIRES,

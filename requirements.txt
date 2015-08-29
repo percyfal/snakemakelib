@@ -2,5 +2,5 @@
 --index-url https://pypi.python.org/simple/
 
 -e .
--e git+https://github.com/percyfal/bokehutils.git@master#egg=bokehutils
+-e git+https://github.com/percyfal/bokehutils.git@0.1.4#egg=bokehutils
 

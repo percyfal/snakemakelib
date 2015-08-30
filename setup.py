@@ -3,6 +3,9 @@
 # --------------------------------------------------
 # Imports
 # --------------------------------------------------
+
+from __future__ import print_function
+
 # stdlib
 import os
 from setuptools import setup
@@ -55,10 +58,20 @@ REQUIRES = [
     'pysam>=0.8.3',
     #'bokeh>=0.9.1',
     #'bokehutils==0.1.3',
-    'matplotlib>=1.4.0',
     'pytest',
     'pytest-cov>=1.8.1',
 ]
+
+try:
+    # Hack for readthedocs
+    if not 'readthedocs' in os.path.dirname(os.path.realpath(__file__)):
+        REQUIRES.append('matplotlib>=1.4.0')
+    else:
+        print("readthedocs in path name; assuming we're building docs @readthedocs")
+except:
+    pass
+    
+
 # https://pythonhosted.org/setuptools/setuptools.html
 SETUP_REQUIRES = [
     #'bokehutils==0.1.4',

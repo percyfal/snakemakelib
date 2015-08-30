@@ -59,6 +59,13 @@ REQUIRES = [
     'pytest',
     'pytest-cov>=1.8.1',
 ]
+try:
+    # Hack for readthedocs
+    import socket
+    print (socket.gethostname())
+except:
+    pass
+
 # https://pythonhosted.org/setuptools/setuptools.html
 SETUP_REQUIRES = [
     #'bokehutils==0.1.4',

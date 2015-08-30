@@ -1,0 +1,4 @@
+0.1-alpha.8 (Aug 2015)
+======================
+
+* add hack to remove matplotlib from requirements at readthedoc (#21)

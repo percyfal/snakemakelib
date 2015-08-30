@@ -62,9 +62,9 @@ REQUIRES = [
 try:
     # Hack for readthedocs
     import socket
-    print (socket.gethostname())
+    print ("Hostname:",  socket.gethostname())
 except:
-    pass
+    print ("Failed to get hostname")
 
 # https://pythonhosted.org/setuptools/setuptools.html
 SETUP_REQUIRES = [

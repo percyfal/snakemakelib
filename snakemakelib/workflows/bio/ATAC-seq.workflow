@@ -27,7 +27,7 @@ def _merge_suffix():
 ##############################
 atac_config = {
     'workflows.bio.atac_seq' : {
-        'aligner' : 'bowtie',
+        'aligner' : 'bowtie2',
         'peakcallers' : ['dfilter', 'macs2'],
         'trimadaptor' : True,
         'bamfilter' : True,
@@ -56,8 +56,12 @@ atac_config = {
 }
 aligner_config = {
     'bio.ngs.align.bowtie' : {
-        'version2' : True,
-        'bowtie' : {
+        'align' : {
+            'options' : '-X 2000',
+        },
+    },
+    'bio.ngs.align.bowtie2' : {
+        'align' : {
             'options' : '-X 2000',
         },
     },
@@ -86,7 +90,6 @@ include: os.path.join(p, "bio/ngs", "settings.rules")
 include: os.path.join(p, "bio/ngs/align", aligner + ".rules")
 include: os.path.join(p, "bio/ngs/align", "blat.rules")
 include: os.path.join(p, "bio/ngs/qc", "picard.rules")
-#include: os.path.join(p, "bio/ngs/qc", "sequenceprocessing.rules")
 include: os.path.join(p, "bio/ngs/qc", "qualimap.rules")
 include: os.path.join(p, "bio/ngs/chromatin", "danpos.rules")
 if 'dfilter' in config['workflows.bio.atac_seq']['peakcallers']:
@@ -103,10 +106,6 @@ ruleorder: picard_merge_sam > picard_sort_sam
 ruleorder: picard_sort_sam > picard_add_or_replace_read_groups
 ruleorder: picard_add_or_replace_read_groups > picard_mark_duplicates
 ruleorder: picard_mark_duplicates > atacseq_correct_coordinates
-ruleorder: atacseq_correct_coordinates > bowtie_align_pe
-ruleorder: picard_sort_sam > bowtie_align_pe
-ruleorder: picard_merge_sam > bowtie_align_pe
-ruleorder: picard_mark_duplicates > bowtie_align_pe
 
 # Set temporary and protected outputs
 set_output(workflow,
@@ -181,8 +180,9 @@ BIGWIG_TARGETS = [x.replace(".bed", ".bed.wig.bw") for x in DFILTER_TARGETS] +\
                  [x.replace("_peaks.xls", "_treat_pileup.bdg.bw") for x in MACS2_TARGETS] +\
                  [x.replace("_peaks.xls", "_control_lambda.bdg.bw") for x in MACS2_TARGETS]
 
-
-# Rules
+##############################
+# Collection rules
+##############################
 rule atacseq_all:
     """Run ATAC-seq pipeline"""
     input: DFILTER_TARGETS + MACS2_TARGETS + DUP_METRICS_TARGETS + ALIGN_METRICS_TARGETS + INSERT_METRICS_TARGETS + REPORT_TARGETS
@@ -203,6 +203,10 @@ rule atacseq_bigwig:
     """Convert peak-calling bed output to bigwig"""
     input: BIGWIG_TARGETS
 
+
+##############################
+# Specific rules
+##############################    
 rule atacseq_correct_coordinates:
     """From Buenrostro paper: 
 

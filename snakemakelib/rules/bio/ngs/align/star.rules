@@ -17,7 +17,9 @@ config_default = {
     },
 }
 
-config = update_config(config_default, config)
+update_config(config_default, config)
+config = config_default
+
 
 try:
     from snakemakelib.bio.ngs.db import index, annotation
@@ -25,7 +27,7 @@ try:
     # Update annotation
     config['bio.ngs.align.star']['star_index']['sjdbGTFfile'] = \
         annotation(annotation=config['bio.ngs.align.star']['star_index']['sjdbGTFfile'],\
-                   db_cfg=config['bio.ngs.settings']['db'])
+                   db_config=config['bio.ngs.settings']['db'])
 
     # Update index
     config['bio.ngs.align.star']['index'] = index(

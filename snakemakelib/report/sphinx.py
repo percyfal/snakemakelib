@@ -43,23 +43,23 @@ def make_rst_table(data):
         return tab_tt.draw()
 
 
-def sphinx_sample_metrics_report(input, report_cfg):
+def sphinx_sample_metrics_report(input, config):
     Sample = namedtuple('Sample', ['sample_id', 'project_id', 'pmc'])
     metrics = {}
     for s in input:
         mlist = [(os.path.basename(s), m) for m in glob.glob(os.path.join(s, "*metrics"))]
         pmc = PicardMetricsCollection(mlist)
-        st = Sample(sample_id=os.path.basename(s), project_id=report_cfg['project_id'], pmc=pmc)
+        st = Sample(sample_id=os.path.basename(s), project_id=config['project_id'], pmc=pmc)
         metrics[st.sample_id] = st
     # Setup output directory
     kw = {
-        'docroot':report_cfg['docroot'],
+        'docroot':config['docroot'],
         'sample_id':None,
         'metrics':{k: (st.sample_id, st.project_id, st.pmc.metrics(as_csv=True)) for k,st in metrics.items()},
-        'project_id':report_cfg['project_id'],
-        'project_name':report_cfg['project_name'],
-        'application':report_cfg['application'],
-        'date':report_cfg['date'],
+        'project_id':config['project_id'],
+        'project_name':config['project_name'],
+        'application':config['application'],
+        'date':config['date'],
         'samples': "\n".join(["   {}".format(s.sample_id) for s in sorted(metrics.values())])
     }
     _setup_directories(kw['docroot'])

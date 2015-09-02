@@ -72,7 +72,9 @@ config_default = {
 	},
 }
 
-config = update_config(config_default, config)
+update_config(config_default, config)
+config = config_default
+
 
 MERGE_INPUT_SUFFIX=.trimmed.sync.sort.rg.bam
 SAMPLE_TARGET_SUFFIX=.sort.merge.realign.recal.clip.bam

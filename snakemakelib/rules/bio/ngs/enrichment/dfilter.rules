@@ -14,7 +14,9 @@ config_default = {
     },
 }
 
-config = update_config(config_default, config)
+update_config(config_default, config)
+config = config_default
+
 
 os.environ["PATH"] += os.pathsep + os.path.dirname(config['bio.ngs.enrichment.dfilter']['cmd'])
 

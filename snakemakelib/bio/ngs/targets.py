@@ -43,9 +43,9 @@ def generic_target_generator(tgt_re, src_re=None, samples=[], runs=[],
         smllogger.debug("trying to gather target information based on " +
                         "configuration keys 'samples' and 'runs'")
         if len(samples) == len(runs):
-            cfg_list = list(zip(samples, runs))
+            config_list = list(zip(samples, runs))
             mlist = []
-            for (s, r) in cfg_list:
+            for (s, r) in config_list:
                 # Use basename searches for samples and runs
                 m = re.search(src_re.basename_pattern, r).groupdict()\
                     if not re.search(src_re.basename_pattern, r) is None else {}

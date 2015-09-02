@@ -7,14 +7,12 @@ config_default = {
     'bio.ngs.variation.htslib' : {
         'rules' : DEFAULT_RULES,
         'home' : os.getenv("HTSLIB_HOME", os.curdir),
+        'cmd' : "vcf",
     },
 }
 
-config = update_config(config_default, config)
-config = update_config(
-    {'bio.ngs.annotion.htslib':
-     {'cmd' : os.path.join(config['bio.ngs.variation.htslib']['home'], "vcf")}},
-    config)
+update_config(config_default, config)
+config = config_default
 
 for rule in config['bio.ngs.variation.htslib']['rules']:
     include: os.path.join("htslib", rule + ".rule")

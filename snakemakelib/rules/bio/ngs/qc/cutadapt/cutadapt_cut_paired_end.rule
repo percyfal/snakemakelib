@@ -7,7 +7,9 @@ config_default = {
     },
 }
 
-config = update_config(config_default, config)
+update_config(config_default, config)
+config = config_default
+
 
 rule cutadapt_cut_paired_end:
     """Cutadapt: cut paired end sequences"""

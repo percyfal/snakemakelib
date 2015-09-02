@@ -18,7 +18,9 @@ config_default = {
     },
 }
 
-config = update_config(config_default, config)
+update_config(config_default, config)
+config = config_default
+
 
 rule picard_merge_sam:
     """Picard: merge sam files.

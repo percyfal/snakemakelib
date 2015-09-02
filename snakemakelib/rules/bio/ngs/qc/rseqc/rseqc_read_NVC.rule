@@ -8,7 +8,9 @@ config_default = {
     },
 }
 
-config = update_config(config_default, config)
+update_config(config_default, config)
+config = config_default
+
 
 rule rseqc_read_NVC:
     """Run RSeQC read_NVC.py"""

@@ -16,13 +16,26 @@ config_default = {
     },
 }
 
-config = update_config(config_default, config)
+update_config(config_default, config)
+config = config_default
 
-config = update_config({'bio.ngs.rnaseq.rnaseqc' : {'jar' : os.path.join(rnaseqc_conf['home'], RNASEQC_JAR_PROGRAM)}},
-                       config)
 
-config = update_config({'bio.ngs.rnaseq.rnaseqc' : {'cmd' : "java -Xmx" + rnaseqc_conf['java_mem'] + " -Djava.io.tmpdir=" + rnaseqc_conf['java_tmpdir'] +  " -jar " + rnaseqc_conf['jar']}},
-                       config)
+config_default2 = {
+    'bio.ngs.rnaseq.rnaseqc' : {
+        'jar' : os.path.join(rnaseqc_conf['home'], RNASEQC_JAR_PROGRAM)},
+}
+
+update_config(config_default2, config)
+config = config_default2
+
+
+config_default3 = {
+    'bio.ngs.rnaseq.rnaseqc' : {
+        'cmd' : "java -Xmx" + rnaseqc_conf['java_mem'] + " -Djava.io.tmpdir=" + rnaseqc_conf['java_tmpdir'] +  " -jar " + rnaseqc_conf['jar']},
+}
+
+update_config(config_default3, config)
+config = config_default3
 
 # RNASEQC uses tophat alignments as input!
 rule rnaseqc_main:

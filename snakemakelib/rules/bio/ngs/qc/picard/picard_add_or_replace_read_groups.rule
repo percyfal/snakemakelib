@@ -7,7 +7,9 @@ config_default = {
     },
 }
 
-config = update_config(config_default, config)
+update_config(config_default, config)
+config = config_default
+
 
 rule picard_add_or_replace_read_groups:
     """Picard: add or replace read groups. Currently tailored for Illumina read groups."""

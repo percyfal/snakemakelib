@@ -7,7 +7,9 @@ config_default = {
     },
 }
 
-config = update_config(config_default, config)
+update_config(config_default, config)
+config = config_default
+
 
 for rule in config['bio.ngs.qc.picard']['qcrules']:
     if not rule in workflow._rules:

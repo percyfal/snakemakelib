@@ -35,10 +35,8 @@ config_default = {
     },
 }
 
-config = update_config(config_default, config)
-
-sra_cfg = config['bio.ngs.tools.sratools']
-ngs_cfg = config['bio.ngs.settings']
+update_config(config_default, config)
+config = config_default
 
 rule sratools_compile_srastudy_metadata:
     """Combine output from rules below"""
@@ -60,7 +58,7 @@ rule sratools_compile_srastudy_metadata:
 
 rule sratools_download_srastudy_metadata:
     """Download srastudy metadata."""
-    params: traces = sra_cfg['tracearchive']
+    params: traces = config['bio.ngs.tools.sratools']['tracearchive']
     output: csv = "{prefix}_metadata.csv"
     run:
         shell ("wget -O {output}  '{traces}sra.cgi?save=efetch&db=sra&rettype=runinfo&term={basename}'".format(output=output.csv, traces=params.traces, basename=os.path.basename(wildcards.prefix)))
@@ -74,16 +72,16 @@ rule sratools_download_srastudy_biosample:
             bioproject = list(set([x["BioProject"] for x in reader]))
         if len(bioproject) > 1:
             smllogger.warn("More than one bioproject defined! This may or may not be ok, depending on what you're doing")
-        if sra_cfg['email'] is None:
+        if config['bio.ngs.tools.sratools']['email'] is None:
             s = "bio.ngs.tools.sratools: No email set; must tell NCBI mail address! Either set USER_EMAIL environment variable or configuration variable bio.ngs.tools.sratools.email"
             smllogger.warn(s)
         else:
             with open(output.csv, "w") as fh:
                 from Bio import Entrez
                 import xml.etree.ElementTree as ET
-                Entrez.email = sra_cfg['email']
+                Entrez.email = config['bio.ngs.tools.sratools']['email']
                 smllogger.info("Connecting to Entrez; querying for bioproject {bioprj}".format(bioprj=bioproject[0]))
-                handle = Entrez.esearch(db="sra", term=bioproject[0], retmax=sra_cfg['retmax'])
+                handle = Entrez.esearch(db="sra", term=bioproject[0], retmax=config['bio.ngs.tools.sratools']['retmax'])
                 record = Entrez.read(handle)
                 handle.close()
                 smllogger.info("Retrieved biosample id list for bioproject {bioprj}; fetching biosamples".format(bioprj=bioproject[0]))
@@ -109,35 +107,35 @@ rule sratools_download_srastudy_biosample:
 
 rule sratools_prefetch:
     """Run sratools prefetch"""
-    params: cmd = sra_cfg['prefetch']['cmd'],
-            options = sra_cfg['prefetch']['options']
-    output: temp(os.path.join(sra_cfg['workspacelocation'], "sra", os.path.basename("{prefix}") + ".sra"))
-    log: os.path.join(sra_cfg['workspacelocation'], "sra", "{prefix}.log")
+    params: cmd = config['bio.ngs.tools.sratools']['prefetch']['cmd'],
+            options = config['bio.ngs.tools.sratools']['prefetch']['options']
+    output: temp(os.path.join(config['bio.ngs.tools.sratools']['workspacelocation'], "sra", os.path.basename("{prefix}") + ".sra"))
+    log: os.path.join(config['bio.ngs.tools.sratools']['workspacelocation'], "sra", "{prefix}.log")
     shell: "{params.cmd} {params.options} $(basename {wildcards.prefix}) > {log}"
 
 def _sra_file(wildcards):
-    return os.path.join(sra_cfg['workspacelocation'], "sra", os.path.basename(wildcards.prefix) + ".sra")
+    return os.path.join(config['bio.ngs.tools.sratools']['workspacelocation'], "sra", os.path.basename(wildcards.prefix) + ".sra")
 
 rule sratools_fastq_dump:
     """Run sratools fastq-dump"""
-    params: cmd = sra_cfg['fastq-dump']['cmd'],
-            options = " ".join([sra_cfg['fastq-dump']['options'],
-                                '--gzip' if ngs_cfg["fastq_suffix"].endswith(".gz") else '',
-                                '--bzip2' if ngs_cfg["fastq_suffix"].endswith(".bzip2") else ''])
+    params: cmd = config['bio.ngs.tools.sratools']['fastq-dump']['cmd'],
+            options = " ".join([config['bio.ngs.tools.sratools']['fastq-dump']['options'],
+                                '--gzip' if config['bio.ngs.settings']["fastq_suffix"].endswith(".gz") else '',
+                                '--bzip2' if config['bio.ngs.settings']["fastq_suffix"].endswith(".bzip2") else ''])
     input: _sra_file
     # Disable . and _ in sra file name
-    output: read1 = os.path.join("{path}", "{prefix,[A-Za-z0-9]+}" + ngs_cfg["read1_label"] + ngs_cfg["fastq_suffix"]),
-            read2 = os.path.join("{path}", "{prefix,[A-Za-z0-9]+}" + ngs_cfg["read2_label"] + ngs_cfg["fastq_suffix"])
+    output: read1 = os.path.join("{path}", "{prefix,[A-Za-z0-9]+}" + config['bio.ngs.settings']["read1_label"] + config['bio.ngs.settings']["fastq_suffix"]),
+            read2 = os.path.join("{path}", "{prefix,[A-Za-z0-9]+}" + config['bio.ngs.settings']["read2_label"] + config['bio.ngs.settings']["fastq_suffix"])
     shell: "{params.cmd} {params.options} -O {wildcards.path} {wildcards.prefix}"
 
 def _get_run(wildcards):
-    run = ngs_cfg['sampleorg'].raw_run_re.parse(os.path.join(wildcards.path, wildcards.prefix))['PU']
-    return os.path.join(sra_cfg['_datadir'], "{run}_{read}".format(run=run, read=wildcards.read) + ngs_cfg["fastq_suffix"])
+    run = config['bio.ngs.settings']['sampleorg'].raw_run_re.parse(os.path.join(wildcards.path, wildcards.prefix))['PU']
+    return os.path.join(config['bio.ngs.tools.sratools']['_datadir'], "{run}_{read}".format(run=run, read=wildcards.read) + config['bio.ngs.settings']["fastq_suffix"])
 
 rule sratools_link_sra_fastq:
     """Link sra run fastq file from download directory to output path"""
     input: fastq = _get_run
-    output: fastq = os.path.join("{path}", "{prefix,[A-Za-z0-9]+}" + "_{read,([0-9]+|R[0-9]+)}" + ngs_cfg["fastq_suffix"])
+    output: fastq = os.path.join("{path}", "{prefix,[A-Za-z0-9]+}" + "_{read,([0-9]+|R[0-9]+)}" + config['bio.ngs.settings']["fastq_suffix"])
     shell: "ln -fs {input.fastq} {output.fastq}"
 
 ruleorder: sratools_link_sra_fastq > sratools_fastq_dump

@@ -14,21 +14,30 @@ config_default = {
     },
 }
 
-config = update_config(config_default, config)
+update_config(config_default, config)
+config = config_default
 
-config = update_config(
-    {'bio.ngs.variation.snpeff': {
+
+config_default2 = {
+    'bio.ngs.variation.snpeff': {
         'config' : os.path.join(config['bio.ngs.variation.snpeff']['home'], "snpEff.config"),
         'jar' : os.path.join(config['bio.ngs.variation.snpeff']['home'], "snpEff.jar"),
-        }}, config)
+        }}
 
-config = update_config(
-    {'bio.ngs.variation.snpeff': {
+update_config(config_default2, config)
+config = config_default2
+
+
+config_default3 = {
+    'bio.ngs.variation.snpeff': {
         'options' : "-c {config}".format(config=config['bio.ngs.variation.snpeff']['config']),
         'cmd' : "java -Xmx{java_mem} -Djava.io.tmpdir={java_tmpdir} -jar {jar}".format(java_mem=config['bio.ngs.variation.snpeff']['java_mem'],
                                                                                        java_tmpdir=config['bio.ngs.variation.snpeff']['java_tmpdir'],
                                                                                        jar=config['bio.ngs.variation.snpeff']['jar']),
-    }}, config)
+    }}
+
+update_config(config_default3, config)
+config = config_default3
 
 
 for rule in config['bio.ngs.variation.snpeff']['rules']:

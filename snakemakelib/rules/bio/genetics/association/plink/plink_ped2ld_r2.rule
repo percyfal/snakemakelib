@@ -1,0 +1,10 @@
+# -*- snakemake -*-
+rule plink_ped2ld_r2:
+    """calculate r-squared linked disequilibrium from ped file. 
+    """
+    params: cmd = config['bio.genetics.association.plink']['cmd'],
+            options = config['bio.genetics.association.plink']['options']
+    input: "{prefix}.ped"
+    output: "{prefix}.r2.ld"
+    shell: "{params.cmd} {params.options}  --file {wildcards.prefix} --r2 --out {wildcards.prefix}.r2"
+

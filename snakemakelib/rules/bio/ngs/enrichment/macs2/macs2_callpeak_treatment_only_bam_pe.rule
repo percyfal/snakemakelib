@@ -7,7 +7,9 @@ config_default = {
     },
 }
 
-config = update_config(config_default, config) 
+update_config(config_default, config)
+config = config_default
+ 
 
 rule macs2_callpeak_treatment_only_bam_pe:
     """MACS callpeak on sample with no control, paired end."""

@@ -27,7 +27,9 @@ config_default = {
     },
 }
 
-config = update_config(config_default, config)
+update_config(config_default, config)
+config = config_default
+
 
 if config['bio.ngs.methylseq.bismark']['trim_galore']:
     include: '../qc/trim_galore.rules'

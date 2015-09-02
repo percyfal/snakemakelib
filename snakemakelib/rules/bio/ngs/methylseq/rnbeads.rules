@@ -131,14 +131,12 @@ config_default = {
     },
 }		
 
-config = update_config(config_default, config)
-
-rnbeads_cfg = config['bio.ngs.methylseq.rnbeads']
-ngs_cfg = config['bio.ngs.settings']
+update_config(config_default, config)
+config = config_default
 
 rule rnbeads_list_options:
     run:
-      print (rnbeads_cfg)
+      print (config['bio.ngs.methylseq.rnbeads'])
 
 # NB: is this even needed?      
 rule rnbeads_create_reportdir:
@@ -146,7 +144,8 @@ rule rnbeads_create_reportdir:
     
     Run rnb.initialize.reports
     """
-    output: reportdir = os.path.join(rnbeads_cfg['analysisdir'], rnbeads_cfg['reportdirname'])
+    output: reportdir = os.path.join(config['bio.ngs.methylseq.rnbeads']['analysisdir'],
+                                     config['bio.ngs.methylseq.rnbeads']['reportdirname'])
     run:
       R("""
       library(RnBeads)
@@ -160,15 +159,15 @@ rule rnbeads_run_analysis_from_bed:
     Run command rnb.run.analysis.
 
     """
-    input: samplesheet = rnbeads_cfg['samplesheet']
+    input: samplesheet = config['bio.ngs.methylseq.rnbeads']['samplesheet']
     log: "RnBeads.log"
-    threads: ngs_cfg['threads']
+    threads: config['bio.ngs.settings']['threads']
     run:
-      analysisdir = rnbeads_cfg['analysisdir']
-      reportdir = os.path.join(analysisdir, rnbeads_cfg['reportdirname'])
+      analysisdir = config['bio.ngs.methylseq.rnbeads']['analysisdir']
+      reportdir = os.path.join(analysisdir, config['bio.ngs.methylseq.rnbeads']['reportdirname'])
       samplesheet = input.samplesheet
-      datadir = rnbeads_cfg['datadir']
-      rnboptions = rnbeads_cfg['options']
+      datadir = config['bio.ngs.methylseq.rnbeads']['datadir']
+      rnboptions = config['bio.ngs.methylseq.rnbeads']['options']
       datatype = 'bs.bed.dir'
       if os.path.exists(reportdir):
           raise Exception("report directory '{reportdir}' already exists; RnBeads requires that this path does not exist prior to analysis".format(reportdir=reportdir))

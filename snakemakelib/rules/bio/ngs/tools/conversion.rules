@@ -7,7 +7,9 @@ config_default = {
     },
 }
 
-config = update_config(config_default, config)
+update_config(config_default, config)
+config = config_default
+
     
 rule gtf_to_bed12:
     """Convert gtf file to bed12 format.

@@ -1,7 +1,7 @@
 # -*- snakemake -*-
 import os
 from collections import namedtuple
-from snakemakelib.config import update_config, sml_path
+from snakemakelib.config import update_config, SNAKEMAKELIB_PATH, SNAKEMAKELIB_RULES_PATH
 from snakemakelib.bio.ngs.regexp import RunRegexp, SampleRegexp
 from snakemakelib.bio.ngs.db import ref
 
@@ -97,7 +97,8 @@ config_default = {
     },
 }
 
-config = update_config(config_default, config)
+update_config(config_default, config)
+config = config_default
 
 config['bio.ngs.settings']['db']['ref'] = ref(config['bio.ngs.settings']['db']['ref'], 
                                               config['bio.ngs.settings']['db'])
@@ -107,8 +108,11 @@ config_default2 = {
     },
 }
 
-config = update_config(config_default2, config)
+update_config(config_default2, config)
+config = config_default2
 
-config = update_config({
-    'bio.ngs.settings' : sample_organization[config['bio.ngs.settings']['sample_organization']]},
-                       config)
+config_default3 = {
+    'bio.ngs.settings' : sample_organization[config['bio.ngs.settings']['sample_organization']]}
+
+update_config(config_default3, config)
+config = config_default3

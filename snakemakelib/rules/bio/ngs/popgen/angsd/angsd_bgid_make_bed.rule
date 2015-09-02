@@ -10,7 +10,9 @@ config_default = {
     },
 }
 
-config = update_config(config_default, config)
+update_config(config_default, config)
+config = config_default
+
 
 rule angsd_bgid_make_bed:
     params: cmd = config['bio.ngs.popgen.angsd']['bgid']['cmd'],

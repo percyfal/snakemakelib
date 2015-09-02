@@ -449,16 +449,16 @@ def combine_metrics(metrics, mergename = "PicardMetrics_merge", uniquify=False):
     return (pm)
 
 
-def qc_plots(inputfiles, cfg, output):
+def qc_plots(inputfiles, config, output):
     """Generate qc plots for picard QC summary report"""
-    samples = cfg['samples']
+    samples = config['samples']
     # Collect pm metrics and plot
     mlist =(list(
         zip(
-            [AlignMetrics(filename=x).category() for x in inputfiles if x.endswith(cfg['alnmetrics'])],
-            [InsertMetrics(filename=x) for x in inputfiles if x.endswith(cfg['insmetrics'])],
-            [DuplicationMetrics(filename=x) for x in inputfiles if x.endswith(cfg['dupmetrics'])],
-            [HsMetrics(filename=x) for x in inputfiles if x.endswith(cfg['hsmetrics'])]
+            [AlignMetrics(filename=x).category() for x in inputfiles if x.endswith(config['alnmetrics'])],
+            [InsertMetrics(filename=x) for x in inputfiles if x.endswith(config['insmetrics'])],
+            [DuplicationMetrics(filename=x) for x in inputfiles if x.endswith(config['dupmetrics'])],
+            [HsMetrics(filename=x) for x in inputfiles if x.endswith(config['hsmetrics'])]
         )
     ))
     pm = combine_metrics(mlist)
@@ -537,8 +537,8 @@ def qc_plots(inputfiles, cfg, output):
     plt.close()
     
     # Hs metrics
-    columns = cfg['columns']
-    hticks = cfg['hticks']
+    columns = config['columns']
+    hticks = config['hticks']
     hsmetrics = pm[columns]
     
     # Hs boxplot metrics
@@ -574,7 +574,7 @@ def qc_plots(inputfiles, cfg, output):
     plt.close()
 
     # Write csv summary file
-    pmsum = pm[cfg['summarycolumns']]
+    pmsum = pm[config['summarycolumns']]
     with open(output.summarytable, "w") as fh:
         fh.write(pmsum.metrics.summary(sep=","))
 

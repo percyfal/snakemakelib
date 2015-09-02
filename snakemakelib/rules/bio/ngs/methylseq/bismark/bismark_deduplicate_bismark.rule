@@ -8,7 +8,9 @@ config_default = {
     },
 }
 
-config = update_config(config_default, config)
+update_config(config_default, config)
+config = config_default
+
 
 rule bismark_deduplicate_bismark:
     """bismark: Run bismark deduplication."""

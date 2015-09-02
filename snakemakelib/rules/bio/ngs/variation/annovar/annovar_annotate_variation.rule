@@ -7,7 +7,9 @@ config_default = {
     },
 }
 
-config = update_config(config_default, config)
+update_config(config_default, config)
+config = config_default
+
 
 rule annovar_annotate_variation:
     params: cmd=os.path.join(config['bio.ngs.variation.annovar']['home'], 'annotate_variation.pl'),

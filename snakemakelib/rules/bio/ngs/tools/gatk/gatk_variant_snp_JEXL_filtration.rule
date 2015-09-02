@@ -11,7 +11,9 @@ config_default = {
     },
 }
 
-config = update_config(config_default, config)
+update_config(config_default, config)
+config = config_default
+
 
 rule gatk_variant_snp_JEXL_filtration:
     """Run GATK VariantFiltration on SNPs

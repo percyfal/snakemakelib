@@ -24,9 +24,6 @@ DEFAULT_RULES = ['gatk_base_recalibrator',
                  'gatk_variant_snp_JEXL_filtration']
 
 
-# FIXME: update_config is run *three* separate times due to the fact
-# that many rules depend on defaults in the same section. Could this
-# be done more economically?
 config_default = { 
     'bio.ngs.tools.gatk' : {
         'rules' : DEFAULT_RULES,
@@ -44,21 +41,29 @@ config_default = {
     },
 }
 
-config = update_config(config_default, config)
+update_config(config_default, config)
+config = config_default
 
 config_default2 = {'bio.ngs.tools.gatk': {}}
 
-# Set these rules after updating config as they depend on internal values and then redo update config 
-config_default2['bio.ngs.tools.gatk']['jar'] = os.path.join(config['bio.ngs.tools.gatk']['home'], GATK_JAR_PROGRAM)
-config_default2['bio.ngs.tools.gatk']['known_sites'] = config['bio.ngs.tools.gatk']['dbsnp']
+config_default2 = {
+    'bio.ngs.tools.gatk' : {
+        'jar' : os.path.join(config['bio.ngs.tools.gatk']['home'], GATK_JAR_PROGRAM),
+        'known_sites' : config['bio.ngs.tools.gatk']['dbsnp'],
+    },
+}
 
-config = update_config(config_default2, config)
+update_config(config_default2, config)
+config = config_default2
 
-# And yes, we need to do it yet again due to dependency on config['bio.ngs.tools.gatk']['jar']
-config_default3 = {'bio.ngs.tools.gatk': {}}
-config_default3['bio.ngs.tools.gatk']['cmd'] = "java -Xmx" + config['bio.ngs.tools.gatk']['java_mem'] + " -Djava.io.tmpdir=" + config['bio.ngs.tools.gatk']['java_tmpdir'] +  " -jar " + config['bio.ngs.tools.gatk']['jar']
+config_default3 = {
+    'bio.ngs.tools.gatk': {
+        'cmd' : "java -Xmx" + config['bio.ngs.tools.gatk']['java_mem'] + " -Djava.io.tmpdir=" + config['bio.ngs.tools.gatk']['java_tmpdir'] +  " -jar " + config['bio.ngs.tools.gatk']['jar'],
+    }
+}
 
-config = update_config(config_default3, config)
+update_config(config_default3, config)
+config = config_default3
 
 for rule in config['bio.ngs.tools.gatk']['rules']:
     include: os.path.join("gatk", rule + ".rule")

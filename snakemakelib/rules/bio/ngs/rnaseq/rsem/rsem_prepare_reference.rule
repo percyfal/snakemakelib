@@ -11,7 +11,9 @@ config_default = {
     },
 }
 
-config = update_config(config_default, config)
+update_config(config_default, config)
+config = config_default
+
  
 rule rsem_prepare_reference:
     """Prepare RSEM transcripts file"""

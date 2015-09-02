@@ -18,42 +18,42 @@ def chromosomes(ref):
     return chroms
 
 
-def annotation(db_cfg, annotation="ref-transcripts.gtf", ignore_extra_ref=False, fmt="gtf"):
+def annotation(db_config, annotation="ref-transcripts.gtf", ignore_extra_ref=False, fmt="gtf"):
     """Return the annotation as a string"""
     if os.path.isabs(annotation):
         if not annotation.endswith(fmt):
             (root, ext) = os.path.splitext(annotation)
             annotation = "{root}.{ext}".format(root=root, ext=fmt)
         return annotation
-    if db_cfg['ref']:
+    if db_config['ref']:
         smllogger.debug("reference set: assuming index locations are organized according to cloudbiolinux conventions")
-        if db_cfg['extra_ref'] and not ignore_extra_ref:
+        if db_config['extra_ref'] and not ignore_extra_ref:
             smllogger.debug("extra references set: renaming annotation file")
-            annotation = "ref-transcripts-" + "-".join([os.path.splitext(os.path.basename(x))[0] for x in db_cfg['extra_ref']]) + "." + fmt
-        annotation = os.path.join(os.path.dirname(db_cfg['ref']), os.pardir, 'rnaseq', annotation)
+            annotation = "ref-transcripts-" + "-".join([os.path.splitext(os.path.basename(x))[0] for x in db_config['extra_ref']]) + "." + fmt
+        annotation = os.path.join(os.path.dirname(db_config['ref']), os.pardir, 'rnaseq', annotation)
         return annotation
 
-def ref(ref, db_cfg):
+def ref(ref, db_config):
     """Return the fasta reference sequence as a string
     
     Args:
-      db_cfg: configuration object for section bio.ngs.settings.db
+      db_config: configuration object for section bio.ngs.settings.db
 
     Returns:
       seq: A <string> representing the reference fasta sequence
     """
     if os.path.isabs(ref):
         return ref
-    if db_cfg['ref']:
+    if db_config['ref']:
         smllogger.debug("reference set: assuming index locations are organized according to cloudbiolinux conventions")
-        ref = os.path.join(os.path.dirname(db_cfg['ref']), ref)
+        ref = os.path.join(os.path.dirname(db_config['ref']), ref)
         return ref
     else:    
         # If no build issue a warning
-        if not db_cfg['build']:
+        if not db_config['build']:
             raise ValueError('No build defined: cannot generate reference fasta file name. Either provide a build, a reference file name or write a custom ref() function that returns the full path name of the reference fasta file.')
             # Otherwise, see if build_config is defined
-        elif not db_cfg['build_config']:
+        elif not db_config['build_config']:
             raise ValueError('build defined but no build_config: cannot generate reference fasta file name. Either provide a build_config file in which the build defines reference and index files or write a custom ref() function that returns the full path name to the reference fasta file.')
             # TODO: make sure build_config points to a file; read file and parse to find reference
     return None

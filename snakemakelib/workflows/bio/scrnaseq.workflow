@@ -1,22 +1,22 @@
 # -*- snakemake -*-
-import os
+from os.path import join, dirname, relpath
 from bokehutils.publish import static_html
 from snakemake.workflow import workflow
 from snakemakelib.io import set_output
 from snakemakelib.utils import SmlTemplateEnv
-from snakemakelib.config import update_config
+from snakemakelib.config import update_config, SNAKEMAKELIB_RULES_PATH
 from snakemakelib.bio.ngs.targets import generic_target_generator
 from snakemakelib.workflow.scrnaseq import scrnaseq_qc_plots
 
 def _merge_suffix(aligner, quantification=[]):
-    align_cfg = config['bio.ngs.align.' + aligner]
+    align_config = config['bio.ngs.align.' + aligner]
     if aligner == "star":
-        return align_cfg['align']['suffix'].replace('.bam', '_unique.bam')
+        return align_config['align']['suffix'].replace('.bam', '_unique.bam')
     elif aligner in ["bowtie", "bowtie2"]:
         return '_unique.bam'
 
 def _merge_tx_suffix(aligner, quantification=[]):
-    align_cfg = config['bio.ngs.align.' + aligner]
+    align_config = config['bio.ngs.align.' + aligner]
     if aligner == "star":
         return ".Aligned.toTranscriptome.out_unique.bam"
 
@@ -25,7 +25,7 @@ def _find_transcript_bam(wildcards):
         tgt_re=config['bio.ngs.settings']['sampleorg'].run_id_re,
         target_suffix = _merge_tx_suffix(config['bio.ngs.settings']['aligner'], config['bio.ngs.settings']['rnaseq']['quantification']),
         **config['bio.ngs.settings'])
-    sources = [src for src in sources if os.path.dirname(src).startswith(wildcards.prefix)]
+    sources = [src for src in sources if dirname(src).startswith(wildcards.prefix)]
     return sources
 
 def find_scrnaseq_merge_inputs(wildcards):
@@ -38,7 +38,7 @@ def find_scrnaseq_merge_inputs(wildcards):
         tgt_re=config['bio.ngs.settings']['sampleorg'].run_id_re, 
         target_suffix = _merge_suffix(config['bio.ngs.settings']['aligner'], config['bio.ngs.settings']['rnaseq']['quantification']), 
         **config['bio.ngs.settings'])
-    sources = [src for src in sources if os.path.dirname(src).startswith(wildcards.prefix)]
+    sources = [src for src in sources if dirname(src).startswith(wildcards.prefix)]
     return sources
 
 
@@ -65,21 +65,22 @@ config_default = {
     },
 }
 
-config = update_config(config_default, config)
+update_config(config_default, config)
+config = config_default
+
 aligner = config['bio.ngs.settings']['aligner']
 
 # Include necessary snakemakelib rules
-p = os.path.join(os.pardir, os.pardir, 'rules')
-include: os.path.join(p, 'settings.rules')
-include: os.path.join(p, 'utils.rules')
-align_include = os.path.join(p, "bio/ngs/align", aligner + ".rules")
+include: join(SNAKEMAKELIB_RULES_PATH, 'settings.rules')
+include: join(SNAKEMAKELIB_RULES_PATH, 'utils.rules')
+align_include = join(SNAKEMAKELIB_RULES_PATH, "bio/ngs/align", aligner + ".rules")
 include: align_include
-include: os.path.join(p, "bio/ngs/tools", "bamtools.rules")
-include: os.path.join(p, "bio/ngs/qc", "rseqc.rules")
-include: os.path.join(p, "bio/ngs/qc", "picard.rules")
-include: os.path.join(p, "bio/ngs/tools", "samtools.rules")
-include: os.path.join(p, "bio/ngs/rnaseq", "rpkmforgenes.rules")
-include: os.path.join(p, "bio/ngs/rnaseq", "rsem.rules")
+include: join(SNAKEMAKELIB_RULES_PATH, "bio/ngs/tools", "bamtools.rules")
+include: join(SNAKEMAKELIB_RULES_PATH, "bio/ngs/qc", "rseqc.rules")
+include: join(SNAKEMAKELIB_RULES_PATH, "bio/ngs/qc", "picard.rules")
+include: join(SNAKEMAKELIB_RULES_PATH, "bio/ngs/tools", "samtools.rules")
+include: join(SNAKEMAKELIB_RULES_PATH, "bio/ngs/rnaseq", "rpkmforgenes.rules")
+include: join(SNAKEMAKELIB_RULES_PATH, "bio/ngs/rnaseq", "rsem.rules")
 
 if aligner in ["bowtie", "bowtie2"]:
     ruleorder: bamtools_filter > picard_merge_sam > picard_sort_bam > bowtie_align
@@ -143,20 +144,20 @@ rule scrnaseq_picard_merge_sam_transcript:
           inputstr = " ".join(["INPUT={}".format(x) for x in input])
           shell("{cmd} {ips} OUTPUT={out} {opt}".format(cmd=params.cmd, ips=inputstr, out=output.merge, opt=params.options))
       else:
-          os.symlink(os.path.relpath(input[0], wildcards.path), output.merge)
+          os.symlink(relpath(input[0], wildcards.path), output.merge)
 
 # QC rules
 QC_INPUT = []
 rule scrnaseq_qc:
     """Perform basic qc on samples"""
-    input: starcsv = os.path.join("{path}", "star.Aligned.out.csv"),
-           rseqc_read_distribution = os.path.join("{path}", "read_distribution_summary_merge_rseqc.csv"),
-           rseqc_gene_coverage = os.path.join("{path}", "gene_coverage_summary_merge_rseqc.csv"),
-           rsemgenes = os.path.join("{path}", "rsem.merge.tx.genes.csv"),
-           rsemisoforms = os.path.join("{path}", "rsem.merge.tx.isoforms.csv"),
-           rulegraph = os.path.join("{path}", "scrnaseq_all.png"),
-           globalconf = os.path.join("{path}", "smlconf_global.yaml")
-    output: html = os.path.join("{path}", "scrnaseq_summary.html")
+    input: starcsv = join("{path}", "star.Aligned.out.csv"),
+           rseqc_read_distribution = join("{path}", "read_distribution_summary_merge_rseqc.csv"),
+           rseqc_gene_coverage = join("{path}", "gene_coverage_summary_merge_rseqc.csv"),
+           rsemgenes = join("{path}", "rsem.merge.tx.genes.csv"),
+           rsemisoforms = join("{path}", "rsem.merge.tx.isoforms.csv"),
+           rulegraph = join("{path}", "scrnaseq_all.png"),
+           globalconf = join("{path}", "smlconf_global.yaml")
+    output: html = join("{path}", "scrnaseq_summary.html")
     run:
         d = {'align': scrnaseq_qc_plots(input.rseqc_read_distribution,
                                         input.rseqc_gene_coverage,
@@ -170,8 +171,8 @@ rule scrnaseq_qc:
             fh.write(static_html(tp, **d))
 
 rule scrnaseq_pca:
-    input: csv = os.path.join("{path}", "rsem.merge.tx.{type}.csv")
-    output: tmp = os.path.join("{path}", "rsem.merge.tx.{type}.pca")
+    input: csv = join("{path}", "rsem.merge.tx.{type}.csv")
+    output: tmp = join("{path}", "rsem.merge.tx.{type}.pca")
     run:
         import pandas as pd
         from sklearn.decomposition import PCA

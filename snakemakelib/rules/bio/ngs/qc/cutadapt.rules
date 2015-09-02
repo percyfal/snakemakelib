@@ -14,7 +14,9 @@ config_default = {
     },
 }
 
-config = update_config(config_default, config)
+update_config(config_default, config)
+config = config_default
+
 
 for rule in config['bio.ngs.qc.cutadapt']['rules']:
     include: os.path.join("cutadapt", rule + ".rule")

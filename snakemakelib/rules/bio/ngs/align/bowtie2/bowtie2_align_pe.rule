@@ -10,7 +10,8 @@ config_default = {
     },
 }
 
-config = update_config(config, config_default)
+update_config(config_default, config)
+config = config_default
 
 rule bowtie2_align_pe:
     """Bowtie paired end alignment"""
@@ -29,7 +30,7 @@ rule bowtie2_align_pe:
         # alternative; process substitution. See
         # http://arstechnica.com/civis/viewtopic.php?f=16&t=1180805.
         if is_compressed(input.read1):
-            shell("{cmd} -p {threads} {options} -x {index} -1 <(gunzip -c {read1}) -2 <(gunzip -c {read2}) 2> {log} | {samtools} view -bS - > {bam}".format(cmd=params.cmd, threads=threads, options=params.options, index=params.index, read1=input.read1, read2=input.read2, bam=output.bam, samtools=samtools_cfg['cmd'], log=log))
+            shell("{cmd} -p {threads} {options} -x {index} -1 <(gunzip -c {read1}) -2 <(gunzip -c {read2}) 2> {log} | {samtools} view -bS - > {bam}".format(cmd=params.cmd, threads=threads, options=params.options, index=params.index, read1=input.read1, read2=input.read2, bam=output.bam, samtools=config['bio.ngs.tools.samtools']['cmd'], log=log))
         else:
-            shell("{cmd} -p {threads} {options} -x {index} -1 {read1} -2 {read2} 2> {log} | {samtools} view -bS - > {bam}".format(cmd=params.cmd,  threads=threads, options=params.options, index=params.index, read1=input.read1, read2=input.read2, bam=output.bam, samtools=samtools_cfg['cmd'], log=log))
+            shell("{cmd} -p {threads} {options} -x {index} -1 {read1} -2 {read2} 2> {log} | {samtools} view -bS - > {bam}".format(cmd=params.cmd,  threads=threads, options=params.options, index=params.index, read1=input.read1, read2=input.read2, bam=output.bam, samtools=config['bio.ngs.tools.samtools']['cmd'], log=log))
 

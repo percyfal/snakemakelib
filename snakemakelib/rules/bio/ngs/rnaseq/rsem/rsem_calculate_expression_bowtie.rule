@@ -8,8 +8,6 @@ align_include = os.path.join('../align', aligner + ".rules")
 
 include: align_include
 
-align_cfg = config[align_section]
-
 rule rsem_calculate_expression_bowtie:
     """Run RSEM on bowtie output. Requires a fifo hack to work: see
     http://atgcio.blogspot.se/2013/08/fifos-and-mapping-with-bowtie-using.html
@@ -20,7 +18,7 @@ rule rsem_calculate_expression_bowtie:
     input: read1 = "{prefix}" + config['bio.ngs.settings']['read1_label'] + config['bio.ngs.settings']['fastq_suffix'],\ 
            read2 = "{prefix}" + config['bio.ngs.settings']['read2_label'] + config['bio.ngs.settings']['fastq_suffix'],\
            index = config['bio.ngs.rnaseq.rsem']['index'] + config['bio.ngs.rnaseq.rsem']['ref_sfx'],
-           bowtie_index = expand(config['bio.ngs.rnaseq.rsem']['index'] + "{ext}", ext=align_cfg.get('build', {}).get('ext_v1', ""))
+           bowtie_index = expand(config['bio.ngs.rnaseq.rsem']['index'] + "{ext}", ext=config[align_section].get('build', {}).get('ext_v1', ""))
     output: "{prefix}.rsem"
     threads: config['bio.ngs.rnaseq.rsem']["threads"]
     run: 

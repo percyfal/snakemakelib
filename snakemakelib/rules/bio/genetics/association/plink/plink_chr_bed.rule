@@ -1,0 +1,10 @@
+# -*- snakemake -*-
+rule plink_chr_bed:
+    """generate chromosome-wise bed files. 
+    """
+    params: cmd = config['bio.genetics.association.plink']['cmd'],
+            options = config['bio.genetics.association.plink']['options'],
+            chr = config['bio.genetics.association.plink']['chr']
+    input: "{prefix}.bed"
+    output: "{prefix}.chr{params.chr}.bed"
+    shell: "{params.cmd} {params.options} --bfile {wildcards.prefix} --make-bed --out {wildcards.prefix}.chr{params.chr}"

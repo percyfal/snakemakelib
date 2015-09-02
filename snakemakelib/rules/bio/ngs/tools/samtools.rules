@@ -16,7 +16,9 @@ config_default = {
     },
 }
 
-config = update_config(config_default, config)
+update_config(config_default, config)
+config = config_default
+
 
 for rule in config['bio.ngs.tools.samtools']['rules']:
     include: os.path.join("samtools", rule + ".rule")

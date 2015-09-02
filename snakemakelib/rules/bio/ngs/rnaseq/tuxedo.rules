@@ -33,7 +33,9 @@ config_default = {
     },
 }
 
-config = update_config(config_default, config)
+update_config(config_default, config)
+config = config_default
+
 bowtie = 'bowtie2' if config['bio.ngs.rnaseq.tuxedo']['version2'] else 'bowtie'
 
 try:

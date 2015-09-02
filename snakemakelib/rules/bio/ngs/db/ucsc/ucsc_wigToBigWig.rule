@@ -8,7 +8,9 @@ config_default = {
     },
 }
 
-config = update_config(config_default, config)
+update_config(config_default, config)
+config = config_default
+
 
 rule ucsc_wig_to_bigWig:
     """Convert wig file to bigWig.

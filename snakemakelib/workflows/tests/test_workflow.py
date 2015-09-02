@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 BASEPATH = os.path.dirname(__file__)
 ROOTPATH = os.path.join(BASEPATH, os.pardir, os.pardir, os.pardir)
+print(ROOTPATH)
 
 snakefile = """# -*- snakemake -*-
 import os
@@ -60,12 +61,9 @@ local_config = {{
     }},
 }}
 
-config = update_config(config, local_config)
+update_config(config, local_config)
 
 include: '{variation}'
-
-cfg = config['bio.ngs.settings']
-path = cfg.get('path') if not cfg.get('path') is None else os.curdir
 
 """
          
@@ -103,18 +101,16 @@ def setUp():
         subprocess.check_call(['samtools', 'faidx', os.path.join(genomedir, 'chr11.fa')])
 
 @pytest.mark.slow
-@attr('slow')
-class TestVariationWorkflow(unittest.TestCase):
-    def test_variation_workflow(self):
-        """Test variation.workflow.
-
-        Don't run snpEff as this step may fail on low-memory machines,
-        such as laptops.
-        """
-        outputs = ['P001_101/P001_101.sort.merge.rg.dup.realign.recal.bp_variants.phased.vcf',
-                   'P001_102/P001_102.sort.merge.rg.dup.realign.recal.bp_variants.phased.vcf']
-        subprocess.check_call(['snakemake', '-F'] + outputs)
-        subprocess.check_call(['snakemake', '-F', 'variation_metrics'])
+def test_variation_workflow(self):
+    """Test variation.workflow.
+    
+    Don't run snpEff as this step may fail on low-memory machines,
+    such as laptops.
+    """
+    outputs = ['P001_101/P001_101.sort.merge.rg.dup.realign.recal.bp_variants.phased.vcf',
+               'P001_102/P001_102.sort.merge.rg.dup.realign.recal.bp_variants.phased.vcf']
+    subprocess.check_call(['snakemake', '-F'] + outputs)
+    subprocess.check_call(['snakemake', '-F', 'variation_metrics'])
 
 def test_bwa_align():
     """Test bwa alignment"""

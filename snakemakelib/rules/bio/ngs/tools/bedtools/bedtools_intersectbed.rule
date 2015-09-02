@@ -8,7 +8,9 @@ config_default = {
     },
 }
 
-config = update_config(config_default, config)
+update_config(config_default, config)
+config = config_default
+
 
 rule bedtools_intersectbed_make_region_baits:
     """Generate overlapping bed file for bait definition file"""

@@ -31,17 +31,19 @@ config_default = {
             'window' : 50000,
             },
         'utils' : {
-            'plotthetas' : os.path.join(sml_path(), 'scripts/plotThetas.R'),
+            'plotthetas' : os.path.join(SNAKEMAKELIB_PATH, 'scripts/plotThetas.R'),
         },
         # Private addition
         'ngstk' : {
             'cmd' : "ngstk",
-            'plotngstk' : os.path.join(sml_path(), "scripts/plotNgstk.R"),
+            'plotngstk' : os.path.join(SNAKEMAKELIB_PATH, "scripts/plotNgstk.R"),
         }
     },
 }
 
-config = update_config(config_default, config)
+update_config(config_default, config)
+config = config_default
+
 
 # Second round
 config_default = {
@@ -86,7 +88,9 @@ config_default = {
 }
 
 
-config = update_config(config_default, config)
+update_config(config_default, config)
+config = config_default
+
 
 # rule rule_2:
 # 	input: " {prefix}.sfs"

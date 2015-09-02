@@ -13,8 +13,18 @@ config_default = {
     },
 }
 
-config = update_config(config_default, config)
-config = update_config({'bio.ngs.variation.annovar': {'db' : os.path.join(config['bio.ngs.variation.annovar']['home'], "/humandb")}}, config)
+update_config(config_default, config)
+config = config_default
+
+config_default2 = {
+    'bio.ngs.variation.annovar': {
+        'db' : os.path.join(config['bio.ngs.variation.annovar']['home'], "/humandb")
+    }
+}
+
+update_config(config_default2, config)
+config = config_default2
+
 
 for rule in config['bio.ngs.variation.annovar']['rules']:
     include: os.path.join("annovar", rule + ".rule")

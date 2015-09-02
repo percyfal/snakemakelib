@@ -1,0 +1,10 @@
+# -*- snakemake -*-
+rule plink_bed2ped:
+    """convert ped file to binary ped. 
+    """
+    params: cmd = config['bio.genetics.association.plink']['cmd'],
+            options = config['bio.genetics.association.plink']['options']
+    input: "{prefix}.ped"
+    output: "{prefix}.bed"
+    shell: "{params.cmd} {params.options}  --file {wildcards.prefix} --make-bed --out {wildcards.prefix}"
+

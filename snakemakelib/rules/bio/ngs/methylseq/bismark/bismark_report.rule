@@ -9,7 +9,9 @@ config_default = {
     },
 }
 
-config = update_config(config_default, config)
+update_config(config_default, config)
+config = config_default
+
 
 rule bismark_report:
     """bismark: Run bismark report. 

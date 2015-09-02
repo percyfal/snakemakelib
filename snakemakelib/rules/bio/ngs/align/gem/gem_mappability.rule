@@ -8,7 +8,9 @@ config_default = {
     },
 }
 
-config = update_config(config_default, config)
+update_config(config_default, config)
+config = config_default
+
 
 rule gem_mappability:
     params: cmd = config['bio.ngs.align.gem']['gem_mappability']['cmd'],

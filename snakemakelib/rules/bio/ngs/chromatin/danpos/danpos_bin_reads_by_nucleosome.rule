@@ -12,7 +12,9 @@ config_default = {
     },
 }
 
-config = update_config(config_default, config)
+update_config(config_default, config)
+config = config_default
+
 
 rule danpos_bin_reads_by_nucleosome:
     """Split reads into bins base on the parameter 'bins'"""

@@ -2,76 +2,31 @@
 import os
 from snakemakelib.config import update_config
 
-include: '../../ngs/settings.rules'
+DEFAULT_RULES = []
 
 config_default = { 
     'bio.genetics.association.plink' : {
-        'plink' : {
-            'common_options' : "--noweb",
-            'cmd' : "plink",
-            'chr' : "1",
-        },
+        'common_options' : "--noweb",
+        'cmd' : "plink",
+        'chr' : "1",
+        'rules' : DEFAULT_RULES,
     },
 }
 
-config = update_config(config_default, config)
+update_config(config_default, config)
+config = config_default
 
 config_default2 = {
     'bio.genetics.association.plink' : {
         'plink' : {
-            'options' : config['bio.genetics.association.plink']['plink']['common_options']
+            'options' : config['bio.genetics.association.plink']['common_options']
         },
     },
 }
 
-config = update_config(config_default2, config)
+update_config(config_default2, config)
+config = config_default2
 
-plink_config = config['bio.genetics.association.plink']
+for rule in config['bio.genetics.association.plink']['rules']:
+    include: os.path.join("plink", rule + ".rule")
 
-rule plink_ped2ld_r2:
-    """calculate r-squared linked disequilibrium from ped file. 
-    """
-    params: cmd = plink_config['plink']['cmd'],
-            options = plink_config['plink']['options']
-    input: "{prefix}.ped"
-    output: "{prefix}.r2.ld"
-    shell: "{params.cmd} {params.options}  --file {wildcards.prefix} --r2 --out {wildcards.prefix}.r2"
-
-rule plink_bed2ld_r2:
-    """calculate r-squared linked disequilibrium from binary ped file.
-    """
-    params: cmd = plink_config['plink']['cmd'],
-            options = plink_config['plink']['options']
-    input: "{prefix}.bed"
-    output: "{prefix}.r2.ld"
-    shell: "{params.cmd} {params.options} --bfile {wildcards.prefix} --r2 --out {wildcards.prefix}.r2"
-
-ruleorder: plink_bed2ld_r2 > plink_ped2ld_r2
-
-rule plink_bed2ped:
-    """convert ped file to binary ped. 
-    """
-    params: cmd = plink_config['plink']['cmd'],
-            options = plink_config['plink']['options']
-    input: "{prefix}.ped"
-    output: "{prefix}.bed"
-    shell: "{params.cmd} {params.options}  --file {wildcards.prefix} --make-bed --out {wildcards.prefix}"
-
-rule plink_bed_blocks:
-    """calculate linkage disequilibrium blocks(?). 
-    """
-    params: cmd = plink_config['plink']['cmd'],
-            options = plink_config['plink']['options']
-    input: "{prefix}.bed"
-    output: "{prefix}.blocks"
-    shell: "{params.cmd} {params.options}  --bfile {wildcards.prefix} --blocks --out {wildcards.prefix}"
-
-rule plink_chr_bed:
-    """generate chromosome-wise bed files. 
-    """
-    params: cmd = plink_config['plink']['cmd'],
-            options = plink_config['plink']['options'],
-            chr = plink_config['plink']['chr']
-    input: "{prefix}.bed"
-    output: "{prefix}.chr{params.chr}.bed"
-    shell: "{params.cmd} {params.options} --bfile {wildcards.prefix} --make-bed --out {wildcards.prefix}.chr{params.chr}"

@@ -10,7 +10,9 @@ config_default = {
     },
 }
 
-config = update_config(config_default, config)
+update_config(config_default, config)
+config = config_default
+
 
 rule trim_galore_main:
     """trim_galore: run trim_galore on a fastq file"""

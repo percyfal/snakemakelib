@@ -13,7 +13,7 @@ rule rpkmforgenes_from_bam:
         d = dict(params)
         d.update(dict(input))
         d.update(dict(output))
-        clist = [python2, " && python {cmd} {options} -bamu -i {bam} -o {rpkmforgenes}".format(**d)]
+        clist = [python2, " {cmd} {options} -bamu -i {bam} -o {rpkmforgenes}".format(**d)]
         if input.unique:
             clist.append(" -u {unique}".format(**d))
         if input.annotation:

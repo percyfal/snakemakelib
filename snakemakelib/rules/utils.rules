@@ -3,7 +3,7 @@ import os
 import yaml
 import sys
 import io
-from snakemakelib.config import sml_rules_path
+from snakemakelib.config import SNAKEMAKELIB_RULES_PATH
 from snakemake.io import Wildcards, Namedlist
 
 include: './settings.rules'
@@ -60,8 +60,8 @@ def _group_rules_by_snakefile(rules):
     d = {}
     for rule in rules:
         k = rule.snakefile
-        if k.startswith(sml_rules_path()):
-            k = k.replace(sml_rules_path() + os.sep, "").replace(os.sep, ".").replace(".rules", "")
+        if k.startswith(SNAKEMAKELIB_RULES_PATH):
+            k = k.replace(SNAKEMAKELIB_RULES_PATH + os.sep, "").replace(os.sep, ".").replace(".rules", "")
         if not k in d.keys():
             d[k] = []
         d[k].append(rule)

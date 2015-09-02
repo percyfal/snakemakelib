@@ -1,0 +1,10 @@
+# -*- snakemake -*-
+rule plink_bed_blocks:
+    """calculate linkage disequilibrium blocks(?). 
+    """
+    params: cmd = config['bio.genetics.association.plink']['cmd'],
+            options = config['bio.genetics.association.plink']['options']
+    input: "{prefix}.bed"
+    output: "{prefix}.blocks"
+    shell: "{params.cmd} {params.options}  --bfile {wildcards.prefix} --blocks --out {wildcards.prefix}"
+

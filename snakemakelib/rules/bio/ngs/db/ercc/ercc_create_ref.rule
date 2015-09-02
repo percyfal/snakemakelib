@@ -17,7 +17,9 @@ config_default = {
     },
 }
 
-config = update_config(config_default, config)
+update_config(config_default, config)
+config = config_default
+
 
 rule ercc_create_ref:
     """Create ERCC reference file"""

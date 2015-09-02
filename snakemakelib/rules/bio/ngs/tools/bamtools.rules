@@ -20,25 +20,24 @@ config_default = {
     },
 }
 
-config = update_config(config_default, config)
-
-bamtools_cfg = config['bio.ngs.tools.bamtools']
+update_config(config_default, config)
+config = config_default
 
 # see http://stackoverflow.com/questions/23244418/set-ld-library-path-before-importing-in-python
 libpath = ""
-if bamtools_cfg['home']:
-    os.environ["PATH"] += os.pathsep + bamtools_cfg['home']
-    bamtools_lib = os.path.join(os.path.dirname(os.path.dirname(bamtools_cfg['home'])), "lib")
+if config['bio.ngs.tools.bamtools']['home']:
+    os.environ["PATH"] += os.pathsep + config['bio.ngs.tools.bamtools']['home']
+    bamtools_lib = os.path.join(os.path.dirname(os.path.dirname(config['bio.ngs.tools.bamtools']['home'])), "lib")
     libpath = "LD_LIBRARY_PATH=" + bamtools_lib
     if not os.path.exists(bamtools_lib):
         raise Exception("\nbio.ngs.tools.bamtools: couldn't find bamtools library path {libpath}".format(libpath=libpath))
-if not is_installed(os.path.join(bamtools_cfg.get('cmd', ""))):
-    raise Exception("\nbio.ngs.tools.bamtools: {prog} not installed or not in PATH\n".format(prog=bamtools_cfg.get('cmd')))
+if not is_installed(os.path.join(config['bio.ngs.tools.bamtools'].get('cmd', ""))):
+    raise Exception("\nbio.ngs.tools.bamtools: {prog} not installed or not in PATH\n".format(prog=config['bio.ngs.tools.bamtools'].get('cmd')))
 
 rule bamtools_filter_unique:
     """Run bamtools filter on a bam file"""
-    params: cmd = bamtools_cfg['cmd'],
-            options = " ".join("-{{}} \"{{}}\"".format(k,v) for k,v in bamtools_cfg['filter']['options'].items())
+    params: cmd = config['bio.ngs.tools.bamtools']['cmd'],
+            options = " ".join("-{{}} \"{{}}\"".format(k,v) for k,v in config['bio.ngs.tools.bamtools']['filter']['options'].items())
     input: "{prefix}.bam"
     output: "{prefix}_unique.bam"
     log: "{prefix}_unique.log"
@@ -46,19 +45,19 @@ rule bamtools_filter_unique:
 
 rule bamtools_filter_script:
     """Run bamtools filter on a bam file using a script input file"""
-    params: cmd = bamtools_cfg['cmd'],
-            options = " ".join("-{} \"{}\"".format(k,v) for k,v in bamtools_cfg['filter']['options'].items())
-    input: script = "{prefix}.script" if bamtools_cfg['filter']['regions'] else [], bam = "{prefix}.bam"
+    params: cmd = config['bio.ngs.tools.bamtools']['cmd'],
+            options = " ".join("-{} \"{}\"".format(k,v) for k,v in config['bio.ngs.tools.bamtools']['filter']['options'].items())
+    input: script = "{prefix}.script" if config['bio.ngs.tools.bamtools']['filter']['regions'] else [], bam = "{prefix}.bam"
     output: bam = "{prefix}.filter.bam"
     log: "{prefix}.filter.log"
     shell:
         "{params.cmd} filter -in {input.bam} -out {output.bam} {params.options} " +
-        "-script {input.script} > {log} " if bamtools_cfg['filter']['regions'] else "> {log}"
+        "-script {input.script} > {log} " if config['bio.ngs.tools.bamtools']['filter']['regions'] else "> {log}"
 
 
 rule bamtools_create_filter_script:
     """Create bamtools filter script"""
-    params: script = "\n".join('{{\n"reference":"{r}",{s}\n}},'.format(r=r, s=json.dumps(bamtools_cfg['filter']['options'], indent=1).lstrip("{").rstrip("}")) for r in bamtools_cfg['filter']['regions']).rstrip(",")
+    params: script = "\n".join('{{\n"reference":"{r}",{s}\n}},'.format(r=r, s=json.dumps(config['bio.ngs.tools.bamtools']['filter']['options'], indent=1).lstrip("{").rstrip("}")) for r in config['bio.ngs.tools.bamtools']['filter']['regions']).rstrip(",")
     output: script = temporary("{prefix}.script")
     shell:
         """echo '{{"filters":[\n{params.script}\n    ]\n}}\n' > {output.script}"""

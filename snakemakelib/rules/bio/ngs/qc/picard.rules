@@ -44,7 +44,9 @@ config_default = {
     },
 }
 
-config = update_config(config_default, config)
+update_config(config_default, config)
+config = config_default
+
 
 config_default2 = {
     'bio.ngs.qc.picard' : {
@@ -54,7 +56,8 @@ config_default2 = {
     },
 }
 
-config = update_config(config_default2, config)
+update_config(config_default2, config)
+config = config_default2
 
 # Needed by all
 if not 'picard_build_bam_index' in config['bio.ngs.qc.picard']['rules']:

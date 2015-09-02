@@ -5,8 +5,7 @@ if not 'picard_do_qc' in config['bio.ngs.qc.picard']['rules']:
     include: "picard/picard_do_qc.rule"
 
 def _picard_find_picard_do_qc_result_files_fn(wildcards):
-    config['bio.ngs.settings'] = config['bio.ngs.settings']
-    sources = generic_target_generator(tgt_re = config['bio.ngs.settings']['sampleorg'].sample_re, src_re=ngs_cfg['sampleorg'].run_id_re, target_suffix = os.path.join("." + wildcards.label), **ngs_cfg)
+    sources = generic_target_generator(tgt_re = config['bio.ngs.settings']['sampleorg'].sample_re, src_re=config['bio.ngs.settings']['sampleorg'].run_id_re, target_suffix = os.path.join("." + wildcards.label), **config['bio.ngs.settings'])
     return sources
 
 rule picard_qc_summary:
@@ -16,7 +15,7 @@ rule picard_qc_summary:
             hist = os.path.join("{path}", "picard.{label}.hist.csv")
     run:
         try:
-            samples = [ngs_cfg['sampleorg'].sample_re.parse(f)['SM'] for f in input]
+            samples = [config['bio.ngs.settings']['sampleorg'].sample_re.parse(f)['SM'] for f in input]
         except KeyError:
             raise Exception("failed to parse sample name 'SM' from input list")
         from snakemakelib.bio.ngs.qc.picard import collect_picard_qc_results

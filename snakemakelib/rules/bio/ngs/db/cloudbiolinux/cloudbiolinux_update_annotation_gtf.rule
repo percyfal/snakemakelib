@@ -4,10 +4,10 @@ from snakemakelib.bio.ngs.db import ref, annotation
 
 rule cloudbiolinux_update_annotation_gtf:
     input: gtf = annotation(annotation='ref-transcripts.gtf',\
-                            db_cfg=config['bio.ngs.settings']['db'], ignore_extra_ref=True),
+                            db_config=config['bio.ngs.settings']['db'], ignore_extra_ref=True),
            ref = [ref(x, config['bio.ngs.settings']['db']) for x in config['bio.ngs.settings']['db']['extra_ref']]
     output: gtf = protected(annotation(annotation="ref-transcripts-" + "-".join([os.path.splitext(os.path.basename(x))[0] for x in config['bio.ngs.settings']['db']['extra_ref']]) + ".gtf",\
-                                       db_cfg=config['bio.ngs.settings']['db']))
+                                       db_config=config['bio.ngs.settings']['db']))
     run:
         from Bio import SeqIO
         with open(output.gtf, "w") as out:

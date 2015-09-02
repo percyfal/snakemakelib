@@ -21,7 +21,8 @@ config_default = {
     },
 }
 
-config = update_config(config_default, config)
+update_config(config_default, config)
+config = config_default
 
 config_default2 = {
     'bio.ngs.motif.gem' : {
@@ -30,7 +31,8 @@ config_default2 = {
     },
 }
 
-config = update_config(config_default2, config)
+update_config(config_default2, config)
+config = config_default2
 
 config_default3 = {
     'bio.ngs.motif.gem' : {
@@ -38,7 +40,8 @@ config_default3 = {
     },
 }
 
-config = update_config(config_default3, config)
+update_config(config_default3, config)
+config = config_default3
 
 for rule in config['bio.ngs.motif.gem']['rules']:
     include: os.path.join("gem", rule + ".rule")

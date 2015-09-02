@@ -1,11 +1,11 @@
 # -*- snakemake -*-
-import os
+from os.path import join
 import pysam
 from jinja2 import Environment, PackageLoader
 from bokehutils.publish import static_html
 from snakemake.report import data_uri
 from snakemakelib.io import set_output
-from snakemakelib.config import update_config
+from snakemakelib.config import update_config, SNAKEMAKELIB_RULES_PATH
 from snakemakelib.bio.ngs.targets import generic_target_generator
 from snakemakelib.bio.ngs.qc.cutadapt import make_cutadapt_summary_plot
 from snakemakelib.bio.ngs.qc.qualimap import make_qualimap_plots
@@ -69,37 +69,40 @@ aligner_config = {
     },
 }
 
+update_config(atac_config, config)
+config = atac_config
+
 ALIGN_TARGET_SUFFIX = ".bam"
-if atac_config['workflows.bio.atac_seq']['trimadaptor']:
-    atac_config['bio.ngs.qc.picard']['merge_sam']['suffix'] = '.trimmed.sort.bam'
+if config['workflows.bio.atac_seq']['trimadaptor']:
+    config['bio.ngs.qc.picard']['merge_sam']['suffix'] = '.trimmed.sort.bam'
     ALIGN_TARGET_SUFFIX = ".trimmed.bam"
 
-aligner = atac_config['workflows.bio.atac_seq']['aligner']
+aligner = config['workflows.bio.atac_seq']['aligner']
 key = 'bio.ngs.align.' + aligner
 
-config = update_config(atac_config, config)
-config = update_config({key :  aligner_config[key]}, config)
+config_default = aligner_config[key]
+update_config(config_default, config)
+config = config_default
 
 ##############################
 # Include statements
 ##############################
-p = os.path.join(os.pardir, os.pardir, 'rules')
-include: os.path.join(p, 'settings.rules')
-include: os.path.join(p, 'utils.rules')
-include: os.path.join(p, "bio/ngs", "settings.rules")
-include: os.path.join(p, "bio/ngs/align", aligner + ".rules")
-include: os.path.join(p, "bio/ngs/align", "blat.rules")
-include: os.path.join(p, "bio/ngs/qc", "picard.rules")
-include: os.path.join(p, "bio/ngs/qc", "qualimap.rules")
-include: os.path.join(p, "bio/ngs/chromatin", "danpos.rules")
+include: join(SNAKEMAKELIB_RULES_PATH, 'settings.rules')
+include: join(SNAKEMAKELIB_RULES_PATH, 'utils.rules')
+include: join(SNAKEMAKELIB_RULES_PATH, "bio/ngs", "settings.rules")
+include: join(SNAKEMAKELIB_RULES_PATH, "bio/ngs/align", aligner + ".rules")
+include: join(SNAKEMAKELIB_RULES_PATH, "bio/ngs/align", "blat.rules")
+include: join(SNAKEMAKELIB_RULES_PATH, "bio/ngs/qc", "picard.rules")
+include: join(SNAKEMAKELIB_RULES_PATH, "bio/ngs/qc", "qualimap.rules")
+include: join(SNAKEMAKELIB_RULES_PATH, "bio/ngs/chromatin", "danpos.rules")
 if 'dfilter' in config['workflows.bio.atac_seq']['peakcallers']:
-    include: os.path.join(p, "bio/ngs/enrichment", "dfilter.rules")
+    include: join(SNAKEMAKELIB_RULES_PATH, "bio/ngs/enrichment", "dfilter.rules")
 if 'macs2' in config['workflows.bio.atac_seq']['peakcallers']:
-    include: os.path.join(p, "bio/ngs/enrichment", "macs2.rules")
+    include: join(SNAKEMAKELIB_RULES_PATH, "bio/ngs/enrichment", "macs2.rules")
 if config['workflows.bio.atac_seq']['trimadaptor']:
-    include: os.path.join(p, "bio/ngs/qc", "cutadapt.rules")
+    include: join(SNAKEMAKELIB_RULES_PATH, "bio/ngs/qc", "cutadapt.rules")
 if config['workflows.bio.atac_seq']['bamfilter']:
-    include: os.path.join(p, "bio/ngs/tools", "bamtools.rules")
+    include: join(SNAKEMAKELIB_RULES_PATH, "bio/ngs/tools", "bamtools.rules")
 
     
 ruleorder: picard_merge_sam > picard_sort_sam 
@@ -236,13 +239,13 @@ rule atacseq_correct_coordinates:
 
 rule atacseq_report:
     """Write report"""
-    input: cutadapt = os.path.join("{path}", "cutadapt.summary.csv") if config['workflows.bio.atac_seq']['trimadaptor'] else [],
+    input: cutadapt = join("{path}", "cutadapt.summary.csv") if config['workflows.bio.atac_seq']['trimadaptor'] else [],
            picard = [("report/picard.sort.merge.dup{sfx}.metrics.csv".format(sfx=sfx), 
            "report/picard.sort.merge.dup{sfx}.hist.csv".format(sfx=sfx)) for sfx in [workflow._rules[x].params.suffix for x in config['bio.ngs.qc.picard']['qcrules']]],
-           qualimap = [os.path.join("{path}", "sample{}.qualimap.globals.csv".format(MERGE_TARGET_SUFFIX)),
-                       os.path.join("{path}", "sample{}.qualimap.coverage_per_contig.csv".format(MERGE_TARGET_SUFFIX))],
+           qualimap = [join("{path}", "sample{}.qualimap.globals.csv".format(MERGE_TARGET_SUFFIX)),
+                       join("{path}", "sample{}.qualimap.coverage_per_contig.csv".format(MERGE_TARGET_SUFFIX))],
            rulegraph = "report/atacseq_all_rulegraph.png"
-    output: html = os.path.join("{path}", "atacseq_summary.html")
+    output: html = join("{path}", "atacseq_summary.html")
     run:
         d = {}
         env = Environment(loader = PackageLoader("snakemakelib", "_templates"))

@@ -126,7 +126,7 @@ if 'rsem' in config['workflows.bio.scrnaseq']['quantification']:
         src_re = config['bio.ngs.settings']['sampleorg'].raw_run_re,
         **config['bio.ngs.settings']) + ['report/rsem.merge.tx.genes.csv', 'report/rsem.merge.tx.isoforms.csv']
 
-REPORT_TARGETS = ['report/star.Aligned.out.csv', 'report/star.Aligned.out.mapping_summary.html']
+REPORT_TARGETS = ['report/star.Aligned.out.csv']#, 'report/star.Aligned.out.mapping_summary.html']
 
 # Additional merge rule for transcript alignment files
 rule scrnaseq_picard_merge_sam_transcript:

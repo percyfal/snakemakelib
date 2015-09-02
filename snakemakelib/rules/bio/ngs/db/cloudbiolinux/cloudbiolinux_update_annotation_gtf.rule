@@ -1,13 +1,28 @@
 # -*- snakemake -*-
 import os
+from snakemakelib.log import LoggerManager
 from snakemakelib.bio.ngs.db import ref, annotation
 
+smllogger = LoggerManager().getLogger(__name__)
+
+config_default = {
+    'bio.ngs.db.cloudbiolinux' : { 
+        'annotation' : {
+            'transcript_annot_gtf' : annotation(annotation="ref-transcripts-" + "-".join([os.path.splitext(os.path.basename(x))[0] for x in config['bio.ngs.settings']['db']['extra_ref']]) + ".gtf",\
+                                                db_config=config['bio.ngs.settings']['db'])
+        },
+    },
+}
+
+update_config(config_default, config)
+config = config_default
+
+# FIXME: input should be genbank file
 rule cloudbiolinux_update_annotation_gtf:
     input: gtf = annotation(annotation='ref-transcripts.gtf',\
                             db_config=config['bio.ngs.settings']['db'], ignore_extra_ref=True),
            ref = [ref(x, config['bio.ngs.settings']['db']) for x in config['bio.ngs.settings']['db']['extra_ref']]
-    output: gtf = protected(annotation(annotation="ref-transcripts-" + "-".join([os.path.splitext(os.path.basename(x))[0] for x in config['bio.ngs.settings']['db']['extra_ref']]) + ".gtf",\
-                                       db_config=config['bio.ngs.settings']['db']))
+    output: gtf = protected(config['bio.ngs.db.cloudbiolinux']['annotation']['transcript_annot_gtf'])
     run:
         from Bio import SeqIO
         with open(output.gtf, "w") as out:
@@ -20,18 +35,22 @@ rule cloudbiolinux_update_annotation_gtf:
                 if os.path.exists(gb):
                     seqs = SeqIO.parse(open(gb), format = "gb")
                 else:
-                    continue
+                    smllogger.warn("No genbank file {} for {}; skipping inclusion in {}".format(gb, f, output.gtf))
                 for seq in seqs:
-                    features = [sf.type for sf in seq.features]
                     d = {
                         'name' : seq.name,
-                        'feature' : seq.features[0].type,
-                        'start' : seq.features[0].location.start,
-                        'end' : seq.features[0].location.end,
                         'score' : 0,
                         'strand' : '+',
                         'frame' : 0,
                         'gene_id' : seq.name,
                         'transcript_id' : seq.name,
+                        'feature' : 'source',
+                        'start' : 1,
+                        'end' : len(seq),
                     }
+                    if len(seq.features) > 0:
+                        d['feature'] = seq.features[0].type
+                        d['start'] = seq.features[0].location.start
+                        d['end'] = seq.features[0].location.end
+
                     out.write('{name}\tsnakemakelib\t{feature}\t{start}\t{end}\t{score}\t{strand}\t{frame}\tgene_id "{gene_id}"; transcript_id "{transcript_id}"\n'.format(**d))

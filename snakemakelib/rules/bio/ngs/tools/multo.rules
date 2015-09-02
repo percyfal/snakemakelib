@@ -27,4 +27,4 @@ rule multo_transcript_level:
             options = config['bio.ngn.tools.multo']['options']
     threads: config['bio.ngn.tools.multo']['threads']
     output: outdir = os.path.join("{outdir}", "{assembly}_{kmin}-{kmax}")
-    shell: python2 + " && python {params.cmd} {params.options} -T -a {wildcards.assembly} -k {wildcards.kmin} -m {wildcards.kmax} -p {threads} -o {output.outdir}"
+    shell: python2 + " python {params.cmd} {params.options} -T -a {wildcards.assembly} -k {wildcards.kmin} -m {wildcards.kmax} -p {threads} -o {output.outdir}"

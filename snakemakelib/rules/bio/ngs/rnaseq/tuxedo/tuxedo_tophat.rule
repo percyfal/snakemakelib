@@ -30,5 +30,5 @@ rule tuxedo_tophat:
             hits = os.path.join("{prefix}.tophat2" if config['bio.ngs.rnaseq.tuxedo']['version2'] else "{prefix}.tophat", "accepted_hits.bam")
     run: 
         rg = dict(config['bio.ngs.rnaseq.tuxedo'])['rg_fn'](os.path.basename(wildcards.prefix))
-        shell("{python2} && {cmd} {opt} {rg} -o {out}.tmp {index} {read1} {read2} 2> {out}.log && mv {out}.tmp/* {out} && mv {out}.log {out}".format(python2=params.python2, cmd=params.cmd, opt=params.options, rg=rg, out=output.tophatdir, prefix=wildcards.prefix, index=params.index, read1=input.read1, read2=input.read2))
+        shell("{python2} {cmd} {opt} {rg} -o {out}.tmp {index} {read1} {read2} 2> {out}.log && mv {out}.tmp/* {out} && mv {out}.log {out}".format(python2=params.python2, cmd=params.cmd, opt=params.options, rg=rg, out=output.tophatdir, prefix=wildcards.prefix, index=params.index, read1=input.read1, read2=input.read2))
 

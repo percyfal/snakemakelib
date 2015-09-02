@@ -2,7 +2,7 @@
 config_default = {
     'bio.ngs.qc.rseqc' : {
         'read_duplication' : {
-            'cmd' : os.path.join(config['bio.ngs.qc.rseqc']['home'], 'read_duplication.py'),
+            'cmd' : 'read_duplication.py',
             'options' : '',
         },
     },
@@ -19,4 +19,4 @@ rule rseqc_read_duplication:
     input: bam = "{prefix}.bam"
     output: pos = "{prefix}_rseqc/read_dup.pos.DupRate.xls",
             seq = "{prefix}_rseqc/read_dup.seq.DupRate.xls",
-    shell: python2 + " && {params.cmd} {params.options} -i {input.bam} -o $(dirname {output.seq})/read_dup"
+    shell: python2 + " {params.cmd} {params.options} -i {input.bam} -o $(dirname {output.seq})/read_dup"

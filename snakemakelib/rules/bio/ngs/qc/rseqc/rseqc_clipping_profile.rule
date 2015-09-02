@@ -2,7 +2,7 @@
 config_default = {
     'bio.ngs.qc.rseqc' : {
         'clipping_profile' : {
-            'cmd' : os.path.join(config['bio.ngs.qc.rseqc']['home'], 'clipping_profile.py'),
+            'cmd' : 'clipping_profile.py',
             'options' : '',
         },
     },
@@ -14,9 +14,9 @@ config = config_default
 
 rule rseqc_clipping_profile:
     """Run RSeQC clipping_profile.py"""
-    params: cmd = os.path.join(config['bio.ngs.qc.rseqc']['home'], config['bio.ngs.qc.rseqc']['clipping_profile']['cmd']),
+    params: cmd = config['bio.ngs.qc.rseqc']['clipping_profile']['cmd'],
             options = config['bio.ngs.qc.rseqc']['clipping_profile']['options'],
     input: bam = "{prefix}.bam"
     output: xls = "{prefix}_rseqc/clippingprofile.clipping_profile.xls",
-    shell: python2 + " && {params.cmd} {params.options} -i {input.bam} -o $(dirname {output.xls})/clippingprofile"
+    shell: python2 + " {params.cmd} {params.options} -i {input.bam} -o $(dirname {output.xls})/clippingprofile"
 

@@ -2,7 +2,7 @@
 config_default = {
     'bio.ngs.qc.rseqc' : {
         'junction_annotation' : {
-            'cmd' : os.path.join(config['bio.ngs.qc.rseqc']['home'], 'junction_annotation.py'),
+            'cmd' : 'junction_annotation.py',
             'options' : '',
         },
     },
@@ -16,10 +16,10 @@ rule rseqc_junction_annotation:
     """Run RSeQC junction_annotation.py
     NB: Requries reference gene model in bed format
     """
-    params: cmd = os.path.join(config['bio.ngs.qc.rseqc']['home'], config['bio.ngs.qc.rseqc']['junction_annotation']['cmd']),
+    params: cmd = config['bio.ngs.qc.rseqc']['junction_annotation']['cmd'],
             options = config['bio.ngs.qc.rseqc']['junction_annotation']['options'],
     input: bam = "{prefix}.bam", refgene = config['bio.ngs.qc.rseqc']['refgene']
     output: xls = "{prefix}_rseqc/junction_annotation_refseq.junction.xls",
             txt = "{prefix}_rseqc/junction_annotation_refseq.txt"
-    shell: python2 + " && {params.cmd} {params.options} -i {input.bam} -o $(dirname {output.txt})/junction_annotation_refseq -r {input.refgene} 2> {output.txt}"
+    shell: python2 + " {params.cmd} {params.options} -i {input.bam} -o $(dirname {output.txt})/junction_annotation_refseq -r {input.refgene} 2> {output.txt}"
 

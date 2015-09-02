@@ -28,7 +28,6 @@ config_default = {
 update_config(config_default, config)
 config = config_default
 
-
 python2 = config['comp.settings']['python2']['activate_cmd']
 
 if config['bio.ngs.chromatin.danpos']['home']:

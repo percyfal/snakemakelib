@@ -2,7 +2,7 @@
 config_default = {
     'bio.ngs.qc.rseqc' : {
         'read_GC' : {
-            'cmd' : os.path.join(config['bio.ngs.qc.rseqc']['home'], 'read_GC.py'),
+            'cmd' : 'read_GC.py',
             'options' : '',
         },
     },
@@ -14,9 +14,9 @@ config = config_default
 
 rule rseqc_read_GC:
     """Run RSeQC read_GC.py"""
-    params: cmd = os.path.join(config['bio.ngs.qc.rseqc']['home'], config['bio.ngs.qc.rseqc']['read_GC']['cmd']),
+    params: cmd = config['bio.ngs.qc.rseqc']['read_GC']['cmd'],
             options = config['bio.ngs.qc.rseqc']['read_GC']['options'],
     input: "{prefix}.bam"
     output: xls = "{prefix}_rseqc/read_GC.GC.xls"
-    shell: python2 + " && {params.cmd} {params.options} -i {input} -o $(dirname {output.xls})/read_GC"
+    shell: python2 + " {params.cmd} {params.options} -i {input} -o $(dirname {output.xls})/read_GC"
 

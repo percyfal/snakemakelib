@@ -2,7 +2,7 @@
 config_default = {
     'bio.ngs.qc.rseqc' : {
         'read_quality' : {
-            'cmd' : os.path.join(config['bio.ngs.qc.rseqc']['home'], 'read_quality.py'),
+            'cmd' : 'read_quality.py',
             'options' : '',
         },
     },
@@ -14,9 +14,9 @@ config = config_default
 
 rule rseqc_read_quality:
     """Run RSeQC read_quality.py"""
-    params: cmd = os.path.join(config['bio.ngs.qc.rseqc']['home'], config['bio.ngs.qc.rseqc']['read_quality']['cmd']),
+    params: cmd = config['bio.ngs.qc.rseqc']['read_quality']['cmd'],
             options = config['bio.ngs.qc.rseqc']['read_quality']['options'],
     input: "{prefix}.bam"
     output: r = "{prefix}_rseqc/read_quality.qual.r"
-    shell: python2 + " && {params.cmd} {params.options} -i {input} -o $(dirname {output.r})/read_quality"
+    shell: python2 + " {params.cmd} {params.options} -i {input} -o $(dirname {output.r})/read_quality"
 

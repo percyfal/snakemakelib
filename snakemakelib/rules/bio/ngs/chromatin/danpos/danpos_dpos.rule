@@ -43,7 +43,7 @@ rule danpos_dpos:
         d = dict(params)
         d.update({'path': ",".join("{sample}:{bg}".format(sample=s, bg=input.bg) for s in input.nuc),
                   'outdir': os.path.join(wildcards.prefix, "danpos")})
-        clist = [python2, " && python {cmd} dpos {path} {options} -o {outdir}".format(**d)]
+        clist = [python2, " {cmd} dpos {path} {options} -o {outdir}".format(**d)]
         clist.append(" &> {log}".format(log=log))
         command = " ".join(clist)
         shell (command)

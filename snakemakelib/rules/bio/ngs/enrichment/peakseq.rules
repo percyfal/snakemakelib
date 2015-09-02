@@ -41,8 +41,6 @@ try:
 except:
     pass
 
-python2 = config['comp.settings']['python2']['activate_cmd']
-
 mapdir = abspath(join(
     dirname(str(config['bio.ngs.enrichment.peakseq']['index'])),
     config['bio.ngs.enrichment.peakseq']['mappability']['merlen'])

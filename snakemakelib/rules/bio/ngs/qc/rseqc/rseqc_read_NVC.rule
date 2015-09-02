@@ -2,7 +2,7 @@
 config_default = {
     'bio.ngs.qc.rseqc' : {
         'read_NVC' : {
-            'cmd' : os.path.join(config['bio.ngs.qc.rseqc']['home'], 'read_NVC.py'),
+            'cmd' : 'read_NVC.py',
             'options' : '',
         },
     },
@@ -14,9 +14,9 @@ config = config_default
 
 rule rseqc_read_NVC:
     """Run RSeQC read_NVC.py"""
-    params: cmd = os.path.join(config['bio.ngs.qc.rseqc']['home'], config['bio.ngs.qc.rseqc']['read_NVC']['cmd']),
+    params: cmd = config['bio.ngs.qc.rseqc']['read_NVC']['cmd'],
             options = config['bio.ngs.qc.rseqc']['read_NVC']['options']
     input: "{prefix}.bam"
     output: xls = "{prefix}_rseqc/read_NVC.NVC.xls"
-    shell: python2 + " && {params.cmd} {params.options} -i {input} -o $(dirname {output.xls})/read_NVC"
+    shell: python2 + " {params.cmd} {params.options} -i {input} -o $(dirname {output.xls})/read_NVC"
 

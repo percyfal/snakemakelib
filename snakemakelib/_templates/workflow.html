@@ -16,8 +16,12 @@ launched by running
 If you have the SLURM queue manager, you can run
 
 <pre><code>
-    snakemake --rerun-incomplete {{ rulegraph['target'] }} --drmaa " -t TIME -A account -p core -n {threads}"
+    snakemake -j 100 --rerun-incomplete --cluster-config cluster.json --cluster "sbatch -A {cluster.account} -p {cluster.partition} -n {cluster.n}  -t {cluster.time}" {{ rulegraph['target'] }}
 </code></pre>
+
+which will submit 100 jobs (core equivalents) using a cluster
+configuration file 'cluster.json' in which the cluster parameters for
+given rules can be specified.
 
 <h4>Workflow illustration</h4>
 <figure>

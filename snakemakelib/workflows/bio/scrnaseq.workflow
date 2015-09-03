@@ -1,5 +1,6 @@
 # -*- snakemake -*-
 from os.path import join, dirname, relpath
+from snakemake.report import data_uri
 from bokehutils.publish import static_html
 from snakemake.workflow import workflow
 from snakemakelib.io import set_output
@@ -62,6 +63,9 @@ config_default = {
             'label' : 'merge',
             'inputfun' : find_scrnaseq_merge_inputs,
         },
+    },
+    'bio.ngs.qc.rseqc' : {
+        'rules' : ['rseqc_qc_8', 'rseqc_qc_8_summary'],
     },
 }
 
@@ -126,7 +130,8 @@ if 'rsem' in config['workflows.bio.scrnaseq']['quantification']:
         src_re = config['bio.ngs.settings']['sampleorg'].raw_run_re,
         **config['bio.ngs.settings']) + ['report/rsem.merge.tx.genes.csv', 'report/rsem.merge.tx.isoforms.csv']
 
-REPORT_TARGETS = ['report/star.Aligned.out.csv']#, 'report/star.Aligned.out.mapping_summary.html']
+    
+REPORT_TARGETS = ['report/star.Aligned.out.csv', 'report/scrnaseq_summary.html'] # 'report/star.Aligned.out.mapping_summary.html']
 
 # Additional merge rule for transcript alignment files
 rule scrnaseq_picard_merge_sam_transcript:
@@ -155,7 +160,7 @@ rule scrnaseq_qc:
            rseqc_gene_coverage = join("{path}", "gene_coverage_summary_merge_rseqc.csv"),
            rsemgenes = join("{path}", "rsem.merge.tx.genes.csv"),
            rsemisoforms = join("{path}", "rsem.merge.tx.isoforms.csv"),
-           rulegraph = join("{path}", "scrnaseq_all.png"),
+           rulegraph = join("{path}", "scrnaseq_all_rulegraph.png"),
            globalconf = join("{path}", "smlconf_global.yaml")
     output: html = join("{path}", "scrnaseq_summary.html")
     run:

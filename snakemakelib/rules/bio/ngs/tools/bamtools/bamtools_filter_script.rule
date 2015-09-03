@@ -7,5 +7,5 @@ rule bamtools_filter_script:
     output: bam = "{prefix}.filter.bam"
     log: "{prefix}.filter.log"
     shell:
-        "{params.cmd} filter -in {input.bam} -out {output.bam} {params.options} " +
+        libpath + " {params.cmd} filter -in {input.bam} -out {output.bam} {params.options} " +
         "-script {input.script} > {log} " if config['bio.ngs.tools.bamtools']['filter']['regions'] else "> {log}"

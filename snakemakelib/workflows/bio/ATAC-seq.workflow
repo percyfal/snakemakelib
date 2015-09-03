@@ -53,6 +53,9 @@ atac_config = {
                          'isProperPair': 'true'},
         },
     },
+    'bio.ngs.qc.cutadapt' : {
+        'rules' : ['cutadapt_cut_paired_end', 'cutadapt_qc_summary'],
+    },
 }
 aligner_config = {
     'bio.ngs.align.bowtie' : {

@@ -1,0 +1,11 @@
+# -*- snakemake -*-
+rule bamtools_filter_script:
+    """Run bamtools filter on a bam file using a script input file"""
+    params: cmd = config['bio.ngs.tools.bamtools']['cmd'],
+            options = " ".join("-{} \"{}\"".format(k,v) for k,v in config['bio.ngs.tools.bamtools']['filter']['options'].items())
+    input: script = "{prefix}.script" if config['bio.ngs.tools.bamtools']['filter']['regions'] else [], bam = "{prefix}.bam"
+    output: bam = "{prefix}.filter.bam"
+    log: "{prefix}.filter.log"
+    shell:
+        "{params.cmd} filter -in {input.bam} -out {output.bam} {params.options} " +
+        "-script {input.script} > {log} " if config['bio.ngs.tools.bamtools']['filter']['regions'] else "> {log}"

@@ -18,3 +18,6 @@ config_default = {
 
 update_config(config_default, config)
 config = config_default
+
+for rule in config['bio.ngs.tools.bedtools']['rules']:
+    include: os.path.join("bedtools", rule + ".rule")

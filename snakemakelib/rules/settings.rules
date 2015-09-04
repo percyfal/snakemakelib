@@ -16,6 +16,7 @@ PROTECTED_FILETYPES_DEFAULT = TEMP_FILETYPES_DEFAULT
 # Add configuration variable to snakemake global config object
 config['section'] = config.get("section", "")
 
+
 config_default = {
     'settings' : {
         'temp_filetypes' : [],

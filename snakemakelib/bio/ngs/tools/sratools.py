@@ -17,7 +17,7 @@ def register_metadata(metadata_file, config):
     metadata_list = []
     import sys
     if metadata_file in sys.argv:
-        return metadata_list
+        return config
     try:
         with open(metadata_file, "r") as fh:
             reader = csv.DictReader(fh.readlines())
@@ -44,5 +44,4 @@ def register_metadata(metadata_file, config):
         please initiate analysis by running 'snakemake {metadata}'
 
         """.format(metadata=metadata_file))
-
     return config

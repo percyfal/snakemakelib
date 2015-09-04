@@ -1,5 +1,5 @@
-0.1-alpha.6 (Aug 2015)
-======================
+0.1-alpha.6 (Aug 25 2015)
+=========================
 
 * tests now run by pytest (#20)
 * BaseConfig has been removed so config is plain dictionary (#19)

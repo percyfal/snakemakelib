@@ -1,0 +1,4 @@
+0.1-alpha.10 (Sep 1 2015)
+=========================
+
+- add missing module import of snakemakelib.workflow to setup.py

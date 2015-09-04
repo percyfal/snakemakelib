@@ -1,0 +1,4 @@
+0.1-alpha.9 (Aug 31 2015)
+==========================
+
+- hotfix: use correct parameters for bowtie2 in atacseq workflow

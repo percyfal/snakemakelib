@@ -1,28 +1,6 @@
 Configuration
 =============
 
-The purpose of snakemakelib is to build a library of rules that can be
-reused without actually writing them anew. The motivation is that only
-parameters, e.g. program options, inputs and outputs, of a rule change
-from time to time, but the rule execution is identical. Therefore, my
-aim is to provide a very simplistic configuration interface in which the
-rule parameters can be modified with simple strings.
-
-Implementation
-~~~~~~~~~~~~~~
-
-The backbone configuration object is the class :class:`BaseConfig
-<snakemakelib.config.BaseConfig>`, which is a modified :class:`dict`
-class. It does simple type checking and also overrides the
-:meth:`__getitem__ <object.__getitem__>`, :meth:`__setitem__
-<object.__setitem__>`, and :meth:`dict.update` methods, ensuring that
-all entries are :class:`BaseConfig <snakemakelib.config.BaseConfig>`
-objects.
-
-An auxiliary function :meth:`~snakemakelib.config.update_snakemake_config`
-populates the backend configuration whenever a include statement loads
-a rules file. Another feature is that entries can point to regular
-python functions.
 
 The default configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -54,65 +32,31 @@ As an example, consider the default configuration for
 
 .. code-block:: python
 
-   config_default = { 
+   DEFAULT_RULES = ['bwa_index', 'bwa_mem']
+
+   config_default = {
        'bio.ngs.align.bwa' : {
 	   'cmd' : "bwa",
-	   'ref' : ngs_cfg['db']['ref'],
+	   'ref' : config['bio.ngs.settings']['db']['ref'],
 	   'index' : "",
 	   'index_ext' : ['.amb', '.ann', '.bwt', '.pac', '.sa'],
 	   'threads' : config['bio.ngs.settings']['threads'],
 	   'options' : "-M",
-	   'mem' :{
-	       'options' : "",
-	   },
+	   'rules' : DEFAULT_RULES,
        },
    }
 
+		
 The namespace is ``bio.ngs.align.bwa``, reflecting the fact that the
 rules file is located in the folder ``rules/bio/ngs/align`` and is
 named ``bwa.rules``. ``config`` is the global snakemake configuration
-object represented as an instance of the
-:class:`~snakemakelib.config.BaseConfig` class that stores all loaded
-rule configurations. Incidentally, this example shows another key idea
-of the configuration, namely that some options inherit from rules
-files higher up in the file hierarchy. The rules file
+object. Incidentally, this example shows another key idea of the
+configuration, namely that some options inherit from rules files
+higher up in the file hierarchy. The rules file
 ``rules/bio/ngs/settings.rules`` contains a generic configuration that
 is common to all ngs rules. This implementation makes it possible to
 override settings for specific programs, like for instance the
 ``threads`` parameter above.
-
-Viewing the default configuration
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-``utils.rules`` defines a rule ``conf`` that can be used to view the
-current configuration of included files:
-
-.. code-block:: shell
-
-    snakemake conf
-
-The output is section according to *namespace*, i.e. the rules file.
-
-Accessing snakemake config
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Snakemake defines its own global configuration variable *config* that
-can be accessed via the command line. In
-``rules/bio/ngs/settings.rules``, three Snakemake *config* options have
-been added that are useful in the context of ngs:
-
-.. code-block:: python
-
-    # Add configuration variable to snakemake global config object
-    config['samples'] = config.get("samples", [])
-    config['regions'] = config.get("regions", []) 
-    config['runs'] = config.get("runs", [])
-
-For instance, a workflow can be run on a single sample by issuing
-
-.. code-block:: shell
-
-    snakemake rule --config samples=["SAMPLE1","SAMPLE2"]
 
 User-defined configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -140,17 +84,17 @@ would then look as follows:
     sys.path.append('/path/to/snakemakelib')
 
     # Import config-related stuff
-    from snakemakelib.config import update_snakemake_config
+    from snakemakelib.config import update_config
     my_config = {
         'bio.ngs.align.bwa' : {
             'mem' : {
-                'options' : "-k 10 -w 50",
+                 'threads' : 1,
             },
         },
     }
 
-    # Initialize configuration
-    update_snakemake_config(my_config)
+    # Update configuration
+    update_config(config, my_config)
 
     # Include settings and utilities
     include: "/path/to/snakemake/rules/settings.rules"

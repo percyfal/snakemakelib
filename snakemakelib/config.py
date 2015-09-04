@@ -13,7 +13,19 @@ SNAKEMAKELIB_PATH = os.path.dirname(__file__)
 SNAKEMAKELIB_RULES_PATH = os.path.join(SNAKEMAKELIB_PATH, "rules")
 SNAKEMAKELIB_TEMPLATES_PATH = os.path.join(SNAKEMAKELIB_PATH, "_templates")
 
-def load_sml_config(config, config_file=None):
+def _expandvars(d):
+    def _update(d):
+        for k, v in d.items():
+            if isinstance(v, Mapping):
+                r = _update(d.get(k, {}))
+                d[k] = r
+            else:
+                if isinstance(d[k], str):
+                    d[k] = os.path.expandvars(d[k])
+        return d
+    _update(d)
+
+def load_sml_config(config, config_file=None, expandvars=True):
     """Load snakemakelib configuration file(s).
     Will search for configuration files in following order:
     
@@ -26,6 +38,7 @@ def load_sml_config(config, config_file=None):
 
       config (dict): snakemake configuration object
       config_file (str): custom configuration file to load
+      expandvars (bool): do automatic expansion of environment variables
 
     """
     for fn in [os.path.join(os.getenv("HOME"), ".smlconf.yaml"),
@@ -40,6 +53,8 @@ def load_sml_config(config, config_file=None):
             overwrite_config = yaml.load(fh)
         smllogger.info("Read configuration from {}".format(fn))
         update_config(config, overwrite_config)
+    if expandvars:
+        _expandvars(config)
 
 def update_config(config, overwrite_config):
     """Recursively update dictionary config with overwrite_config.

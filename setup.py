@@ -68,6 +68,7 @@ try:
         REQUIRES.append('matplotlib>=1.4.0')
     else:
         print("readthedocs in path name; assuming we're building docs @readthedocs")
+        REQUIRES.append('sphinx-bootstrap-theme')
 except:
     pass
     

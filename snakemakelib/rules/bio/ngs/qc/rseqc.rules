@@ -16,7 +16,7 @@ DEFAULT_RULES = ['rseqc_clipping_profile',
 config_default = {
     'bio.ngs.qc.rseqc' : {
         'rules' : DEFAULT_RULES,
-        'refgene' : config['bio.ngs.settings']["annotation"]["transcript_annot_gtf"].replace(".gtf", ".bed12"),
+        'refgene' : config['bio.ngs.settings']["annotation"]["transcript_annot_gtf"],
         'home' : os.getenv("RSEQC_HOME", ""),
     },
 }
@@ -25,6 +25,16 @@ update_config(config_default, config)
 config = config_default
 
 python2 = config['comp.settings']['python2']['activate_cmd']
+
+try:
+    from snakemakelib.bio.ngs.db import annotation
+    # Update annotation
+    config['bio.ngs.qc.rseqc']['refgene'] = \
+        annotation(annotation=config['bio.ngs.qc.rseqc']['refgene'],
+                   db_config=config['bio.ngs.settings']['db'],
+                   fmt='bed12')
+except:
+    pass
 
 for rule in config['bio.ngs.qc.rseqc']['rules']:
     include: os.path.join("rseqc", rule + ".rule")

@@ -6,6 +6,10 @@
 snakemakelib - a library of snakemake rules
 ===========================================
 
+.. warning:: snakemakelib is still very much WIP and currently
+             undergoing heavy development. I'm aiming for a 0.1.0
+             release this autumn.
+
 .. _about:
 
 
@@ -31,20 +35,19 @@ interface.
              them before running any commands. I take no responsibility
              if you'd happen to run a ``snakemake clean`` in an
              inappropriate location, removing precious data in the
-             process. You have been warned!
+             process.
 
-
-
-
-
-Contents:
+Contents
 ---------
 
 .. toctree::
    :maxdepth: 2
 
    docs/quickstart
+   docs/installation
    docs/configuration
+   docs/sampleorganization
+   docs/databases
    docs/troubleshooting
 
 

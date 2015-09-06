@@ -227,11 +227,11 @@ html_static_path = ['_static']
 #html_use_smartypants = True
 
 # Custom sidebar templates, maps document names to template names.
-# standard_sidebars = ['sidebartoc.html', 'sourcelink.html', 'searchbox.html']
-# html_sidebars = {
-#     '*': standard_sidebars,
-#     'docs/*': standard_sidebars,
-# }
+standard_sidebars = ['sidebartoc.html', 'sourcelink.html', 'searchbox.html']
+html_sidebars = {
+    '*': standard_sidebars,
+    'docs/*': standard_sidebars,
+}
 
 
 # Additional templates that should be rendered to pages, maps page names to

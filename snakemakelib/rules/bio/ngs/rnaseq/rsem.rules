@@ -1,7 +1,7 @@
 # -*- snakemake -*-
 include: '../settings.rules'
 
-DEFAULT_RULES = ['rsem_calculate_expression', 'rsem_summarize_expression_data']
+DEFAULT_RULES = ['rsem_calculate_expression', 'rsem_summarize_expression_data', 'rsem_prepare_reference']
 
 config_default = { 
     'bio.ngs.rnaseq.rsem' : {

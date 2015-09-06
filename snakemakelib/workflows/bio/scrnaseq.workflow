@@ -51,9 +51,12 @@ config_default = {
     },
     'workflows.bio.scrnaseq' : {
         'qc' : {
-            
+            # Add parameters here
         },
-        'quantification' :  ['rsem', 'rpkmforgenes']
+        'quantification' :  ['rsem', 'rpkmforgenes'],
+        'db' : {
+            'do_multo' : False,  ## Set to True to run generate multo database
+        },
     },
     'bio.ngs.settings' : {
         'aligner' : 'bowtie',
@@ -89,6 +92,9 @@ include: join(SNAKEMAKELIB_RULES_PATH, "bio/ngs/rnaseq", "rsem.rules")
 if aligner in ["bowtie", "bowtie2"]:
     ruleorder: bamtools_filter > picard_merge_sam > picard_sort_bam > bowtie_align
 
+if config['workflows.bio.scrnaseq']['db']['do_multo']:
+    include: join(SNAKEMAKELIB_RULES_PATH, "bio/ngs/tools", "multo.rules")
+    
 if workflow._workdir is None:
     raise Exception("no workdir set, or set after include of 'scrnaseq.workflow'; set workdir before include statement!")
 

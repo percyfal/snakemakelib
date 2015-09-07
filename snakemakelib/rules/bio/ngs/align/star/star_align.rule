@@ -1,5 +1,8 @@
 # -*- snakemake -*-
-from snakemakelib.stat import is_compressed
+try:
+    from snakemakelib.stat import is_compressed
+except:
+    is_
 
 config_default = { 
     'bio.ngs.align.star' : {

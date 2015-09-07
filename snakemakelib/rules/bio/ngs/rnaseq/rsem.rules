@@ -23,20 +23,16 @@ update_config(config_default, config)
 config = config_default
 
 
-try:
-    from snakemakelib.bio.ngs.db import index, annotation
-    # Update annotation
-    config['bio.ngs.rnaseq.rsem']['annot_gtf'] = annotation(
-        annotation=config['bio.ngs.rnaseq.rsem']['annot_gtf'],
-        db_config=config['bio.ngs.settings']['db'])
-    # Update index
-    config['bio.ngs.rnaseq.rsem']['index'] = index(
-        ref = config['bio.ngs.rnaseq.rsem']['ref'],
-        index = config['bio.ngs.rnaseq.rsem']['index'],
-        application = 'rsem',
-        build = config['bio.ngs.settings']['db']['build'])
-except:
-    pass
+# Update annotation
+config['bio.ngs.rnaseq.rsem']['annot_gtf'] = annotation(
+    annotation=config['bio.ngs.rnaseq.rsem']['annot_gtf'],
+    db_config=config['bio.ngs.settings']['db'])
+# Update index
+config['bio.ngs.rnaseq.rsem']['index'] = index(
+    ref = config['bio.ngs.rnaseq.rsem']['ref'],
+    index = config['bio.ngs.rnaseq.rsem']['index'],
+    application = 'rsem',
+    build = config['bio.ngs.settings']['db']['build'])
 
 for rule in config['bio.ngs.rnaseq.rsem']['rules']:
     include: os.path.join("rsem", rule + ".rule")

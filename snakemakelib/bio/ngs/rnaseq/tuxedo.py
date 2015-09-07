@@ -12,7 +12,12 @@ from snakemakelib.bio.ngs.regexp import ReadGroup
 # --rg-platform                  <string>    (Sequencing platform descriptor)
 
 class TuxedoReadGroup(ReadGroup):
-    _group_dict =  {'ID' : 'id', 'CN' : 'center', 'DS' : 'description', 'DT' : 'date', 'FO' : 'floworder', 'KS' : 'keysequence', 'LB' : 'library', 'PG' : 'program', 'PI' : 'insertsize', 'PL': 'platform', 'PU' : 'platform-unit', 'SM' : 'sample'}
+    _group_dict = {'ID' : 'id', 'CN' : 'center',
+                   'DS' : 'description', 'DT' : 'date',
+                   'FO' : 'floworder', 'KS' : 'keysequence',
+                   'LB' : 'library', 'PG' : 'program',
+                   'PI' : 'insertsize', 'PL': 'platform',
+                   'PU' : 'platform-unit', 'SM' : 'sample'}
 
     def __init__(self, opt_prefix="--rg-", *args, **kwargs):
         ReadGroup.__init__(self, *args, **kwargs)

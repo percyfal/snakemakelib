@@ -4,7 +4,12 @@ Main settings for snakemakelib. Defines top-level configuration
 settings for all rules. 
 """
 import os
-from snakemakelib._version import get_versions
+try:
+    from snakemakelib._version import get_versions
+except:
+    get_versions = lambda: {'full-revisionid': 'unknown', 'version': 'unknown', 'dirty': "unknown", 'error': None}
+    
+# FIXME: eventually this will be imported from snakemake    
 from snakemakelib.config import update_config
 
 

@@ -10,7 +10,6 @@ config_default = {
         'index' : "",
         'index_ext' : ['.amb', '.ann', '.bwt', '.pac', '.sa'],
         'threads' : config['bio.ngs.settings']['threads'],
-        'options' : "-M",
         'rules' : DEFAULT_RULES,
     },
 }
@@ -18,17 +17,11 @@ config_default = {
 update_config(config_default, config)
 config = config_default
 
-
-try:
-    # Update index
-    from snakemakelib.bio.ngs.db import index
-    config['bio.ngs.align.bwa']['index'] = index(
-        ref = config['bio.ngs.settings']['db']['ref'],
-        index = config['bio.ngs.align.bwa']['index'],
-        application = 'bwa',
-        build = config['bio.ngs.settings']['db']['build'])
-except:
-    pass
+config['bio.ngs.align.bwa']['index'] = index(
+    ref = config['bio.ngs.settings']['db']['ref'],
+    index = config['bio.ngs.align.bwa']['index'],
+    application = 'bwa',
+    build = config['bio.ngs.settings']['db']['build'])
 
 for rule in config['bio.ngs.align.bwa']['rules']:
     include: os.path.join("bwa", rule + ".rule")

@@ -2,7 +2,10 @@
 import shutil
 
 def _find_merge_inputs(wildcards):
-    sources = generic_target_generator(tgt_re=config['bio.ngs.settings']['sampleorg'].run_id_re, target_suffix = config['bio.ngs.qc.picard']['merge_sam']['suffix'], **config['bio.ngs.settings'])
+    sources = generic_target_generator(
+        tgt_re=config['bio.ngs.settings']['sampleorg'].run_id_re,
+        target_suffix=config['bio.ngs.qc.picard']['merge_sam']['suffix'],
+        **config['bio.ngs.settings'])
     sources = [src for src in sources if os.path.dirname(src).startswith(wildcards.prefix)]
     return sources
 

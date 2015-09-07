@@ -2,8 +2,6 @@
 import os
 import glob
 import math
-from snakemakelib.config import update_config
-from snakemakelib.utils import utc_time
 
 include: '../settings.rules'
 

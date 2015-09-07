@@ -1,6 +1,9 @@
 # -*- snakemake -*-
-from snakemakelib.bio.ngs.rnaseq.tuxedo import TuxedoReadGroup
-include: '../settings.rules'
+try:
+    from snakemakelib.bio.ngs.rnaseq.tuxedo import TuxedoReadGroup
+except:
+    
+    include: '../settings.rules'
 include: '../tools/samtools.rules'
 
 DEFAULT_RULES = ['tuxedo_bowtie2_build',

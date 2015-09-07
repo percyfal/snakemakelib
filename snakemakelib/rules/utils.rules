@@ -3,8 +3,11 @@ import os
 import yaml
 import sys
 import io
-from snakemakelib.config import SNAKEMAKELIB_RULES_PATH
 from snakemake.io import Wildcards, Namedlist
+try:
+    from snakemakelib.config import SNAKEMAKELIB_RULES_PATH
+except:
+    SNAKEMAKELIB_RULES_PATH = os.path.dirname(__file__)
 
 include: './settings.rules'
 

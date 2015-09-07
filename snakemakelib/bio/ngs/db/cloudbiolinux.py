@@ -1,22 +1,9 @@
 # Copyright (C) 2015 by Per Unneberg
 import os
+import snakemakelib.bio.ngs.db
 from snakemakelib.log import LoggerManager
 
 smllogger = LoggerManager().getLogger(__name__)
-
-def chromosomes(ref):
-    """Return the chromosome names for a given reference.
-
-    Currently assumes the existence of a dictionary file.
-    """
-    dictfile = ref.replace(".fa", ".dict")
-    try:
-        with open(dictfile, "r") as fh:
-            chroms = [x.split()[1].replace("SN:", "") for x in fh.readlines() if x.startswith("@SQ")]
-    except:
-        raise Exception("failed to read dict file {dict}".format(dictfile))
-    return chroms
-
 
 def annotation(db_config, annotation="ref-transcripts.gtf", ignore_extra_ref=False, fmt="gtf"):
     """Return the annotation as a string"""
@@ -79,3 +66,8 @@ def index(ref, application, build=None, index="", index_name=""):
     else:
         return None
 
+## Set the functions
+smllogger.info("Setting snakemakelib.bio.ngs.db functions index, ref, and annotation to to cloudbiolinux variants")
+snakemakelib.bio.ngs.db.index = index
+snakemakelib.bio.ngs.db.ref = ref
+snakemakelib.bio.ngs.db.annotation = annotation

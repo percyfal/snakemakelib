@@ -7,7 +7,7 @@
 # three binaries chr2hash, mergeOligoCounts, oligoFindPLFFile are in
 # PATH.
 from os.path import splitext, join, dirname, abspath
-from snakemakelib.bio.ngs.db import chromosomes
+    
 include: "../settings.rules"
 
 config_default = {

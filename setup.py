@@ -41,8 +41,12 @@ def package_path(path, filters=()):
 
 rule_suffixes = ('.rules', '.rule')
 workflow_suffixes = ('.workflow')
+data_suffixes = ('.fastq.gz', 'fa', '.csv', '.vcf', '.interval_list',
+                 '.align_metrics', '.hs_metrics', '.insert_metrics',
+                 '.dup_metrics', '.gtf')
                     
 package_path(join(ROOT, 'snakemakelib', '_templates'))
+package_path(join(ROOT, 'snakemakelib', 'data'))
 package_path(join(ROOT, 'snakemakelib', 'rules'), rule_suffixes)
 package_path(join(ROOT, 'snakemakelib', 'workflows'), workflow_suffixes)
 scripts = []
@@ -123,6 +127,7 @@ setup(
         'snakemakelib.bio',
         'snakemakelib.bio.ngs',
         'snakemakelib.bio.ngs.align',
+        'snakemakelib.bio.ngs.db',
         'snakemakelib.bio.ngs.methylseq',
         'snakemakelib.bio.ngs.qc',
         'snakemakelib.bio.ngs.rnaseq',

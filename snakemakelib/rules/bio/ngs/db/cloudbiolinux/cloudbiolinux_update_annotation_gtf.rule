@@ -1,15 +1,19 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.log import LoggerManager
-from snakemakelib.bio.ngs.db import ref, annotation
-
-smllogger = LoggerManager().getLogger(__name__)
+try:
+    from snakemakelib.log import LoggerManager
+    smllogger = LoggerManager().getLogger(__name__)
+except:
+    import logging
+    smllogger = logging.getLogger(__name__)
 
 config_default = {
     'bio.ngs.db.cloudbiolinux' : { 
         'annotation' : {
-            'transcript_annot_gtf' : annotation(annotation="ref-transcripts-" + "-".join([os.path.splitext(os.path.basename(x))[0] for x in config['bio.ngs.settings']['db']['extra_ref']]) + ".gtf",\
-                                                db_config=config['bio.ngs.settings']['db'])
+            'transcript_annot_gtf' : annotation(
+                annotation="ref-transcripts-" + "-".join([
+                    os.path.splitext(os.path.basename(x))[0] for x in config['bio.ngs.settings']['db']['extra_ref']]) + ".gtf",\
+                db_config=config['bio.ngs.settings']['db'])
         },
     },
 }
@@ -44,7 +48,7 @@ rule cloudbiolinux_update_annotation_gtf:
                         'frame' : 0,
                         'gene_id' : seq.name,
                         'transcript_id' : seq.name,
-                        'feature' : 'source',
+                        'feature' : 'exon',
                         'start' : 1,
                         'end' : len(seq),
                     }

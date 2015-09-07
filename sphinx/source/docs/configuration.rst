@@ -1,13 +1,12 @@
 Configuration
 =============
 
-
 The default configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Each rule file consists of rules and an accompanying *default
-configuration*. The latter ensures that all rules have sensible defaults
-set, regardless whether the user decides to modify them or not. In
+For any application, the main rule file contains a *default
+configuration* that ensures that all rules have sensible defaults set,
+regardless whether the user decides to modify them or not. In
 principle, a rule file has two parts:
 
 1. default configuration
@@ -15,7 +14,7 @@ principle, a rule file has two parts:
 
 The basic configuration structure looks like
 
-::
+.. code-block:: text
 
     namespace
         section/parameter
@@ -32,17 +31,11 @@ As an example, consider the default configuration for
 
 .. code-block:: python
 
-   DEFAULT_RULES = ['bwa_index', 'bwa_mem']
-
    config_default = {
        'bio.ngs.align.bwa' : {
-	   'cmd' : "bwa",
-	   'ref' : config['bio.ngs.settings']['db']['ref'],
-	   'index' : "",
-	   'index_ext' : ['.amb', '.ann', '.bwt', '.pac', '.sa'],
-	   'threads' : config['bio.ngs.settings']['threads'],
-	   'options' : "-M",
-	   'rules' : DEFAULT_RULES,
+           'mem' : {
+               'options': "",
+           },
        },
    }
 
@@ -63,25 +56,21 @@ User-defined configuration
 
 A user can modify the configuration by defining a :class:`dict` object
 and passing it as an argument to
-:meth:`~snakemakelib.config.update_snakemake_config`. This is done in the
+:meth:`~snakemakelib.config.update_config`. This is done in the
 Snakefile that uses ``include`` statements to include rules files, and
 must be done **before** any ``include`` statement. The reason is that
 when a rules file is included, the default configuration values are
-compared to the existing ``config``. If the user has defined
-custom configurations, these will take precedence over the default
-values. If no custom configuration exists, the default values are
-applied.
+compared to the existing ``config``. If the user has defined custom
+configurations, these will take precedence over the default values. If
+no custom configuration exists, the default values are applied.
 
-As an example, imagine we want to change the options to ``-k 10 -w 50``
-for ``bwa mem`` in the example Snakefile above. The modified Snakefile
-would then look as follows:
+As an example, imagine we want to change the number of threads from 8
+to 1 for ``bwa mem`` in the example Snakefile above. The modified
+Snakefile would then look as follows:
 
 .. code-block:: python
 
     #-*- snakemake -*-
-    # Snakefile example
-    # Add path to snakemakelib, unless installed in a virtualenv or similar
-    sys.path.append('/path/to/snakemakelib')
 
     # Import config-related stuff
     from snakemakelib.config import update_config

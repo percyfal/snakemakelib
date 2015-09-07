@@ -67,6 +67,7 @@ Contents
 
    docs/quickstart
    docs/installation
+   docs/rules
    docs/configuration
    docs/sampleorganization
    docs/databases

@@ -1,4 +1,4 @@
 halo
 -----
 
-To be reimplemented from biomake.
+.. note:: WIP

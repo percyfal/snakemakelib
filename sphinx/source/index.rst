@@ -23,19 +23,41 @@ needs I've had and do by no means have a comprehensive coverage.
 Nevertheless, many commands are so commonly used that the recipes may
 be of general interest.
 
-snakemakelib is basically a port of the rules in `biomake
-<https://github.com/percyfal/biomake>`__ to `Snakemake
-<https://bitbucket.org/johanneskoester/snakemake/wiki/Home>`__. The
-design principles are similar in that my aim is to compile a library
-of rules that can be reused and configured via a simple configuration
-interface.
+.. warning:: Use the rules at your own risk, and make sure you
+             understand them before running any commands. I take no
+             responsibility if you'd happen to run a ``snakemake
+             clean`` in an inappropriate location, removing precious
+             data in the process.
 
 
-.. warning:: Use the rules at your own risk, and make sure you understand
-             them before running any commands. I take no responsibility
-             if you'd happen to run a ``snakemake clean`` in an
-             inappropriate location, removing precious data in the
-             process.
+Features
+^^^^^^^^
+
+1. **Rule library**. As much as is possible, every rule lives in an
+   individual file. This makes it easy to fine-tune what rules to
+   include. Moreover, most rules can be included in snakefiles without
+   even using functionality in snakemakelib. At the very least, if
+   rules need to be tweaked, the rule library serves as a
+   cut-and-paste resource of template rules. Rules are located in the
+   `rules subfolder
+   <https://github.com/percyfal/snakemakelib/tree/master/snakemakelib/rules>`__.
+
+2. **Predefined workflows**. The workflows do require a full
+   installation of snakemakelib as they depend on functionality
+   therein. See :doc:`docs/workflows` for more information.
+
+3. **Simple regexp-based sample organization setup**. Input files and
+   samples can be organized in various ways. snakemakelib provides
+   regexps for some common sample organization setups, but it is easy
+   to add custom configurations. See :doc:`docs/sampleorganization`
+   for more information.
+
+4. **Automated generation of alignment indices and annotation file
+   names**. Provided a reference is given, snakemakelib offers the
+   possibility to automatically generate names of annotation and index
+   file names, building the index files if necessary. See
+   :doc:`docs/databases` for more information.
+
 
 Contents
 ---------

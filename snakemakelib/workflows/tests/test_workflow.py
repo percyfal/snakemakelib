@@ -22,7 +22,6 @@ import os
 import sys
 import re
 from snakemakelib.config import update_config
-from snakemakelib.utils import rreplace
 from snakemakelib.bio.ngs.targets import generic_target_generator
 
 workdir: '{workdir}'

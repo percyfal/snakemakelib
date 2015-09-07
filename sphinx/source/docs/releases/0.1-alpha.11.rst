@@ -1,2 +1,7 @@
 0.1-alpha.11 (Sep 1 2015)
 =========================
+
+- updated documentation
+- started working in removing magic configurations (issue #35)
+- started working on making rules independent of snakemakelib (issue #7)
+- moved data to snakemakelib namespace

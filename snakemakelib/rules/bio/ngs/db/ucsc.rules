@@ -18,16 +18,12 @@ config_default = {
 update_config(config_default, config)
 config = config_default
 
-try:
-    from snakemakelib.bio.ngs.db import index
-    config['bio.ngs.db.ucsc']['index'] = index(
-        ref = config['bio.ngs.db.ucsc']['ref'],
-        index = config['bio.ngs.db.ucsc']['index'],
-        build = config['bio.ngs.settings']['db']['build'],
-        application = "ucsc",
-    )
-except:
-    pass
+config['bio.ngs.db.ucsc']['index'] = index(
+    ref = config['bio.ngs.db.ucsc']['ref'],
+    index = config['bio.ngs.db.ucsc']['index'],
+    build = config['bio.ngs.settings']['db']['build'],
+    application = "ucsc",
+)
 
 for rule in config['bio.ngs.db.ucsc']['rules']:
     include: os.path.join("ucsc", rule + ".rule")

@@ -13,8 +13,10 @@
 #
 from os.path import splitext, join, dirname
 from snakemake.utils import R
-from snakemakelib.bio.ngs.db import chromosomes, index
-from snakemakelib.bio.ngs.utils import dict_to_Rdict
+try:
+    from snakemakelib.bio.ngs.utils import dict_to_Rdict
+except:
+    dict_to_Rdict = lambda d, as_string=True: d
 
 include: "../settings.rules"
 include: "peakseq.rules"

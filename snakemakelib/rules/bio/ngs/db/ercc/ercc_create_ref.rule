@@ -3,7 +3,6 @@ import re
 import csv
 
 try:
-    from snakemakelib.bio.ngs.db import ref
     from snakemakelib.log import LoggerManager
     smllogger = LoggerManager().getLogger('bio/ngs/db/ercc.rules')
 except:

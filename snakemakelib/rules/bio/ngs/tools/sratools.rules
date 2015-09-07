@@ -2,10 +2,12 @@
 import os
 import re
 import csv
-from snakemakelib.utils import utc_time
-from snakemakelib.log import LoggerManager
-
-smllogger = LoggerManager().getLogger('bio/ngs/tools/sratools.rules')
+try:
+    from snakemakelib.log import LoggerManager
+    smllogger = LoggerManager().getLogger('bio/ngs/tools/sratools.rules')
+except:
+    import logging
+    smllogger.getLogger('bio.ngs.tools.sratools')
 
 include: '../settings.rules'
 include: '../../../settings.rules'

@@ -21,15 +21,11 @@ config = config_default
 
 python2 = config['comp.settings']['python2']['activate_cmd']
 
-try:
-    from snakemakelib.bio.ngs.db import annotation
-    # Update annotation
-    config['bio.ngs.rnaseq.rpkmforgenes']['annotation'] = \
-        annotation(annotation=config['bio.ngs.rnaseq.rpkmforgenes']['annotation'],
-                   db_config=config['bio.ngs.settings']['db'],
-                   fmt=config['bio.ngs.rnaseq.rpkmforgenes']['annot_format'])
-except:
-    pass
+# Update annotation
+config['bio.ngs.rnaseq.rpkmforgenes']['annotation'] = annotation(
+    annotation=config['bio.ngs.rnaseq.rpkmforgenes']['annotation'],
+    db_config=config['bio.ngs.settings']['db'],
+    fmt=config['bio.ngs.rnaseq.rpkmforgenes']['annot_format'])
 
 if config['bio.ngs.rnaseq.rpkmforgenes']['annot_format'] != "gtf":
     include: '../db/ucsc.rules'

@@ -187,8 +187,8 @@ rule scrnaseq_pca:
     run:
         import pandas as pd
         from sklearn.decomposition import PCA
-        #df = pd.read_csv(input.csv, index_col=0)
-        #pca = PCA(n_components='mle')
+        df = pd.read_csv(input.csv, index_col="gene_id")
+        pca = PCA(n_components='mle')
         #pca.fit(df.head())
         #print (df.head())
 

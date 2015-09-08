@@ -1,0 +1,16 @@
+# -*- snakemake -*-
+# Currently just write down explicit dependencies
+rule rsem_pca:
+    input: csv = join("{path}", "{prefix}.{type}.csv"), samples="samples.txt"
+    output: pca = join("{path}", "{prefix}.{type}.pca")
+    run:
+        import pandas as pd
+        df = pd.read_csv(input.csv)
+        samples = pd.read_csv(input.samples, header=None)
+        df["sample"] = [x for x in samples[0] for _ in range(int(df.shape[0]/len(samples)))]
+        X = df.pivot(columns="sample", values="TPM", index="gene_id")
+        
+        from sklearn.decomposition import PCA
+        pca = PCA(n_components='mle')
+        pca.fit(X)
+

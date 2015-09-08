@@ -72,5 +72,5 @@ Contents
    docs/sampleorganization
    docs/databases
    docs/troubleshooting
-
+   docs/release_notes
 

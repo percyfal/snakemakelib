@@ -47,7 +47,7 @@ def find_scrnaseq_merge_inputs(wildcards):
 config_default = {
     'settings' : {
         'temp_rules' : [],
-        'temp_rules_default' : ['sratools_prefetch', 'star_align', 'bamtools_filter'],
+        'temp_rules_default' : ['sratools_prefetch', 'star_align', 'bamtools_filter_unique'],
     },
     'workflows.bio.scrnaseq' : {
         'qc' : {
@@ -90,7 +90,7 @@ include: join(SNAKEMAKELIB_RULES_PATH, "bio/ngs/rnaseq", "rpkmforgenes.rules")
 include: join(SNAKEMAKELIB_RULES_PATH, "bio/ngs/rnaseq", "rsem.rules")
 
 if aligner in ["bowtie", "bowtie2"]:
-    ruleorder: bamtools_filter > picard_merge_sam > picard_sort_bam > bowtie_align
+    ruleorder: bamtools_filter_unique > picard_merge_sam > picard_sort_bam > bowtie_align
 
 if config['workflows.bio.scrnaseq']['db']['do_multo']:
     include: join(SNAKEMAKELIB_RULES_PATH, "bio/ngs/tools", "multo.rules")
@@ -126,7 +126,7 @@ if 'rpkmforgenes' in config['workflows.bio.scrnaseq']['quantification']:
         tgt_re = config['bio.ngs.settings']['sampleorg'].sample_re,
         target_suffix = '.merge.rpkmforgenes',
         src_re = config['bio.ngs.settings']['sampleorg'].raw_run_re,
-        **config['bio.ngs.settings']) 
+        **config['bio.ngs.settings'])
 
 RSEM_TARGETS = []
 if 'rsem' in config['workflows.bio.scrnaseq']['quantification']:
@@ -137,7 +137,7 @@ if 'rsem' in config['workflows.bio.scrnaseq']['quantification']:
         **config['bio.ngs.settings']) + ['report/rsem.merge.tx.genes.csv', 'report/rsem.merge.tx.isoforms.csv']
 
     
-REPORT_TARGETS = ['report/star.Aligned.out.csv', 'report/scrnaseq_summary.html'] # 'report/star.Aligned.out.mapping_summary.html']
+REPORT_TARGETS = ['report/star.Aligned.out.csv', 'report/scrnaseq_summary.html']
 
 # Additional merge rule for transcript alignment files
 rule scrnaseq_picard_merge_sam_transcript:

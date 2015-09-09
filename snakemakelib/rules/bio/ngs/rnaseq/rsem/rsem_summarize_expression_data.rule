@@ -3,7 +3,6 @@ import pandas as pd
 from snakemakelib.bio.ngs.targets import generic_target_generator
 
 def _rsem_find_result_files_fn(wildcards):
-    config['bio.ngs.settings'] = config['bio.ngs.settings']
     sources = generic_target_generator(
         tgt_re = config['bio.ngs.settings']['sampleorg'].sample_re,
         src_re=config['bio.ngs.settings']['sampleorg'].run_id_re,

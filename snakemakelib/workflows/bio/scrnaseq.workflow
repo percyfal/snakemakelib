@@ -1,5 +1,7 @@
 # -*- snakemake -*-
-from os.path import join, dirname, relpath
+import shutil
+import os
+from os.path import join, dirname, relpath, exists
 from snakemake.report import data_uri
 from bokehutils.publish import static_html
 from snakemake.workflow import workflow
@@ -155,7 +157,9 @@ rule scrnaseq_picard_merge_sam_transcript:
           inputstr = " ".join(["INPUT={}".format(x) for x in input])
           shell("{cmd} {ips} OUTPUT={out} {opt}".format(cmd=params.cmd, ips=inputstr, out=output.merge, opt=params.options))
       else:
-          os.symlink(relpath(input[0], wildcards.path), output.merge)
+          if exists(output.merge):
+              os.unlink(output.merge)
+          shutil.copy(input[0], output.merge)
 
 # QC rules
 QC_INPUT = []

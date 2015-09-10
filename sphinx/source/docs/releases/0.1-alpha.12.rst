@@ -1,4 +1,5 @@
 0.1-alpha.12 (Sep 8 2015)
 =========================
 
-- hotfix: fix issue #39
+- hotfix: fix `issue 39
+  <https://github.com/percyfal/snakemakelib/issues/39>`_

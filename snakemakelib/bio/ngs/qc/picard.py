@@ -5,8 +5,10 @@ import pandas as pd
 import numpy as np
 from bokeh.plotting import figure, gridplot
 from bokehutils.geom import dotplot, lines
+from bokehutils.mgeom import mlines, mdotplot
 from bokehutils.facet import facet_grid
 from bokehutils.axes import xaxis, yaxis
+from bokehutils.color import colorbrewer
 from snakemake.report import data_uri
 from snakemakelib.log import LoggerManager
 
@@ -14,7 +16,6 @@ smllogger = LoggerManager().getLogger(__name__)
 
 # Picard has percentage columns that actually report fractions...
 pct_re = re.compile(r'(PERCENT|PCT)')
-
 
 def collect_picard_qc_results(inputfiles, samples):
     """Collect picard qc results"""
@@ -103,7 +104,7 @@ class HistMetrics(Metrics):
         """
         kwargs.update(self.kw)
         f = figure(**kwargs['figure'])
-        lines(f, df=self, **kwargs['renderer'])
+        mlines(f, df=self, **kwargs['renderer'])
         gp = facet_grid(f, df=self, ncol=self.ncol,
                         **kwargs['facet'])
         plist = [x for sublist in gp.children for x in sublist]
@@ -121,6 +122,7 @@ class HistMetrics(Metrics):
         f = figure(**kwargs['figure'])
         lines(f, df=self, **kwargs['renderer'])
         return [f]
+
 
 
 class AlignMetrics(Metrics):
@@ -182,17 +184,20 @@ class InsertHist(HistMetrics):
                 'width': 300, 'height': 300,
                 'share_x_range': True,
                 'x': 'insert_size',
-                'y': 'All_Reads.fr_count',
+                'y':  [x for x in list(self.columns) if x.startswith("All_Reads")],
                 'title_text_font_size': "12pt",
             },
             'renderer': {
                 'x': 'insert_size',
-                'y': 'All_Reads.fr_count',
+                'y': [x for x in list(self.columns) if x.startswith("All_Reads")],
+                'legend' : [x for x in list(self.columns) if x.startswith("All_Reads")],
+                'line_width' : 2,
             },
             'xaxis': {'axis_label': 'Insert size',
                       'axis_label_text_font_size': '10pt'},
             'yaxis': {'axis_label': 'Count',
                       'axis_label_text_font_size': '10pt'}}
+        self.kw['renderer']['color'] =  colorbrewer(datalen = len(self.kw['renderer']['y']), palette="RdYlBu")
         self.plot_hist = self.facet_grid_hist
 
 

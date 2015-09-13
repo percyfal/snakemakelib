@@ -61,7 +61,7 @@ def make_cutadapt_summary_plot(inputfile):
     df_summary = pd.read_csv(inputfile)
     TOOLS = "pan,wheel_zoom,box_zoom,box_select,reset,save"
     fig = figure(tools=TOOLS, width=400, height=400,
-                 x_range=list(set(df_summary["sample"])),
+                 x_range=sorted(list(set(df_summary["sample"]))),
                  y_range=[0, 105], title="Cutadapt metrics",
                  title_text_font_size='12pt')
     mdotplot(fig, x="sample", y=["read1_pct", "read2_pct"],

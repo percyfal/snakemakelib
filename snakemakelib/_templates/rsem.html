@@ -1,0 +1,15 @@
+<!-- -*- jinja2 -*- -->
+{% if rsem is defined %}
+  <h3>rsem summary</h3>
+  
+  <figure>
+    {{ rsem['fig']['div']|indent(8) }}
+    <figcaption>rsem summary plots. The plots are based on raw data in      <ol>
+	{% for uri, file in zip(rsem['uri'], rsem['file']) %}
+	  <li><a href="{{ uri }}" download="{{ file }}" draggable="true">{{ file }}</a></li>
+	{% endfor %}
+      </ol>
+    </figcaption>
+  </figure>
+
+{% endif %}

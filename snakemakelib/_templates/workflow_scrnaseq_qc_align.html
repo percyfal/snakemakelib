@@ -1,7 +1,16 @@
 <!-- -*- jinja2 -*- -->
 {% if align is defined %}
   <h3>Alignment summary</h3>
-    
+
+  Alignment summary statistics. Presented data are generated from raw
+  data in
+  <ol>
+    {% for uri, file in zip(align['uri'], align['file']) %}
+      <li><a href="{{ uri }}" download="{{ file }}" draggable="true">{{ file }}</a></li>
+    {% endfor %}
+  </ol>
+
+  
   <figure>
     {{ align['fig']['div']|indent(8) }}
     <figcaption>Alignment summary plots. 
@@ -10,7 +19,7 @@
   {% if align['table'] is not none %}
     <figure>
       {{ align['table']['div']|indent(8) }}
-      <figcaption>Table of all alignment statistics. 
+      <figcaption>Table of all alignment statistics.
       </figcaption>
     </figure>
   {% endif %}

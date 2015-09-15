@@ -2,6 +2,7 @@
 import shutil
 import os
 from os.path import join, dirname, relpath, exists
+import pickle
 from snakemake.report import data_uri
 from bokehutils.publish import static_html
 from snakemake.workflow import workflow
@@ -76,6 +77,10 @@ config_default = {
     'bio.ngs.rnaseq.rpkmforgenes' : {
         'rules' : ['rpkmforgenes_from_bam', 'rpkmforgenes_summarize_expression_data'],
     },
+    'bio.ngs.rnaseq.rsem' : {
+        'rules' : ['rsem_calculate_expression', 'rsem_prepare_reference', 'rsem_summarize_expression_data'],
+    },
+
 }
 
 update_config(config_default, config)
@@ -182,19 +187,30 @@ rule scrnaseq_qc:
     output: html = join("{path}", "scrnaseq_summary.html")
     run:
         d = {'align': scrnaseq_alignment_qc_plots(input.rseqc_read_distribution,
-                                        input.rseqc_gene_coverage,
-                                        input.starcsv)}
+                                                  input.rseqc_gene_coverage,
+                                                  input.starcsv)}
+        d['align'].update({
+             'uri': [data_uri(input.rseqc_read_distribution),
+                     data_uri(input.rseqc_gene_coverage),
+                     data_uri(input.starcsv)],
+             'file': [input.rseqc_read_distribution,
+                     input.rseqc_gene_coverage,
+                     input.starcsv],
+        })
         d.update({'rulegraph' : {'uri' : data_uri(input.rulegraph), 'file' : input.rulegraph, 'fig' : input.rulegraph, 'target' : 'scrnaseq_all'}})
         if input.rsemgenes:
             #d.update({'rsem' : {'file': [input.rsemgenes, input.rsemisoforms]},
-            d.update({'rsem' : {'file': input.rsemgenespca}})
-            d['rsem'].update(scrnaseq_pca_plots(input.rsemgenespca, metadata=config['workflows.bio.scrnaseq']['metadata'], pcaloadings=input.rsemgenespca.replace(".pca", ".pcaobj")))
+            d.update({'rsem' : {'file': [input.rsemgenespca], 'uri': [data_uri(input.rsemgenespca)]}})
+            d['rsem'].update(scrnaseq_pca_plots(input.rsemgenespca,
+                                                metadata=config['workflows.bio.scrnaseq']['metadata'],
+                                                pcaobjfile=input.rsemgenespca.replace(".pca.csv",
+                                                                                      ".pcaobj.pickle")))
         if input.rpkmforgenespca:
-            d.update({'rpkmforgenes' : {'file': input.rpkmforgenespca}})
+            d.update({'rpkmforgenes' : {'file': [input.rpkmforgenespca], 'uri': [data_uri(input.rpkmforgenespca)]}})
             d['rpkmforgenes'].update(
                 scrnaseq_pca_plots(input.rpkmforgenespca,
                                    metadata=config['workflows.bio.scrnaseq']['metadata'],
-                                   pcaloadings=input.rpkmforgenespca.replace(".pca", ".pcaobj")))
+                                   pcaobjfile=input.rpkmforgenespca.replace(".pca.csv", ".pcaobj.pickle")))
         d.update({'version' : config['_version'], 'config' : {'uri' : data_uri(input.globalconf), 'file' : input.globalconf}})
         tp = SmlTemplateEnv.get_template('workflow_scrnaseq_qc.html')
         with open(output.html, "w") as fh:
@@ -203,7 +219,7 @@ rule scrnaseq_qc:
 rule scrnaseq_pca:
     input: expr = "{prefix}.csv",
            annotation = config['bio.ngs.settings']['annotation']['transcript_annot_gtf'] if config['bio.ngs.settings']['annotation']['transcript_annot_gtf'] else []
-    output: pca = "{prefix}.pca.csv", pcaobj = "{prefix}.pcaobj.csv"
+    output: pca = "{prefix}.pca.csv", pcaobj = "{prefix}.pcaobj.pickle"
     run:
         expr_long = read_gene_expression(input.expr,
                                          annotation=input.annotation)
@@ -217,11 +233,9 @@ rule scrnaseq_pca:
             pcares = pcares.join(detected_genes)
         with open(output.pca, "w") as fh:
             pcares.to_csv(fh)
-        with open(output.pcaobj, "w") as fh:
-            pd.DataFrame(pcaobj.explained_variance_ratio_).to_csv(fh, header=None)
+        with open(output.pcaobj, "wb") as fh:
+            pickle.dump(pcaobj, fh)
         
-        
-
 # All rules
 rule scrnaseq_all:
     """Run scRNAseq pipeline"""

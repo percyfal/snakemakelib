@@ -1,5 +1,6 @@
 # Copyright (C) 2015 by Per Unneberg
 import re
+import pickle
 import pandas as pd
 import numpy as np
 from sklearn.decomposition import PCA
@@ -233,14 +234,14 @@ def number_of_detected_genes(expr, cutoff=1.0, **kwargs):
         detected_genes = None
     return detected_genes
 
-def scrnaseq_pca_plots(pca_results_file=None, metadata=None, pcacomp=(1,2), pcaloadings=None):
+def scrnaseq_pca_plots(pca_results_file=None, metadata=None, pcacomp=(1,2), pcaobjfile=None):
     """Make PCA QC plots for scrnaseq workflow
 
     Args:
       pca_results_file (str): pca results file
       metadata (str): metadata file name
       pcacomp (int): tuple of ints corresponding to components to draw
-      pcaloadings (str): file name containing loadings information
+      pcaobjfile (str): file name containing pickled pca object
 
     Returns: 
       dict: dictionary with keys 'fig' pointing to a (:py:class:`~bokeh.models.GridPlot`) Bokeh GridPlot object and key 'table' pointing to a (:py:class:`~bokeh.widgets.DataTable`) DataTable
@@ -248,8 +249,9 @@ def scrnaseq_pca_plots(pca_results_file=None, metadata=None, pcacomp=(1,2), pcal
     """
     if not metadata is None:
         md = pd.read_csv(metadata, index_col=0)
-    if not pcaloadings is None:
-        loadings = pd.read_csv(pcaloadings, header=None)
+    if not pcaobjfile is None:
+        with open(pcaobjfile, 'rb') as fh:
+            pcaobj = pickle.load(fh)
     df_pca = pd.read_csv(pca_results_file, index_col="sample")
     df_pca['color'] = ['red'] * df_pca.shape[0]
     df_pca['x'] = df_pca['0']
@@ -344,10 +346,10 @@ def scrnaseq_pca_plots(pca_results_file=None, metadata=None, pcacomp=(1,2), pcal
 
     points(p1, 'x', 'y', source=source, color='color', size=20,
            alpha=.5)
-    kwxaxis = {'axis_label': "Component {} ({:.2f}%)".format(pcacomp[0], 100.0 * loadings[1][pcacomp[0] - 1]),
+    kwxaxis = {'axis_label': "Component {} ({:.2f}%)".format(pcacomp[0], 100.0 * pcaobj.explained_variance_ratio_[pcacomp[0] - 1]),
                'axis_label_text_font_size': '10pt',
                'major_label_orientation': np.pi/3}
-    kwyaxis = {'axis_label': "Component {} ({:.2f}%)".format(pcacomp[1], 100.0 * loadings[1][pcacomp[1] - 1]),
+    kwyaxis = {'axis_label': "Component {} ({:.2f}%)".format(pcacomp[1], 100.0 * pcaobj.explained_variance_ratio_[pcacomp[1] - 1]),
                'axis_label_text_font_size': '10pt',
                'major_label_orientation': np.pi/3}
     xaxis(p1, **kwxaxis)
@@ -369,6 +371,4 @@ def scrnaseq_pca_plots(pca_results_file=None, metadata=None, pcacomp=(1,2), pcal
     tooltips(p2, HoverTool, [('sample', '@sample'),
                              ('# genes (FPKM)', '@FPKM')])
     
-    
-
     return {'fig':vform(rbg, component_x, component_y, gridplot([[p1, p2]]))}

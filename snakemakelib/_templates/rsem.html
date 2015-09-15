@@ -2,9 +2,16 @@
 {% if rsem is defined %}
   <h3>rsem summary</h3>
   
+  Gene expression quantified by rsem.
+  
   <figure>
     {{ rsem['fig']['div']|indent(8) }}
-    <figcaption>rsem summary plots. The plots are based on raw data in      <ol>
+    <figcaption>rsem summary plots. Only the two first principal
+      components are shown; see the attached data file for
+      higher-order components. If present, click on any radio button
+      to color the pca plot. The number of detected genes are based on
+      FPKM values > 1.0. The plots are generated from raw data in
+      <ol>
 	{% for uri, file in zip(rsem['uri'], rsem['file']) %}
 	  <li><a href="{{ uri }}" download="{{ file }}" draggable="true">{{ file }}</a></li>
 	{% endfor %}

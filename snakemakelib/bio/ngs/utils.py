@@ -2,6 +2,9 @@
 import re
 import os
 from snakemakelib.bio.ngs.regexp import RegexpDict
+from snakemakelib.log import LoggerManager
+
+smllogger = LoggerManager().getLogger(__name__)
 
 
 def find_files(regexp, path=os.curdir, search=False, limit=None):
@@ -25,6 +28,10 @@ def find_files(regexp, path=os.curdir, search=False, limit=None):
         if not regexp:
             return []
         r = re.compile(regexp)
+    if not limit is None and any(k not in r.groupindex.keys() for k in limit.keys()):
+        smllogger.warning("""Some limit keys '{}' not in regexp
+        groupindex '{}'; disregarding limit option for these
+        keys""".format(list(limit.keys()), list(r.groupindex.keys())))
     re_fn = r.search if search else r.match
     flist = []
     for root, dirs, files in os.walk(path):
@@ -33,7 +40,7 @@ def find_files(regexp, path=os.curdir, search=False, limit=None):
             if m is None:
                 continue
             if limit:
-                if any([m.group(k) in limit[k] for k in limit.keys()]):
+                if any([m.group(k) in limit[k] for k in limit.keys() if k in m.groupdict().keys()]):
                     flist += [os.path.join(root, x)]
             else:
                 flist += [os.path.join(root, x)]

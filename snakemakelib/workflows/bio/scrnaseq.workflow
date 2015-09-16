@@ -3,11 +3,12 @@ import shutil
 import os
 from os.path import join, dirname, relpath, exists
 from snakemake.report import data_uri
+from snakemake.utils import update_config
 from bokehutils.publish import static_html
 from snakemake.workflow import workflow
 from snakemakelib.io import set_output
 from snakemakelib.utils import SmlTemplateEnv
-from snakemakelib.config import update_config, SNAKEMAKELIB_RULES_PATH
+from snakemakelib.config import SNAKEMAKELIB_RULES_PATH
 from snakemakelib.bio.ngs.targets import generic_target_generator
 from snakemakelib.workflow.scrnaseq import scrnaseq_qc_plots
 

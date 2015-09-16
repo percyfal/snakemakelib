@@ -1,7 +1,4 @@
 # -*- snakemake -*- 
-import os
-from snakemakelib.config import update_config
-
 include: "settings.rules"
 
 rule comp_utils_link:

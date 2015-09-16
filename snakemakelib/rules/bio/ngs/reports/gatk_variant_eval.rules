@@ -2,7 +2,7 @@
 import os
 from mako.template import Template
 from snakemake.utils import report, R
-from snakemakelib.config import update_config, SNAKEMAKELIB_RULES_PATH
+from snakemakelib.config import SNAKEMAKELIB_RULES_PATH
 from snakemakelib.report.gatk import gatk_eval_report_plots_R
 
 include: '../settings.rules'

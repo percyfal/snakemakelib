@@ -3,7 +3,7 @@
 import unittest
 import logging
 from nose.tools import raises
-from snakemakelib.config import update_config
+from snakemake.utils import update_config
 import pytest
 
 logging.basicConfig(level=logging.DEBUG)

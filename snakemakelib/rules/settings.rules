@@ -9,8 +9,7 @@ try:
 except:
     get_versions = lambda: {'full-revisionid': 'unknown', 'version': 'unknown', 'dirty': "unknown", 'error': None}
     
-# FIXME: eventually this will be imported from snakemake    
-from snakemakelib.config import update_config
+from snakemake.utils import update_config
 
 
 TEMP_FILETYPES_DEFAULT = ['.bam', '.gz', '.zip', '.bigWig', '.wig', '.bed', '.sra',

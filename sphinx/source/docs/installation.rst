@@ -4,8 +4,8 @@ Installation
 Requirements
 ------------
 
--  Snakemake version >= 3.3 that supports the global ``config``
-   variable.
+-  Snakemake version >= 3.4.2 that supports the global ``config``
+   variable and has the ``update_config`` function.
 -  Python version >= 3.3. This may require setting up a virtual
    environment for python3+.
 

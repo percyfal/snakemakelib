@@ -1,7 +1,8 @@
 # -*- snakemake -*-
 import os
 from os.path import join, dirname, isdir, basename
-from snakemakelib.config import update_config, SNAKEMAKELIB_RULES_PATH
+from snakemake.utils import update_config
+from snakemakelib.config import SNAKEMAKELIB_RULES_PATH
 from snakemakelib.utils import rreplace
 from snakemakelib.bio.ngs.methylseq.bismark import report_label, align_suffix
 from snakemakelib.bio.ngs.targets import generic_target_generator

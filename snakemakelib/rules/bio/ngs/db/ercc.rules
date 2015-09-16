@@ -1,6 +1,5 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.config import update_config
 
 include: "../settings.rules"
 

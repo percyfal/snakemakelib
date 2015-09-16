@@ -344,19 +344,25 @@ def scrnaseq_pca_plots(pca_results_file=None, metadata=None, pcacomp=(1,2), pcao
     p1 = figure(title="Principal component analysis",
                 tools=TOOLS, **kwfig)
 
-    points(p1, 'x', 'y', source=source, color='color', size=20,
-           alpha=.5)
-    kwxaxis = {'axis_label': "Component {} ({:.2f}%)".format(pcacomp[0], 100.0 * pcaobj.explained_variance_ratio_[pcacomp[0] - 1]),
+    points(p1, 'x', 'y', source=source, color='color', size=10,
+           alpha=.7)
+    kwxaxis = {'axis_label': "Component {}
+    ({:.2f}%)".format(pcacomp[0], 100.0 *
+                      pcaobj.explained_variance_ratio_[pcacomp[0] - 1]),
                'axis_label_text_font_size': '10pt',
                'major_label_orientation': np.pi/3}
-    kwyaxis = {'axis_label': "Component {} ({:.2f}%)".format(pcacomp[1], 100.0 * pcaobj.explained_variance_ratio_[pcacomp[1] - 1]),
+    kwyaxis = {'axis_label': "Component {}
+    ({:.2f}%)".format(pcacomp[1], 100.0 *
+                      pcaobj.explained_variance_ratio_[pcacomp[1] - 1]),
                'axis_label_text_font_size': '10pt',
                'major_label_orientation': np.pi/3}
     xaxis(p1, **kwxaxis)
     yaxis(p1, **kwyaxis)
-    tooltiplist = [("sample", "@sample")] if "sample" in source.column_names else []
+    tooltiplist = [("sample", "@sample")] if "sample" in
+    source.column_names else []
     if not md is None:
-        tooltiplist = tooltiplist + [(str(x), "@{}".format(x)) for x in md.columns]
+        tooltiplist = tooltiplist + [(str(x), "@{}".format(x)) for x
+                                     in md.columns]
     tooltips(p1, HoverTool, tooltiplist)
 
     # Detected genes, FPKM and TPM

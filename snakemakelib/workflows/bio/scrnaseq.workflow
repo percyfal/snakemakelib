@@ -221,11 +221,13 @@ rule scrnaseq_pca:
            annotation = config['bio.ngs.settings']['annotation']['transcript_annot_gtf'] if config['bio.ngs.settings']['annotation']['transcript_annot_gtf'] else []
     output: pca = "{prefix}.pca.csv", pcaobj = "{prefix}.pcaobj.pickle"
     run:
+        import math
         expr_long = read_gene_expression(input.expr,
                                          annotation=input.annotation)
+        expr_long["TPM"] = [math.log2(x+1.0) for x in expr_long["TPM"]]
         detected_genes = number_of_detected_genes(expr_long)
         # FIXME: configurations?
-        expr = expr_long.pivot_table(columns="gene_id", values="FPKM",
+        expr = expr_long.pivot_table(columns="gene_id", values="TPM",
                                      index="sample")
         pcaobj = pca(expr)
         pcares = pca_results(pcaobj, expr, metadata=config['workflows.bio.scrnaseq']['metadata'])

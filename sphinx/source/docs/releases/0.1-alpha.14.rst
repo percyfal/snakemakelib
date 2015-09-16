@@ -1,0 +1,7 @@
+0.1-alpha.14 (Sep 16 2015)
+==========================
+
+- update dependency and compatibility with snakemake 3.4.2
+- update_config, load_sml_config have now been deprecated
+- find_files now skips limits if key not in regexp groupdict
+

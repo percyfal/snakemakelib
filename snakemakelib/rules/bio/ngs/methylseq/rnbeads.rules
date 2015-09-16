@@ -1,7 +1,6 @@
 # -*- snakemake -*-
 import os
 from snakemake.utils import R
-from snakemakelib.config import update_config
 from snakemakelib.bio.ngs.utils import dict_to_R
 
 include: '../../../utils.rules'

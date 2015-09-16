@@ -1,6 +1,6 @@
 # -*- snakemake -*-
 import os
-from snakemakelib.config import update_config
+from snakemake.utils import update_config
 
 DEFAULT_RULES = []
 

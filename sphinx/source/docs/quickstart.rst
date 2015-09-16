@@ -149,7 +149,7 @@ variant calling pipeline like so:
 
 .. code:: shell
 
-   py.test -m slow
+   py.test -vsm slow
    
 
 .. rubric:: Footnotes

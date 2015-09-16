@@ -4,7 +4,7 @@ import re
 from collections import namedtuple
 
 try:
-    from snakemakelib.config import update_config, SNAKEMAKELIB_PATH, SNAKEMAKELIB_RULES_PATH
+    from snakemakelib.config import SNAKEMAKELIB_PATH, SNAKEMAKELIB_RULES_PATH
     from snakemakelib.bio.ngs.regexp import RunRegexp, SampleRegexp
     from snakemakelib.bio.ngs.db import ref, index, annotation, chromosomes
     from snakemakelib.utils import utc_time

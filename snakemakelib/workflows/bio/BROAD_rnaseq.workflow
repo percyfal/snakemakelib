@@ -1,6 +1,7 @@
 # -*- snakemake -*-
 from os.path import join
-from snakemakelib.config import update_config, SNAKEMAKELIB_RULES_PATH
+from snakemake.utils import update_config
+from snakemakelib.config import SNAKEMAKELIB_RULES_PATH
 from snakemakelib.bio.ngs.targets import generic_target_generator
 from snakemakelib.bio.ngs.utils import ReadGroup
 

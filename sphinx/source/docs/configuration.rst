@@ -56,7 +56,7 @@ User-defined configuration
 
 A user can modify the configuration by defining a :class:`dict` object
 and passing it as an argument to
-:meth:`~snakemakelib.config.update_config`. This is done in the
+:meth:`~snakemake.utils.update_config`. This is done in the
 Snakefile that uses ``include`` statements to include rules files, and
 must be done **before** any ``include`` statement. The reason is that
 when a rules file is included, the default configuration values are
@@ -73,7 +73,7 @@ Snakefile would then look as follows:
     #-*- snakemake -*-
 
     # Import config-related stuff
-    from snakemakelib.config import update_config
+    from snakemake.utils import update_config
     my_config = {
         'bio.ngs.align.bwa' : {
             'mem' : {

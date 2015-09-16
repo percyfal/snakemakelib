@@ -1,7 +1,7 @@
 # -*- snakemake -*-
 import os
 from mako.template import Template
-from snakemakelib.config import update_config, SNAKEMAKELIB_RULES_PATH
+from snakemakelib.config import SNAKEMAKELIB_RULES_PATH
 
 include: '../settings.rules'
 include: './settings.rules'

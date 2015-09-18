@@ -2,8 +2,11 @@
 from snakemakelib.bio.ngs.qc.cutadapt import collect_cutadapt_qc_results, make_cutadapt_summary_plot
 
 def _cutadapt_find_result_files_fn(wildcards):
-    config['bio.ngs.settings'] = config['bio.ngs.settings']
-    sources = generic_target_generator(tgt_re = config['bio.ngs.settings']['sampleorg'].run_id_re, src_re=config['bio.ngs.settings']['sampleorg'].run_id_re, target_suffix = wildcards.label + "cutadapt_metrics", **config['bio.ngs.settings'])
+    sources = generic_target_generator(tgt_re =
+                                       config['bio.ngs.settings']['sampleorg'].run_id_re,
+                                       src_re=config['bio.ngs.settings']['sampleorg'].run_id_re,
+                                       target_suffix = wildcards.label + "cutadapt_metrics",
+                                       **config['bio.ngs.settings'])
     return sources
 
 rule cutadapt_qc_summary:

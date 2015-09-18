@@ -59,6 +59,7 @@ def collect_cutadapt_qc_results(inputfiles, sampleruns):
 
 def make_cutadapt_summary_plot(inputfile):
     df_summary = pd.read_csv(inputfile)
+    df_summary["sample"] = df_summary["sample"].astype("str")
     TOOLS = "pan,wheel_zoom,box_zoom,box_select,reset,save"
     fig = figure(tools=TOOLS, width=400, height=400,
                  x_range=list(set(df_summary["sample"])),

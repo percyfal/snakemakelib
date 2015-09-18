@@ -62,6 +62,7 @@ def collect_picard_qc_results(inputfiles, samples):
 class Metrics(pd.DataFrame):
     def __init__(self, *args, **kwargs):
         super(Metrics, self).__init__(*args, **kwargs)
+        self["Sample"] = self["Sample"].astype('str')
         self._metadata = {'type': 'metrics'}
         self.plots = []
         self._label = str(type(self)).split(".")[-1].replace("'>", "")

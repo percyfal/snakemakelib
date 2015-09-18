@@ -91,6 +91,7 @@ def make_qualimap_plots(qmglobals=None, coverage_per_contig=None):
     # Globals
     if qmglobals is not None:
         df_all = pd.read_csv(qmglobals)
+        df_all["Sample"] = df_all["Sample"].astype('str')
         fig = figure(y_range=[0, max(df_all['number of reads'])],
                      title="Mapping summary",
                      title_text_font_size="12pt",
@@ -113,6 +114,7 @@ def make_qualimap_plots(qmglobals=None, coverage_per_contig=None):
     # Coverage per contig
     if coverage_per_contig is not None:
         df_all = pd.read_csv(coverage_per_contig, index_col=0)
+        df_all["Sample"] = df_all["Sample"].astype('str')
         fig = figure(width=300, height=300)
         points(fig, x="chrlen_percent", y="mapped_bases_percent",
                df=df_all, glyph="text", text="chr", text_font_size="8pt")

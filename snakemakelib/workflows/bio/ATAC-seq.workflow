@@ -57,6 +57,9 @@ atac_config = {
     'bio.ngs.qc.cutadapt' : {
         'rules' : ['cutadapt_cut_paired_end', 'cutadapt_qc_summary'],
     },
+    'bio.ngs.db.ucsc' : {
+        'rules' : ['ucsc_wigToBigWig', 'ucsc_bedGraphToBigWig', 'ucsc_fetchChromSizes'],
+    },
 }
 aligner_config = {
     'bio.ngs.align.bowtie' : {
@@ -96,6 +99,7 @@ include: join(SNAKEMAKELIB_RULES_PATH, 'utils.rules')
 include: join(SNAKEMAKELIB_RULES_PATH, "bio/ngs", "settings.rules")
 include: join(SNAKEMAKELIB_RULES_PATH, "bio/ngs/align", aligner + ".rules")
 include: join(SNAKEMAKELIB_RULES_PATH, "bio/ngs/align", "blat.rules")
+include: join(SNAKEMAKELIB_RULES_PATH, "bio/ngs/db", "ucsc.rules")
 include: join(SNAKEMAKELIB_RULES_PATH, "bio/ngs/qc", "picard.rules")
 include: join(SNAKEMAKELIB_RULES_PATH, "bio/ngs/qc", "qualimap.rules")
 include: join(SNAKEMAKELIB_RULES_PATH, "bio/ngs/chromatin", "danpos.rules")

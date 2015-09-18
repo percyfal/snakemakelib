@@ -2,16 +2,17 @@
 
 def _qualimap_find_result_files_fn(wildcards):
     tmp = wildcards.label.lstrip("sample").lstrip("run")
-    config['bio.ngs.settings'] = config['bio.ngs.settings']
     tgt_re = config['bio.ngs.settings']['sampleorg'].run_id_re
+    src_re = config['bio.ngs.settings']['sampleorg'].run_id_re,
     if wildcards.label.startswith("sample"):
         tgt_re = config['bio.ngs.settings']['sampleorg'].sample_re
+        src_re = config['bio.ngs.settings']['sampleorg'].sample_re
     sources = generic_target_generator(
         tgt_re = tgt_re,
-        src_re = config['bio.ngs.settings']['sampleorg'].run_id_re,
+        src_re = src_re,
         target_suffix = os.path.join(tmp, 'genome_results.txt'),
         **config['bio.ngs.settings'])
-    return sources
+    return list(set(sources))
 
 
 rule qualimap_collect_results:

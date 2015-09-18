@@ -11,6 +11,7 @@ Pre-releases
 .. toctree::
     :maxdepth: 1
 
+    releases/0.1-alpha.15
     releases/0.1-alpha.14
     releases/0.1-alpha.13
     releases/0.1-alpha.12

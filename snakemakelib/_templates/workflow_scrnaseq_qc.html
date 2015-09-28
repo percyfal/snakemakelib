@@ -5,12 +5,9 @@
     <meta charset="utf-8">
     <title>Single-cell RNA-Seq summary report</title>
 
-    {{ plot_resources|indent(8) }}
+    {{ bokeh_css }}
+    {{ bokeh_js }}
     
-    <style>
-      {{ css|indent(8) }}
-    </style>
-
     <!-- Include bokeh script commands -->
     {% if rseqc is defined %}
       {{ rseqc['fig']['script'] | indent(8) }}

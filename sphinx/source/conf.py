@@ -15,6 +15,7 @@
 
 import sys
 import os
+import re
 import sphinx_bootstrap_theme
 
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -70,6 +71,8 @@ from snakemakelib import __version__
 #
 # The short X.Y version.
 version = __version__
+if version.endswith("dirty"):
+    version = re.sub("\+[0-9]+\.[a-z0-9]+\.dirty", "", version)
 # The full version, including alpha/beta/rc tags.
 release = __version__
 

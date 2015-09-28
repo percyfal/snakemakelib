@@ -19,11 +19,20 @@
 	{{ star['table']['script'] | indent(8) }}
       {% endif %}
     {% endif %}
+
     {% if align is defined %}
       {{ align['fig']['script'] | indent(8) }}
       {{ align['table']['script'] | indent(8) }}
     {% endif %}
 
+    {% if rpkmforgenes is defined %}
+      {{ rpkmforgenes['fig']['script'] | indent(8) }}
+    {% endif %}
+
+    {% if rsem is defined %}
+      {{ rsem['fig']['script'] | indent(8) }}
+    {% endif %}
+    
   </head>
   <body>
 
@@ -45,13 +54,11 @@
 
     <h2>Run-level QC metrics</h2>
 
-    <h3>Alignment</h3>
-
     <h2>Sample-level QC metrics</h2>
 
-    <h3>Alignment</h3>
-    
     {% include 'workflow_scrnaseq_qc_align.html' ignore missing %}
+
+    {% include 'workflow_scrnaseq_qc_quantification.html' ignore missing %}
     
   </body>
 </html>

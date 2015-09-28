@@ -2,6 +2,7 @@
 import shutil
 import os
 from os.path import join, dirname, relpath, exists
+import pickle
 from snakemake.report import data_uri
 from snakemake.utils import update_config
 from bokehutils.publish import static_html
@@ -10,7 +11,7 @@ from snakemakelib.io import set_output
 from snakemakelib.utils import SmlTemplateEnv
 from snakemakelib.config import SNAKEMAKELIB_RULES_PATH
 from snakemakelib.bio.ngs.targets import generic_target_generator
-from snakemakelib.workflow.scrnaseq import scrnaseq_qc_plots
+from snakemakelib.workflow.scrnaseq import scrnaseq_alignment_qc_plots, scrnaseq_pca_plots, read_gene_expression, pca, pca_results, number_of_detected_genes
 
 def _merge_suffix(aligner, quantification=[]):
     align_config = config['bio.ngs.align.' + aligner]
@@ -60,6 +61,7 @@ config_default = {
         'db' : {
             'do_multo' : False,  ## Set to True to run generate multo database
         },
+        'metadata' : None, ## Sample metadata
     },
     'bio.ngs.settings' : {
         'aligner' : 'bowtie',
@@ -73,6 +75,13 @@ config_default = {
     'bio.ngs.qc.rseqc' : {
         'rules' : ['rseqc_qc_8', 'rseqc_qc_8_summary'],
     },
+    'bio.ngs.rnaseq.rpkmforgenes' : {
+        'rules' : ['rpkmforgenes_from_bam', 'rpkmforgenes_summarize_expression_data'],
+    },
+    'bio.ngs.rnaseq.rsem' : {
+        'rules' : ['rsem_calculate_expression', 'rsem_prepare_reference', 'rsem_summarize_expression_data'],
+    },
+
 }
 
 update_config(config_default, config)
@@ -129,7 +138,7 @@ if 'rpkmforgenes' in config['workflows.bio.scrnaseq']['quantification']:
         tgt_re = config['bio.ngs.settings']['sampleorg'].sample_re,
         target_suffix = '.merge.rpkmforgenes',
         src_re = config['bio.ngs.settings']['sampleorg'].raw_run_re,
-        **config['bio.ngs.settings'])
+        **config['bio.ngs.settings']) + ['report/rpkmforgenes.merge.csv']
 
 RSEM_TARGETS = []
 if 'rsem' in config['workflows.bio.scrnaseq']['quantification']:
@@ -169,34 +178,67 @@ rule scrnaseq_qc:
     input: starcsv = join("{path}", "star.Aligned.out.csv"),
            rseqc_read_distribution = join("{path}", "read_distribution_summary_merge_rseqc.csv"),
            rseqc_gene_coverage = join("{path}", "gene_coverage_summary_merge_rseqc.csv"),
-           rsemgenes = join("{path}", "rsem.merge.tx.genes.csv"),
-           rsemisoforms = join("{path}", "rsem.merge.tx.isoforms.csv"),
+           rsemgenes = join("{path}", "rsem.merge.tx.genes.csv") if 'rsem' in config['workflows.bio.scrnaseq']['quantification'] else [],
+           rsemisoforms = join("{path}", "rsem.merge.tx.isoforms.csv")  if 'rsem' in config['workflows.bio.scrnaseq']['quantification'] else [],
+           rsemgenespca = join("{path}", "rsem.merge.tx.genes.pca.csv") if 'rsem' in config['workflows.bio.scrnaseq']['quantification'] else [],
+           rpkmforgenes = join("{path}", "rpkmforgenes.merge.csv") if 'rpkmforgenes' in config['workflows.bio.scrnaseq']['quantification'] else [],
+           rpkmforgenespca = join("{path}", "rpkmforgenes.merge.pca.csv") if 'rpkmforgenes' in config['workflows.bio.scrnaseq']['quantification'] else [],
            rulegraph = join("{path}", "scrnaseq_all_rulegraph.png"),
            globalconf = join("{path}", "smlconf_global.yaml")
     output: html = join("{path}", "scrnaseq_summary.html")
     run:
-        d = {'align': scrnaseq_qc_plots(input.rseqc_read_distribution,
-                                        input.rseqc_gene_coverage,
-                                        input.starcsv)}
+        d = {'align': scrnaseq_alignment_qc_plots(input.rseqc_read_distribution,
+                                                  input.rseqc_gene_coverage,
+                                                  input.starcsv)}
+        d['align'].update({
+             'uri': [data_uri(input.rseqc_read_distribution),
+                     data_uri(input.rseqc_gene_coverage),
+                     data_uri(input.starcsv)],
+             'file': [input.rseqc_read_distribution,
+                     input.rseqc_gene_coverage,
+                     input.starcsv],
+        })
         d.update({'rulegraph' : {'uri' : data_uri(input.rulegraph), 'file' : input.rulegraph, 'fig' : input.rulegraph, 'target' : 'scrnaseq_all'}})
-        d.update({'rsem' : {'file': [input.rsemgenes, input.rsemisoforms]}})
-
+        if input.rsemgenes:
+            #d.update({'rsem' : {'file': [input.rsemgenes, input.rsemisoforms]},
+            d.update({'rsem' : {'file': [input.rsemgenespca], 'uri': [data_uri(input.rsemgenespca)]}})
+            d['rsem'].update(scrnaseq_pca_plots(input.rsemgenespca,
+                                                metadata=config['workflows.bio.scrnaseq']['metadata'],
+                                                pcaobjfile=input.rsemgenespca.replace(".pca.csv",
+                                                                                      ".pcaobj.pickle")))
+        if input.rpkmforgenespca:
+            d.update({'rpkmforgenes' : {'file': [input.rpkmforgenespca], 'uri': [data_uri(input.rpkmforgenespca)]}})
+            d['rpkmforgenes'].update(
+                scrnaseq_pca_plots(input.rpkmforgenespca,
+                                   metadata=config['workflows.bio.scrnaseq']['metadata'],
+                                   pcaobjfile=input.rpkmforgenespca.replace(".pca.csv", ".pcaobj.pickle")))
         d.update({'version' : config['_version'], 'config' : {'uri' : data_uri(input.globalconf), 'file' : input.globalconf}})
         tp = SmlTemplateEnv.get_template('workflow_scrnaseq_qc.html')
         with open(output.html, "w") as fh:
             fh.write(static_html(tp, **d))
 
 rule scrnaseq_pca:
-    input: csv = join("{path}", "rsem.merge.tx.{type}.csv")
-    output: tmp = join("{path}", "rsem.merge.tx.{type}.pca")
+    input: expr = "{prefix}.csv",
+           annotation = config['bio.ngs.settings']['annotation']['transcript_annot_gtf'] if config['bio.ngs.settings']['annotation']['transcript_annot_gtf'] else []
+    output: pca = "{prefix}.pca.csv", pcaobj = "{prefix}.pcaobj.pickle"
     run:
-        import pandas as pd
-        from sklearn.decomposition import PCA
-        #df = pd.read_csv(input.csv, index_col=0)
-        #pca = PCA(n_components='mle')
-        #pca.fit(df.head())
-        #print (df.head())
-
+        import math
+        expr_long = read_gene_expression(input.expr,
+                                         annotation=input.annotation)
+        expr_long["TPM"] = [math.log2(x+1.0) for x in expr_long["TPM"]]
+        detected_genes = number_of_detected_genes(expr_long)
+        # FIXME: configurations?
+        expr = expr_long.pivot_table(columns="gene_id", values="TPM",
+                                     index="sample")
+        pcaobj = pca(expr)
+        pcares = pca_results(pcaobj, expr, metadata=config['workflows.bio.scrnaseq']['metadata'])
+        if not detected_genes is None:
+            pcares = pcares.join(detected_genes)
+        with open(output.pca, "w") as fh:
+            pcares.to_csv(fh)
+        with open(output.pcaobj, "wb") as fh:
+            pickle.dump(pcaobj, fh)
+        
 # All rules
 rule scrnaseq_all:
     """Run scRNAseq pipeline"""

@@ -96,7 +96,7 @@ def make_qualimap_plots(qmglobals=None, coverage_per_contig=None):
                      title="Mapping summary",
                      title_text_font_size="12pt",
                      plot_width=400, plot_height=400,
-                     x_range=list(set(df_all["Sample"])))
+                     x_range=sorted(list(set(df_all["Sample"]))))
         mdotplot(fig, x='Sample', size=10,
                  df=df_all, alpha=0.5,
                  y= ['number of reads',

@@ -6,7 +6,7 @@ if not 'picard_do_qc' in config['bio.ngs.qc.picard']['rules']:
 
 def _picard_find_picard_do_qc_result_files_fn(wildcards):
     sources = generic_target_generator(tgt_re = config['bio.ngs.settings']['sampleorg'].sample_re, src_re=config['bio.ngs.settings']['sampleorg'].run_id_re, target_suffix = os.path.join("." + wildcards.label), **config['bio.ngs.settings'])
-    return sources
+    return list(set(sources))
 
 rule picard_qc_summary:
     """Summarize results from picard_do_qc"""

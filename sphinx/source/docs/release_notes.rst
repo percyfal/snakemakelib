@@ -6,7 +6,7 @@ Release notes
 
 
 Pre-releases
-=============
+------------
 
 .. toctree::
     :maxdepth: 1

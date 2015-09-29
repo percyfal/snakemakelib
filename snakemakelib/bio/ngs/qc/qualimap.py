@@ -1,7 +1,8 @@
 # Copyright (C) 2015 by Per Unneberg
 import pandas as pd
 import numpy as np
-from bokeh.plotting import figure
+from bokeh.plotting import figure, gridplot
+from bokeh.charts import Scatter
 from bokehutils.geom import points, abline
 from bokehutils.mgeom import mdotplot
 from bokehutils.facet import facet_grid
@@ -109,7 +110,28 @@ def make_qualimap_plots(qmglobals=None, coverage_per_contig=None):
         yaxis(fig, axis_label="count",
               major_label_orientation=1,
               axis_label_text_font_size='10pt')
-        retval['fig']['globals'] = fig
+
+        df_rel = df_all[["number of reads", "number of mapped reads", "number of duplicated reads", "number of unique reads"]].div(df_all["number of reads"], axis=0)*100
+        df_rel["Sample"] = df_all["Sample"]
+        fig2 = figure(y_range=[0, max(df_rel['number of reads'])],
+                      title="Mapping summary, relative values",
+                      title_text_font_size="12pt",
+                      plot_width=400, plot_height=400,
+                      x_range=sorted(list(set(df_rel["Sample"]))))
+        mdotplot(fig2, x='Sample', size=10,
+                 df=df_rel, alpha=0.5,
+                 y= ['number of reads',
+                     'number of mapped reads',
+                     'number of duplicated reads',
+                     'number of unique reads'])
+        xaxis(fig2, axis_label="sample",
+              major_label_orientation=np.pi/3,
+              axis_label_text_font_size='10pt')
+        yaxis(fig2, axis_label="percent",
+              major_label_orientation=1,
+              axis_label_text_font_size='10pt')
+
+        retval['fig']['globals'] = gridplot([[fig, fig2]])
         
     # Coverage per contig
     if coverage_per_contig is not None:

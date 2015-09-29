@@ -198,7 +198,7 @@ class InsertHist(HistMetrics):
                       'axis_label_text_font_size': '10pt'},
             'yaxis': {'axis_label': 'Count',
                       'axis_label_text_font_size': '10pt'}}
-        self.kw['renderer']['color'] =  colorbrewer(datalen = len(self.kw['renderer']['y']), palette="RdYlBu")
+        self.kw['renderer']['color'] =  colorbrewer(datalen = len(self.kw['renderer']['y']))
         self.plot_hist = self.facet_grid_hist
 
 

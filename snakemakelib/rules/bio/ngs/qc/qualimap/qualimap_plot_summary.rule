@@ -12,5 +12,5 @@ rule qualimap_plot_summary:
         d.update({'qualimap' : make_qualimap_plots(*input)})
         tp = SmlTemplateEnv.get_template('qualimap.html')
         with open(output.qualimap_summary, "w") as fh:
-            fh.write(static_html(tp, **d))
+            fh.write(static_html(tp, template_variables=d))
 

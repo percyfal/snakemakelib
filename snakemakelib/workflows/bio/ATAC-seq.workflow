@@ -1,12 +1,12 @@
 # -*- snakemake -*-
 from os.path import join
 import pysam
-from jinja2 import Environment, PackageLoader
 from bokehutils.publish import static_html
 from snakemake.report import data_uri
 from snakemake.utils import update_config
 from snakemakelib.io import set_output
 from snakemakelib.config import SNAKEMAKELIB_RULES_PATH
+from snakemakelib.resources import SmlTemplateEnv, css_files
 from snakemakelib.bio.ngs.targets import generic_target_generator
 from snakemakelib.bio.ngs.qc.cutadapt import make_cutadapt_summary_plot
 from snakemakelib.bio.ngs.qc.qualimap import make_qualimap_plots
@@ -256,8 +256,7 @@ rule atacseq_report:
     output: html = join("{path}", "atacseq_summary.html")
     run:
         d = {}
-        env = Environment(loader = PackageLoader("snakemakelib", "_templates"))
-        tp = env.get_template('workflow_atacseq_qc.html')
+        tp = SmlTemplateEnv.get_template('workflow_atacseq_qc.html')
         if config['workflows.bio.atac_seq']['trimadaptor']:
             d.update({'cutadapt' : make_cutadapt_summary_plot(input.cutadapt)})
         d.update({'qualimap' : make_qualimap_plots(*input.qualimap)})
@@ -265,7 +264,7 @@ rule atacseq_report:
         d.update({'rulegraph' : {'uri' : data_uri(input.rulegraph), 'file' : input.rulegraph, 'fig' : input.rulegraph,
                                  'target' : 'atacseq_all'}})
         with open(output.html, "w") as fh:
-            fh.write(static_html(tp, **d))
+            fh.write(static_html(tp, template_variables=d, css_raw=css_files))
 
                 
 #

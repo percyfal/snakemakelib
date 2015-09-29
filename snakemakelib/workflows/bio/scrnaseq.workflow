@@ -8,7 +8,7 @@ from snakemake.utils import update_config
 from bokehutils.publish import static_html
 from snakemake.workflow import workflow
 from snakemakelib.io import set_output
-from snakemakelib.utils import SmlTemplateEnv
+from snakemakelib.resources import SmlTemplateEnv, css_files
 from snakemakelib.config import SNAKEMAKELIB_RULES_PATH
 from snakemakelib.bio.ngs.targets import generic_target_generator
 from snakemakelib.workflow.scrnaseq import scrnaseq_alignment_qc_plots, scrnaseq_pca_plots, read_gene_expression, pca, pca_results, number_of_detected_genes
@@ -215,7 +215,7 @@ rule scrnaseq_qc:
         d.update({'version' : config['_version'], 'config' : {'uri' : data_uri(input.globalconf), 'file' : input.globalconf}})
         tp = SmlTemplateEnv.get_template('workflow_scrnaseq_qc.html')
         with open(output.html, "w") as fh:
-            fh.write(static_html(tp, **d))
+            fh.write(static_html(tp, template_variables=d, css_raw=css_files))
 
 rule scrnaseq_pca:
     input: expr = "{prefix}.csv",

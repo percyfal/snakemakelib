@@ -2,4 +2,12 @@
 ==========================
 
 - convert numerical sample ids to strings for plots (#45)
+- remove dirty tag from doc builds (#47)
+- update dependency to bokehutils-0.1.6 (#46)
 
+Minor fixes:
+------------
+
+- update pca, use log2 values
+- update css styling to conform to bokehutils-0.1.7
+- use Toggle bokes until CustomJS available for RadioButtonGroup

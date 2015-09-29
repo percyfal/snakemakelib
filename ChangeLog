@@ -1,0 +1,1775 @@
+Changelog
+=========
+
+%%version%% (unreleased)
+------------------------
+
+- Minor changes to ATAC-seq. [Per Unneberg]
+
+  - make picard summary pick up unique files
+  - add ucsc to ATAC-seq workflow
+
+- Use log2 values for pca plots. [Per Unneberg]
+
+- Pickle pca output, minor changes to templates. [Per Unneberg]
+
+- Add pca plots and templates. [Per Unneberg]
+
+  Substantial additions including:
+
+  - code to do pca and plot the results
+  - template additions
+  - minor fixes to the ordering on x-axes
+
+- Minor fixes. [Per Unneberg]
+
+- Add and update pca rule. [Per Unneberg]
+
+- Add release notes for 0.1-alpha.15. [Per Unneberg]
+
+- Convert numerical sample ids to strings. [Per Unneberg]
+
+  Fixes #45
+
+- Update dependency to bokehutils-0.1.6. [Per Unneberg]
+
+  - update templates to use bokeh_css and bokeh_js
+
+- Remove dirty tags from doc build. [Per Unneberg]
+
+  Fixes #47
+
+0.1-alpha.14 (2015-09-16)
+-------------------------
+
+- Update dependency to snakemake 3.4.2. [Per Unneberg]
+
+- Disable limit in find_files. [Per Unneberg]
+
+  Disable limit in find_files if limit key missing in regexp
+
+0.1-alpha.13 (2015-09-10)
+-------------------------
+
+- Hotfix: fix #40. [Per Unneberg]
+
+  scrnaseq merge rule did symlink on temporary dependency
+
+0.1-alpha.12 (2015-09-08)
+-------------------------
+
+- Make correct rnaseq annotations. [Per Unneberg]
+
+  Fix #39
+
+0.1-alpha.11 (2015-09-07)
+-------------------------
+
+- Add release notes. [Per Unneberg]
+
+- Update rules to work standalone. [Per Unneberg]
+
+- Move data and include in setup. [Per Unneberg]
+
+  Add db lambda functions and update docs
+
+  Documentation update
+
+  Documentation update
+
+- Documentation updates. [Per Unneberg]
+
+- Minor tweaks to rules and workflow. [Per Unneberg]
+
+- Update navbar and add sidebar toc. [Per Unneberg]
+
+- Ditto. [Per Unneberg]
+
+- Updates to docs. [Per Unneberg]
+
+- Documentation updates. [Per Unneberg]
+
+- Minor fixes to rules. [Per Unneberg]
+
+- Convert bamtools to atomic and fix rules. [Per Unneberg]
+
+  Convert bamtools to atomic rules. Fix some bugs in rules.
+
+- Fixes for scrnaseq workflow. [Per Unneberg]
+
+  - add reporting rules for rseqc, rsem, star
+  - update cloudbiolinux annotation gtf rule
+
+- Cleanup python2 statements. [Per Unneberg]
+
+  Statements have been pruned of " && "
+
+- Simplify bowtie2_align. [Per Unneberg]
+
+  Can take gzipped input
+
+- Update config loading. [Per Unneberg]
+
+  - change sml_path and friends to variables (fixes #38)
+  - remove trailing refs to samtools_cfg and the likes (fixes #37)
+
+0.1-alpha.10 (2015-09-01)
+-------------------------
+
+- Add snakemakelib.workflow to setup. [Per Unneberg]
+
+  Fixes #34
+
+0.1-alpha.9 (2015-08-31)
+------------------------
+
+- Update aligner config in atacseq. [Per Unneberg]
+
+  Fixes #23
+
+0.1-alpha.8 (2015-08-30)
+------------------------
+
+- Add release notes. [Per Unneberg]
+
+  cdb40d0 fixes #21
+
+- Add readthedocs test based on file name. [Per Unneberg]
+
+- Add error message. [Per Unneberg]
+
+- Add socket to get hostname. [Per Unneberg]
+
+- Remove matplotlib dependency. [Per Unneberg]
+
+0.1-alpha.7 (2015-08-29)
+------------------------
+
+- Add release notes. [Per Unneberg]
+
+- Remove trailing diff line. [Per Unneberg]
+
+- Add atomic_rules. [Per Unneberg]
+
+  Fixes #12
+
+  Fix various inconsistensies in workflows
+
+- Add angsd and tuxedo atomic rules. [Per Unneberg]
+
+- Add misc atomic rules. [Per Unneberg]
+
+- Add vcftools. [Per Unneberg]
+
+- Add atomic variation rules. [Per Unneberg]
+
+  Add rules for annovar, snpeff, htslib, vcftools, vcf
+
+- Add rsem atomic rules. [Per Unneberg]
+
+- Add rpkmforgenes atomic rules. [Per Unneberg]
+
+- Delete sequenceprocessing and convert to single applications. [Per
+  Unneberg]
+
+- Add cutadapt atomic rules. [Per Unneberg]
+
+- Add rseqc atomic rules. [Per Unneberg]
+
+- Add picard atomic rules. [Per Unneberg]
+
+- Add gatk atomic rules. [Per Unneberg]
+
+- Add and update atomic rules. [Per Unneberg]
+
+- Add atomic rules. [Per Unneberg]
+
+  Start converting to atomic rules
+
+- Initial support of atomic rules. [Per Unneberg]
+
+  * setup.py: distinguish between multiple rules and atomic rules with '.rule' and '.rules' suffixes
+  * snakemakelib/config.py: don't require config dict is a BaseConfig instance
+  * snakemakelib/rules/bio/ngs/align/bwa/bwa.rules: default settings for bwa
+  * snakemakelib/rules/bio/ngs/align/bwa/bwa_index.rule: atomic bwa index rule
+  * snakemakelib/rules/bio/ngs/align/bwa/bwa_link_ref.rule: atomic bwa link ref rule
+  * snakemakelib/rules/bio/ngs/align/bwa/bwa_mem.rule: atomic bwa mem rule
+  * snakemakelib/rules/bio/ngs/settings.rules: use tentative snakemake configdefault keyword
+  * snakemakelib/rules/bio/ngs/tools/samtools.rules: ditto
+  * snakemakelib/rules/settings.rules: ditto
+
+- Update bokehutils dependency. [Per Unneberg]
+
+  Fix #22
+
+- Reuse matplotlib >= 1.4.0. [Per Unneberg]
+
+- Test matplotlib 1.4.0. [Per Unneberg]
+
+- Readd matplotlib dependency. [Per Unneberg]
+
+- Revert conf and remove matplotlib dependency. [Per Unneberg]
+
+- Mock: alternative take. [Per Unneberg]
+
+- Mock matplotlib for documentation build. [Per Unneberg]
+
+  Attempt to fix #21
+
+- Fix errors in readme. [Per Unneberg]
+
+- Misc fixes. [Per Unneberg]
+
+  - remove test doc files
+  - readd load_sml_config
+
+0.1-alpha.6 (2015-08-25)
+------------------------
+
+- Add release notes. [Per Unneberg]
+
+- Delete travis test branch. [Per Unneberg]
+
+- Remove superfluous test line. [Per Unneberg]
+
+- Add pytest to setup. [Per Unneberg]
+
+- Make py.test default test. [Per Unneberg]
+
+- Use update_config. [Per Unneberg]
+
+  Minor fix.
+
+  Fixes #18 and #19
+
+- Use update_config throughout. [Per Unneberg]
+
+  - for multiple update_config calls, need specific config_default dicts
+    for each call (otherwise config points to a reference)
+
+- Make unique test file names. [Per Unneberg]
+
+  py.test best practices recommends unique file names
+
+  See http://stackoverflow.com/questions/12582503/py-test-test-discovery-failure-when-tests-in-different-directories-are-called
+
+- Adapt tests to pytest. [Per Unneberg]
+
+  - add fixtures
+  - remove trailing refs to BaseConfig, update_snakemakelib_config
+
+- Remove obsolete BaseConfig. [Per Unneberg]
+
+  Fixes #19
+
+- Remove update_snakemake_config. [Per Unneberg]
+
+  - Remove update_snakemake_config and use update_config
+  - Also change update order to update_config(config_default, config)
+
+- Follow pytest best practices and omit __init__.py. [Per Unneberg]
+
+  See https://pytest.org/latest/goodpractises.html#choosing-a-test-layout-import-rules
+
+- Add support for pytest. [Per Unneberg]
+
+  Add pytest. Avoid running slow test. Note that tests are still based on
+  nose.
+
+- Add update_config. [Per Unneberg]
+
+  - add update_config
+  - remove deprecated functions
+
+0.1-alpha.5 (2015-07-22)
+------------------------
+
+- Fix erroneous tag prefix. [Per Unneberg]
+
+  * snakemakelib/_version.py: update tag_prefix
+
+0.1.0-alpha.4 (2015-07-11)
+--------------------------
+
+- Add import of static_html. [Per Unneberg]
+
+- Add plot dependencies. [Per Unneberg]
+
+- Update docs, make editable install for coveralls. [Per Unneberg]
+
+- Remove bokehutils and bokeh dependencies from setup.py. [Per Unneberg]
+
+- Remove matplotlib. [Per Unneberg]
+
+  * setup.py: remove matplotlib to avoid pytz issue
+  * snakemakelib/rules/bio/ngs/enrichment/macs.rules: make BAMPE default input
+
+- Undo editable install. [Per Unneberg]
+
+  * requirements.txt: remove -e flag
+  * setup.py: readd matplotlib
+
+- Remove setup develop and readd nose.collector. [Per Unneberg]
+
+- Change install order of bokeh and bokehutils. [Per Unneberg]
+
+  * requirements.txt: install bokehutils after .
+  * setup.py: add bokeh
+
+- Update installation instructions. [Per Unneberg]
+
+- Correct erroneous parameter call to fig.circle. [Per Unneberg]
+
+  * snakemakelib/bio/ngs/qc/cutadapt.py: move title to figure setup
+  * setup.py: depend on bokehutils 0.1.3
+
+- * setup.py: add setup_requires. [Per Unneberg]
+
+- * setup.py: add bokehutis to requires. [Per Unneberg]
+
+- * requirements.txt: add -e flag to bokehutils. [Per Unneberg]
+
+- * setup.py: remove erroneous test path. [Per Unneberg]
+
+- * setup.py: remove bokehutils from requires. [Per Unneberg]
+
+- Update versioneer and add tests. [Per Unneberg]
+
+  * setup.cfg: add versioneer
+  * setup.py: delete versioneer, add test modules
+
+0.1.0-alpha.3 (2015-07-10)
+--------------------------
+
+- Update jinja template path. [Per Unneberg]
+
+  Fix #14
+
+0.1.0-alpha.2 (2015-07-10)
+--------------------------
+
+- Update package data structure. [Per Unneberg]
+
+  * requirements.txt: use implementation recommended by https://caremad.io/blog/setup-vs-requirement/
+  * setup.py: model after bokeh setup - explicitly list packages and add requirements here
+  * snakemakelib/config.py: fix root path
+
+0.1.0-alpha.1 (2015-07-09)
+--------------------------
+
+- Add samopt parameter for bowtie vs bowtie2. [Per Unneberg]
+
+  Fixes #11
+
+- Add release notes doc. [Per Unneberg]
+
+- Add bamtools filter on regions. [Per Unneberg]
+
+  - add regions options to bamtools filter
+  - add bamfilter to ATAC-seq workflow
+
+- Bowtie2 index. [Per Unneberg]
+
+  Ditto in db
+
+- Bowtie2 index. [Per Unneberg]
+
+  Make index function point to bowtie2 location
+
+- Strip -e from install_requires. [Per Unneberg]
+
+- Change git checkout to https. [Per Unneberg]
+
+- Fix typo in requirements.txt. [Per Unneberg]
+
+- Fix git installation syntax. [Per Unneberg]
+
+- Setup bokehutils git requirement in requirements.txt. [Per Unneberg]
+
+- * requirements.txt: require bokehutils==0.1.1 * .travis.yml: process
+  dependencies. [Per Unneberg]
+
+- * rules/bio/ngs/align/star.rules: remove summary plot rule *
+  rules/bio/ngs/qc/picard.rules: ditto * rules/bio/ngs/qc/rseqc.rules:
+  ditto * workflows/bio/scrnaseq.workflow: comment out rseqc, star
+  plots. [Per Unneberg]
+
+- * setup.py: add git dependency to bokehutils. [Per Unneberg]
+
+- Remove snakemakelib.bokeh, update scrnaseq summary output. [Per
+  Unneberg]
+
+  * snakemakelib/bio/ngs/align/star.py: remove snakemakelib.bokeh dependency
+  * snakemakelib/bio/ngs/qc/rseqc.py: ditto
+  * snakemakelib/bio/ngs/tests/test_qualimap.py: add duplicated reads
+  * snakemakelib/bio/ngs/tests/test_star.py: take into account added columns
+  * snakemakelib/workflow/scrnaseq.py: add plot
+  * workflows/bio/scrnaseq.workflow: update reporting
+
+- Add more plots for scrnaseq. [Per Unneberg]
+
+  * snakemakelib/bio/ngs/qc/rseqc.py: update save function
+  * snakemakelib/bio/ngs/align/star.py: ditto
+  * workflows/bio/scrnaseq.workflow: add plots
+
+- Make ATAC-seq reports compatible with bokehutils. [Per Unneberg]
+
+  * snakemakelib/bio/ngs/qc/picard.py: finalize compatibility with bokehutils
+  * snakemakelib/bio/ngs/qc/qualimap.py: add abline, beautify facet plot
+
+- Add bigwig support. [Per Unneberg]
+
+  * rules/bio/ngs/db/ucsc.rules: add bigwig support functions
+  * rules/bio/ngs/enrichment/dfilter.rules: add wig output as default
+  * rules/bio/ngs/enrichment/macs.rules: add bedgraph output as default
+  * rules/bio/ngs/enrichment/zinba.rules: add hack to convert bed to
+    bedgraph (NB: not sure if this is correct)
+
+  * rules/comp/settings.rules: add ampersand to source construct
+  * snakemakelib/bio/ngs/utils.py: PEP8 formatting
+  * workflows/bio/ATAC-seq.workflow: add bigwig rule
+
+- Add rules to generate bigwig from bed. [Per Unneberg]
+
+  * rules/bio/ngs/db/ucsc.rules: add chromsize and bigwig rules
+
+- Start adding support for picard bokehutils. [Per Unneberg]
+
+  * snakemakelib/bio/ngs/qc/picard.py: modify parameter sets
+
+- Add bokehutils to qualimap plots. [Per Unneberg]
+
+- Add bokehutils support for cutadapt. [Per Unneberg]
+
+  * requirements.txt: add bokehutils
+
+- Update alphas. [Per Unneberg]
+
+  * snakemakelib/bio/ngs/qc/qualimap.py: update alpha
+  * snakemakelib/bokeh/plot.py: ditto
+
+- * snakemakelib/bio/ngs/qc/qualimap.py: add changes *
+  snakemakelib/bio/ngs/qc/rseqc.py: ditto *
+  snakemakelib/bio/ngs/regexp.py: ditto *
+  snakemakelib/bio/ngs/tests/test_star.py: ditto *
+  snakemakelib/bokeh/plot.py: ditto * templates/star.html: ditto *
+  templates/workflow_scrnaseq_qc.html: ditto. [Per Unneberg]
+
+- Scatterplot improvements. [Per Unneberg]
+
+  * snakemakelib/bio/ngs/align/star.py: add make_scatterplot
+  * snakemakelib/bio/ngs/qc/qualimap.py: set default intercept
+  * snakemakelib/bio/ngs/qc/rseqc.py: PEP8 formatting
+  * snakemakelib/bio/ngs/regexp.py: PEP8 formatting
+  * snakemakelib/bio/ngs/tests/test_star.py: remove obsolete imports
+  * snakemakelib/bokeh/plot.py: add abline, data_fields functions
+  * templates/star.html: check for none table
+  * templates/workflow_scrnaseq_qc.html: ditto
+
+- * rules/bio/ngs/align/star.rules: make result collection depend on the
+  right output files. [Per Unneberg]
+
+- Update star reporting utilities. [Per Unneberg]
+
+  * snakemakelib/bio/ngs/align/star.py: PEP8 formatting
+  * snakemakelib/bio/ngs/tests/test_star.py: add star parsing test
+  * snakemakelib/bokeh/plot.py: remove obsolete plots
+  * rules/bio/ngs/align/star.rules: use Star parser class
+
+- * snakemakelib/bio/ngs/qc/picard.py: Only share x range. [Per
+  Unneberg]
+
+- Remove comments. [Per Unneberg]
+
+  * templates/picard.html: remove comments
+  * templates/workflow_atacseq_qc.html: ditto
+
+- Update plotting facilities. [Per Unneberg]
+
+  * snakemakelib/bio/ngs/qc/picard.py: add gridplot, make all plots return lists
+  * snakemakelib/bio/ngs/qc/qualimap.py: kwtext -> text
+  * snakemakelib/bokeh/plot.py: add make_scatterplot
+  * snakemakelib/bokeh/publish.py: PEP8 formatting
+  * templates/cutadapt.html: add jinja2 mode
+  * templates/picard.html: add rubric
+  * templates/workflow_atacseq_qc.html: add comments
+  * workflows/bio/ATAC-seq.workflow: add default qcrules
+
+- Fix failing test. [Per Unneberg]
+
+  * snakemakelib/bio/ngs/qc/qualimap.py: add try/except clause
+  * snakemakelib/bio/ngs/tests/test_qualimap.py: remove qm
+  * snakemakelib/bokeh/plot.py: make qc dict
+
+- Refactor some ATAC-seq plots. [Per Unneberg]
+
+  * rules/bio/ngs/qc/picard.rules: PEP8 formatting
+  * snakemakelib/bio/ngs/qc/cutadapt.py: PEP8 formatting, use make_dotplot
+  * snakemakelib/bio/ngs/qc/picard.py: beautify plots
+  * snakemakelib/bio/ngs/qc/qualimap.py: ditto
+  * snakemakelib/bokeh/plot.py: update docs, better handling of legend
+  * templates/qualimap.html: update docs
+  * workflows/bio/ATAC-seq.workflow: add qualimap to pipeline
+
+- Add qualimap to ATAC-seq workflow. [Per Unneberg]
+
+  * rules/bio/ngs/qc/qualimap.rules: do conditional search depending on
+    whether target starts with run or sample
+
+  * templates/qualimap.html: finish standalone html
+  * templates/workflow_atacseq_qc.html: add qualimap section
+  * workflows/bio/ATAC-seq.workflow: add qualimap
+
+- Fix globals plot. [Per Unneberg]
+
+  * snakemakelib/bio/ngs/qc/qualimap.py: fix parameters to globals plot
+  * snakemakelib/bio/ngs/tests/test_qualimap.py: refactor test order
+  * snakemakelib/bokeh/plot.py: revamp make_dotplot to also return
+    relative plot if desired
+  * snakemakelib/results.py: make _inputfiles, _samples instance variables
+
+- Add make_dotplot function. [Per Unneberg]
+
+  * rules/bio/ngs/qc/qualimap.rules: add qmglobals
+  * snakemakelib/bio/ngs/qc/qualimap.py: use make_dotplot
+  * snakemakelib/bio/ngs/tests/test_qualimap.py: add test for globals
+  * snakemakelib/bokeh/plot.py: add make_dotplot, PEP8 formatting
+  * snakemakelib/results.py: PEP8 formatting
+
+- Add make_gridplot. [Per Unneberg]
+
+  * rules/bio/ngs/qc/qualimap.rules: PEP8 formatting
+  * snakemakelib/bio/ngs/qc/qualimap.py: add call to make_gridplot
+  * snakemakelib/bokeh/plot.py: add make_gridplot
+
+- Add sample parsing to results class. [Per Unneberg]
+
+  * rules/bio/ngs/qc/qualimap.rules: move sample parsing to Qualimap
+  * snakemakelib/bio/ngs/tests/test_qualimap.py: PEP8 formatting
+  * snakemakelib/results.py: add _set_samples
+  * snakemakelib/tests/test_results.py: add test for sample parsing, PEP8 formatting
+
+- Automated documentation update. [Per Unneberg]
+
+- PEP8 formatting and code cleanup. [Per Unneberg]
+
+- Unset DISPLAY for qualimap. [Per Unneberg]
+
+  * rules/bio/ngs/qc/qualimap.rules: unset DISPLAY, add java_mem
+  * rules/bio/ngs/settings.rules: set java_mem default to 8g
+
+- Add api docs. [Per Unneberg]
+
+- * templates/qualimap.html: add * rules/bio/ngs/qc/qualimap.rules: add
+  result collection and plotting rules *
+  snakemakelib/bio/ngs/qc/qualimap.py: add plotting function *
+  snakemakelib/results.py: filter empty lines. [Per Unneberg]
+
+- * snakemakelib/bio/ngs/qc/qualimap.py: add data parsing *
+  snakemakelib/bio/ngs/tests/test_qualimap.py: update tests *
+  snakemakelib/results.py: add load_lines, split functionality *
+  snakemakelib/tests/test_results.py: set class variable _keys. [Per
+  Unneberg]
+
+- * rules/bio/ngs/qc/qualimap.rules: add initial support *
+  snakemakelib/bio/ngs/qc/qualimap.py: add basic result parsing *
+  snakemakelib/bio/ngs/tests/test_qualimap.py: add basic tests *
+  snakemakelib/exceptions.py: add exceptions * snakemakelib/results.py:
+  add generic class for parsing and containing results *
+  snakemakelib/tests/test_results.py: add basic tests *
+  snakemakelib/utils.py: add function to set command. [Per Unneberg]
+
+- Completely refactor test directory structure. [Per Unneberg]
+
+  Now all tests live in subdirectories to the modules they are supposed
+  to test.
+
+- Update title and doc ref. [Per Unneberg]
+
+  * Readme.md: point docs to rtd
+  * sphinx/source/index.rst: update title
+
+- Update documentation to comply with sphinx formatting. [Per Unneberg]
+
+  * snakemakelib/config.py: update types in docstring
+  * sphinx/source/conf.py: point to python3.4 by default
+  * sphinx/source/docs/about.rst: fix code blocks
+  * sphinx/source/docs/configuration.rst: ditto
+  * sphinx/source/docs/troubleshooting.rst: add title
+  * sphinx/source/docs/tutorial.rst: fix code blocks
+  * sphinx/source/docs/workflows.rst: fix titles and image links
+  * sphinx/source/index.rst: refactor index
+
+- Add sphinx documentation. [Per Unneberg]
+
+- Update sphinx settings. [Per Unneberg]
+
+  * requirements.txt: require sphinx 1.3
+  * rules/bio/ngs/settings.rules: add global settings
+  * snakemakelib/rules.py: add input rule modification
+  * sphinx/source/conf.py: add napoleon extension for Google-style docstrings
+
+- Add support for programmatic rule inheritance. [Per Unneberg]
+
+- * test/test_db_config.py: fix failing test due to updated bwa
+  reference return vaue. [Per Unneberg]
+
+- * rules/bio/ngs/align/bwa.rules: remove reference to label. [Per
+  Unneberg]
+
+- * rules/bio/ngs/align/bowtie.rules: update input for bowtie_build2 *
+  rules/bio/ngs/align/bwa.rules: add indexing rules *
+  snakemakelib/bio/ngs/db.py: return full ref name for bwa. [Per
+  Unneberg]
+
+- * rules/bio/ngs/chromatin/danpos.rules: tentatively add dpos rule *
+  static/basic.css: add table-version * templates/snakemake.html: modify
+  version style * templates/workflow_scrnaseq_qc.html: move workflow
+  after snakemake * workflows/bio/ATAC-seq.workflow: add danpos. [Per
+  Unneberg]
+
+- Add snakemake html template. [Per Unneberg]
+
+- * rules/bio/ngs/chromatin/danpos.rules: add danpos. [Per Unneberg]
+
+- * rules/bio/ngs/align/star.rules: update annotation call *
+  rules/bio/ngs/db/cloudbiolinux.rules: ditto *
+  rules/bio/ngs/db/ucsc.rules: add refFlat rule *
+  rules/bio/ngs/rnaseq/rpkmforgenes.rules: use absolute path for program
+  call, update annotation * rules/bio/ngs/rnaseq/rsem.rules: update
+  annotation call * snakemakelib/bio/ngs/db.py: update annotation
+  function. [Per Unneberg]
+
+- * Readme.md: add branch-specific coverage badges. [Per Unneberg]
+
+- * .travis.yml: use arbitrary caching method. [Per Unneberg]
+
+- * Readme.md: add coverage to table. [Per Unneberg]
+
+- * .travis.yml: add coveralls * Readme.md: add coverall badge. [Per
+  Unneberg]
+
+- * rules/settings.rules: add _version to global configuration. [Per
+  Unneberg]
+
+0.0.1 (2015-05-19)
+------------------
+
+- * requirements.txt: remove version check for bokeh since it fails for
+  some reason. [Per Unneberg]
+
+- * setup.py: fix typo. [Per Unneberg]
+
+- Add versioneer. [Per Unneberg]
+
+  * setup.py: update to accomodate versioneer
+
+- * Readme.md: add develop and master tags. [Per Unneberg]
+
+- * .travis.yml: add develop to test. [Per Unneberg]
+
+- * Readme.md: add quickstart. [Per Unneberg]
+
+- * .travis.yml: cache pip * data/genomes/Hsapiens/hg19/bowtie/chr11.fa:
+  add link * data/genomes/Hsapiens/hg19/bwa/chr11.fa: ditto * setup.cfg:
+  add nosetests section * test/__init__.py: remove obsolete code *
+  test/test_metrics.py: fix paths * test/test_workflow.py: ditto. [Per
+  Unneberg]
+
+- * workflows/bio/variation.workflow: flakify and remove filter_suffix *
+  setup.cfg: add flake8 * .travis.yml: upgrade pip. [Per Unneberg]
+
+- * test/__init__.py: only keep linking to bwa and bowtie * .travis.yml:
+  add feature branch. [Per Unneberg]
+
+- * rules/bio/ngs/tools/multo.rules: update to working command. [Per
+  Unneberg]
+
+- * rules/bio/ngs/qc/cutadapt.rules: add log file to output. [Per
+  Unneberg]
+
+- * rules/bio/ngs/tools/sratools.rules: don't create output file if
+  user_email is missing. [Per Unneberg]
+
+- * snakemakelib/config.py: add overwrite parameter to overwrite
+  configuration. [Per Unneberg]
+
+- * snakemakelib/config.py: bug fix: load_sml_config now updates the
+  config object, regardless if anything already has been set. This
+  allows for overriding site-wide configuration settings. [Per Unneberg]
+
+- * requirements.txt: add bokeh. [Per Unneberg]
+
+- * setup.py: install data. [Per Unneberg]
+
+- * rules/bio/ngs/tools/sratools.rules: fix link rule *
+  workflows/bio/scrnaseq.workflow: add quantification config. [Per
+  Unneberg]
+
+- * rules/bio/ngs/rnaseq/rpkmforgenes.rules: update rules to use unique
+  and annotation flags * rules/bio/ngs/tools/multo.rules: remove abspath
+  to home. [Per Unneberg]
+
+- * rules/bio/ngs/enrichment/macs.rules: unclear what files are actually
+  produced; remove uncertainties * workflows/bio/ATAC-seq.workflow:
+  update MACS2 output to file that most certainly will be generated?
+  [Per Unneberg]
+
+- * rules/bio/ngs/align/star.rules: read file in module, remove
+  filter_suffix * rules/bio/ngs/qc/rseqc.rules: ditto *
+  rules/bio/ngs/rnaseq/rsem.rules: ditto *
+  snakemakelib/bio/ngs/align/star.py: read summary file *
+  snakemakelib/bio/ngs/qc/rseqc.py: ditto * snakemakelib/bokeh/plot.py:
+  add axis_types to fig members * snakemakelib/utils.py: add
+  smltemplateenv * templates/rseqc.html: simplify template *
+  templates/workflow.html: add target *
+  templates/workflow_scrnaseq_qc.html: modify template to comply with
+  new config * workflows/bio/scrnaseq.workflow: beautification and
+  update report. [Per Unneberg]
+
+- * templates/picard.html: beautify * templates/workflow.html: ditto *
+  templates/workflow_atacseq_qc.html: ditto *
+  templates/workflow_scrnaseq_qc.html: ditto * workflows/bio/ATAC-
+  seq.workflow: add report targets * snakemakelib/bio/ngs/qc/picard.py:
+  improve plotting functions * snakemakelib/bokeh/plot.py: add axes
+  annotation to lineplot. [Per Unneberg]
+
+- * rules/bio/ngs/qc/cutadapt.rules: remove trailing filter_suffix *
+  rules/bio/ngs/qc/picard.rules: ditto * setup.py: add templates *
+  snakemakelib/bio/ngs/qc/cutadapt.py: process file locally and add
+  data_uri * snakemakelib/bio/ngs/qc/picard.py: add data_uri *
+  snakemakelib/bokeh/publish.py: fix typo * workflows/bio/ATAC-
+  seq.workflow: add report rule. [Per Unneberg]
+
+- * rules/bio/ngs/db/ucsc.rules: add home, correct index function call *
+  rules/bio/ngs/enrichment/zinba.rules: fix ref key *
+  rules/bio/ngs/qc/picard.rules: remove filter suffix *
+  rules/bio/ngs/rnaseq/rsem.rules: add dependency on annotation *
+  rules/bio/ngs/settings.rules: add filter_suffix *
+  rules/bio/ngs/tools/bamtools.rules: add home *
+  rules/bio/ngs/tools/bedtools.rules: update name * rules/utils.rules:
+  update rulegraph output names * snakemakelib/config.py: update debug
+  message * snakemakelib/stat.py: add default compression suffixes *
+  workflows/bio/ATAC-seq.workflow: update to comply with new
+  configuration, make include statements conditional on peakcallers,
+  beautification of targets. [Per Unneberg]
+
+- * wiki: update. [Per Unneberg]
+
+- * test/bio/ngs/tools/test_sratools.py: update test to comply with new
+  config routines * test/test_config.py: ditto * test/test_db_config.py:
+  ditto * test/test_workflow.py: ditto *
+  rules/bio/ngs/align/bowtie.rules: add home *
+  rules/bio/ngs/align/bwa.rules: correct ref *
+  rules/bio/ngs/align/star.rules: add log *
+  rules/bio/ngs/db/cloudbiolinux.rules: use fasta in extra_ref *
+  rules/bio/ngs/db/ercc.rules: write fasta and genbank *
+  rules/bio/ngs/rnaseq/rsem.rules: add bowtie path *
+  rules/bio/ngs/settings.rules: update ref *
+  rules/bio/ngs/tools/sratools.rules: add log *
+  snakemakelib/bio/ngs/db.py: remove index2 *
+  snakemakelib/bio/ngs/tools/sratools.py: exception only *
+  snakemakelib/config.py: require config parameter for load_sml_config.
+  [Per Unneberg]
+
+- Update config usage. [Per Unneberg]
+
+- * rules/bio/ngs/align/star.rules: update config usage, make indexing
+  depend on input gtf * rules/bio/ngs/db/ucsc.rules: update config
+  usage, add genepred rule, add rule for generating pipeline-ready
+  reference * rules/bio/ngs/qc/rseqc.rules: update config usage *
+  rules/bio/ngs/rnaseq/rpkmforgenes.rules: ditto *
+  rules/bio/ngs/rnaseq/rsem.rules: ditto, update index function *
+  rules/bio/ngs/settings.rules: set default gtf, add extra_ref *
+  rules/bio/ngs/tools/bamtools.rules: update config usage *
+  rules/bio/ngs/tools/bedtools.rules: ditto *
+  rules/bio/ngs/tools/conversion.rules: ditto *
+  rules/bio/ngs/tools/sratools.rules: ditto, also merge info and
+  biosample output * rules/settings.rules: add protected file types *
+  snakemakelib/bio/ngs/db.py: refactor index, ref functions, add
+  annotation * snakemakelib/bio/ngs/tools/sratools.py: fix parameters *
+  snakemakelib/config.py: make load_sml_config be a required rule *
+  snakemakelib/io.py: add support for protected rules *
+  snakemakelib/log.py: warn if we try to get existing logger *
+  snakemakelib/stat.py: remove direct dependency on config *
+  workflows/bio/ATAC-seq.workflow: add set_output *
+  workflows/bio/scrnaseq.workflow: ditto, and update config usage. [Per
+  Unneberg]
+
+- Replace update_sml_config with update_snakemake_config and the like at
+  relevant positions. [Per Unneberg]
+
+- * rules/settings.rules: add protected settings * snakemakelib/io.py:
+  update output function to take into account both temporary and
+  protected output * workflows/bio/ATAC-seq.workflow: use new set_output
+  function * workflows/bio/scrnaseq.workflow: ditto. [Per Unneberg]
+
+- * rules/bio/ngs/enrichment/macs.rules: add log * workflows/bio/ATAC-
+  seq.workflow: correct macs2 options. [Per Unneberg]
+
+- * rules/bio/ngs/tools/sratools.rules: add restraint on SRR fastq name.
+  [Per Unneberg]
+
+- * rules/bio/ngs/align/bowtie.rules: add log output *
+  rules/bio/ngs/tools/sratools.rules: fix fastq link rule *
+  rules/settings.rules: add sra filetype * snakemakelib/io.py: add
+  warning message if no outputs set to temp * workflows/bio/ATAC-
+  seq.workflow: update macs options. [Per Unneberg]
+
+- * rules/bio/ngs/enrichment/dfilter.rules: add PATH *
+  rules/bio/ngs/qc/cutadapt.rules: add uris *
+  rules/bio/ngs/qc/picard.rules: output csv, add uri *
+  snakemakelib/bio/ngs/qc/cutadapt.py: pass data frame *
+  snakemakelib/bio/ngs/qc/picard.py: fix percent columns, beautify plot
+  call * snakemakelib/bio/ngs/qc/rseqc.py: beatify plot calls *
+  snakemakelib/bokeh/plot.py: add scatterplot2 * workflows/bio/ATAC-
+  seq.workflow: add align targets. [Per Unneberg]
+
+- * rules/bio/ngs/qc/cutadapt.rules: update data summary rules *
+  snakemakelib/bokeh/plot.py: add dotplot. [Per Unneberg]
+
+- * rules/bio/ngs/align/bowtie.rules: add benchmark *
+  rules/bio/ngs/qc/picard.rules: add template *
+  snakemakelib/bio/ngs/qc/picard.py: add metrics plotting utilities *
+  snakemakelib/bokeh/plot.py: add lineplot *
+  snakemakelib/bokeh/publish.py: do recursive update of template
+  keywords * workflows/bio/ATAC-seq.workflow: add cutadapt execution.
+  [Per Unneberg]
+
+- * rules/bio/ngs/tools/bamtools.rules: add installation check *
+  rules/bio/ngs/tools/bedtools.rules: readd home. [Per Unneberg]
+
+- * snakemakelib/bio/ngs/align/star.py: use new plotting interface in
+  snakemakelib.bokeh.plot * snakemakelib/bio/ngs/qc/rseqc.py: ditto *
+  snakemakelib/bokeh/plot.py: new. [Per Unneberg]
+
+- * rules/bio/ngs/align/bowtie.rules: parametrize bowtie *
+  rules/bio/ngs/enrichment/macs.rules: update macs rule *
+  rules/bio/ngs/qc/cutadapt.rules: move from sequenceprocessing *
+  rules/bio/ngs/qc/picard.rules: add qc rules *
+  rules/bio/ngs/qc/sequenceprocessing.rules: remove cutadapt *
+  rules/bio/ngs/tools/sratools.rules: fix conflicting rules *
+  snakemakelib/io.py: require input to set_temp_output * workflows/bio
+  /ATAC-seq.workflow: add options * workflows/bio/scrnaseq.workflow: fix
+  temp_output. [Per Unneberg]
+
+- * snakemakelib/bio/ngs/tools/sratools.py: update error message on
+  analysis startup. [Per Unneberg]
+
+- * wiki: update. [Per Unneberg]
+
+- * rules/bio/ngs/enrichment/dfilter.rules: correct parameter string *
+  rules/bio/ngs/enrichment/zinba.rules: reorganize configuration dict *
+  rules/bio/ngs/motif/gem.rules: add installation info * workflows/bio
+  /ATAC-seq.workflow: add information about additional analyses *
+  workflows/bio/scrnaseq.workflow: add bamtools_filter to
+  temp_rules_default. [Per Unneberg]
+
+- * snakemakelib/bio/ngs/utils.py: add function to convert dict to
+  R-compatible dict. [Per Unneberg]
+
+- * rules/bio/ngs/enrichment/zinba.rules: add run.zinba rule. [Per
+  Unneberg]
+
+- * rules/bio/ngs/enrichment/dfilter.rules: add dfilter support *
+  rules/bio/ngs/enrichment/zinba.rules: correct output file names *
+  rules/bio/ngs/rnaseq/rsem.rules: remove bam output *
+  rules/bio/ngs/tools/sratools.rules: add title to biosample output *
+  templates/workflow_scrnaseq_qc.html: add rulegraph * workflows/bio
+  /ATAC-seq.workflow: rewrite ruleorders *
+  workflows/bio/scrnaseq.workflow: add temp_rules, add report output.
+  [Per Unneberg]
+
+- * rules/settings.rules: use temp_filetypes_default *
+  snakemakelib/io.py: ditto * rules/utils.rules: add rules to generate
+  rulegraph plot and configuration output. [Per Unneberg]
+
+- * rules/bio/ngs/enrichment/zinba.rules: update alignability target *
+  rules/bio/ngs/rnaseq/rsem.rules: add installation check *
+  rules/bio/ngs/tools/sratools.rules: add logger * workflows/bio/ATAC-
+  seq.workflow: update alignability target *
+  workflows/bio/scrnaseq.workflow: add qc and pca rule. [Per Unneberg]
+
+- * rules/bio/ngs/tools/sratools.rules: add rule to download phenotype
+  data. [Per Unneberg]
+
+- * rules/bio/ngs/align/blat.rules: remove duplicate link rule *
+  rules/bio/ngs/db/ucsc.rules: make ucsc_write_chromosome write output
+  files prefixed with 'chr' [Per Unneberg]
+
+- * rules/bio/ngs/align/bowtie.rules: update check for program *
+  rules/bio/ngs/tools/bedtools.rules: ditto. [Per Unneberg]
+
+- * rules/bio/ngs/align/bowtie.rules: update align and index commands *
+  rules/bio/ngs/db/ucsc.rules: add several rules to generate custom
+  references * rules/bio/ngs/enrichment/peakseq.rules: remove obsolete
+  rules and simplify names * rules/bio/ngs/enrichment/zinba.rules: add
+  putatively working functions * rules/bio/ngs/qc/picard.rules: add dict
+  rule * rules/bio/ngs/tools/bedtools.rules: remove obsolete home *
+  snakemakelib/io.py: extend default temp files * workflows/bio/ATAC-
+  seq.workflow: add correction rule. [Per Unneberg]
+
+- * requirements.txt: add pysam * rules/bio/ngs/align/bowtie.rules: fix
+  bowtie aligment rule * rules/bio/ngs/enrichment/peakseq.rules: add
+  docstring * rules/bio/ngs/qc/picard.rules: merge: do copy instead of
+  symlink * rules/settings.rules: add temp_files * snakemakelib/io.py:
+  only include large file types in temp_files. [Per Unneberg]
+
+- * rules/bio/ngs/enrichment/peakseq.rules: add rules for generating
+  mappability files. [Per Unneberg]
+
+- * rules/bio/ngs/enrichment/peakseq.rules: add. [Per Unneberg]
+
+- * requirements.txt: add biopython *
+  rules/bio/ngs/enrichment/zinba.rules: add peakseq, clean up rules *
+  rules/bio/ngs/qc/picard.rules: improve find_merge_inputs *
+  rules/bio/ngs/settings.rules: add read_length *
+  rules/bio/ngs/tools/sratools.rules: add log *
+  snakemakelib/bio/ngs/db.py: add chromosomes *
+  snakemakelib/bio/ngs/regexp.py: add __repr__ * snakemakelib/utils.py:
+  add safe_makedir * workflows/bio/ATAC-seq.workflow: update suffix.
+  [Per Unneberg]
+
+- Remove obsolete code. [Per Unneberg]
+
+- * rules/settings.rules: add temp_rules configuration parameter *
+  snakemakelib/io.py: add set_temp_output * workflows/bio/ATAC-
+  seq.workflow: add temp_output. [Per Unneberg]
+
+- * rules/bio/ngs/enrichment/macs.rules: add. [Per Unneberg]
+
+- * rules/bio/ngs/align/bowtie.rules: fix readgroup error *
+  workflows/bio/ATAC-seq.workflow: fix ruleorders. [Per Unneberg]
+
+- * rules/bio/ngs/chipseq/macs.rules: add macs rules. [Per Unneberg]
+
+- * rules/bio/ngs/motif/gem.rules: add. [Per Unneberg]
+
+- * rules/bio/ngs/align/bowtie.rules: add bowtie rules outside tuxedo *
+  rules/bio/ngs/enrichment/zinba.rules: modify options, add template *
+  rules/bio/ngs/methylseq/rnbeads.rules: move dict_to_R to
+  snakemake.bio.ngs.utils * rules/bio/ngs/qc/picard.rules: unlink file
+  if symlink to be done on force * rules/bio/ngs/rnaseq/tuxedo.rules:
+  update index calls * snakemakelib/bio/ngs/utils.py: add dict_to_R *
+  workflows/bio/ATAC-seq.workflow: add initial configurations. [Per
+  Unneberg]
+
+- * workflows/bio/ATAC-seq.workflow: Add. [Per Unneberg]
+
+- * rules/bio/ngs/methylseq/rnbeads.rules: add ngs_cfg. [Per Unneberg]
+
+- * rules/bio/ngs/methylseq/rnbeads.rules: update rnbeads run rule. [Per
+  Unneberg]
+
+- * rules/bio/ngs/methylseq/rnbeads.rules: update analysis from bed.
+  [Per Unneberg]
+
+- * rules/bio/ngs/methylseq/rnbeads.rules: Add rnbeads rules *
+  rules/utils.rules: Need sml_rules_path. [Per Unneberg]
+
+- * rules/bio/ngs/db/ucsc.rules: add rules for dealing with ucsc data,
+  mainly downloads * rules/bio/ngs/enrichment/zinba.rules: add rules for
+  zinba. [Per Unneberg]
+
+- * snakemakelib/log.py: fix setting log from config. [Per Unneberg]
+
+- * wiki: [Per Unneberg]
+
+- * wiki: [Per Unneberg]
+
+- * rules/bio/ngs/tools/samtools.rules: remove obsolete rule *
+  rules/utils.rules: ditto * setup.py: remove obsolete info; add
+  examples * wiki: updated. [Per Unneberg]
+
+- * wiki: update. [Per Unneberg]
+
+- * rules/bio/ngs/rnaseq/rsem.rules: save dataframe as csv *
+  workflows/bio/scrnaseq.workflow: add qc section. [Per Unneberg]
+
+- * requirements.txt: add scikit, statsmodels *
+  rules/bio/ngs/qc/picard.rules: remove bam_bai rule *
+  rules/bio/ngs/qc/rseqc.rules: finish up summary rules *
+  rules/bio/ngs/rnaseq/rsem.rules: add parsing of rsem result files *
+  snakemakelib/bio/ngs/align/star.py: add brewer colors *
+  snakemakelib/bio/ngs/qc/rseqc.py: finish up summary functions *
+  workflows/bio/scrnaseq.workflow: remove obsolete rule_order. [Per
+  Unneberg]
+
+- * rules/bio/ngs/qc/picard.rules: add bam_bai indexing rule *
+  rules/bio/ngs/tools/samtools.rules: add bam_bai indexing rule *
+  workflows/bio/scrnaseq.workflow: correct merge.bam sources to genome-
+  based bam. [Per Unneberg]
+
+- * .travis.yml: update to only use master. [Per Unneberg]
+
+- * requirements.txt: add mock * rules/bio/ngs/align/star.rules: find
+  result files by run * rules/bio/ngs/qc/rseqc.rules: output r heatmap,
+  not pdf * rules/bio/ngs/tools/conversion.rules: remove obsolete R code
+  * rules/bio/ngs/tools/sratools.rules: reintroduce _run2sample *
+  rules/comp/settings.rules: improve message *
+  snakemakelib/bio/ngs/tools/sratools.py: reintroduce _run2sample *
+  snakemakelib/stat.py: add is_installed * test/test_utils.py: add test
+  for is_installed * workflows/bio/scrnaseq.workflow: add reports. [Per
+  Unneberg]
+
+- * rules/bio/ngs/qc/rseqc.rules: remove plots from default outputs as
+  these aren't always generated. Add home in case rseqc not locally
+  installed. * workflows/bio/scrnaseq.workflow: filter on dirname for
+  merge_sam. [Per Unneberg]
+
+- * workflows/bio/scrnaseq.workflow: match merge targets by dirname, not
+  basename. [Per Unneberg]
+
+- * rules/bio/ngs/tools/sratools.rules: fix target names *
+  snakemakelib/bio/ngs/tools/sratools.py: remove obsolete run2sample.
+  [Per Unneberg]
+
+- * snakemakelib/bio/ngs/align/star.py: add mismatch plots *
+  snakemakelib/report/utils.py: replace comma. [Per Unneberg]
+
+- * rules/bio/ngs/align/star.rules: simplify plot alignment summary rule
+  * snakemakelib/bio/ngs/align/star.py: generate three basic qc plots
+  and a table * snakemakelib/bokeh/publish.py: distinguish between bokeh
+  Widgets and other objects * static/basic.css: style figures and figure
+  captions * templates/bio_ngs_align_star_summary.html: refactor
+  template. [Per Unneberg]
+
+- * requirements.txt: add pandas and jinja2 *
+  rules/bio/ngs/qc/rseqc.rules: import pandas *
+  snakemakelib/bio/ngs/align/star.py: add utility functions for star *
+  snakemakelib/bokeh/publish.py: add template function for publishing *
+  snakemakelib/report/utils.py: add utility functions for parsing *
+  test/test_utils.py: remove obsolete report format tests. [Per
+  Unneberg]
+
+- * rules/bio/ngs/qc/picard.rules: unlink symlink if exists. [Per
+  Unneberg]
+
+- * .gitignore: add .noseids * rules/bio/ngs/methylseq/bismark.rules:
+  add ref key * rules/bio/ngs/qc/sequenceprocessing.rules: remove path
+  prefixes * rules/bio/ngs/settings.rules: update run_id_re for
+  Illumina@SciLife * snakemakelib/bio/ngs/regexp.py: update _init_format
+  to cope with more general regular expressions *
+  snakemakelib/bio/ngs/targets.py: add debug statement *
+  test/bio/ngs/test_regexp.py: add tests for format generation *
+  workflows/bio/methylseq.workflow: update to new
+  generic_target_generator function. [Per Unneberg]
+
+- * rules/bio/ngs/align/star.rules: update merge rule *
+  rules/bio/ngs/settings.rules: fix Illumina@SciLife sampleorg pattern *
+  setup.py: update to work with travis * snakemakelib/bio/ngs/regexp.py:
+  clear pattern upon new parse * test/bio/ngs/test_targets.py: remove
+  trailing import * test/test_workflow.py: update snakefile generation *
+  workflows/bio/scrnaseq.workflow: update target generation *
+  workflows/bio/variation.workflow: ditto. [Per Unneberg]
+
+- * rules/bio/ngs/align/bowtie.rules: use sample_org key *
+  rules/bio/ngs/align/star.rules: ditto * rules/bio/ngs/qc/rseqc.rules:
+  ditto * rules/bio/ngs/rnaseq/rsem.rules: ditto *
+  rules/bio/ngs/rnaseq/tuxedo.rules: ditto *
+  rules/bio/ngs/settings.rules: use namedtuple for sample organization *
+  snakemakelib/bio/ngs/targets.py: change info to debug log messages *
+  snakemakelib/stat.py: add to avoid circular import *
+  snakemakelib/utils.py: move is_compressed to module stat *
+  workflows/bio/scrnaseq.workflow: use new generic_target_generator.
+  [Per Unneberg]
+
+- * rules/bio/ngs/settings.rules: use sample_column_map for sampleinfo *
+  snakemakelib/bio/ngs/targets.py: rewrite generic_target_generator *
+  snakemakelib/bio/ngs/utils.py: add test for empty regexp strings *
+  test/bio/ngs/test_targets.py: rewrite tests completely. [Per Unneberg]
+
+- * snakemakelib/bio/ngs/regexp.py: add basename_pattern, use super for
+  __init__ functions * test/bio/ngs/test_regexp.py: add basename tests,
+  remove regexp= parameter call * test/test_workflow.py: remove
+  ReadGroup * workflows/bio/variation.workflow: update ReadGroup import.
+  [Per Unneberg]
+
+- * snakemakelib/config.py: make __init__ first function. [Per Unneberg]
+
+- * snakemakelib/bio/ngs/rnaseq/tuxedo.py: update subclass to comply
+  with new structure * snakemakelib/bio/ngs/targets.py: change argument
+  order in function call * snakemakelib/bio/ngs/utils.py: correct
+  attribute call * test/bio/ngs/rnaseq/test_tuxedo.py: add required
+  regexp parameter * test/bio/ngs/test_targets.py: ditto *
+  test/test_utils.py: remove unused imports. [Per Unneberg]
+
+- * snakemakelib/bio/ngs/regexp.py: add r"" to regexps, pass match
+  object to _post_process_keys * test/bio/ngs/test_regexp.py: add r"" to
+  regexps, match full path illumina * test/bio/ngs/test_utils.py: add
+  simple mocks for finding files * test/test_utils.py: move bulk to
+  test/bio/ngs/test_utils.py. [Per Unneberg]
+
+- * rules/bio/ngs/settings.rules: remove unnecessary NA tag *
+  snakemakelib/bio/ngs/regexp.py: add regexp classes *
+  snakemakelib/bio/ngs/utils.py: move ReadGroup to regexp and make
+  find_files accept RegexpDict as input * test/bio/ngs/test_regexp.py:
+  add tests for regexp * test/bio/ngs/test_targets.py: copy
+  test/test_targets.py tests * test/bio/ngs/test_utils.py: add FindFiles
+  test. [Per Unneberg]
+
+- Add qc summary functions. [Per Unneberg]
+
+- * workflows/bio/scrnaseq.workflow: add merge rule for transcript
+  alignments (as opposed to genome alignment) *
+  rules/bio/ngs/qc/rseqc.rules: fix output names *
+  rules/bio/ngs/settings.rules: doc change. [Per Unneberg]
+
+- Add environment variable to configurations. [Per Unneberg]
+
+- * rules/bio/ngs/qc/sequenceprocessing.rules: change fastqc target *
+  test/test_workflow.py: run slow tests conditionally *
+  workflows/bio/methylseq.workflow: update merge function. [Per
+  Unneberg]
+
+- * rules/comp/utils.rules: remove inadvertently inserted tabs. [Per
+  Unneberg]
+
+- * rules/bio/ngs/settings.rules: remove flowcells, lanes, add runs *
+  snakemakelib/bio/ngs/targets.py: ditto * snakemakelib/log.py: disable
+  config loading configuration interface * snakemakelib/utils.py: add
+  rreplace * test/test_targets.py: update tests to comply with runs *
+  test/test_workflow.py: remove flowcells, lanes, add runs *
+  workflows/bio/BROAD_rnaseq.workflow: apply generic_target_generator *
+  workflows/bio/methylseq.workflow: ditto *
+  workflows/bio/variation.workflow: ditto *
+  workflows/bio/scrnaseq.workflow: remove find_files. [Per Unneberg]
+
+- * rules/bio/ngs/settings.rules: update sample_run_sra sample
+  organization, add run_column_name *
+  rules/bio/ngs/tools/sratools.rules: add fastq link rule *
+  snakemakelib/bio/ngs/targets.py: add run_column_name mapping *
+  snakemakelib/bio/ngs/tools/sratools.py: rename get_metadata to
+  register_metadata * snakemakelib/config.py: expand environment
+  variables in configuration files * snakemakelib/log.py: add loading of
+  smlconf as this is unavailable for the configuration module *
+  test/bio/ngs/rnaseq/test_tuxedo.py: update year *
+  workflows/bio/scrnaseq.workflow: update merge target names *
+  test/bio/ngs/tools/test_sratools.py: add tests for sra tools. [Per
+  Unneberg]
+
+- * rules/bio/ngs/rnaseq/rsem.rules: update output name to
+  *.isoform.results, *.genes.results * workflows/bio/scrnaseq.workflow:
+  ditto for RSEM_TARGETS. [Per Unneberg]
+
+- * workflows/bio/scrnaseq.workflow: remove trailing sort. [Per
+  Unneberg]
+
+- * rules/bio/ngs/rnaseq/rsem.rules: fix typo. [Per Unneberg]
+
+- * rules/bio/ngs/align/star.rules: add check for rsem quantification *
+  rules/bio/ngs/rnaseq/rsem.rules: add transcript annotation, fix rules
+  * rules/bio/ngs/settings.rules: add rnaseq section *
+  snakemakelib/bio/ngs/db.py: change logger to smllogger *
+  snakemakelib/bio/ngs/targets.py: ditto *
+  snakemakelib/bio/ngs/tools/sratools.py: remove unused logger *
+  snakemakelib/config.py: change logger to smllogger *
+  snakemakelib/report/sphinx.py: ditto * snakemakelib/log.py: add
+  default handlers. [Per Unneberg]
+
+  * workflows/bio/scrnaseq.workflow: fixes for rsem; find correct merge source
+
+- * snakemakelib/bio/ngs/tools/sratools.py: us try/except statement for
+  missing metadata file. [Per Unneberg]
+
+- * rules/bio/ngs/align/bowtie.rules: add rules from tuxedo and simplify
+  * rules/bio/ngs/align/star.rules: add function for align suffix *
+  rules/bio/ngs/qc/rseqc.rules: add missing include statements *
+  rules/bio/ngs/settings.rules: add sample_run_sra configuration and
+  sample_column_name * snakemakelib/bio/ngs/targets.py: update logging *
+  snakemakelib/bio/ngs/tools/sratools.py: update handling of missing
+  metadata file. [Per Unneberg]
+
+- * snakemakelib/log.py: load config only once. [Per Unneberg]
+
+- Update logging management. [Per Unneberg]
+
+- * snakemakelib/config.py: update docs and add load_sml_config for
+  loading yaml configuration files. [Per Unneberg]
+
+- * rules/bio/ngs/settings.rules: make snakemakelib config recognize
+  command-line options * snakemakelib/bio/ngs/targets.py: limit target
+  by sample * snakemakelib/bio/ngs/utils.py: add limit to find_files *
+  workflows/bio/scrnaseq.workflow: add customization of aligner. [Per
+  Unneberg]
+
+- * workflows/bio/scrnaseq.workflow: start adding rsem support *
+  rules/bio/ngs/tools/sratools.rules: fix wget expression *
+  rules/bio/ngs/rnaseq/tuxedo.rules: add bowtie variable *
+  rules/bio/ngs/rnaseq/rsem.rules: start adding STAR support *
+  rules/bio/ngs/align/star.rules: minor PEP polish. [Per Unneberg]
+
+- * rules/bio/ngs/settings.rules: set .fastq.gz default suffix *
+  test/test_workflow.py: remove default .fastq.gz. [Per Unneberg]
+
+- * rules/bio/ngs/qc/picard.rules: use PICARD_HOME *
+  rules/bio/ngs/tools/sratools.rules: remove obsolete rules as the
+  process can be much simplified * rules/comp/settings.rules: add
+  support for VENV environment variables *
+  snakemakelib/bio/ngs/tools/sratools.py: add function for reading
+  metadata. [Per Unneberg]
+
+- * rules/bio/ngs/rnaseq/rpkmforgenes.rules: add path to rpkmforgenes
+  execution. [Per Unneberg]
+
+- * rules/bio/ngs/rnaseq/rpkmforgenes.rules: add python2 activation.
+  make gtf default again. [Per Unneberg]
+
+- * rules/bio/ngs/settings.rules: change platform to
+  sample_organization, simplify formats *
+  rules/bio/ngs/tools/samtools.rules: config -> cfg *
+  snakemakelib/bio/ngs/targets.py: add option to prepend path to output.
+  Remove PATH dependency * snakemakelib/bio/ngs/utils.py: delete
+  parse_str_path; all read group parsing is now done on the basename *
+  test/test_targets.py: remove PATH * test/test_utils.py: remove PATH.
+  [Per Unneberg]
+
+- * rules/bio/ngs/qc/picard.rules: symlink merge files if len(inputs) ==
+  1 * rules/bio/ngs/rnaseq/rpkmforgenes.rules: use genePred input *
+  workflows/bio/scrnaseq.workflow: modify formatting of merge sources.
+  [Per Unneberg]
+
+- * rules/bio/ngs/align/star.rules: add default annotation *
+  rules/bio/ngs/settings.rules:  add sample_sample platform *
+  rules/bio/ngs/tools/sratools.rules: remove input *
+  snakemakelib/bio/ngs/targets.py: add way to deal with read group info
+  that lacks PATH information * snakemakelib/bio/ngs/utils.py: add parse
+  function where PATH not picked up * test/test_workflow.py: use index
+  instead of ref. [Per Unneberg]
+
+- * rules/bio/ngs/tools/sratools.rules: fix erroneous download rules.
+  [Per Unneberg]
+
+- Add rules for sra download preparation and conversion to fastq. [Per
+  Unneberg]
+
+- Minor fixes to scrnaseq pipeline. [Per Unneberg]
+
+  * rules/bio/ngs/qc/rseqc.rules: add parameter for missing refgene
+  * rules/bio/ngs/rnaseq/rpkmforgenes.rules: fix missing keys
+  * snakemakelib/bio/ngs/targets.py: fix call of platform_unit_fn
+  * workflows/bio/scrnaseq.workflow: add merge function
+
+- Add target generators and tests for target generation. Rename punit to
+  lane again. [Per Unneberg]
+
+  * rules/bio/ngs/settings.rules: add format and re strings
+  * snakemakelib/bio/ngs/rnaseq/tuxedo.py: change s to run_id_re
+  * snakemakelib/bio/ngs/targets.py: target generator functions
+  * snakemakelib/bio/ngs/utils.py: add extra key, misc fixes
+  * test/test_targets.py: add target generator tests
+  * test/test_utils.py: use new run_id_re format
+  * test/test_workflow.py: punit -> lane
+  * workflows/bio/BROAD_rnaseq.workflow: ditto
+  * workflows/bio/methylseq.workflow: ditto
+  * workflows/bio/variation.workflow: ditto
+
+- Simplify read group parsing. [Per Unneberg]
+
+  * rules/bio/ngs/rnaseq/tuxedo.rules: add TuxedoReadGroup
+  * rules/bio/ngs/settings.rules: simplify platform config
+  * snakemakelib/bio/ngs/rnaseq/tuxedo.py: add TuxedoReadGroup
+  * snakemakelib/bio/ngs/utils.py: add ReadGroup
+  * test/bio/ngs/rnaseq/test_tuxedo.py: add test for TuxedoReadGroup
+  * test/test_utils.py: add test for ReadGroup
+
+- * rules/bio/ngs/tools/samtools.rules: add index function. [Per
+  Unneberg]
+
+- Add utility functions for read group handling. [Per Unneberg]
+
+- * rules/bio/ngs/settings.rules: change platform-unit to punit *
+  snakemakelib/bio/ngs/rnaseq/tuxedo.py: ditto *
+  test/bio/ngs/rnaseq/test_tuxedo.py: ditto * test/test_workflow.py:
+  ditto * workflows/bio/BROAD_rnaseq.workflow: ditto *
+  workflows/bio/methylseq.workflow: ditto. [Per Unneberg]
+
+- Add rpkmforgenes.rules, bamtools.rules, scrnaseq.workflow. [Per
+  Unneberg]
+
+- * snakemakelib/bio/ngs/utils.py: fix lencheck error. Allow arbitrary
+  key names for run_id_re. * test/test_metrics.py: sort metrics to make
+  sure correct file is read. [Per Unneberg]
+
+- * rules/bio/ngs/qc/rseqc.rules: add RSeQC rules *
+  rules/bio/ngs/rnaseq/misc.rules: add rpkmforgenes.py *
+  rules/bio/ngs/tools/bedtools.rules: add bamtobed command *
+  rules/utils.rules: add missing sml_rules_path. [Per Unneberg]
+
+- * rules/bio/ngs/rnaseq/rsem.rules: simplify bowtie index extension
+  handling * rules/bio/ngs/rnaseq/tuxedo.rules: ditto *
+  rules/bio/ngs/tools/sratools.rules: add fastq-dump *
+  workflows/bio/BROAD_rnaseq.workflow: finish first basic working
+  setting. [Per Unneberg]
+
+- * rules/bio/ngs/rnaseq/rsem.rules: fix rsem rules *
+  rules/bio/ngs/rnaseq/tuxedo.rules: separate bowtie_build and
+  bowtie_build2 * snakemakelib/bio/ngs/db.py: strip extensions from
+  rsem, bowtie. [Per Unneberg]
+
+- * rules/bio/ngs/rnaseq/tuxedo.rules: add read group output to tophat
+  alignments * rules/bio/ngs/settings.rules: add platform information *
+  snakemakelib/bio/ngs/db.py: remove default parameter value *
+  snakemakelib/bio/ngs/rnaseq/tuxedo.py: update rg string *
+  snakemakelib/bio/ngs/utils.py: raise exception on missing re info *
+  snakemakelib/config.py: correct logger import * snakemakelib/utils.py:
+  implement isoformat function * test/bio/ngs/rnaseq/test_tuxedo.py:
+  test empty rg center string * test/test_utils.py: add tests for read
+  group strings. [Per Unneberg]
+
+- Add tests and code for tuxedo read group generation. [Per Unneberg]
+
+- * rules/bio/ngs/rnaseq/tuxedo.rules: add docs, update input patterns
+  for cufflinks. [Per Unneberg]
+
+- * rules/bio/ngs/rnaseq/rnaseq.rules: delete. [Per Unneberg]
+
+- * .gitignore: ignore data * rules/bio/ngs/rnaseq/tuxedo.rules: add
+  cufflinks rules * rules/comp/settings.rules: add python2 settings *
+  snakemakelib/bio/ngs/db.py: add default argument to application. [Per
+  Unneberg]
+
+- * rules/bio/ngs/align/star.rules: add support for bam output *
+  snakemakelib/bio/ngs/db.py: add support for star. [Per Unneberg]
+
+- * rules/bio/ngs/align/star.rules: update indexing rule and add
+  alignment rule * rules/comp/settings.rules: add compression section *
+  snakemakelib/utils.py: add function to check for compression. [Per
+  Unneberg]
+
+- * workflows/bio/variation.workflow: make cfg specific to workflow by
+  giving it unique name. [Per Unneberg]
+
+- * rules/bio/ngs/align/bwa.rules: add index function *
+  rules/bio/ngs/methylseq/bismark.rules: return function by type-casting
+  parent section to <dict> * rules/bio/ngs/qc/picard.rules: ditto *
+  rules/bio/ngs/tools/gatk.rules: ditto *
+  snakemakelib/bio/ngs/methylseq/bismark.py: remove ref function *
+  rules/bio/ngs/settings.rules: set new default values for build and
+  build_config. [Per Unneberg]
+
+- * test/test_config.py: Add tests for configuration update. [Per
+  Unneberg]
+
+- * snakemakelib/config.py: fix update function; make sure that if
+  config value is a function it is not evaluated. Achieve by type-
+  casting the config object to a dict. [Per Unneberg]
+
+- * snakemakelib/bio/ngs/db.py: Add functionality for generating index
+  and ref strings * test/test_db_config.py: add tests for db. [Per
+  Unneberg]
+
+- * .gitignore: add tmp * snakemakelib/config.py: overload __getitem__
+  to allow for function entries * test/test_config.py: add test for
+  BaseConfig.__getitem__ [Per Unneberg]
+
+- * .gitignore: add *tmp* * rules/bio/ngs/align/star.rules: add *
+  rules/bio/ngs/rnaseq/tuxedo.rules: Update to snakemake format *
+  test/__init__.py: add annotation installation *
+  rules/bio/ngs/rnaseq/rnaseqc.rules: add *
+  rules/bio/ngs/rnaseq/rsem.rules: add. [Per Unneberg]
+
+- * rules/bio/ngs/tools/samtools.rules: change {sfx} -> .{sfx} [Per
+  Unneberg]
+
+- * Readme.md: moved image. [Per Unneberg]
+
+- * Readme.md: add travis badge. [Per Unneberg]
+
+- * requirements.txt: add. [Per Unneberg]
+
+- * .travis.yml: add. [Per Unneberg]
+
+- Use relative include paths. [Per Unneberg]
+
+- * test/test_report.py: Remove obsolete mako template references. [Per
+  Unneberg]
+
+- * test/test_workflow.py: add attribute to slow tests. [Per Unneberg]
+
+- * wiki: Update. [Per Unneberg]
+
+- * rules/bio/ngs/settings.rules: remove obsolet sample_prefix *
+  test/test_workflow.py: update Snakefile to accomodate for bismark
+  test, add genome preparation step * workflows/bio/methylseq.workflow:
+  update options and rule name to avoid name clash. [Per Unneberg]
+
+- * rules/bio/ngs/methylseq/bismark.rules: update rules, add paired_end
+  option * rules/bio/ngs/qc/picard.rules: add documentation string *
+  snakemakelib/bio/ngs/methylseq/bismark.py: add helper functions
+  align_suffix, report_label * workflows/bio/methylseq.workflow: add use
+  of bismark helper functions. [Per Unneberg]
+
+- * test/test_workflow.py: add methylseq test function. [Per Unneberg]
+
+- * .gitignore: add more suffixes *
+  rules/bio/ngs/methylseq/bismark.rules: add genome preparation, rule
+  for merging alignment reports * rules/bio/ngs/settings.rules: move
+  run_id_re here * test/__init__.py: add bismark *
+  workflows/bio/methylseq.workflow: cleanup, add find_report_inputs.
+  [Per Unneberg]
+
+- * test/test_workflow.py: Add snpeff info *
+  rules/bio/ngs/variation/variation.rules: add build config *
+  rules/bio/ngs/settings.rules: ditto * .gitignore: add more file
+  suffices. [Per Unneberg]
+
+- Update interval_list LN field. [Per Unneberg]
+
+- * .gitignore: add file suffixes. [Per Unneberg]
+
+- * test/test_workflow.py: Update target names to reflect new names *
+  workflows/bio/variation.workflow: add dup to dup.dup_metrics. [Per
+  Unneberg]
+
+- * rules/bio/ngs/qc/picard.rules: Replace read1_label + fastq_suffix as
+  one string. [Per Unneberg]
+
+- Deleted old format files. [Per Unneberg]
+
+- Rename files to delivery format. Move internal format names to
+  data/projects_internal_format. [Per Unneberg]
+
+- * rules/bio/ngs/settings.rules: Update read labels and sample prefix.
+  [Per Unneberg]
+
+- * workflows/bio/methylseq.workflow: remove obsolete sml_rules_path()
+  [Per Unneberg]
+
+- * rules/bio/ngs/settings.rules: make sure not to overwrite commandline
+  config options * rules/comp/slurm/general.rules: ditto *
+  rules/settings.rules: ditto. [Per Unneberg]
+
+- * rules/bio/ngs/methylseq/bismark.rules: make bowtie2 PE specific rule
+  as params not accessible via output/input rules. [Per Unneberg]
+
+- * workflows/bio/methylseq.workflow: merging requires sorting by
+  queries * rules/bio/ngs/methylseq/bismark.rules: generate gzipped
+  output by default. [Per Unneberg]
+
+- Updates to region-based analyses. [Per Unneberg]
+
+- * rules/bio/ngs/qc/picard.rules: add . to
+  picard_calculate_region_hs_metrics. [Per Unneberg]
+
+- * rules/bio/ngs/tools/gatk.rules: add baits stratification *
+  rules/bio/ngs/reports/picard_qc_report.mako: add attachments section *
+  rules/bio/ngs/reports/gatk_variant_eval.mako: add methods
+  documentation. [Per Unneberg]
+
+- * rules/bio/ngs/tools/gatk.rules: use the region_{region} syntax for
+  region-based rules gatk_select_variants_region and
+  gatk_variant_eval_stratify_by_region. [Per Unneberg]
+
+- * rules/bio/ngs/reports/variant_evaluation_per_gene.rules: deleted.
+  [Per Unneberg]
+
+- * rules/bio/ngs/qc/picard.rules: add/update region-based rules *
+  rules/bio/ngs/reports/picard_qc_report.mako: add table and region-
+  based summary * rules/bio/ngs/reports/picard_qc_report.rules: add
+  region summary, flags for region report *
+  rules/bio/ngs/reports/rulegraphs.rules: update output suffix *
+  rules/bio/ngs/tools/bedtools.rules: add region-based rules for
+  generating baits/targets files * rules/bio/ngs/tools/samtools.rules:
+  update region-based rule * snakemakelib/report/picard.py: add clear-
+  figure statements after observing weird output. [Per Unneberg]
+
+- * snakemakelib/report/picard.py: remove requirement that a histogram
+  be present. prune empty rows in duplication metrics if the Unknown
+  library is set. [Per Unneberg]
+
+- * rules/bio/ngs/qc/picard.rules: modified duplication rules to take
+  into account dup label * rules/bio/ngs/settings.rules: add regions
+  label * rules/bio/ngs/reports/rulegraphs.rules: add templates *
+  rules/bio/ngs/reports/picard_qc_report.rules: remove bamlabel; make
+  rule more generic by asking for a wildcard *label* so that region-
+  based reports can be made on the fly *
+  rules/bio/ngs/reports/variant_evaluation_per_gene.rules: remove
+  import. [Per Unneberg]
+
+- * rules/bio/ngs/reports/picard_qc_report.rules: Move template to
+  separate mako file * rules/bio/ngs/reports/settings.rules: move
+  rulegraphs key to rulegraphs.rules * snakemakelib/report/picard.py:
+  fix plotting function. [Per Unneberg]
+
+- Delete obsolete mako files. [Per Unneberg]
+
+- * rules/bio/ngs/report.rules: move to reports *
+  rules/bio/ngs/reports/picard_qc_report.rules: make picard qc plot
+  function * rules/bio/ngs/reports/report.rules: move from .. *
+  rules/bio/ngs/reports/settings.rules: general settings for reports.
+  [Per Unneberg]
+
+- * rules/bio/ngs/reports/variant_evaluation_per_gene.rules: add
+  picard_qc_report per gene * snakemakelib/report/picard.py: add
+  qc_plots. [Per Unneberg]
+
+- * rules/bio/ngs/qc/picard.rules: fix interval_list command *
+  rules/bio/ngs/report.rules: finish gatk_eval_report *
+  rules/bio/ngs/reports/variant_evaluation_per_gene.rules: add *
+  rules/bio/ngs/tools/bedtools.rules: add options *
+  rules/bio/ngs/tools/gatk.rules: add region-based rules *
+  rules/bio/ngs/tools/samtools.rules: add region-based rule. [Per
+  Unneberg]
+
+- * rules/bio/ngs/report.rules: update rulegraph and dag rules *
+  rules/bio/ngs/tools/gatk.rules: update config values for variant_eval.
+  [Per Unneberg]
+
+- * rules/bio/ngs/report.rules: add R code. [Per Unneberg]
+
+- * rules/bio/ngs/report.rules: Add rulegrahps rule. [Per Unneberg]
+
+- * rules/bio/ngs/report.rules: Add reports and rules. [Per Unneberg]
+
+- * rules/bio/ngs/report.rules: add plots, csv-table support, and remove
+  dependency on texttable. * snakemakelib/report/picard.py: add width
+  spec to make_rst_table, fix error in add_column. [Per Unneberg]
+
+- * rules/bio/ngs/tools/gatk.rules:   - add picard.rules   - update
+  VariantEval options; GenotypeConcordance has been moved to own walker,
+  remove redundant -ST spec. [Per Unneberg]
+
+- * rules/bio/ngs/qc/picard.rules: input function evaluated when parsing
+  file. Check for error in input function. [Per Unneberg]
+
+- Fix output names to comply with -B (basename) flag. [Per Unneberg]
+
+  * workflows/bio/methylseq.workflow: add unsorted option to merge bam output. update output names
+  * rules/bio/ngs/methylseq/bismark.rules: fix output names
+
+- * rules/bio/ngs/report.rules: update report template and plotting
+  functions * snakemakelib/report/picard.py: add rst functionality *
+  test/test_report.py: unset tests for now. [Per Unneberg]
+
+- * snakemakelib/data/templates/doc/source/index.mako: checkin for
+  feature finish. [Per Unneberg]
+
+- * snakemakelib/report/picard.py: add format, summary to DataFrame.
+  Make PicardMetrics format-related functions return DataFrame
+  equivalents. * test/test_metrics.py: add test_format. [Per Unneberg]
+
+- Add report plotting rule and various tests. [Per Unneberg]
+
+  * test/test_metrics.py: Add test for read_picard_metrics
+  * test/test_report.py: clean up and add initial report tests
+  * snakemakelib/report/picard.py: add x,y to PicardMetrics, add as_list
+  * rules/bio/ngs/report.rules: add plotting functions
+
+- Add DataFrame and support for DataFrame in Metrics classes. [Per
+  Unneberg]
+
+  * snakemakelib/report/picard.py: Add DataFrame class. PicardMetrics class now is container for a metrics DataFrame, PicardHistMetrics two DataFrame objects
+  * test/test_metrics.py: add tests for DataFrame. Update tests to comply with DataFrame. Fix merge tests.
+
+- More updates to metrics classes. [Per Unneberg]
+
+  * rules/bio/ngs/report.rules: add sample finder, sample report rule
+  * snakemakelib/report/picard.py: add self.__class__ calls
+  * test/test_metrics.py: add and rename tests
+
+- Begin implementing summary class with tests. [Per Unneberg]
+
+- * snakemakelib/report/picard.py: update formats, add Template
+  formatter * snakemakelib/report/utils.py: change prefix to suffix *
+  test/test_metrics.py: update tests. [Per Unneberg]
+
+- Add SI suffix formatting * snakemakelib/report/utils.py: new; subclass
+  string.Formatter to format SI suffixes * test/test_utils.py: add test
+  for utils module. [Per Unneberg]
+
+- * snakemakelib/report/picard.py: remove ID from metrics, fieldnames.
+  remove EXTENSIONS. [Per Unneberg]
+
+- * snakemakelib/report/picard.py: Add ID to fieldnames and metrics;
+  non-functional! [Per Unneberg]
+
+- Update documentation. [Per Unneberg]
+
+  * workflows/bio/variation.workflow: Update docs
+
+- Large update to picard metrics classes and tests. [Per Unneberg]
+
+  * .gitignore: add files
+  * snakemakelib/report/picard.py:
+    - remove Collections, old Metrics classes
+    - rewrite Metrics classes, add HistMetrics
+  * test/test_metrics.py: separate tests of Metrics classes
+
+- Major refactoring of PicardMetrics classes. [Per Unneberg]
+
+  * snakemakelib/report/picard.py: Refactor classes
+  * test/test_report.py: Update tests to reflect refactoring
+
+- * .gitignore: add .snakemake *
+  data/genomes/Hsapiens/hg19/seqcap/chr11_baits.interval_list: modify
+  sequence info *
+  data/genomes/Hsapiens/hg19/seqcap/chr11_targets.interval_list: ditto *
+  rules/bio/ngs/qc/picard.rules: fix metrics commands *
+  workflows/bio/variation.workflow: refactor targets. [Per Unneberg]
+
+- * rules/bio/ngs/report.rules: remove trailing BaseConfig *
+  rules/bio/ngs/tools/gatk.rules: update print_reads output *
+  rules/comp/settings.rules: remove trailing BaseConfig *
+  test/test_config.py: delete snakemake logger *
+  workflows/bio/variation.workflow: add clean target. [Per Unneberg]
+
+- Copied much code from ratatosk library. [Per Unneberg]
+
+  * setup.py: Add texttable and sphinx for report generation
+  * rules/bio/ngs/report.rules: Add rules for report generation
+  * snakemakelib/report/picard.py: add utilities to parse and manipulate picard output reports, port to snakemakelib
+  * snakemakelib/report/sphinx.py: port to snakemakelib
+  * snakemakelib/utils.py: utc_time
+  * snakemakelib/report/utils.py: function group_samples
+  * snakemakelib/log.py: add logger for snakemakelib
+  * test/test_report.py: add simple tests for report classes and rules
+
+- * rules/bio/ngs/methylseq/bismark.rules: add suffix labels for finding
+  input * rules/bio/ngs/qc/picard.rules: move find_merge_inputs; add
+  inputfun key * workflows/bio/methylseq.workflow: add configuration
+  items. Reimplement alignment step as here we take trim_galore as
+  input. [Per Unneberg]
+
+- * rules/bio/ngs/settings.rules: remove trailing BaseConfig. [Per
+  Unneberg]
+
+  * rules/bio/ngs/variation/variation.rules: fix snpeff command. Comment out annovar download rules for now as they trigger errors
+  * workflows/bio/variation.workflow: update
+
+- * rules/bio/ngs/qc/picard.rules: update bam finding function *
+  workflows/bio/variation.workflow: add numerous functions *
+  rules/bio/ngs/tools/gatk.rules: add filtering and select rules. [Per
+  Unneberg]
+
+- * rules/bio/ngs/qc/picard_old.rules: Old-style picard rules. [Per
+  Unneberg]
+
+- * rules/bio/ngs/qc/picard.rules: Updated commands to comply with new
+  GATK-like picard. Add function to collect input files to merge sam.
+  [Per Unneberg]
+
+- Updates to bismark; add methylation workflow. [Per Unneberg]
+
+- * rules/bio/genetics/association/plink.rules: remove add_section *
+  rules/bio/ngs/qc/picard.rules: remove add_section *
+  rules/bio/ngs/qc/sequenceprocessing.rules: remove add_section *
+  workflows/bio/variation.workflow: update search path to picard. [Per
+  Unneberg]
+
+- * rules/bio/ngs/tools/gatk.rules: Remove add_section statements *
+  snakemakelib/config.py: Add conversions to BaseConfig *
+  test/test_config.py: Update test for init_sml_config. [Per Unneberg]
+
+- Remove BaseConfig statements. [Per Unneberg]
+
+- * rules/bio/ngs/variation/variation.rules: Update all rules *
+  rules/bio/ngs/popgen/angsd.rules: Update some rules. [Per Unneberg]
+
+- Remove BaseConfig statements in rules files. [Per Unneberg]
+
+- * workflows/bio/variation.workflow: Add. [Per Unneberg]
+
+- * rules/bio/ngs/popgen/angsd.rules: rewrite config_default *
+  rules/bio/ngs/align/bwa.rules: modify samtools load path * setup.py:
+  remove sphinx dependency. [Per Unneberg]
+
+- * Readme.md: Update. [Per Unneberg]
+
+- * .gitmodules: add. [Per Unneberg]
+
+  * wiki: add wiki
+
+- * rules/bio/ngs/methylseq/bismark.rules: Update rules. [Per Unneberg]
+
+- * rules/bio/ngs/methylseq/bismark.rules: correct bismark_align so
+  read1, read2 file used as input and not read1, read1 *
+  rules/bio/ngs/settings.rules: add read1, read2 suffix specification
+  for pathological renaming cases. [Per Unneberg]
+
+- * rules/bio/ngs/methylseq/bismark.rules: add rules align, deduplicate,
+  methXtract for entire bismark pipeline. [Per Unneberg]
+
+- Add bismark.py. [Per Unneberg]
+
+- * snakemakelib/config.py: add get_section * test/test_config.py: add
+  test for get_section * rules/bio/ngs/methylseq/bismark.rules: add ref.
+  [Per Unneberg]
+
+- * rules/bio/ngs/settings.rules: add snakemake configuration options *
+  rules/utils.rules: add snakemake config to printout. [Per Unneberg]
+
+- Delete obsolete variables. [Per Unneberg]
+
+- Updated rules to comply with new config format. [Per Unneberg]
+
+- * test/test_config.py: Add get_sml_config for assert statements *
+  snakemakelib/config.py: Change return types and add get_sml_config.
+  [Per Unneberg]
+
+- * setup.py: add sphinx * rules/bio/ngs/tools/samtools.rules: update
+  import statements. [Per Unneberg]
+
+- * snakemakelib/config.py: Refactor module. Make use of global
+  statement to access global configuration variable in routines. *
+  test/test_config.py: add tests for sml_config. add init_sml_config to
+  clear global init variable. [Per Unneberg]
+
+- * test/test_config.py: Add tests for updating BaseConfig and updating
+  SmlConfig * snakemakelib/config.py: make update_sml_config recursive
+  and check for types of custom config. [Per Unneberg]
+
+- * snakemakelib/config.py: update BaseConfig class to make sure
+  subsections are also BaseConfig instances. Add functions from
+  utils.py. * snakemakelib/utils.py: move config related functions to
+  config.py * test/test_config.py: add tests for creating and setting
+  config instances. [Per Unneberg]
+
+- * snakemakelib/backend.py: add since global config must be stored in
+  backend * snakemakelib/config.py: configuration base classes and
+  utilities * test/test_config.py: test configuration functionality.
+  [Per Unneberg]
+
+- * rules/bio/ngs/methylseq/bismark.rules: update main rule to take into
+  account path * rules/bio/ngs/qc/sequenceprocessing.rules: add
+  trim_galore * snakemakelib/variables.py: add trim_galore variables.
+  [Per Unneberg]
+
+- Add more variables. Start modifying angsd. [Per Unneberg]
+
+- Rule updates. [Per Unneberg]
+
+- * rules/bio/ngs/settings.rules: add import statement. [Per Unneberg]
+
+- Add snakemakelib/variables.py to enforce consistent naming of config
+  dictionary keys. [Per Unneberg]
+
+- * rules/settings.rules: Add * rules/bio/ngs/tools/bedtools.rules: Add
+  configuration string variables * rules/utils.rules: Update
+  configuration rules. Add rules to print rule docs. [Per Unneberg]
+
+- * rules/bio/ngs/align/bwa.rules: Update key strings *
+  rules/bio/ngs/genetics/plink.rules: Define rules *
+  rules/bio/ngs/settings.rules: Update key strings *
+  rules/bio/ngs/tools/bedtools.rules: Update docstring *
+  rules/bio/ngs/tools/gatk.rules: Make use of variables for config dict
+  keys. [Per Unneberg]
+
+- * rules/bio/ngs/settings.rules: add configuration variables to define
+  configuration dictionary key names * rules/bio/ngs/tools/gatk.rules:
+  port biomake rules * rules/utils.rules: add docstring. [Per Unneberg]
+
+- Modify lots of rules. [Per Unneberg]
+
+- - Add rules and workflows - add make2snakemake.py - add module. [Per
+  Unneberg]
+
+- * snakemakelib/ext/__init__.py: Add. [Per Unneberg]
+
+- * snakemakelib/__init__.py: Remove Apache license. [Per Unneberg]
+
+- Initial commit. [Per Unneberg]
+
+- Initial commit. [Per Unneberg]
+
+

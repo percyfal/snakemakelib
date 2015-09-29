@@ -1,8 +1,12 @@
 Changelog
 =========
 
-%%version%% (unreleased)
-------------------------
+0.1-alpha.15 (2015-09-29)
+-------------------------
+
+- Add final support for bokehutils-0.1.6. [Per Unneberg]
+
+  Fix #46
 
 - Minor changes to ATAC-seq. [Per Unneberg]
 

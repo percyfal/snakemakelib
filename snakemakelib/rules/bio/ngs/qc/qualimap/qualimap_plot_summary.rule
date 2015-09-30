@@ -1,6 +1,6 @@
 # -*- snakemake -*-
 from snakemakelib.bio.ngs.qc.qualimap import Qualimap, make_qualimap_plots
-from snakemakelib.utils import SmlTemplateEnv
+from snakemakelib.resources import SmlTemplateEnv
 
 rule qualimap_plot_summary:
     """Qualimap: plot summary results"""

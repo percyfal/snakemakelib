@@ -261,21 +261,22 @@ def scrnaseq_pca_plots(pca_results_file=None, metadata=None, pcacomp=(1,2), pcao
     TOOLS = "pan,wheel_zoom,box_zoom,box_select,resize,reset,save,hover"
 
     # Add radio button group
-    cmap = colorbrewer(datalen = df_pca.shape[0], palette="RdYlBu")
+    cmap = colorbrewer(datalen = df_pca.shape[0])
     callback_rbg = CustomJS(args=dict(source=source), code="""
         var data = source.get('data');
         var active = cb_obj.get('active')
         var label = cb_obj.get('label')[active]
-        var RdYlBu = {
-    3: ["#fc8d59","#ffffbf","#91bfdb"],
-    4: ["#d7191c","#fdae61","#abd9e9","#2c7bb6"],
-    5: ["#d7191c","#fdae61","#ffffbf","#abd9e9","#2c7bb6"],
-    6: ["#d73027","#fc8d59","#fee090","#e0f3f8","#91bfdb","#4575b4"],
-    7: ["#d73027","#fc8d59","#fee090","#ffffbf","#e0f3f8","#91bfdb","#4575b4"],
-    8: ["#d73027","#f46d43","#fdae61","#fee090","#e0f3f8","#abd9e9","#74add1","#4575b4"],
-    9: ["#d73027","#f46d43","#fdae61","#fee090","#ffffbf","#e0f3f8","#abd9e9","#74add1","#4575b4"],
-    10: ["#a50026","#d73027","#f46d43","#fdae61","#fee090","#e0f3f8","#abd9e9","#74add1","#4575b4","#313695"],
-    11: ["#a50026","#d73027","#f46d43","#fdae61","#fee090","#ffffbf","#e0f3f8","#abd9e9","#74add1","#4575b4","#313695"]};
+    var Paired = {
+    3	: [ "#A6CEE3","#1F78B4","#B2DF8A"],
+    4	: [ "#A6CEE3","#1F78B4","#B2DF8A","#33A02C"],
+    5	: [ "#A6CEE3","#1F78B4","#B2DF8A","#33A02C","#FB9A99"],
+    6	: [ "#A6CEE3","#1F78B4","#B2DF8A","#33A02C","#FB9A99","#E31A1C"],
+    7	: [ "#A6CEE3","#1F78B4","#B2DF8A","#33A02C","#FB9A99","#E31A1C","#FDBF6F"],
+    8	: [ "#A6CEE3","#1F78B4","#B2DF8A","#33A02C","#FB9A99","#E31A1C","#FDBF6F","#FF7F00"] ,
+    9	: [ "#A6CEE3","#1F78B4","#B2DF8A","#33A02C","#FB9A99","#E31A1C","#FDBF6F","#FF7F00","#CAB2D6"],
+    10	: [ "#A6CEE3","#1F78B4","#B2DF8A","#33A02C","#FB9A99","#E31A1C","#FDBF6F","#FF7F00","#CAB2D6","#6A3D9A"],
+    11	: [ "#A6CEE3","#1F78B4","#B2DF8A","#33A02C","#FB9A99","#E31A1C","#FDBF6F","#FF7F00","#CAB2D6","#6A3D9A","#FFFF99"],
+    12	: [ "#A6CEE3","#1F78B4","#B2DF8A","#33A02C","#FB9A99","#E31A1C","#FDBF6F","#FF7F00","#CAB2D6","#6A3D9A","#FFFF99", "#B15928"]};
         var colormap = {};
 
         var j = 0;
@@ -287,13 +288,13 @@ def scrnaseq_pca_plots(pca_results_file=None, metadata=None, pcacomp=(1,2), pcao
             }
         }
         var nfac = Object.keys(colormap).length;
-        if (nfac > 11) {
-            nfac = 11;
+        if (nfac > 12) {
+            nfac = 12;
         } 
         if (nfac < 3) {
            nfac = 3;
         }
-        var colors = RdYlBu[nfac];
+        var colors = Paired[nfac];
         for (i = 0; i < data[label].length; i++) {
               data['color'][i] = colors[colormap[data[label][i]]]
         }
@@ -303,16 +304,17 @@ def scrnaseq_pca_plots(pca_results_file=None, metadata=None, pcacomp=(1,2), pcao
         var data = source.get('data');
         var active = cb_obj.get('active');
         var label = cb_obj.get('label');
-        var RdYlBu = {
-    3: ["#fc8d59","#ffffbf","#91bfdb"],
-    4: ["#d7191c","#fdae61","#abd9e9","#2c7bb6"],
-    5: ["#d7191c","#fdae61","#ffffbf","#abd9e9","#2c7bb6"],
-    6: ["#d73027","#fc8d59","#fee090","#e0f3f8","#91bfdb","#4575b4"],
-    7: ["#d73027","#fc8d59","#fee090","#ffffbf","#e0f3f8","#91bfdb","#4575b4"],
-    8: ["#d73027","#f46d43","#fdae61","#fee090","#e0f3f8","#abd9e9","#74add1","#4575b4"],
-    9: ["#d73027","#f46d43","#fdae61","#fee090","#ffffbf","#e0f3f8","#abd9e9","#74add1","#4575b4"],
-    10: ["#a50026","#d73027","#f46d43","#fdae61","#fee090","#e0f3f8","#abd9e9","#74add1","#4575b4","#313695"],
-    11: ["#a50026","#d73027","#f46d43","#fdae61","#fee090","#ffffbf","#e0f3f8","#abd9e9","#74add1","#4575b4","#313695"]};
+    var Paired = {
+    3	: [ "#A6CEE3","#1F78B4","#B2DF8A"],
+    4	: [ "#A6CEE3","#1F78B4","#B2DF8A","#33A02C"],
+    5	: [ "#A6CEE3","#1F78B4","#B2DF8A","#33A02C","#FB9A99"],
+    6	: [ "#A6CEE3","#1F78B4","#B2DF8A","#33A02C","#FB9A99","#E31A1C"],
+    7	: [ "#A6CEE3","#1F78B4","#B2DF8A","#33A02C","#FB9A99","#E31A1C","#FDBF6F"],
+    8	: [ "#A6CEE3","#1F78B4","#B2DF8A","#33A02C","#FB9A99","#E31A1C","#FDBF6F","#FF7F00"] ,
+    9	: [ "#A6CEE3","#1F78B4","#B2DF8A","#33A02C","#FB9A99","#E31A1C","#FDBF6F","#FF7F00","#CAB2D6"],
+    10	: [ "#A6CEE3","#1F78B4","#B2DF8A","#33A02C","#FB9A99","#E31A1C","#FDBF6F","#FF7F00","#CAB2D6","#6A3D9A"],
+    11	: [ "#A6CEE3","#1F78B4","#B2DF8A","#33A02C","#FB9A99","#E31A1C","#FDBF6F","#FF7F00","#CAB2D6","#6A3D9A","#FFFF99"],
+    12	: [ "#A6CEE3","#1F78B4","#B2DF8A","#33A02C","#FB9A99","#E31A1C","#FDBF6F","#FF7F00","#CAB2D6","#6A3D9A","#FFFF99", "#B15928"]};
         var colormap = {};
     if (!active) {
         var j = 0;
@@ -324,13 +326,13 @@ def scrnaseq_pca_plots(pca_results_file=None, metadata=None, pcacomp=(1,2), pcao
             }
         }
         var nfac = Object.keys(colormap).length;
-        if (nfac > 11) {
-            nfac = 11;
+        if (nfac > 12) {
+            nfac = 12;
         } 
         if (nfac < 3) {
            nfac = 3;
         }
-        var colors = RdYlBu[nfac];
+        var colors = Paired[nfac];
         for (i = 0; i < data[label].length; i++) {
               data['color'][i] = colors[colormap[data[label][i]]]
         }

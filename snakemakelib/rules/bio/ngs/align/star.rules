@@ -2,7 +2,7 @@
 include: '../../../comp/settings.rules'
 include: '../settings.rules'
 
-DEFAULT_RULES = ['star_index', 'star_align', 'star_summarize_alignment_runs']
+DEFAULT_RULES = ['star_index', 'star_align', 'star_align_se', 'star_summarize_alignment_runs']
 
 config_default = { 
     'bio.ngs.align.star' : {

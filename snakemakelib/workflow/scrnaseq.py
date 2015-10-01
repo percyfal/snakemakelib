@@ -7,7 +7,7 @@ from sklearn.decomposition import PCA
 from bokeh.plotting import figure, gridplot
 from bokeh.io import vform
 from bokeh.models import ColumnDataSource, DataTable, TableColumn, HoverTool, BoxSelectTool, CustomJS
-from bokeh.models.widgets import Dropdown, Toggle
+from bokeh.models.widgets import Select, Toggle
 from bokehutils.axes import xaxis, yaxis
 from bokehutils.geom import dotplot, points
 from bokehutils.tools import tooltips
@@ -256,55 +256,20 @@ def scrnaseq_pca_plots(pca_results_file=None, metadata=None, pcacomp=(1,2), pcao
     df_pca['color'] = ['red'] * df_pca.shape[0]
     df_pca['x'] = df_pca['0']
     df_pca['y'] = df_pca['1']
+    df_pca['size'] = [10] * df_pca.shape[0]
 
     source = ColumnDataSource(df_pca)
     TOOLS = "pan,wheel_zoom,box_zoom,box_select,resize,reset,save,hover"
 
     # Add radio button group
     cmap = colorbrewer(datalen = df_pca.shape[0])
-    callback_rbg = CustomJS(args=dict(source=source), code="""
-        var data = source.get('data');
-        var active = cb_obj.get('active')
-        var label = cb_obj.get('label')[active]
-    var Paired = {
-    3	: [ "#A6CEE3","#1F78B4","#B2DF8A"],
-    4	: [ "#A6CEE3","#1F78B4","#B2DF8A","#33A02C"],
-    5	: [ "#A6CEE3","#1F78B4","#B2DF8A","#33A02C","#FB9A99"],
-    6	: [ "#A6CEE3","#1F78B4","#B2DF8A","#33A02C","#FB9A99","#E31A1C"],
-    7	: [ "#A6CEE3","#1F78B4","#B2DF8A","#33A02C","#FB9A99","#E31A1C","#FDBF6F"],
-    8	: [ "#A6CEE3","#1F78B4","#B2DF8A","#33A02C","#FB9A99","#E31A1C","#FDBF6F","#FF7F00"] ,
-    9	: [ "#A6CEE3","#1F78B4","#B2DF8A","#33A02C","#FB9A99","#E31A1C","#FDBF6F","#FF7F00","#CAB2D6"],
-    10	: [ "#A6CEE3","#1F78B4","#B2DF8A","#33A02C","#FB9A99","#E31A1C","#FDBF6F","#FF7F00","#CAB2D6","#6A3D9A"],
-    11	: [ "#A6CEE3","#1F78B4","#B2DF8A","#33A02C","#FB9A99","#E31A1C","#FDBF6F","#FF7F00","#CAB2D6","#6A3D9A","#FFFF99"],
-    12	: [ "#A6CEE3","#1F78B4","#B2DF8A","#33A02C","#FB9A99","#E31A1C","#FDBF6F","#FF7F00","#CAB2D6","#6A3D9A","#FFFF99", "#B15928"]};
-        var colormap = {};
-
-        var j = 0;
-        for (i = 0; i < data['sample'].length; i++) {
-            if (data[label][i] in colormap) {
-            } else {
-                colormap[data[label][i]] = j;
-                j++;
-            }
-        }
-        var nfac = Object.keys(colormap).length;
-        if (nfac > 12) {
-            nfac = 12;
-        } 
-        if (nfac < 3) {
-           nfac = 3;
-        }
-        var colors = Paired[nfac];
-        for (i = 0; i < data[label].length; i++) {
-              data['color'][i] = colors[colormap[data[label][i]]]
-        }
-        source.trigger('change');
-    """)
     callback  = CustomJS(args=dict(source=source), code="""
-        var data = source.get('data');
-        var active = cb_obj.get('active');
-        var label = cb_obj.get('label');
-    var Paired = {
+var data = source.get('data');
+var active = cb_obj.get('active');
+// If radio button group need index
+// var label = cb_obj.get('label')[active]
+var label = cb_obj.get('label');
+var Paired = {
     3	: [ "#A6CEE3","#1F78B4","#B2DF8A"],
     4	: [ "#A6CEE3","#1F78B4","#B2DF8A","#33A02C"],
     5	: [ "#A6CEE3","#1F78B4","#B2DF8A","#33A02C","#FB9A99"],
@@ -315,29 +280,45 @@ def scrnaseq_pca_plots(pca_results_file=None, metadata=None, pcacomp=(1,2), pcao
     10	: [ "#A6CEE3","#1F78B4","#B2DF8A","#33A02C","#FB9A99","#E31A1C","#FDBF6F","#FF7F00","#CAB2D6","#6A3D9A"],
     11	: [ "#A6CEE3","#1F78B4","#B2DF8A","#33A02C","#FB9A99","#E31A1C","#FDBF6F","#FF7F00","#CAB2D6","#6A3D9A","#FFFF99"],
     12	: [ "#A6CEE3","#1F78B4","#B2DF8A","#33A02C","#FB9A99","#E31A1C","#FDBF6F","#FF7F00","#CAB2D6","#6A3D9A","#FFFF99", "#B15928"]};
-        var colormap = {};
-    if (!active) {
-        var j = 0;
-        for (i = 0; i < data['sample'].length; i++) {
+var colormap = {};
+// Comment out if(!active) if radiobuttongroup
+if (!active) {
+    if (typeof(data[label][0]) != "string") {
+	var minsize = Math.log(Math.min.apply(null, data[label]))/Math.LN2;
+	var maxsize = Math.log(Math.max.apply(null, data[label]))/Math.LN2;
+	for (i = 0; i < data['sample'].length; i++) {
+	    data['size'][i] = 10 + (Math.log(data[label][i])/Math.LN2 - minsize) / (maxsize - minsize) * 20;
+	}
+    } else {
+	var j = 0;
+	// Simple categorical grouping
+	for (i = 0; i < data['sample'].length; i++) {
             if (data[label][i] in colormap) {
             } else {
-                colormap[data[label][i]] = j;
-                j++;
+		colormap[data[label][i]] = j;
+		j++;
             }
-        }
-        var nfac = Object.keys(colormap).length;
-        if (nfac > 12) {
+	}
+	var nfac = Object.keys(colormap).length;
+	if (nfac > 12) {
             nfac = 12;
-        } 
-        if (nfac < 3) {
-           nfac = 3;
-        }
-        var colors = Paired[nfac];
-        for (i = 0; i < data[label].length; i++) {
-              data['color'][i] = colors[colormap[data[label][i]]]
-        }
-        source.trigger('change');
+	} 
+	if (nfac < 3) {
+	    nfac = 3;
+	}
+	var colors = Paired[nfac];
+	for (i = 0; i < data[label].length; i++) {
+            data['color'][i] = colors[colormap[data[label][i]]]
+	}
     }
+} else {
+    if (typeof(data[label][i] != "string")) {
+	for (i = 0; i < data['sample'].length; i++) {
+	    data['size'][i] = 10;
+	}
+    }
+}
+source.trigger('change');
     """)
     if not md is None:
         # Waiting for callbacks to be implemented upstream in bokeh
@@ -349,21 +330,19 @@ def scrnaseq_pca_plots(pca_results_file=None, metadata=None, pcacomp=(1,2), pcao
         # rbg = RadioButtonGroup()
     # PC components
     xcallback = CustomJS(args=dict(source=source), code="""
+    var myRe = /^([0-9]+)/;
         var data = source.get('data');
-        var active = cb_obj.get('active')
-        var value = cb_obj.get('value')
+        var value = myRe.exec(String(cb_obj.get('value')))[1]
         x = data['x']
         for (i = 0; i < x.length; i++) {
               x[i] = data[value][i]
-              data['sample'][i] = value
-              data['FileID'][i] = active
         }
-
         source.trigger('change');
     """)
     ycallback = CustomJS(args=dict(source=source), code="""
+    var myRe = /^([0-9]+)/;
         var data = source.get('data');
-        var value = cb_obj.get('value')
+        var value = myRe.exec(String(cb_obj.get('value')))[1]
         y = data['y']
         for (i = 0; i < y.length; i++) {
              y[i] = data[value][i]
@@ -372,12 +351,13 @@ def scrnaseq_pca_plots(pca_results_file=None, metadata=None, pcacomp=(1,2), pcao
     """)
 
     pca_components = sorted([int(x) + 1 for x in source.column_names if re.match("\d+", x)])
-    menulist = [(str(x), str(x)) for x in pca_components]
-    component_x = Dropdown(label = "PCA component x", menu = menulist, default_value="1",
-                           callback=xcallback)
-    component_y = Dropdown(label = "PCA component y", menu = menulist, default_value="2",
-                           callback=ycallback)
+    menulist = ["{} ({:.2f}%)".format(x, 100.0 * p) for x, p in zip(pca_components, pcaobj.explained_variance_ratio_)]
+    component_x = Select(title = "PCA component x", options = menulist, value=menulist[0],
+                         callback=xcallback)
+    component_y = Select(title = "PCA component y", options = menulist, value=menulist[1],
+                         callback=ycallback)
 
+    buttons = toggle_buttons + [component_x, component_y]
     # Make the pca plot
     kwfig = {'plot_width': 400, 'plot_height': 400,
              'title_text_font_size': "12pt"}
@@ -386,16 +366,14 @@ def scrnaseq_pca_plots(pca_results_file=None, metadata=None, pcacomp=(1,2), pcao
     p1 = figure(title="Principal component analysis",
                 tools=TOOLS, **kwfig)
 
-    points(p1, 'x', 'y', source=source, color='color', size=10,
+    points(p1, 'x', 'y', source=source, color='color', size='size',
            alpha=.7)
-    kwxaxis = {'axis_label': "Component {} ({:.2f}%)".format(
-        pcacomp[0], 100.0 * pcaobj.explained_variance_ratio_[pcacomp[0] - 1]),
+    kwxaxis = {
                'axis_label_text_font_size': '10pt',
                'major_label_orientation': np.pi/3}
-    kwyaxis = {'axis_label': "Component {} ({:.2f}%)".format(
-        pcacomp[1], 100.0 * pcaobj.explained_variance_ratio_[pcacomp[1] - 1]),
-               'axis_label_text_font_size': '10pt',
-               'major_label_orientation': np.pi/3}
+    kwyaxis = {
+        'axis_label_text_font_size': '10pt',
+        'major_label_orientation': np.pi/3}
     xaxis(p1, **kwxaxis)
     yaxis(p1, **kwyaxis)
     tooltiplist = [("sample", "@sample")] if "sample" in source.column_names else []
@@ -415,4 +393,4 @@ def scrnaseq_pca_plots(pca_results_file=None, metadata=None, pcacomp=(1,2), pcao
     yaxis(p2, **kwyaxis)
     tooltips(p2, HoverTool, [('sample', '@sample'),
                              ('# genes (FPKM)', '@FPKM')])
-    return {'fig':vform(*(toggle_buttons + [gridplot([[p1, p2]])]))}
+    return {'fig':vform(*(buttons + [gridplot([[p1, p2]])]))}

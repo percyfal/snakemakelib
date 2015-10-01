@@ -51,7 +51,9 @@ def find_scrnaseq_merge_inputs(wildcards):
 config_default = {
     'settings' : {
         'temp_rules' : [],
-        'temp_rules_default' : ['sratools_prefetch', 'star_align', 'bamtools_filter_unique'],
+        'temp_rules_default' : [
+            'sratools_prefetch', 'star_align',
+            'bamtools_filter_unique'],
     },
     'workflows.bio.scrnaseq' : {
         'qc' : {
@@ -61,6 +63,9 @@ config_default = {
             'do_multo' : False,  ## Set to True to run generate multo database
         },
         'metadata' : None, ## Sample metadata
+        'report' : {
+            'directory' : 'report',
+        },
     },
     'bio.ngs.settings' : {
         'aligner' : 'bowtie',
@@ -119,6 +124,7 @@ set_output(workflow,
 ##################################################
 # Target definitions
 ##################################################
+REPORT=config['workflows.bio.scrnaseq']['report']['directory']
 ALIGN_TARGETS = generic_target_generator(
     tgt_re = config['bio.ngs.settings']['sampleorg'].run_id_re,
     src_re = config['bio.ngs.settings']['sampleorg'].raw_run_re,
@@ -132,23 +138,27 @@ RSEQC_TARGETS = generic_target_generator(
     **config['bio.ngs.settings'])
 
 RPKMFORGENES_TARGETS = []
-if 'rpkmforgenes' in config['workflows.bio.scrnaseq']['_quantification']:
+if 'rpkmforgenes' in config['workflows.bio.scrnaseq']['quantification']:
     RPKMFORGENES_TARGETS = generic_target_generator(
         tgt_re = config['bio.ngs.settings']['sampleorg'].sample_re,
-        target_suffix = '.merge.sort.rpkmforgenes',
+        target_suffix = '.merge.rpkmforgenes',
         src_re = config['bio.ngs.settings']['sampleorg'].raw_run_re,
-        **config['bio.ngs.settings']) + ['report/rpkmforgenes.merge.sort.csv']
+        **config['bio.ngs.settings']) + \
+    ['{report}/rpkmforgenes.merge.csv'.format(report=REPORT)]
 
 RSEM_TARGETS = []
-if 'rsem' in config['workflows.bio.scrnaseq']['_quantification']:
+if 'rsem' in config['workflows.bio.scrnaseq']['quantification']:
     RSEM_TARGETS = generic_target_generator(
         tgt_re = config['bio.ngs.settings']['sampleorg'].sample_re,
-        target_suffix = '.merge.tx.sort.isoforms.results',
+        target_suffix = '.merge.tx.isoforms.results',
         src_re = config['bio.ngs.settings']['sampleorg'].raw_run_re,
-        **config['bio.ngs.settings']) + ['report/rsem.merge.tx.genes.sort.csv', 'report/rsem.merge.tx.isoforms.sort.csv']
+        **config['bio.ngs.settings']) + \
+    ['{report}/rsem.merge.tx.genes.csv'.format(report=REPORT),
+     '{report}/rsem.merge.tx.isoforms.csv'.format(report=REPORT)]
 
     
-REPORT_TARGETS = ['report/star.Aligned.out.csv', 'report/scrnaseq_summary.html']
+REPORT_TARGETS = ['{report}/star.Aligned.out.csv'.format(report=REPORT),
+                  '{report}/scrnaseq_summary.html'.format(report=REPORT)]
 
 # Additional merge rule for transcript alignment files
 rule scrnaseq_picard_merge_sam_transcript:
@@ -177,11 +187,11 @@ rule scrnaseq_qc:
     input: starcsv = join("{path}", "star.Aligned.out.csv"),
            rseqc_read_distribution = join("{path}", "read_distribution_summary_merge_rseqc.csv"),
            rseqc_gene_coverage = join("{path}", "gene_coverage_summary_merge_rseqc.csv"),
-           rsemgenes = join("{path}", "rsem.merge.tx.sort.genes.csv") if 'rsem' in config['workflows.bio.scrnaseq']['quantification'] else [],
-           rsemisoforms = join("{path}", "rsem.merge.tx.isoforms.sort.csv")  if 'rsem' in config['workflows.bio.scrnaseq']['quantification'] else [],
-           rsemgenespca = join("{path}", "rsem.merge.tx.genes.sort.pca.csv") if 'rsem' in config['workflows.bio.scrnaseq']['quantification'] else [],
-           rpkmforgenes = join("{path}", "rpkmforgenes.merge.sort.csv") if 'rpkmforgenes' in config['workflows.bio.scrnaseq']['quantification'] else [],
-           rpkmforgenespca = join("{path}", "rpkmforgenes.merge.sort.pca.csv") if 'rpkmforgenes' in config['workflows.bio.scrnaseq']['quantification'] else [],
+           rsemgenes = join("{path}", "rsem.merge.tx.genes.csv") if 'rsem' in config['workflows.bio.scrnaseq']['quantification'] else [],
+           rsemisoforms = join("{path}", "rsem.merge.tx.isoforms.csv")  if 'rsem' in config['workflows.bio.scrnaseq']['quantification'] else [],
+           rsemgenespca = join("{path}", "rsem.merge.tx.genes.pca.csv") if 'rsem' in config['workflows.bio.scrnaseq']['quantification'] else [],
+           rpkmforgenes = join("{path}", "rpkmforgenes.merge.csv") if 'rpkmforgenes' in config['workflows.bio.scrnaseq']['quantification'] else [],
+           rpkmforgenespca = join("{path}", "rpkmforgenes.merge.pca.csv") if 'rpkmforgenes' in config['workflows.bio.scrnaseq']['quantification'] else [],
            rulegraph = join("{path}", "scrnaseq_all_rulegraph.png"),
            globalconf = join("{path}", "smlconf_global.yaml")
     output: html = join("{path}", "scrnaseq_summary.html")

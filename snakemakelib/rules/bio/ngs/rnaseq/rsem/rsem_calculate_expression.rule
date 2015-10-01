@@ -1,14 +1,21 @@
 # -*- snakemake -*-
 # See https://groups.google.com/forum/#!topic/rna-star/tvajn49WTYk for
 # setting up RSEM with STAR alignments
+include: "../../tools/samtools.rules"
+
 rule rsem_calculate_expression:
     """Calculate RSEM expression from bam"""
     params: cmd = config['bio.ngs.rnaseq.rsem']['calculate-expression']['cmd'],
-            options = " ".join(["--bam",  "--paired-end",
-            config['bio.ngs.rnaseq.rsem']['calculate-expression']['options']]),
+            options = " ".join(["--bam",
+                                config['bio.ngs.rnaseq.rsem']['calculate-expression']['options']]),
+
             index = str(config['bio.ngs.rnaseq.rsem']['index'])
     input: index = str(config['bio.ngs.rnaseq.rsem']['index']) + config['bio.ngs.rnaseq.rsem']['ref_sfx'],
            bam = "{prefix}.bam"
     output: isoforms = "{prefix}.isoforms.results", genes = "{prefix}.genes.results"
     threads: config['bio.ngs.rnaseq.rsem']["threads"]
-    shell: "{params.cmd} {params.options} -p {threads} {input.bam} {params.index} {wildcards.prefix}"
+    shell:
+        "if [ $({config[bio.ngs.tools.samtools][cmd]} view -f 0x1 {input.bam} | wc -l) -gt 0 ]; then opt=\"--paired\"; else opt=\"\"; fi;"
+        "{params.cmd} {params.options} $opt "
+        "-p {threads} {input.bam} {params.index} {wildcards.prefix}"
+

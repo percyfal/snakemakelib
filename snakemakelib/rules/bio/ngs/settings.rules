@@ -106,7 +106,8 @@ config_default = {
             'target_regions' : "",
         },
         'rnaseq' : {
-            'quantification' : ['rsem'],
+            '_quantification' : [],
+            '_transcriptome_quantification' : False,
         },
     },
 }

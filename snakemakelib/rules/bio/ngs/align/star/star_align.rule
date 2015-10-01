@@ -33,12 +33,12 @@ rule star_align:
             options = " ".join([config['bio.ngs.align.star']['align']['options'],
                                 "--readFilesCommand {cmd}".format(cmd=config['comp.settings']['compression']['prog_map'][os.path.splitext(config['bio.ngs.settings']['fastq_suffix'])[1]]) if is_compressed(config['bio.ngs.settings']['fastq_suffix'], config['comp.settings']['compression']['re']) else "",
                                 "--outSAMtype BAM {}".format(config['bio.ngs.align.star']['align']['outSAMtype']),
-                                "--quantMode TranscriptomeSAM" if 'rsem' in config['bio.ngs.settings']['rnaseq']['quantification'] else "",
+                                "--quantMode TranscriptomeSAM" if config['bio.ngs.settings']['rnaseq']['_transcriptome_quantification'] else "",
                                 ])
     input: read1 = "{prefix}" + config['bio.ngs.settings']['read1_label'] + config['bio.ngs.settings']['fastq_suffix'],
            read2 = "{prefix}" + config['bio.ngs.settings']['read2_label'] + config['bio.ngs.settings']['fastq_suffix'],
            index = config['bio.ngs.align.star']['index']
-    output: bam = (["{prefix}" + config['bio.ngs.align.star']['align']['suffix']] + ["{prefix}" + ".Aligned.toTranscriptome.out.bam"] if 'rsem' in config['bio.ngs.settings']['rnaseq']['quantification'] else []),
+    output: bam = (["{prefix}" + config['bio.ngs.align.star']['align']['suffix']] + ["{prefix}" + ".Aligned.toTranscriptome.out.bam"] if config['bio.ngs.settings']['rnaseq']['_transcriptome_quantification'] else []),
             log = ["{prefix}" + ".Log.final.out"]
     threads: config['bio.ngs.align.star']['align']['threads']
     shell: "{params.cmd} --runThreadN {threads} --genomeDir {params.genomedir} --readFilesIn {input.read1} {input.read2} {params.options} --outFileNamePrefix {wildcards.prefix}."

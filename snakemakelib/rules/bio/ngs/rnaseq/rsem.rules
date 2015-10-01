@@ -22,6 +22,10 @@ config_default = {
 update_config(config_default, config)
 config = config_default
 
+# Add rsem to rnaseq section
+config['bio.ngs.settings']['rnaseq']['_quantification'].append('rsem')
+# Set transcriptome based quantification true (for STAR etc)
+config['bio.ngs.settings']['rnaseq']['_transcriptome_quantification'] = True
 
 # Update annotation
 config['bio.ngs.rnaseq.rsem']['annot_gtf'] = annotation(

@@ -19,6 +19,10 @@ config_default = {
 update_config(config_default, config)
 config = config_default
 
+# Add rpkmforgenes to rnaseq section
+config['bio.ngs.settings']['rnaseq']['_quantification'].append('rpkmforgenes')
+
+
 python2 = config['comp.settings']['python2']['activate_cmd']
 
 # Update annotation

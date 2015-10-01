@@ -13,14 +13,14 @@ from snakemakelib.config import SNAKEMAKELIB_RULES_PATH
 from snakemakelib.bio.ngs.targets import generic_target_generator
 from snakemakelib.workflow.scrnaseq import scrnaseq_alignment_qc_plots, scrnaseq_pca_plots, read_gene_expression, pca, pca_results, number_of_detected_genes
 
-def _merge_suffix(aligner, quantification=[]):
+def _merge_suffix(aligner):
     align_config = config['bio.ngs.align.' + aligner]
     if aligner == "star":
         return align_config['align']['suffix'].replace('.bam', '_unique.bam')
     elif aligner in ["bowtie", "bowtie2"]:
         return '_unique.bam'
 
-def _merge_tx_suffix(aligner, quantification=[]):
+def _merge_tx_suffix(aligner):
     align_config = config['bio.ngs.align.' + aligner]
     if aligner == "star":
         return ".Aligned.toTranscriptome.out_unique.bam"
@@ -28,7 +28,7 @@ def _merge_tx_suffix(aligner, quantification=[]):
 def _find_transcript_bam(wildcards):
     sources = generic_target_generator(
         tgt_re=config['bio.ngs.settings']['sampleorg'].run_id_re,
-        target_suffix = _merge_tx_suffix(config['bio.ngs.settings']['aligner'], config['bio.ngs.settings']['rnaseq']['quantification']),
+        target_suffix = _merge_tx_suffix(config['bio.ngs.settings']['aligner']),
         **config['bio.ngs.settings'])
     sources = [src for src in sources if dirname(src).startswith(wildcards.prefix)]
     return sources
@@ -41,7 +41,7 @@ def find_scrnaseq_merge_inputs(wildcards):
     """
     sources = generic_target_generator(
         tgt_re=config['bio.ngs.settings']['sampleorg'].run_id_re, 
-        target_suffix = _merge_suffix(config['bio.ngs.settings']['aligner'], config['bio.ngs.settings']['rnaseq']['quantification']), 
+        target_suffix = _merge_suffix(config['bio.ngs.settings']['aligner']),
         **config['bio.ngs.settings'])
     sources = [src for src in sources if dirname(src).startswith(wildcards.prefix)]
     return sources
@@ -57,7 +57,6 @@ config_default = {
         'qc' : {
             # Add parameters here
         },
-        'quantification' :  ['rsem', 'rpkmforgenes'],
         'db' : {
             'do_multo' : False,  ## Set to True to run generate multo database
         },
@@ -133,20 +132,20 @@ RSEQC_TARGETS = generic_target_generator(
     **config['bio.ngs.settings'])
 
 RPKMFORGENES_TARGETS = []
-if 'rpkmforgenes' in config['workflows.bio.scrnaseq']['quantification']:
+if 'rpkmforgenes' in config['workflows.bio.scrnaseq']['_quantification']:
     RPKMFORGENES_TARGETS = generic_target_generator(
         tgt_re = config['bio.ngs.settings']['sampleorg'].sample_re,
-        target_suffix = '.merge.rpkmforgenes',
+        target_suffix = '.merge.sort.rpkmforgenes',
         src_re = config['bio.ngs.settings']['sampleorg'].raw_run_re,
-        **config['bio.ngs.settings']) + ['report/rpkmforgenes.merge.csv']
+        **config['bio.ngs.settings']) + ['report/rpkmforgenes.merge.sort.csv']
 
 RSEM_TARGETS = []
-if 'rsem' in config['workflows.bio.scrnaseq']['quantification']:
+if 'rsem' in config['workflows.bio.scrnaseq']['_quantification']:
     RSEM_TARGETS = generic_target_generator(
         tgt_re = config['bio.ngs.settings']['sampleorg'].sample_re,
-        target_suffix = '.merge.tx.isoforms.results',
+        target_suffix = '.merge.tx.sort.isoforms.results',
         src_re = config['bio.ngs.settings']['sampleorg'].raw_run_re,
-        **config['bio.ngs.settings']) + ['report/rsem.merge.tx.genes.csv', 'report/rsem.merge.tx.isoforms.csv']
+        **config['bio.ngs.settings']) + ['report/rsem.merge.tx.genes.sort.csv', 'report/rsem.merge.tx.isoforms.sort.csv']
 
     
 REPORT_TARGETS = ['report/star.Aligned.out.csv', 'report/scrnaseq_summary.html']
@@ -178,11 +177,11 @@ rule scrnaseq_qc:
     input: starcsv = join("{path}", "star.Aligned.out.csv"),
            rseqc_read_distribution = join("{path}", "read_distribution_summary_merge_rseqc.csv"),
            rseqc_gene_coverage = join("{path}", "gene_coverage_summary_merge_rseqc.csv"),
-           rsemgenes = join("{path}", "rsem.merge.tx.genes.csv") if 'rsem' in config['workflows.bio.scrnaseq']['quantification'] else [],
-           rsemisoforms = join("{path}", "rsem.merge.tx.isoforms.csv")  if 'rsem' in config['workflows.bio.scrnaseq']['quantification'] else [],
-           rsemgenespca = join("{path}", "rsem.merge.tx.genes.pca.csv") if 'rsem' in config['workflows.bio.scrnaseq']['quantification'] else [],
-           rpkmforgenes = join("{path}", "rpkmforgenes.merge.csv") if 'rpkmforgenes' in config['workflows.bio.scrnaseq']['quantification'] else [],
-           rpkmforgenespca = join("{path}", "rpkmforgenes.merge.pca.csv") if 'rpkmforgenes' in config['workflows.bio.scrnaseq']['quantification'] else [],
+           rsemgenes = join("{path}", "rsem.merge.tx.sort.genes.csv") if 'rsem' in config['workflows.bio.scrnaseq']['quantification'] else [],
+           rsemisoforms = join("{path}", "rsem.merge.tx.isoforms.sort.csv")  if 'rsem' in config['workflows.bio.scrnaseq']['quantification'] else [],
+           rsemgenespca = join("{path}", "rsem.merge.tx.genes.sort.pca.csv") if 'rsem' in config['workflows.bio.scrnaseq']['quantification'] else [],
+           rpkmforgenes = join("{path}", "rpkmforgenes.merge.sort.csv") if 'rpkmforgenes' in config['workflows.bio.scrnaseq']['quantification'] else [],
+           rpkmforgenespca = join("{path}", "rpkmforgenes.merge.sort.pca.csv") if 'rpkmforgenes' in config['workflows.bio.scrnaseq']['quantification'] else [],
            rulegraph = join("{path}", "scrnaseq_all_rulegraph.png"),
            globalconf = join("{path}", "smlconf_global.yaml")
     output: html = join("{path}", "scrnaseq_summary.html")

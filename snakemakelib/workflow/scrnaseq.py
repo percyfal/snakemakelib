@@ -158,29 +158,6 @@ def scrnaseq_alignment_qc_plots(rseqc_read_distribution=None, rseqc_gene_coverag
     return {'fig': gridplot([[p1, p2, p3], [p4, p5, p6], [p7, None, None]]),
             'table': table}
 
-def _gene_name_map_from_gtf(gtf):
-    """Get a mapping from gene_id to gene_name"""
-    mapping = {}
-    for feature in gtf[8]:
-        tmp = {k.replace("\"", ""):v.replace("\"", "") for k, v in [x.split(" ") for x in feature.split("; ")]}
-        mapping[tmp.get("gene_id", "")] = tmp.get("gene_name", tmp.get("gene_id", ""))
-    return mapping
-
-
-def read_gene_expression(infile, annotation=None, gene_id="gene_id",
-                         gene_name="gene_name"):
-    """Read gene expression file, renaming genes if annotation present.
-
-    NB: currently assumes annotation file is in gtf format
-
-    """
-    expr = pd.read_csv(infile)
-    if annotation:
-        annot = pd.read_table(annotation, header=None)
-        mapping = _gene_name_map_from_gtf(annot)
-        expr[gene_name] = expr[gene_id].map(mapping.get)
-    return expr
-
 def pca(expr, **kwargs):
     """scrnaseq pca - run pca
 
@@ -205,7 +182,8 @@ def pca_results(pcaobj, expr, metadata=None, **kwargs):
       metadata (DataFrame): sample metadata
 
     Returns:
-      pcares (DataFrame): pca results concatenated
+      pcares (DataFrame): pca results concatenated,
+      loadings (DataFrame): pca loadings of top 10 units for each component
     """
     pcares = pd.DataFrame(pcaobj.fit(expr).transform(expr))
     if not expr.index.name is None:
@@ -217,30 +195,12 @@ def pca_results(pcaobj, expr, metadata=None, **kwargs):
     pcares.columns = [str(x) for x in list(pcares.columns)]
     return pcares
 
-def number_of_detected_genes(expr, cutoff=1.0, **kwargs):
-    """Aggregate expression data frame to count number of detected genes
-
-    Args:
-      expr (DataFrame): pandas data frame with expression values
-      cutoff (float): cutoff for detected gene
-
-    Returns:
-      detected_genes (DataFrame): aggregated data fram with number of detected genes per sample
-    """
-    try:
-        detected_genes = expr.groupby("sample").agg(lambda x: sum(x > cutoff))
-    except Exception as e:
-        logger.warning("Failed to group genes by sample :", e)
-        detected_genes = None
-    return detected_genes
-
-def scrnaseq_pca_plots(pca_results_file=None, metadata=None, pcacomp=(1,2), pcaobjfile=None):
+def scrnaseq_pca_plots(pca_results_file=None, metadata=None, pcaobjfile=None):
     """Make PCA QC plots for scrnaseq workflow
 
     Args:
       pca_results_file (str): pca results file
       metadata (str): metadata file name
-      pcacomp (int): tuple of ints corresponding to components to draw
       pcaobjfile (str): file name containing pickled pca object
 
     Returns: 
@@ -257,6 +217,14 @@ def scrnaseq_pca_plots(pca_results_file=None, metadata=None, pcacomp=(1,2), pcao
     df_pca['x'] = df_pca['0']
     df_pca['y'] = df_pca['1']
     df_pca['size'] = [10] * df_pca.shape[0]
+
+    # TODO: Move to stats.pca
+    # Define the loadings
+    # loadings = pd.DataFrame(pcaobj.components_).T
+    # sort the columns
+    #    loadings_index = 
+    # Annotate the genes
+    
 
     source = ColumnDataSource(df_pca)
     TOOLS = "pan,wheel_zoom,box_zoom,box_select,resize,reset,save,hover"
@@ -324,7 +292,7 @@ source.trigger('change');
         # Waiting for callbacks to be implemented upstream in bokeh
         # rbg = RadioButtonGroup(labels=list(md.columns),
         #                        callback=callback)
-        toggle_buttons = [Toggle(label=x, callback=callback) for x in list(md.columns)]
+        toggle_buttons = [Toggle(label=x, callback=callback) for x in list(md.columns) + ["TPM", "FPKM"]]
     else:
         toggle_buttons = []
         # rbg = RadioButtonGroup()
@@ -379,7 +347,8 @@ source.trigger('change');
     tooltiplist = [("sample", "@sample")] if "sample" in source.column_names else []
     if not md is None:
         tooltiplist = tooltiplist + [(str(x), "@{}".format(x)) for x
-                                     in md.columns]
+                                     in md.columns] + \
+        [("Detected genes (TPM)", "@TPM"), ("Detected genes (FPKM)", "@FPKM")]
     tooltips(p1, HoverTool, tooltiplist)
 
     # Detected genes, FPKM and TPM

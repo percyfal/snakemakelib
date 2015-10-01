@@ -1,6 +1,7 @@
 # -*- snakemake -*-
 import shutil
 import os
+import math
 from os.path import join, dirname, relpath, exists
 import pickle
 from snakemake.report import data_uri
@@ -11,7 +12,8 @@ from snakemakelib.io import set_output
 from snakemakelib.resources import SmlTemplateEnv, css_files
 from snakemakelib.config import SNAKEMAKELIB_RULES_PATH
 from snakemakelib.bio.ngs.targets import generic_target_generator
-from snakemakelib.workflow.scrnaseq import scrnaseq_alignment_qc_plots, scrnaseq_pca_plots, read_gene_expression, pca, pca_results, number_of_detected_genes
+from snakemakelib.bio.ngs.rnaseq.utils import number_of_detected_genes
+from snakemakelib.workflow.scrnaseq import scrnaseq_alignment_qc_plots, scrnaseq_pca_plots, pca, pca_results
 
 def _merge_suffix(aligner):
     align_config = config['bio.ngs.align.' + aligner]
@@ -53,7 +55,8 @@ config_default = {
         'temp_rules' : [],
         'temp_rules_default' : [
             'sratools_prefetch', 'star_align',
-            'bamtools_filter_unique'],
+            'bamtools_filter_unique',
+            'rsem_summarize_expression_data'],
     },
     'workflows.bio.scrnaseq' : {
         'qc' : {
@@ -83,9 +86,15 @@ config_default = {
         'rules' : ['rpkmforgenes_from_bam', 'rpkmforgenes_summarize_expression_data'],
     },
     'bio.ngs.rnaseq.rsem' : {
-        'rules' : ['rsem_calculate_expression', 'rsem_prepare_reference', 'rsem_summarize_expression_data'],
+        'rules' : ['rsem_calculate_expression', 'rsem_prepare_reference',
+                   'rsem_summarize_expression_data'],
     },
-
+    'bio.ngs.rnaseq.utils' : {
+        'rules' : ['annotate_expression_data'],
+    },
+    'bio.ngs.align.star' : {
+        'rules' : ['star_align', 'star_align_se', 'star_index', 'star_summarize_alignment_runs']
+    },
 }
 
 update_config(config_default, config)
@@ -96,14 +105,15 @@ aligner = config['bio.ngs.settings']['aligner']
 # Include necessary snakemakelib rules
 include: join(SNAKEMAKELIB_RULES_PATH, 'settings.rules')
 include: join(SNAKEMAKELIB_RULES_PATH, 'utils.rules')
+include: join(SNAKEMAKELIB_RULES_PATH, "bio/ngs/rnaseq", "rsem.rules")
+include: join(SNAKEMAKELIB_RULES_PATH, "bio/ngs/rnaseq", "rpkmforgenes.rules")
+include: join(SNAKEMAKELIB_RULES_PATH, "bio/ngs/rnaseq", "utils.rules")
 align_include = join(SNAKEMAKELIB_RULES_PATH, "bio/ngs/align", aligner + ".rules")
 include: align_include
 include: join(SNAKEMAKELIB_RULES_PATH, "bio/ngs/tools", "bamtools.rules")
 include: join(SNAKEMAKELIB_RULES_PATH, "bio/ngs/qc", "rseqc.rules")
 include: join(SNAKEMAKELIB_RULES_PATH, "bio/ngs/qc", "picard.rules")
 include: join(SNAKEMAKELIB_RULES_PATH, "bio/ngs/tools", "samtools.rules")
-include: join(SNAKEMAKELIB_RULES_PATH, "bio/ngs/rnaseq", "rpkmforgenes.rules")
-include: join(SNAKEMAKELIB_RULES_PATH, "bio/ngs/rnaseq", "rsem.rules")
 
 if aligner in ["bowtie", "bowtie2"]:
     ruleorder: bamtools_filter_unique > picard_merge_sam > picard_sort_bam > bowtie_align
@@ -121,6 +131,8 @@ set_output(workflow,
            protected_rules = config['settings']['protected_rules'] + config['settings']['protected_rules_default'],
            protected_filetypes=config['settings']['protected_filetypes'] + config['settings']['protected_filetypes_default'])
 
+if config['bio.ngs.settings']['annotation']['transcript_annot_gtf']:
+    annotationstring = ".annotated"
 ##################################################
 # Target definitions
 ##################################################
@@ -144,7 +156,7 @@ if 'rpkmforgenes' in config['workflows.bio.scrnaseq']['quantification']:
         target_suffix = '.merge.rpkmforgenes',
         src_re = config['bio.ngs.settings']['sampleorg'].raw_run_re,
         **config['bio.ngs.settings']) + \
-    ['{report}/rpkmforgenes.merge.csv'.format(report=REPORT)]
+    ['{report}/rpkmforgenes.merge{annot}.csv'.format(report=REPORT, annot=annotationstring)]
 
 RSEM_TARGETS = []
 if 'rsem' in config['workflows.bio.scrnaseq']['quantification']:
@@ -153,8 +165,8 @@ if 'rsem' in config['workflows.bio.scrnaseq']['quantification']:
         target_suffix = '.merge.tx.isoforms.results',
         src_re = config['bio.ngs.settings']['sampleorg'].raw_run_re,
         **config['bio.ngs.settings']) + \
-    ['{report}/rsem.merge.tx.genes.csv'.format(report=REPORT),
-     '{report}/rsem.merge.tx.isoforms.csv'.format(report=REPORT)]
+    ['{report}/rsem.merge.tx.genes{annot}.csv'.format(report=REPORT, annot=annotationstring),
+     '{report}/rsem.merge.tx.isoforms{annot}.csv'.format(report=REPORT, annot=annotationstring)]
 
     
 REPORT_TARGETS = ['{report}/star.Aligned.out.csv'.format(report=REPORT),
@@ -182,16 +194,19 @@ rule scrnaseq_picard_merge_sam_transcript:
 
 # QC rules
 QC_INPUT = []
+csv = "{annot}.csv".format(annot=annotationstring)
+pcacsv = "{annot}.pca.csv".format(annot=annotationstring)
+
 rule scrnaseq_qc:
     """Perform basic qc on samples"""
     input: starcsv = join("{path}", "star.Aligned.out.csv"),
            rseqc_read_distribution = join("{path}", "read_distribution_summary_merge_rseqc.csv"),
            rseqc_gene_coverage = join("{path}", "gene_coverage_summary_merge_rseqc.csv"),
-           rsemgenes = join("{path}", "rsem.merge.tx.genes.csv") if 'rsem' in config['workflows.bio.scrnaseq']['quantification'] else [],
-           rsemisoforms = join("{path}", "rsem.merge.tx.isoforms.csv")  if 'rsem' in config['workflows.bio.scrnaseq']['quantification'] else [],
-           rsemgenespca = join("{path}", "rsem.merge.tx.genes.pca.csv") if 'rsem' in config['workflows.bio.scrnaseq']['quantification'] else [],
-           rpkmforgenes = join("{path}", "rpkmforgenes.merge.csv") if 'rpkmforgenes' in config['workflows.bio.scrnaseq']['quantification'] else [],
-           rpkmforgenespca = join("{path}", "rpkmforgenes.merge.pca.csv") if 'rpkmforgenes' in config['workflows.bio.scrnaseq']['quantification'] else [],
+           rsemgenes = join("{path}", "rsem.merge.tx.genes" + csv) if 'rsem' in config['workflows.bio.scrnaseq']['quantification'] else [],
+           rsemisoforms = join("{path}", "rsem.merge.tx.isoforms" + csv) if 'rsem' in config['workflows.bio.scrnaseq']['quantification'] else [],
+           rsemgenespca = join("{path}", "rsem.merge.tx.genes" + pcacsv) if 'rsem' in config['workflows.bio.scrnaseq']['quantification'] else [],
+           rpkmforgenes = join("{path}", "rpkmforgenes.merge" + csv) if 'rpkmforgenes' in config['workflows.bio.scrnaseq']['quantification'] else [],
+           rpkmforgenespca = join("{path}", "rpkmforgenes.merge" + pcacsv) if 'rpkmforgenes' in config['workflows.bio.scrnaseq']['quantification'] else [],
            rulegraph = join("{path}", "scrnaseq_all_rulegraph.png"),
            globalconf = join("{path}", "smlconf_global.yaml")
     output: html = join("{path}", "scrnaseq_summary.html")
@@ -229,16 +244,15 @@ rule scrnaseq_qc:
 rule scrnaseq_pca:
     input: expr = "{prefix}.csv",
            annotation = config['bio.ngs.settings']['annotation']['transcript_annot_gtf'] if config['bio.ngs.settings']['annotation']['transcript_annot_gtf'] else []
-    output: pca = "{prefix}.pca.csv", pcaobj = "{prefix}.pcaobj.pickle"
+    output: pca = "{prefix}.pca.csv",
+            pcaobj = "{prefix}.pcaobj.pickle"
     run:
-        import math
-        expr_long = read_gene_expression(input.expr,
-                                         annotation=input.annotation)
+        expr_long = pd.read_csv(input.expr)
         expr_long["TPM"] = [math.log2(x+1.0) for x in expr_long["TPM"]]
-        detected_genes = number_of_detected_genes(expr_long)
-        # FIXME: configurations?
+        # Should we be able to configure parameters?
         expr = expr_long.pivot_table(columns="gene_id", values="TPM",
                                      index="sample")
+        detected_genes = number_of_detected_genes(input.expr)
         pcaobj = pca(expr)
         pcares = pca_results(pcaobj, expr, metadata=config['workflows.bio.scrnaseq']['metadata'])
         if not detected_genes is None:

@@ -110,7 +110,7 @@ rule rule_l:
 rule rulegraph:
     """Print rulegraph. 
 
-    NB: currently this rule may have to be run manually. When the rule is included as a dependecy it fails throwing an InputFileMissing exception"""
+    NB: currently this rule may have to be run manually. When the rule is included as a dependecy it fails throwing an MissingInputException"""
     output: rulegraph = "{prefix}_rulegraph.dot"
     run:
         # see http://stackoverflow.com/questions/5136611/capture-stdout-from-a-script-in-python

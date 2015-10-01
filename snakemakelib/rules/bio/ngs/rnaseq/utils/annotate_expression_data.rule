@@ -1,0 +1,21 @@
+# -*- snakemake -*-
+def _annotated_data(infile, annotation, **kwargs):
+    try:
+        from snakemakelib.bio.ngs.rnaseq.utils import read_gene_expression
+        df = read_gene_expression(infile, annotation, **kwargs)
+        return df
+    except:
+        raise
+
+        
+rule annotate_expression_data:
+    """Annotate expression data"""
+    input: expr = "{prefix}{type}.csv",
+           annotation = config['bio.ngs.settings']['annotation']['transcript_annot_gtf']
+    output: expr = "{prefix}{type,(\.genes|\.isoforms|\.[a-z]+)}.annotated.csv"
+    run:
+        kwargs = {'unit_id' : "transcript_id" if wildcards.type == ".isoforms" else "gene_id",
+                  'unit_name' : "transcript_name" if wildcards.type == ".isoforms" else "gene_name"}
+        df = _annotated_data(input.expr, input.annotation, **kwargs)
+        with open(output.expr, "w") as fh:
+             df.to_csv(fh)

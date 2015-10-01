@@ -24,7 +24,10 @@ rule rsem_summarize_expression_data:
             tmp = pd.read_table(f)
             df_tmp = pd.DataFrame({k:tmp[k] for k in ["expected_count", "TPM", "FPKM"]})
             df_tmp["sample"] = sample
-            df_tmp.index = tmp["gene_id"]
+            if (wildcards.type == "genes"):
+                df_tmp.index = tmp["gene_id"]
+            else:
+                df_tmp.index = tmp["transcript_id"]
             if first:
                 df = df_tmp
                 first = False

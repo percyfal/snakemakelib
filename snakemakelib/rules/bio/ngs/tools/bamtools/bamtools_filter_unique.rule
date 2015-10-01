@@ -3,8 +3,10 @@ rule bamtools_filter_unique:
     """Run bamtools filter on a bam file"""
     params: cmd = config['bio.ngs.tools.bamtools']['cmd'],
             options = " ".join("-{} \"{}\"".format(k,v) for k,v in config['bio.ngs.tools.bamtools']['filter']['options'].items())
-    input: "{prefix}.bam"
-    output: "{prefix}_unique.bam"
+    input: bam = "{prefix}.bam"
+    output: bam = "{prefix}_unique.bam"
     log: "{prefix}_unique.log"
-    shell: libpath + " {params.cmd} filter -in {input} -out {output} {params.options} > {log}"
+    shell:
+        libpath + " {params.cmd} filter -in {input.bam} " + \
+        "-out {output.bam} {params.options} > {log}"
 

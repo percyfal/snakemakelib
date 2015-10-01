@@ -1,0 +1,16 @@
+# -*- snakemake -*-
+include: '../settings.rules'
+
+DEFAULT_RULES = ['annotate_expression_data']
+
+config_default = {
+    'bio.ngs.rnaseq.utils' :  {
+        'rules' : DEFAULT_RULES,
+    },
+}
+
+update_config(config_default, config)
+config = config_default
+
+for rule in config['bio.ngs.rnaseq.utils']['rules']:
+    include: os.path.join("utils", rule + ".rule")

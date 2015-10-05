@@ -40,6 +40,7 @@ rule star_align:
            index = config['bio.ngs.align.star']['index']
     output: bam = (["{prefix}" + config['bio.ngs.align.star']['align']['suffix']] + ["{prefix}" + ".Aligned.toTranscriptome.out.bam"] if config['bio.ngs.settings']['rnaseq']['_transcriptome_quantification'] else []),
             log = ["{prefix}" + ".Log.final.out"]
+    log: "{prefix}.log"
     threads: config['bio.ngs.align.star']['align']['threads']
     shell: "{params.cmd} --runThreadN {threads} --genomeDir {params.genomedir} --readFilesIn {input.read1} {input.read2} {params.options} --outFileNamePrefix {wildcards.prefix}."
 

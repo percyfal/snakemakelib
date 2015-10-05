@@ -21,10 +21,12 @@ rule rsem_prepare_reference:
             options = " ".join([config['bio.ngs.rnaseq.rsem']['prepare-reference']['options'],
             "--gtf {annot}".format(annot=config['bio.ngs.rnaseq.rsem']['annot_gtf']) if config['bio.ngs.rnaseq.rsem']['annot_gtf'] else ""]),
             ref = config['bio.ngs.rnaseq.rsem']['ref'],
-            index = config['bio.ngs.rnaseq.rsem']['index']
-    input: config['bio.ngs.rnaseq.rsem']['annot_gtf'] if config['bio.ngs.rnaseq.rsem']['annot_gtf'] else [], ref = config['bio.ngs.rnaseq.rsem']['ref'], 
+            index = config['bio.ngs.rnaseq.rsem']['index'],
+            extra_ref = ",{}".format(",".join(x for x in config['bio.ngs.settings']['db']['extra_ref'])) if config['bio.ngs.settings']['db']['extra_ref'] else ""
+    input: annot = config['bio.ngs.rnaseq.rsem']['annot_gtf'] if config['bio.ngs.rnaseq.rsem']['annot_gtf'] else [],
+           ref = config['bio.ngs.rnaseq.rsem']['ref'],
+           extra_ref = config['bio.ngs.settings']['db']['extra_ref'] if config['bio.ngs.settings']['db']['extra_ref'] else []
     output: config['bio.ngs.rnaseq.rsem']['index'] + config['bio.ngs.rnaseq.rsem']['ref_sfx']
     log: config['bio.ngs.rnaseq.rsem']['index'] + config['bio.ngs.rnaseq.rsem']['ref_sfx'] + ".log"
-    shell: "{params.cmd} {params.options} {input.ref} {params.index} > {log}"
-
-
+    shell:
+        "{params.cmd} {params.options} {input.ref}{params.extra_ref} {params.index} > {log}"

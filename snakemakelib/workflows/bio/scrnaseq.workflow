@@ -13,7 +13,7 @@ from snakemakelib.resources import SmlTemplateEnv, css_files
 from snakemakelib.config import SNAKEMAKELIB_RULES_PATH
 from snakemakelib.bio.ngs.targets import generic_target_generator
 from snakemakelib.bio.ngs.rnaseq.utils import number_of_detected_genes
-from snakemakelib.workflow.scrnaseq import scrnaseq_alignment_qc_plots, scrnaseq_pca_plots, pca, pca_results
+from snakemakelib.workflow.scrnaseq import scrnaseq_alignment_qc_plots, scrnaseq_pca_plots, pca, pca_results, scrnaseq_extra_ref_plot
 
 def _merge_suffix(aligner):
     align_config = config['bio.ngs.align.' + aligner]
@@ -230,12 +230,17 @@ rule scrnaseq_qc:
                                                 metadata=config['workflows.bio.scrnaseq']['metadata'],
                                                 pcaobjfile=input.rsemgenespca.replace(".pca.csv",
                                                                                       ".pcaobj.pickle")))
-        if input.rpkmforgenespca:
+            d['rsem'].update(
+                scrnaseq_extra_ref_plot(extra_ref=[ref(x, config['bio.ngs.settings']['db']) for x in config['bio.ngs.settings']['db']['extra_ref']], expr=input.rsemgenes))
+
+        if input.rpkmforgenes:
             d.update({'rpkmforgenes' : {'file': [input.rpkmforgenespca], 'uri': [data_uri(input.rpkmforgenespca)]}})
             d['rpkmforgenes'].update(
                 scrnaseq_pca_plots(input.rpkmforgenespca,
                                    metadata=config['workflows.bio.scrnaseq']['metadata'],
                                    pcaobjfile=input.rpkmforgenespca.replace(".pca.csv", ".pcaobj.pickle")))
+            d['rpkmforgenes'].update(
+                scrnaseq_extra_ref_plot(extra_ref=[ref(x, config['bio.ngs.settings']['db']) for x in config['bio.ngs.settings']['db']['extra_ref']], expr=input.rpkmforgenes))
         d.update({'version' : config['_version'], 'config' : {'uri' : data_uri(input.globalconf), 'file' : input.globalconf}})
         tp = SmlTemplateEnv.get_template('workflow_scrnaseq_qc.html')
         with open(output.html, "w") as fh:

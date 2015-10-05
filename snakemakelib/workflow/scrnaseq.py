@@ -1,9 +1,11 @@
 # Copyright (C) 2015 by Per Unneberg
 import re
+import os
 import pickle
 import pandas as pd
 import numpy as np
 from sklearn.decomposition import PCA
+from Bio import SeqIO
 from bokeh.plotting import figure, gridplot
 from bokeh.io import vform
 from bokeh.models import ColumnDataSource, DataTable, TableColumn, HoverTool, BoxSelectTool, CustomJS
@@ -114,10 +116,7 @@ def scrnaseq_alignment_qc_plots(rseqc_read_distribution=None, rseqc_gene_coverag
                                                '@Deletion_rate_per_base'), ])
     select_tool = p4.select(dict(type=BoxSelectTool))
     select_tool.dimensions = ['width']
-
     
-
-             
     # Unmapped
     p5 = figure(title="Mismatch/indel sum",
                 x_range=p1.x_range,
@@ -158,6 +157,7 @@ def scrnaseq_alignment_qc_plots(rseqc_read_distribution=None, rseqc_gene_coverag
     return {'fig': gridplot([[p1, p2, p3], [p4, p5, p6], [p7, None, None]]),
             'table': table}
 
+# FIXME: move to stats module
 def pca(expr, **kwargs):
     """scrnaseq pca - run pca
 
@@ -173,6 +173,7 @@ def pca(expr, **kwargs):
     pcaobj.fit(expr)
     return pcaobj
 
+# FIXME: move to stats module
 def pca_results(pcaobj, expr, metadata=None, **kwargs):
     """Generate output file on which to base pca plots
     
@@ -362,4 +363,30 @@ source.trigger('change');
     yaxis(p2, **kwyaxis)
     tooltips(p2, HoverTool, [('sample', '@sample'),
                              ('# genes (FPKM)', '@FPKM')])
-    return {'fig':vform(*(buttons + [gridplot([[p1, p2]])]))}
+    return {'pca' : vform(*(buttons + [gridplot([[p1, p2]])]))}
+
+
+def scrnaseq_extra_ref_plot(expr=None, extra_ref=None):
+    if extra_ref is None:
+        return
+    # Add spikein plots
+    extra_ids = []
+    seqio_format = {'fa' : 'fasta',
+                    'fasta' : 'fasta'}
+    for ref in extra_ref:
+        fh = open(ref)
+        ext = os.path.splitext(ref)[1].replace(".", "")
+        extra_ids += [record.id.strip() for record in SeqIO.parse(fh, format=seqio_format[ext])]
+
+    expr_long = pd.read_csv(expr)
+    criterion = expr_long["gene_id"].map(lambda x: x in extra_ids)
+    df = expr_long[criterion]
+    from bokeh.charts import Scatter
+    import math
+    df["TPM_log"] = [math.log2(x + 1) for x in df["TPM"]]
+    fig = Scatter(df, x="sample", y="TPM_log", xscale="categorical",
+                  color='gene_id')
+    return {'spikein' : fig}
+
+def scrnaseq_expr_heatmap():
+    pass

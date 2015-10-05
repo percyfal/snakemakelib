@@ -26,11 +26,17 @@
     {% endif %}
 
     {% if rpkmforgenes is defined %}
-      {{ rpkmforgenes['fig']['script'] | indent(8) }}
+      {{ rpkmforgenes['pca']['script'] | indent(8) }} 
+      {% if rpkmforgenes.spikein %} 
+      	{{ rpkmforgenes['spikein']['script'] }} 
+      {% endif %} 
     {% endif %}
 
     {% if rsem is defined %}
-      {{ rsem['fig']['script'] | indent(8) }}
+      {{ rsem['pca']['script'] | indent(8) }} 
+      {% if rsem.spikein %} 
+      	{{ rsem['spikein']['script'] }} 
+      {% endif %} 
     {% endif %}
     
   </head>

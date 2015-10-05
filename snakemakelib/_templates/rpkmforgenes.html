@@ -5,7 +5,7 @@
   Gene expression quantified by rpkmforgenes.py. 
   
   <figure>
-    {{ rpkmforgenes['fig']['div']|indent(8) }}
+    {{ rpkmforgenes['pca']['div']|indent(8) }}
     <figcaption>rpkmforgenes summary plots. If present, click on any
       select button to highlight the pca plot. Categorical variables
       will be colored, numerical variables will change the size of the
@@ -16,8 +16,11 @@
 	  <li><a href="{{ uri }}" download="{{ file }}" draggable="true">{{ file }}</a></li>
 	{% endfor %}
       </ol>
-
     </figcaption>
   </figure>
-
+  {% if rpkmforgenes.spikein %} 
+    <figure> 
+      {{ rpkmforgenes['spikein']['div'] | indent(8) }} 
+    </figure> 
+  {% endif %} 
 {% endif %}

@@ -5,7 +5,7 @@
   Gene expression quantified by rsem.
   
   <figure>
-    {{ rsem['fig']['div']|indent(8) }}
+    {{ rsem['pca']['div']|indent(8) }}
     <figcaption>rsem summary plots. If present, click on any select
       button to highlight the pca plot. Categorical variables will be
       colored, numerical variables will change the size of the dots.
@@ -18,5 +18,11 @@
       </ol>
     </figcaption>
   </figure>
+  {% if rsem.spikein %} 
+    <figure> 
+      {{ rsem['spikein']['div'] | indent(8) }} 
+    </figure> 
+  {% endif %} 
+
 
 {% endif %}

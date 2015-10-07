@@ -48,11 +48,13 @@ rule cloudbiolinux_update_annotation_gtf:
                         'frame' : 0,
                         'gene_id' : seq.name,
                         'transcript_id' : seq.name,
-                        'feature' : 'exon',
+                        'feature' : 'transcript',
                         'start' : 1,
                         'end' : len(seq),
                     }
                     if len(seq.features) > 0:
                         d['start'] = max(seq.features[0].location.start, 1)
                         d['end'] = seq.features[0].location.end
+                    out.write('{name}\tsnakemakelib\t{feature}\t{start}\t{end}\t{score}\t{strand}\t{frame}\tgene_id "{gene_id}"; transcript_id "{transcript_id}";\n'.format(**d))
+                    d['feature'] = 'exon'
                     out.write('{name}\tsnakemakelib\t{feature}\t{start}\t{end}\t{score}\t{strand}\t{frame}\tgene_id "{gene_id}"; transcript_id "{transcript_id}";\n'.format(**d))

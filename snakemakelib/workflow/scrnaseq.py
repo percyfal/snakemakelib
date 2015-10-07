@@ -18,6 +18,8 @@ from snakemakelib.log import LoggerManager
 
 logger = LoggerManager().getLogger(__name__)
 
+TOOLS = "pan,wheel_zoom,box_zoom,box_select,lasso_select,resize,reset,save,hover"
+
 def scrnaseq_alignment_qc_plots(rseqc_read_distribution=None, rseqc_gene_coverage=None,
                       star_results=None):
     """Make alignment QC plots for scrnaseq workflow
@@ -55,7 +57,6 @@ def scrnaseq_alignment_qc_plots(rseqc_read_distribution=None, rseqc_gene_coverag
     ]
     table = DataTable(source=source, columns=columns,
                       editable=False, width=1000)
-    TOOLS = "pan,wheel_zoom,box_zoom,box_select,lasso_select,resize,reset,save,hover"
     kwfig = {'plot_width': 400, 'plot_height': 400, 
              'title_text_font_size': "12pt"}
     kwxaxis = {'axis_label': 'Sample',
@@ -228,7 +229,6 @@ def scrnaseq_pca_plots(pca_results_file=None, metadata=None, pcaobjfile=None):
     
 
     source = ColumnDataSource(df_pca)
-    TOOLS = "pan,wheel_zoom,box_zoom,box_select,resize,reset,save,hover"
 
     # Add radio button group
     cmap = colorbrewer(datalen = df_pca.shape[0])
@@ -366,7 +366,19 @@ source.trigger('change');
     return {'pca' : vform(*(buttons + [gridplot([[p1, p2]])]))}
 
 
-def scrnaseq_extra_ref_plot(expr=None, extra_ref=None):
+def scrnaseq_extra_ref_plot(expr=None, extra_ref=None, unit_id="gene_id"):
+    """Plot spikeins.
+
+    FIXME: this should be a generic plot for multi-plotting gene
+    expression values over samples
+
+    Args: 
+      expr (str): expression matrix file name (long format)
+      extra_ref (list): list of extra reference file names
+      unit_id (str): name of column to use for plotting
+
+    """
+    
     if extra_ref is None:
         return
     # Add spikein plots
@@ -377,16 +389,73 @@ def scrnaseq_extra_ref_plot(expr=None, extra_ref=None):
         fh = open(ref)
         ext = os.path.splitext(ref)[1].replace(".", "")
         extra_ids += [record.id.strip() for record in SeqIO.parse(fh, format=seqio_format[ext])]
-
     expr_long = pd.read_csv(expr)
     criterion = expr_long["gene_id"].map(lambda x: x in extra_ids)
-    df = expr_long[criterion]
-    from bokeh.charts import Scatter
     import math
-    df["TPM_log"] = [math.log2(x + 1) for x in df["TPM"]]
-    fig = Scatter(df, x="sample", y="TPM_log", xscale="categorical",
-                  color='gene_id')
+    expr_long.loc[criterion, "TPM_log"] = [math.log2(x + 1) for x in expr_long.loc[criterion, "TPM"]]
+    expr_long.loc[criterion, "size"] = 5
+    df = expr_long.loc[criterion, :]
+    fig = figure(title="spikein plot", x_range=sorted(list(set(df["sample"]))),
+                 plot_width=800, plot_height=400, tools=TOOLS)
+    cmap = colorbrewer(size=4, datalen = len(list(set(df["sample"]))))
+    for (groupid, g), c in zip(df.groupby('gene_id'), cmap):
+        source = ColumnDataSource(g)
+        fig.circle(x='sample', y='TPM_log', legend=groupid, color=c,
+                   source=source, size=g['size'])
+    xaxis(fig, axis_label='Sample', major_label_orientation= np.pi/3)
+    yaxis(fig, axis_label='TPM_log', major_label_orientation= np.pi/3)
+    tooltips(fig, HoverTool,[('sample', '@sample'),
+                             (unit_id, '@' + unit_id)])
+    # Widget for selecting ref
+    # selectref_callback = CustomJS(args=dict(source=source), code="""
+    #     var data = source.get('data');
+    #     var value = cb_obj.get('value')
+    #     y = data['y']
+    #     for (i = 0; i < y.length; i++) {
+    #          y[i] = data[value][i]
+    #     }
+    #     }
+
+    #     source.trigger('change');
+    # """)
+    # selectref = Select(title = "Reference", options = extra_ids,
+    #                    value=extra_ids[0], callback=selectref_callback)
+
+    #return {'spikein' : vform(*([selectref] + [fig]))}
     return {'spikein' : fig}
 
-def scrnaseq_expr_heatmap():
-    pass
+def scrnaseq_expr_heatmap(expr_file=None, unit_id="gene_id", metadata=None):
+    from sklearn.cluster import AgglomerativeClustering
+    if not expr_file:
+        return None
+    expr_long = pd.read_csv(expr_file)
+    expr = expr_long.pivot_table(columns=unit_id, values="TPM",
+                                 index="sample")
+    import math
+    expr_log = expr.applymap(lambda x: math.log2(x + 1))
+    n_samples = expr_log.shape[0]
+    samplecorr = expr_log.T.corr()
+    model = AgglomerativeClustering(linkage='average',
+                                    affinity='precomputed',
+                                    n_clusters=n_samples)
+
+    fit = model.fit(samplecorr)
+    order = model.fit_predict(samplecorr)
+    samplecorr_reordered = samplecorr.iloc[order, order]
+    print(samplecorr_reordered.head())
+    sc_stack = samplecorr_reordered.stack().reset_index()
+    print (sc_stack.head())
+    sc_stack.index = samplecorr_reordered["sample"]
+    sc_stack.columns = ['x', 'y', 'cor']
+    print (md.head())
+    print (samplecorr_reordered.head())
+    if not metadata is None:
+        md = pd.read_csv(metadata, index_col=0)
+        samplecorr_reordered = samplecorr_reordered.join(md)
+    print(samplecorr_reordered.head())
+    # from bokeh.charts import Scatter
+    # fig = Scatter(expr
+    # print(dir(model))
+    
+
+    

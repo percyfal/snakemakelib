@@ -3,9 +3,10 @@ import os
 import re
 import pandas as pd
 import numpy as np
+from bokeh.charts import Scatter
 from bokeh.plotting import figure, gridplot
 from bokehutils.geom import dotplot, lines
-from bokehutils.mgeom import mlines, mdotplot
+from bokehutils.mgeom import mlines
 from bokehutils.facet import facet_grid
 from bokehutils.axes import xaxis, yaxis
 from bokehutils.color import colorbrewer
@@ -68,6 +69,8 @@ class Metrics(pd.DataFrame):
         self.plots = []
         self._label = str(type(self)).split(".")[-1].replace("'>", "")
         self.ncol = 4
+        self._stack = None
+        self._kwargs = None
 
     @property
     def label(self):
@@ -82,11 +85,15 @@ class Metrics(pd.DataFrame):
         plist = []
         for kw in self.plots:
             kwargs.update(kw['figure'])
-            fig = figure(**kwargs)
-            dotplot(fig, df=self, **kw['renderer'])
-            xaxis(fig, **kw['xaxis'])
-            yaxis(fig, **kw['yaxis'])
+            if self._stack is None:
+                fig = figure(**kwargs)
+                dotplot(fig, df=self, **kw['renderer'])
+                xaxis(fig, **kw['xaxis'])
+                yaxis(fig, **kw['yaxis'])
+            else:
+                fig = Scatter(self._stack, **self._kwargs)
             plist.append(fig)
+
         return plist
 
 
@@ -152,6 +159,7 @@ class AlignMetrics(Metrics):
 class InsertMetrics(Metrics):
     def __init__(self, *args, **kwargs):
         super(InsertMetrics, self).__init__(*args, **kwargs)
+        self.columns = ["ind"] + list(self.columns[1:])
         self.plots = [{
             'figure': {
                 'plot_width': 400, 'plot_height': 400,
@@ -170,6 +178,12 @@ class InsertMetrics(Metrics):
             'yaxis': {'axis_label': 'Mean insert size',
                       'major_label_orientation': np.pi/3,
                       'axis_label_text_font_size': '10pt'}}]
+        self._stack = self[["Sample", "ind", "MEAN_INSERT_SIZE"]].pivot_table(index=["Sample", "ind"]).stack().reset_index()
+        self._stack.columns = ["Sample", "ind", "type", "MEAN_INSERT_SIZE"]
+        self._kwargs = {'x': 'Sample', 'y': 'MEAN_INSERT_SIZE', 'color': 'ind',
+                        'legend': 'top_right', 'title': "Picard metrics, mean insert size",
+                        'ylabel': "mean insert size"}
+
 
 class InsertHist(HistMetrics):
     def __init__(self, *args, **kwargs):
@@ -198,7 +212,7 @@ class InsertHist(HistMetrics):
                       'axis_label_text_font_size': '10pt'},
             'yaxis': {'axis_label': 'Count',
                       'axis_label_text_font_size': '10pt'}}
-        self.kw['renderer']['color'] =  colorbrewer(datalen = len(self.kw['renderer']['y']), palette="RdYlBu")
+        self.kw['renderer']['color'] =  colorbrewer(datalen = len(self.kw['renderer']['y']))
         self.plot_hist = self.facet_grid_hist
 
 
@@ -223,7 +237,10 @@ class DuplicationMetrics(Metrics):
             'yaxis': {'axis_label': 'Percent duplication',
                       'major_label_orientation': np.pi/3,
                       'axis_label_text_font_size': '10pt'}}]
-
+        self._stack = self[["Sample", "PERCENT_DUPLICATION"]].pivot_table(index="Sample").stack().reset_index([0,1])
+        self._stack.columns = ["Sample", "PERCENT_DUPLICATION", "percent"]
+        self._kwargs = {'x': 'Sample', 'y': 'percent',
+                        'title': "Picard metrics, percent duplication"}
 
 class DuplicationHist(HistMetrics):
     # see http://sourceforge.net/p/picard/wiki/Main_Page/

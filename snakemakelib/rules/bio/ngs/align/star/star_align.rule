@@ -2,7 +2,7 @@
 try:
     from snakemakelib.stat import is_compressed
 except:
-    is_
+    is_compressed = lambda x: True
 
 config_default = { 
     'bio.ngs.align.star' : {

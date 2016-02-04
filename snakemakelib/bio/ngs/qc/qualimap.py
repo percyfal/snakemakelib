@@ -1,9 +1,10 @@
 # Copyright (C) 2015 by Per Unneberg
 import pandas as pd
 import numpy as np
-from bokeh.plotting import figure
+from math import log10
+from bokeh.plotting import figure, gridplot
+from bokeh.charts import Scatter
 from bokehutils.geom import points, abline
-from bokehutils.mgeom import mdotplot
 from bokehutils.facet import facet_grid
 from bokehutils.axes import xaxis, yaxis, main
 from snakemake.report import data_uri
@@ -92,24 +93,24 @@ def make_qualimap_plots(qmglobals=None, coverage_per_contig=None):
     if qmglobals is not None:
         df_all = pd.read_csv(qmglobals)
         df_all["Sample"] = df_all["Sample"].astype('str')
-        fig = figure(y_range=[0, max(df_all['number of reads'])],
-                     title="Mapping summary",
-                     title_text_font_size="12pt",
-                     plot_width=400, plot_height=400,
-                     x_range=sorted(list(set(df_all["Sample"]))))
-        mdotplot(fig, x='Sample', size=10,
-                 df=df_all, alpha=0.5,
-                 y= ['number of reads',
-                     'number of mapped reads',
-                     'number of duplicated reads',
-                     'number of unique reads'])
-        xaxis(fig, axis_label="sample",
-              major_label_orientation=np.pi/3,
-              axis_label_text_font_size='10pt')
-        yaxis(fig, axis_label="count",
-              major_label_orientation=1,
-              axis_label_text_font_size='10pt')
-        retval['fig']['globals'] = fig
+        READ_COLUMNS = ["number of reads",
+                        "number of mapped reads",
+                        "number of duplicated reads",
+                        "number of unique reads"]
+        df = df_all[["Sample"] + READ_COLUMNS].pivot_table(index="Sample").stack().reset_index([0,1])
+        df.columns = ["Sample", "ind", "count"]
+        df["count"] = [log10(x) for x in df["count"]]
+        
+        p1 = Scatter(df, x="Sample", y="count",
+                     color="ind", legend="top_right",
+                     ylabel="log10(count)", title="Qualimap read summary")
+        df_all[READ_COLUMNS] = df_all[READ_COLUMNS].div(df_all["number of reads"], axis=0)*100
+        df = df_all[["Sample"] + READ_COLUMNS].pivot_table(index="Sample").stack().reset_index([0,1])
+        df.columns = ["Sample", "ind", "percent"]
+        p2 = Scatter(df, x="Sample", y="percent",
+                     color="ind", legend="top_right",
+                     title="Qualimap read summary, percent")
+        retval['fig']['globals'] = gridplot([[p1, p2]])
         
     # Coverage per contig
     if coverage_per_contig is not None:
